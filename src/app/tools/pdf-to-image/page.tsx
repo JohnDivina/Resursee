@@ -14,9 +14,7 @@ import {
   ArrowLeft,
   Trash,
   FilePdf,
-  CheckCircle,
   Sliders,
-  Eye,
 } from '@phosphor-icons/react';
 
 interface RenderedPage {
@@ -32,8 +30,7 @@ export default function PdfToImagePage() {
   const [renderedPages, setRenderedPages] = useState<RenderedPage[]>([]);
   const [isRendering, setIsRendering] = useState(false);
   const [outputFormat, setOutputFormat] = useState<'png' | 'jpeg'>('png');
-  const [scale, setScale] = useState<number>(2.0); // High res 2x
-  const [activePage, setActivePage] = useState<number>(1);
+  const [scale] = useState<number>(2.0); // High res 2x
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePdfUpload = async (file: File) => {
@@ -47,9 +44,7 @@ export default function PdfToImagePage() {
     setIsRendering(true);
 
     try {
-      // Dynamic import of pdfjs to avoid SSR issues
       const pdfjsLib = await import('pdfjs-dist');
-      // Set worker source
       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
       const arrayBuffer = await file.arrayBuffer();
@@ -79,7 +74,6 @@ export default function PdfToImagePage() {
       }
 
       setRenderedPages(pages);
-      setActivePage(1);
     } catch (error) {
       console.error('Error rendering PDF:', error);
       alert('Could not render PDF. Please ensure the file is not password-protected.');
@@ -133,21 +127,21 @@ export default function PdfToImagePage() {
           </nav>
 
           {/* Heading */}
-          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule)] pb-6 sm:flex-row sm:items-end">
+          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-6 sm:flex-row sm:items-end">
             <div>
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-primary-subtle)] text-[var(--color-primary)]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-rose-500 text-white shadow-xs">
                   <FileArrowDown size={20} weight="bold" />
                 </span>
-                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+                <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                   PDF Utility
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.2 font-mono text-[9.5px] font-bold text-emerald-700 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[9.5px] font-bold text-emerald-700 border border-emerald-500/20">
                   <ShieldCheck size={12} weight="bold" />
                   <span>100% Client-Side</span>
                 </span>
               </div>
-              <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+              <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 PDF to Image
               </h1>
               <p className="mt-1 text-xs text-[var(--color-ink-muted)] sm:text-sm">
@@ -157,7 +151,7 @@ export default function PdfToImagePage() {
 
             <Link
               href="/tools"
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3 py-1.5 text-xs font-semibold text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] px-4 py-1.5 text-xs font-semibold text-[var(--color-ink-secondary)] hover:bg-black/[0.03]"
             >
               <ArrowLeft size={14} />
               <span>Back to all tools</span>
@@ -175,12 +169,12 @@ export default function PdfToImagePage() {
                     handlePdfUpload(e.dataTransfer.files[0]);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]/20 shadow-xs"
+                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-black/[0.1] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-rose-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
               >
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-subtle)] text-[var(--color-primary)] shadow-xs transition-transform group-hover:scale-110">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-rose-500 text-white shadow-md transition-transform group-hover:scale-110">
                   <FilePdf size={32} weight="bold" />
                 </div>
-                <h3 className="mt-4 font-display text-lg font-bold text-[var(--color-ink)]">
+                <h3 className="mt-4 text-lg font-bold text-[var(--color-ink)]">
                   Choose a PDF document to extract images
                 </h3>
                 <p className="mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
@@ -188,7 +182,7 @@ export default function PdfToImagePage() {
                 </p>
                 <button
                   type="button"
-                  className="mt-6 rounded-lg bg-[var(--color-primary)] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] pointer-events-none"
+                  className="mt-6 rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] pointer-events-none"
                 >
                   Select PDF File
                 </button>
@@ -208,7 +202,7 @@ export default function PdfToImagePage() {
           ) : isRendering ? (
             <div className="mt-12 flex flex-col items-center justify-center p-12 text-center">
               <span className="h-10 w-10 animate-spin rounded-full border-3 border-[var(--color-primary)] border-t-transparent" />
-              <h3 className="mt-4 font-display text-base font-bold text-[var(--color-ink)]">
+              <h3 className="mt-4 text-base font-bold text-[var(--color-ink)]">
                 Rendering PDF Pages...
               </h3>
               <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
@@ -219,10 +213,10 @@ export default function PdfToImagePage() {
             <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
               {/* Left 2 Cols: Extracted Pages Grid */}
               <div className="space-y-6 lg:col-span-2">
-                <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+                <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3.5">
                     <div>
-                      <h3 className="font-display text-sm font-bold text-[var(--color-ink)]">
+                      <h3 className="text-sm font-bold text-[var(--color-ink)]">
                         Extracted Pages ({renderedPages.length} pages)
                       </h3>
                       <p className="text-[11px] text-[var(--color-ink-muted)]">{pdfFile.name}</p>
@@ -230,7 +224,7 @@ export default function PdfToImagePage() {
                     <button
                       type="button"
                       onClick={handleReset}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:underline"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:underline"
                     >
                       <Trash size={14} />
                       <span>Upload different PDF</span>
@@ -242,9 +236,9 @@ export default function PdfToImagePage() {
                     {renderedPages.map((page) => (
                       <div
                         key={page.pageNumber}
-                        className="group relative flex flex-col justify-between rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-2.5 transition-all hover:border-[var(--color-primary)] hover:shadow-md"
+                        className="group relative flex flex-col justify-between rounded-[18px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] p-3 transition-all hover:border-[var(--color-primary)] hover:shadow-md"
                       >
-                        <div className="relative aspect-[3/4] overflow-hidden rounded border border-[var(--color-rule-subtle)] bg-white shadow-2xs">
+                        <div className="relative aspect-[3/4] overflow-hidden rounded-[12px] border border-black/[0.06] bg-white shadow-2xs">
                           <img
                             src={page.dataUrl}
                             alt={`Page ${page.pageNumber}`}
@@ -252,14 +246,14 @@ export default function PdfToImagePage() {
                           />
                         </div>
 
-                        <div className="mt-2.5 flex items-center justify-between">
+                        <div className="mt-3 flex items-center justify-between">
                           <span className="font-mono text-xs font-bold text-[var(--color-ink)]">
                             Page {page.pageNumber}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleDownloadSingle(page)}
-                            className="flex items-center gap-1 rounded bg-[var(--color-primary)] px-2 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-[var(--color-primary-hover)] active:scale-95"
+                            className="flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-3 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-[var(--color-primary-hover)] active:scale-95"
                           >
                             <DownloadSimple size={12} weight="bold" />
                             <span>Save</span>
@@ -273,17 +267,17 @@ export default function PdfToImagePage() {
 
               {/* Right Col: Extraction Settings */}
               <div className="space-y-6 lg:col-span-1">
-                <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs space-y-6">
-                  <div className="flex items-center gap-2 border-b border-[var(--color-rule-subtle)] pb-3">
+                <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-6">
+                  <div className="flex items-center gap-2 border-b border-black/[0.04] dark:border-white/[0.06] pb-3.5">
                     <Sliders size={18} className="text-[var(--color-primary)]" />
-                    <h3 className="font-display text-sm font-bold text-[var(--color-ink)]">
+                    <h3 className="text-sm font-bold text-[var(--color-ink)]">
                       Export Format
                     </h3>
                   </div>
 
                   {/* Format Choice */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Output Image Format
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -295,10 +289,10 @@ export default function PdfToImagePage() {
                           key={item.val}
                           type="button"
                           onClick={() => setOutputFormat(item.val)}
-                          className={`rounded-lg border p-2 text-center text-xs font-semibold transition-all ${
+                          className={`rounded-[14px] border p-2.5 text-center text-xs font-bold transition-all ${
                             outputFormat === item.val
                               ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]'
-                              : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
+                              : 'border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:bg-black/[0.03]'
                           }`}
                         >
                           {item.label}
@@ -311,7 +305,7 @@ export default function PdfToImagePage() {
                   <button
                     type="button"
                     onClick={handleDownloadAll}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-[var(--color-primary-hover)] active:scale-95"
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-[var(--color-primary-hover)] active:scale-95"
                   >
                     <DownloadSimple size={16} weight="bold" />
                     <span>Download All {renderedPages.length} Pages</span>

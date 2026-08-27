@@ -4,14 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  FileText,
   CaretLeft,
   CaretRight,
   X,
   Sparkle,
   ArrowRight,
-  Eye,
-  CheckCircle,
 } from '@phosphor-icons/react';
 import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
@@ -28,10 +25,8 @@ export default function ResourceShowcase({
   const [isPaused, setIsPaused] = useState(false);
   const showcaseRef = useRef<HTMLDivElement>(null);
 
-  // Focus only on active top resources for the showcase (up to 6 items)
   const previewItems = resources.slice(0, 6);
 
-  // Auto-rotation when open and not hovered
   useEffect(() => {
     if (!isOpen || isPaused) return;
 
@@ -42,7 +37,6 @@ export default function ResourceShowcase({
     return () => clearInterval(interval);
   }, [isOpen, isPaused, previewItems.length]);
 
-  // Handle escape key to collapse
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -75,18 +69,16 @@ export default function ResourceShowcase({
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
           aria-label={isOpen ? 'Collapse resource preview' : 'Preview university documents'}
-          className={`group relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-md transition-all duration-300 hover:border-[var(--color-primary)] hover:shadow-[0_0_24px_var(--color-primary-glow)] hover:scale-105 active:scale-95 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+          className={`group relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] text-[var(--color-ink)] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[var(--color-primary)] hover:shadow-[0_0_24px_var(--color-primary-glow)] hover:scale-105 active:scale-95 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
             isOpen
               ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
               : ''
           }`}
         >
-          {/* Subtle Ambient Pulse Ring */}
           {!isOpen && (
             <span className="pointer-events-none absolute inset-0 -m-1 rounded-full border border-[var(--color-primary)]/25 animate-ping opacity-75" />
           )}
 
-          {/* Central Rotating Icon / Mascot Indicator */}
           <div className="relative flex items-center justify-center">
             {isOpen ? (
               <X size={20} weight="bold" className="transition-transform rotate-0 group-hover:rotate-90 duration-200" />
@@ -105,7 +97,6 @@ export default function ResourceShowcase({
           </div>
         </button>
 
-        {/* Minimal Context Pill Below Circle */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -128,9 +119,9 @@ export default function ResourceShowcase({
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
-            <div className="relative rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-xl backdrop-blur-md">
+            <div className="relative rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] backdrop-blur-md">
               {/* Carousel Header & Controls */}
-              <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3 text-xs">
+              <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="flex h-2 w-2 rounded-full bg-[var(--color-primary)] animate-pulse" />
                   <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
@@ -142,7 +133,7 @@ export default function ResourceShowcase({
                   <button
                     type="button"
                     onClick={handlePrev}
-                    className="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] hover:border-[var(--color-primary)] transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-colors"
                     aria-label="Previous document"
                   >
                     <CaretLeft size={14} weight="bold" />
@@ -150,7 +141,7 @@ export default function ResourceShowcase({
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] hover:border-[var(--color-primary)] transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-colors"
                     aria-label="Next document"
                   >
                     <CaretRight size={14} weight="bold" />
@@ -168,12 +159,12 @@ export default function ResourceShowcase({
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -12 }}
                       transition={{ duration: 0.22, ease: 'easeOut' }}
-                      className="group flex flex-col gap-3 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-4 transition-all hover:border-[var(--color-primary)]"
+                      className="group flex flex-col gap-3.5 rounded-[18px] border border-black/[0.04] dark:border-white/[0.06] bg-[var(--color-paper)] p-4 sm:p-5 transition-all"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`inline-flex items-center justify-center rounded px-2 py-0.5 font-mono text-[10px] font-bold ${
+                            className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
                               previewItems[currentIndex].file_format === 'PDF'
                                 ? 'badge-pdf'
                                 : previewItems[currentIndex].file_format === 'DOCX'
@@ -185,10 +176,10 @@ export default function ResourceShowcase({
                           >
                             {previewItems[currentIndex].file_format}
                           </span>
-                          <span className="rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-2 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">
+                          <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.08] px-2.5 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">
                             v{previewItems[currentIndex].current_version}
                           </span>
-                          <span className="rounded-md bg-[var(--color-primary-subtle)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--color-primary)]">
+                          <span className="rounded-full bg-[var(--color-primary-subtle)] px-2.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-primary)]">
                             {previewItems[currentIndex].department?.abbreviation || 'OUR'}
                           </span>
                         </div>
@@ -199,7 +190,7 @@ export default function ResourceShowcase({
                       </div>
 
                       <div>
-                        <h4 className="font-display text-sm sm:text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">
+                        <h4 className="text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors tracking-tight line-clamp-1">
                           {previewItems[currentIndex].title}
                         </h4>
                         <p className="mt-1 text-xs text-[var(--color-ink-muted)] line-clamp-2 leading-relaxed">
@@ -207,13 +198,13 @@ export default function ResourceShowcase({
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-2.5 text-xs">
+                      <div className="flex items-center justify-between border-t border-black/[0.04] dark:border-white/[0.06] pt-3 text-xs">
                         <span className="text-[11px] text-[var(--color-ink-secondary)]">
                           Office: {previewItems[currentIndex].department?.name || 'Academic Affairs'}
                         </span>
                         <Link
                           href={`/resources/${previewItems[currentIndex].slug}`}
-                          className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary)] hover:underline"
+                          className="inline-flex items-center gap-1 font-bold text-[var(--color-primary)] hover:underline"
                         >
                           <span>Open document</span>
                           <ArrowRight size={13} weight="bold" />

@@ -1,6 +1,5 @@
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Newspaper, ArrowRight, ArrowSquareOut, Buildings, CalendarBlank, ShieldCheck } from '@phosphor-icons/react';
 import { NewsArticle } from '@/types/database';
 import { mockNewsArticles } from '@/lib/mockData';
@@ -24,7 +23,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
   };
 
   return (
-    <section className="border-t border-[var(--color-rule)] bg-[var(--color-paper-surface)] py-12 sm:py-16">
+    <section className="border-t border-black/[0.05] dark:border-white/[0.08] bg-[var(--color-paper-surface)] py-14 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end">
           <div>
@@ -32,25 +31,25 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
               <Newspaper size={14} />
               <span>Campus Updates</span>
             </div>
-            <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+            <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Latest University News & Advisories
             </h2>
           </div>
           <Link
             href="/news"
-            className="group flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:underline"
+            className="group flex items-center gap-1 text-xs font-bold text-[var(--color-primary)] hover:underline"
           >
             <span>View all news & advisories</span>
             <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
 
-        {/* 3-column news grid */}
+        {/* 3-column news grid (Apple Squircle Solid White Cards) */}
         <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
           {publishedNews.map((article) => (
             <article
               key={article.id}
-              className="group flex flex-col justify-between rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] overflow-hidden shadow-xs transition-all hover:border-[var(--color-primary)] hover:shadow-md hover:-translate-y-0.5"
+              className="group flex flex-col justify-between rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5"
             >
               {/* Image banner if available */}
               {article.image_url && (
@@ -70,10 +69,10 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
                 </div>
               )}
 
-              <div className="flex-1 p-5">
+              <div className="flex-1 p-6">
                 {/* Meta: Department + Date */}
                 <div className="flex items-center justify-between text-[11px] text-[var(--color-ink-muted)]">
-                  <div className="flex items-center gap-1 font-medium text-[var(--color-primary)]">
+                  <div className="flex items-center gap-1 font-semibold text-[var(--color-primary)]">
                     <Buildings size={13} />
                     <span>{article.department?.abbreviation || 'Campus'}</span>
                   </div>
@@ -88,7 +87,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
                   href={article.content_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2.5 block font-display text-base font-bold leading-snug text-[var(--color-ink)] transition-colors group-hover:text-[var(--color-primary)]"
+                  className="mt-3 block text-base font-bold leading-snug text-[var(--color-ink)] transition-colors group-hover:text-[var(--color-primary)] tracking-tight"
                 >
                   {article.title}
                 </a>
@@ -100,15 +99,15 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
               </div>
 
               {/* Read Source Link */}
-              <div className="border-t border-[var(--color-rule-subtle)] px-5 py-3 bg-[var(--color-paper-surface)]/50 flex items-center justify-between text-xs">
+              <div className="border-t border-black/[0.04] dark:border-white/[0.06] px-6 py-3.5 bg-[var(--color-paper-muted)]/40 flex items-center justify-between text-xs">
                 <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">Official Notice</span>
                 <a
                   href={article.content_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary)] hover:underline"
+                  className="inline-flex items-center gap-1 font-bold text-[var(--color-primary)] hover:underline"
                 >
-                  <span>Read full announcement</span>
+                  <span>Read announcement</span>
                   <ArrowSquareOut size={13} />
                 </a>
               </div>

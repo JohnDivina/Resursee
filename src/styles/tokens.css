@@ -1,67 +1,70 @@
-/* Hallmark · macrostructure: Ecosystem Index · theme: Cobalt · genre: modern-minimal
- * Anchor hue: 256 (electric cobalt) · Paper: cool engineered light · Radii: 6px-10px technical
+/* Resursee Apple / iOS Soft Minimal Design Tokens
+ * Typography: Apple SF Pro / San Francisco native stack (-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter)
+ * Radii: Soft 16px - 24px squircle curves
+ * Surfaces: Solid pure white cards with soft hairline borders & ambient lift
  */
 
 :root {
   /* Paper & Surfaces */
-  --color-paper: oklch(98.5% 0.004 250);
-  --color-paper-surface: oklch(99.5% 0.002 250);
-  --color-paper-muted: oklch(96.0% 0.008 250);
-  --color-paper-card: oklch(100% 0 0);
-  --color-paper-elevated: oklch(100% 0 0);
+  --color-paper: #f8f9fc;
+  --color-paper-surface: #ffffff;
+  --color-paper-muted: #f1f3f9;
+  --color-paper-card: #ffffff;
+  --color-paper-elevated: #ffffff;
 
   /* Inks & Text */
-  --color-ink: oklch(24.0% 0.02 258);
-  --color-ink-secondary: oklch(45.0% 0.018 257);
-  --color-ink-muted: oklch(62.0% 0.012 257);
-  --color-ink-faint: oklch(78.0% 0.008 257);
+  --color-ink: #0f172a;
+  --color-ink-secondary: #334155;
+  --color-ink-muted: #64748b;
+  --color-ink-faint: #94a3b8;
 
-  /* Hairline Rules */
-  --color-rule: oklch(91.0% 0.006 250);
-  --color-rule-subtle: oklch(94.5% 0.004 250);
-  --color-rule-strong: oklch(80.0% 0.015 250);
+  /* Soft Hairline Borders */
+  --color-rule: rgba(0, 0, 0, 0.06);
+  --color-rule-subtle: rgba(0, 0, 0, 0.04);
+  --color-rule-strong: rgba(0, 0, 0, 0.12);
 
   /* Primary Signal Accent: Electric Cobalt */
-  --color-primary: oklch(58.0% 0.20 256);
-  --color-primary-hover: oklch(52.0% 0.22 256);
-  --color-primary-active: oklch(46.0% 0.24 256);
-  --color-primary-glow: rgba(37, 99, 235, 0.15);
-  --color-primary-subtle: oklch(95.0% 0.035 256);
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-active: #1e40af;
+  --color-primary-glow: rgba(37, 99, 235, 0.14);
+  --color-primary-subtle: #eff6ff;
 
   /* Secondary Accents */
-  --color-accent-amber: oklch(76.0% 0.16 75);
-  --color-accent-amber-subtle: oklch(96.0% 0.03 75);
-  --color-accent-amber-glow: rgba(245, 158, 11, 0.18);
-  --color-accent-emerald: oklch(70.0% 0.17 150);
-  --color-accent-emerald-subtle: oklch(96.0% 0.03 150);
-  --color-accent-rose: oklch(65.0% 0.20 25);
-  --color-accent-rose-subtle: oklch(96.0% 0.03 25);
+  --color-accent-amber: #f59e0b;
+  --color-accent-amber-subtle: #fffbeb;
+  --color-accent-amber-glow: rgba(245, 158, 11, 0.16);
+  --color-accent-emerald: #10b981;
+  --color-accent-emerald-subtle: #ecfdf5;
+  --color-accent-rose: #f43f5e;
+  --color-accent-rose-subtle: #fff1f2;
 
   /* Dark Graphite Band / Command Palette */
-  --color-dark-surface: oklch(18.0% 0.016 260);
-  --color-dark-card: oklch(22.0% 0.016 260);
-  --color-dark-border: oklch(30.0% 0.015 260);
-  --color-dark-ink: oklch(94.0% 0.005 250);
-  --color-dark-muted: oklch(70.0% 0.010 250);
+  --color-dark-surface: #0f172a;
+  --color-dark-card: #1e293b;
+  --color-dark-border: #334155;
+  --color-dark-ink: #f8fafc;
+  --color-dark-muted: #94a3b8;
 
-  /* Radius scale */
-  --radius-xs: 3px;
-  --radius-sm: 5px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Apple / iOS Soft Squircle Radii */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 26px;
   --radius-full: 9999px;
 
-  /* Typography scale */
-  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Apple SF Pro / San Francisco Typography Stack */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", var(--font-inter), sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", var(--font-inter), sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 
-  /* Elevation (hairline-first, minimal shadow) */
+  /* Soft Ambient Elevation */
   --shadow-hairline: 0 0 0 1px var(--color-rule);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--color-rule);
-  --shadow-card-hover: 0 4px 12px rgba(37, 99, 235, 0.08), 0 0 0 1px var(--color-primary);
-  --shadow-modal: 0 20px 40px -15px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--color-rule-strong);
+  --shadow-card: 0 2px 10px -2px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--color-rule);
+  --shadow-card-hover: 0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--color-primary-glow);
+  --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.18), 0 0 0 1px var(--color-rule-strong);
 
   /* Motion */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -72,26 +75,26 @@
 }
 
 [data-theme='dark'] {
-  --color-paper: oklch(14.0% 0.015 260);
-  --color-paper-surface: oklch(18.0% 0.016 260);
-  --color-paper-muted: oklch(22.0% 0.016 260);
-  --color-paper-card: oklch(19.0% 0.016 260);
-  --color-paper-elevated: oklch(24.0% 0.016 260);
+  --color-paper: #0b0f17;
+  --color-paper-surface: #111726;
+  --color-paper-muted: #172033;
+  --color-paper-card: #131b2e;
+  --color-paper-elevated: #1a243d;
 
-  --color-ink: oklch(95.0% 0.005 250);
-  --color-ink-secondary: oklch(80.0% 0.010 250);
-  --color-ink-muted: oklch(65.0% 0.012 250);
-  --color-ink-faint: oklch(40.0% 0.015 250);
+  --color-ink: #f8fafc;
+  --color-ink-secondary: #cbd5e1;
+  --color-ink-muted: #94a3b8;
+  --color-ink-faint: #64748b;
 
-  --color-rule: oklch(26.0% 0.015 260);
-  --color-rule-subtle: oklch(21.0% 0.015 260);
-  --color-rule-strong: oklch(34.0% 0.015 260);
+  --color-rule: rgba(255, 255, 255, 0.08);
+  --color-rule-subtle: rgba(255, 255, 255, 0.05);
+  --color-rule-strong: rgba(255, 255, 255, 0.15);
 
-  --color-primary: oklch(65.0% 0.22 256);
-  --color-primary-hover: oklch(70.0% 0.20 256);
-  --color-primary-subtle: oklch(22.0% 0.06 256);
+  --color-primary: #3b82f6;
+  --color-primary-hover: #60a5fa;
+  --color-primary-subtle: rgba(59, 130, 246, 0.15);
 
   --shadow-hairline: 0 0 0 1px var(--color-rule);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--color-rule);
-  --shadow-card-hover: 0 4px 16px rgba(37, 99, 235, 0.2), 0 0 0 1px var(--color-primary);
+  --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--color-rule);
+  --shadow-card-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--color-primary);
 }

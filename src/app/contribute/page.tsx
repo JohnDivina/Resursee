@@ -10,14 +10,7 @@ import {
   FileText,
   ShieldCheck,
   CheckCircle,
-  ArrowRight,
-  Info,
-  Buildings,
-  Tag,
   ClockCounterClockwise,
-  ArrowLeft,
-  Sparkle,
-  Paperclip,
 } from '@phosphor-icons/react';
 import { mockCategories, mockDepartments, mockResources } from '@/lib/mockData';
 import { DocumentType, SubmissionType } from '@/types/database';
@@ -55,7 +48,6 @@ export default function ContributePage() {
         setFileFormat(ext);
       }
       if (!title) {
-        // Auto populate title from filename
         const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ');
         setTitle(cleanName);
       }
@@ -86,7 +78,6 @@ export default function ContributePage() {
 
     setIsSubmitting(true);
 
-    // Simulate server submission
     setTimeout(() => {
       const newId = `SUB-${Math.floor(100000 + Math.random() * 900000)}`;
       setSubmissionId(newId);
@@ -126,16 +117,16 @@ export default function ContributePage() {
           </nav>
 
           {/* Header Banner */}
-          <div className="mt-4 border-b border-[var(--color-rule)] pb-6">
+          <div className="mt-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-6">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-primary-subtle)] text-base">
+              <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-[var(--color-primary-subtle)] text-base">
                 🦦
               </span>
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                 Community Document Repository
               </span>
             </div>
-            <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
               Submit a University Resource or Update
             </h1>
             <p className="mt-2 text-xs leading-relaxed text-[var(--color-ink-muted)] sm:text-sm">
@@ -144,7 +135,7 @@ export default function ContributePage() {
           </div>
 
           {/* Submission Process Notice Banner */}
-          <div className="mt-6 flex items-start gap-3 rounded-xl border border-[var(--color-primary-subtle)] bg-[var(--color-primary-subtle)]/40 p-4 text-xs text-[var(--color-ink)]">
+          <div className="mt-6 flex items-start gap-3 rounded-[20px] border border-blue-500/20 bg-blue-500/[0.04] p-4 text-xs text-[var(--color-ink)]">
             <ShieldCheck size={20} className="text-[var(--color-primary)] shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">Editorial Review Policy:</span> All community submissions are queued for verification by university department administrators before appearing publicly. Submissions with verified university sources or official email addresses are expedited.
@@ -153,18 +144,18 @@ export default function ContributePage() {
 
           {/* SUCCESS STATE */}
           {isSubmitted ? (
-            <div className="mt-8 rounded-2xl border-2 border-emerald-500/30 bg-[var(--color-paper-card)] p-8 text-center shadow-lg animate-in zoom-in-95">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <CheckCircle size={32} weight="fill" />
+            <div className="mt-8 rounded-[28px] border-2 border-emerald-500/30 bg-white dark:bg-[#131b2e] p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.06)] animate-in zoom-in-95">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600">
+                <CheckCircle size={36} weight="fill" />
               </div>
-              <h2 className="mt-4 font-display text-2xl font-bold text-[var(--color-ink)]">
+              <h2 className="mt-4 text-2xl font-extrabold text-[var(--color-ink)]">
                 Submission Received for Review!
               </h2>
               <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-[var(--color-ink-muted)] sm:text-sm">
-                Thank you, <span className="font-semibold text-[var(--color-ink)]">{submitterName}</span>. Your submission has been securely queued in the Master Admin Review Queue.
+                Thank you, <span className="font-bold text-[var(--color-ink)]">{submitterName}</span>. Your submission has been securely queued in the Master Admin Review Queue.
               </p>
 
-              <div className="mx-auto mt-6 max-w-sm rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3 font-mono text-xs">
+              <div className="mx-auto mt-6 max-w-sm rounded-[16px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] p-3 font-mono text-xs">
                 <span className="text-[var(--color-ink-muted)]">Tracking Reference:</span>{' '}
                 <span className="font-bold text-[var(--color-primary)]">{submissionId}</span>
               </div>
@@ -172,13 +163,13 @@ export default function ContributePage() {
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <button
                   onClick={handleReset}
-                  className="rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-4 py-2 text-xs font-semibold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
+                  className="rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] px-5 py-2.5 text-xs font-bold text-[var(--color-ink)] hover:bg-black/[0.03]"
                 >
                   Submit Another Resource
                 </button>
                 <Link
                   href="/resources"
-                  className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)]"
+                  className="rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)]"
                 >
                   Browse Public Directory
                 </Link>
@@ -186,28 +177,28 @@ export default function ContributePage() {
             </div>
           ) : (
             /* SUBMISSION FORM */
-            <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
               {/* SECTION 1: Submission Type */}
-              <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-                <h2 className="font-display text-base font-bold text-[var(--color-ink)]">
+              <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                <h2 className="text-base font-bold text-[var(--color-ink)]">
                   1. What are you submitting?
                 </h2>
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => {
                       setSubmissionType('new_resource');
                       setExistingResourceId('');
                     }}
-                    className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
+                    className={`flex items-start gap-3 rounded-[18px] border p-4 text-left transition-all ${
                       submissionType === 'new_resource'
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/60 ring-2 ring-[var(--color-primary)]'
-                        : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-card)]'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] ring-2 ring-[var(--color-primary)]'
+                        : 'border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] hover:bg-black/[0.02]'
                     }`}
                   >
                     <FileText size={22} className="text-[var(--color-primary)] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-display text-xs font-bold text-[var(--color-ink)]">
+                      <span className="text-xs font-bold text-[var(--color-ink)]">
                         Brand New Resource
                       </span>
                       <p className="mt-1 text-[11px] text-[var(--color-ink-muted)]">
@@ -219,15 +210,15 @@ export default function ContributePage() {
                   <button
                     type="button"
                     onClick={() => setSubmissionType('update_existing')}
-                    className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
+                    className={`flex items-start gap-3 rounded-[18px] border p-4 text-left transition-all ${
                       submissionType === 'update_existing'
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/60 ring-2 ring-[var(--color-primary)]'
-                        : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-card)]'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] ring-2 ring-[var(--color-primary)]'
+                        : 'border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] hover:bg-black/[0.02]'
                     }`}
                   >
                     <ClockCounterClockwise size={22} className="text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-display text-xs font-bold text-[var(--color-ink)]">
+                      <span className="text-xs font-bold text-[var(--color-ink)]">
                         Updated Revision / Superseded Form
                       </span>
                       <p className="mt-1 text-[11px] text-[var(--color-ink-muted)]">
@@ -237,17 +228,16 @@ export default function ContributePage() {
                   </button>
                 </div>
 
-                {/* If updating existing, show dropdown of current resources */}
                 {submissionType === 'update_existing' && (
-                  <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/50 p-4">
-                    <label className="block text-xs font-bold text-amber-900">
+                  <div className="mt-4 rounded-[18px] border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+                    <label className="block text-xs font-bold text-amber-900 dark:text-amber-300">
                       Select Existing Document to Update *
                     </label>
                     <select
                       value={existingResourceId}
                       onChange={(e) => handleExistingResourceSelect(e.target.value)}
                       required
-                      className="mt-1.5 w-full rounded-md border border-[var(--color-rule-strong)] bg-white p-2 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.1] bg-white dark:bg-[#1e293b] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
                       <option value="">-- Choose a document from the current directory --</option>
                       {mockResources.map((res) => (
@@ -261,13 +251,13 @@ export default function ContributePage() {
               </div>
 
               {/* SECTION 2: Document Details */}
-              <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs space-y-4">
-                <h2 className="font-display text-base font-bold text-[var(--color-ink)]">
+              <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-4">
+                <h2 className="text-base font-bold text-[var(--color-ink)]">
                   2. Document Details
                 </h2>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">
                     Official Document Title *
                   </label>
                   <input
@@ -276,12 +266,12 @@ export default function ContributePage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Application for Academic Overload & Cross-Enrollment Form"
-                    className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">
                     Summary / Purpose of Document
                   </label>
                   <textarea
@@ -289,19 +279,19 @@ export default function ContributePage() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Provide a brief summary of what this document is used for and who requires it..."
-                    className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Academic Category *
                     </label>
                     <select
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
                     >
                       {mockCategories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -312,13 +302,13 @@ export default function ContributePage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Issuing Department / Office *
                     </label>
                     <select
                       value={departmentId}
                       onChange={(e) => setDepartmentId(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
                     >
                       {mockDepartments.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -331,13 +321,13 @@ export default function ContributePage() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       File Format
                     </label>
                     <select
                       value={fileFormat}
                       onChange={(e) => setFileFormat(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 font-mono text-xs uppercase outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs uppercase outline-hidden"
                     >
                       <option value="PDF">PDF</option>
                       <option value="DOCX">DOCX</option>
@@ -347,7 +337,7 @@ export default function ContributePage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Version Label
                     </label>
                     <input
@@ -355,18 +345,18 @@ export default function ContributePage() {
                       value={versionLabel}
                       onChange={(e) => setVersionLabel(e.target.value)}
                       placeholder="2026.1"
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 font-mono text-xs outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Document Type
                     </label>
                     <select
                       value={docType}
                       onChange={(e) => setDocType(e.target.value as DocumentType)}
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 font-mono text-xs uppercase outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs uppercase outline-hidden"
                     >
                       <option value="form">Form</option>
                       <option value="template">Template</option>
@@ -379,20 +369,19 @@ export default function ContributePage() {
                 </div>
               </div>
 
-              {/* SECTION 3: File Attachment or Source Link */}
-              <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs space-y-4">
-                <h2 className="font-display text-base font-bold text-[var(--color-ink)]">
+              {/* SECTION 3: File Attachment */}
+              <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-4">
+                <h2 className="text-base font-bold text-[var(--color-ink)]">
                   3. File Attachment & Official Source
                 </h2>
 
-                {/* Upload box */}
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">
                     Upload Document File (.pdf, .docx, .xlsx, .pptx)
                   </label>
-                  <label className="mt-2 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-6 text-center cursor-pointer transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]/30">
+                  <label className="mt-2 flex flex-col items-center justify-center rounded-[20px] border-2 border-dashed border-black/[0.1] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-6 text-center cursor-pointer transition-colors hover:border-[var(--color-primary)]">
                     <UploadSimple size={28} className="text-[var(--color-primary)]" />
-                    <span className="mt-2 text-xs font-semibold text-[var(--color-ink)]">
+                    <span className="mt-2 text-xs font-bold text-[var(--color-ink)]">
                       {fileName ? fileName : 'Click to select a file from your computer'}
                     </span>
                     <span className="mt-0.5 text-[11px] text-[var(--color-ink-muted)]">
@@ -409,7 +398,7 @@ export default function ContributePage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Official Source Webpage URL
                     </label>
                     <input
@@ -417,12 +406,12 @@ export default function ContributePage() {
                       value={sourceUrl}
                       onChange={(e) => setSourceUrl(e.target.value)}
                       placeholder="https://university.edu/registrar/forms"
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Source Bureau / Issuing Office Name
                     </label>
                     <input
@@ -430,21 +419,21 @@ export default function ContributePage() {
                       value={sourceName}
                       onChange={(e) => setSourceName(e.target.value)}
                       placeholder="e.g. Office of the University Registrar"
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* SECTION 4: Submitter Information */}
-              <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs space-y-4">
-                <h2 className="font-display text-base font-bold text-[var(--color-ink)]">
+              <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-4">
+                <h2 className="text-base font-bold text-[var(--color-ink)]">
                   4. Submitter Information
                 </h2>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Your Full Name *
                     </label>
                     <input
@@ -453,12 +442,12 @@ export default function ContributePage() {
                       value={submitterName}
                       onChange={(e) => setSubmitterName(e.target.value)}
                       placeholder="Juan Dela Cruz"
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       University Email Address *
                     </label>
                     <input
@@ -467,18 +456,18 @@ export default function ContributePage() {
                       value={submitterEmail}
                       onChange={(e) => setSubmitterEmail(e.target.value)}
                       placeholder="jdelacruz@university.edu"
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Affiliation / Role
                     </label>
                     <select
                       value={submitterRole}
                       onChange={(e) => setSubmitterRole(e.target.value as any)}
-                      className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
                     >
                       <option value="student">Student</option>
                       <option value="faculty">Faculty Member</option>
@@ -490,7 +479,7 @@ export default function ContributePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">
                     Notes for the Reviewing Administrator
                   </label>
                   <textarea
@@ -498,16 +487,16 @@ export default function ContributePage() {
                     value={submissionNotes}
                     onChange={(e) => setSubmissionNotes(e.target.value)}
                     placeholder="Provide any additional context, effective dates, or verification notes..."
-                    className="mt-1.5 w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                   />
                 </div>
               </div>
 
               {/* Form Actions */}
-              <div className="flex items-center justify-between border-t border-[var(--color-rule)] pt-6">
+              <div className="flex items-center justify-between border-t border-black/[0.05] dark:border-white/[0.08] pt-6">
                 <Link
                   href="/"
-                  className="text-xs font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                  className="text-xs font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
                 >
                   Cancel and return
                 </Link>
@@ -515,7 +504,7 @@ export default function ContributePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-6 py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-7 py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>

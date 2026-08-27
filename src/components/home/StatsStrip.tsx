@@ -23,7 +23,7 @@ export default function StatsStrip({
   // 2. Dynamic Active Campus Offices Count
   const activeOfficesCount = departments.filter((d) => d.is_active).length;
 
-  // 3. Dynamic Latest Document Revision Year (derived from resource metadata dates)
+  // 3. Dynamic Latest Document Revision Year
   const latestRevisionYear =
     resources.length > 0
       ? Math.max(
@@ -34,47 +34,28 @@ export default function StatsStrip({
   // 4. Dynamic Available Document Count
   const activeDocumentCount = activeResources.length;
 
+  const stats = [
+    { value: `${verifiedPercentage}%`, label: 'Official & Verified' },
+    { value: activeOfficesCount, label: 'Campus Offices' },
+    { value: latestRevisionYear, label: 'Current Revisions' },
+    { value: activeDocumentCount, label: 'Active Documents' },
+  ];
+
   return (
-    <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-4 border-t border-[var(--color-rule-subtle)] pt-8 sm:grid-cols-4">
-      {/* Metric 1: Verified */}
-      <div className="flex flex-col items-center justify-center p-2 text-center">
-        <span className="font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-          {verifiedPercentage}%
-        </span>
-        <span className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-          Official & Verified
-        </span>
-      </div>
-
-      {/* Metric 2: Campus Offices */}
-      <div className="flex flex-col items-center justify-center p-2 text-center">
-        <span className="font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-          {activeOfficesCount}
-        </span>
-        <span className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-          Campus Offices
-        </span>
-      </div>
-
-      {/* Metric 3: Revision Year */}
-      <div className="flex flex-col items-center justify-center p-2 text-center">
-        <span className="font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-          {latestRevisionYear}
-        </span>
-        <span className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-          Current Revisions
-        </span>
-      </div>
-
-      {/* Metric 4: Active Resources */}
-      <div className="flex flex-col items-center justify-center p-2 text-center">
-        <span className="font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-          {activeDocumentCount}
-        </span>
-        <span className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-          Active Documents
-        </span>
-      </div>
+    <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
+      {stats.map((stat, i) => (
+        <div
+          key={i}
+          className="flex flex-col items-center justify-center rounded-[20px] border border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-4 text-center shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-transform hover:scale-[1.02]"
+        >
+          <span className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+            {stat.value}
+          </span>
+          <span className="mt-1 text-xs font-medium text-[var(--color-ink-muted)]">
+            {stat.label}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

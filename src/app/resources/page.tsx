@@ -17,6 +17,7 @@ import {
   ArrowsDownUp,
   X,
   CheckCircle,
+  DownloadSimple,
 } from '@phosphor-icons/react';
 import { mockResources, mockCategories, mockDepartments } from '@/lib/mockData';
 import { Resource } from '@/types/database';
@@ -130,12 +131,12 @@ function ResourcesContent() {
           </nav>
 
           {/* Page Heading & Search Filter Bar */}
-          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule)] pb-6 md:flex-row md:items-end">
+          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-6 md:flex-row md:items-end">
             <div>
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                 Document Repository
               </span>
-              <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+              <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 University Resources Directory
               </h1>
               <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm">
@@ -146,18 +147,18 @@ function ResourcesContent() {
             {/* Quick Search Bar */}
             <div className="w-full md:w-80">
               <div className="relative flex items-center">
-                <MagnifyingGlass size={18} className="absolute left-3 text-[var(--color-primary)]" />
+                <MagnifyingGlass size={18} className="absolute left-3.5 text-[var(--color-primary)]" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter resources..."
-                  className="w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] py-2 pr-8 pl-9 text-xs font-medium text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] shadow-2xs outline-hidden focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                  className="w-full rounded-[16px] border border-black/[0.08] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] py-2.5 pr-8 pl-10 text-xs font-semibold text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] shadow-[0_2px_8px_rgba(0,0,0,0.03)] outline-hidden focus:border-[var(--color-primary)]"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                    className="absolute right-3 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
                   >
                     <X size={14} />
                   </button>
@@ -168,18 +169,18 @@ function ResourcesContent() {
 
           {/* Layout: Sidebar Filters + Main Grid */}
           <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-4">
-            {/* Sidebar Filter Panel */}
+            {/* Sidebar Filter Panel (Apple Squircle Solid White Card) */}
             <aside className="space-y-6 lg:col-span-1">
-              <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-xs">
-                <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
-                  <div className="flex items-center gap-1.5 font-display text-sm font-bold text-[var(--color-ink)]">
+              <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3.5">
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-[var(--color-ink)]">
                     <Funnel size={16} className="text-[var(--color-primary)]" />
                     <span>Filter & Refine</span>
                   </div>
                   {hasActiveFilters && (
                     <button
                       onClick={clearAllFilters}
-                      className="text-xs font-semibold text-[var(--color-primary)] hover:underline"
+                      className="text-xs font-bold text-[var(--color-primary)] hover:underline"
                     >
                       Reset All
                     </button>
@@ -187,17 +188,17 @@ function ResourcesContent() {
                 </div>
 
                 {/* 1. Category Filter */}
-                <div className="mt-4">
-                  <label className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                <div className="mt-5">
+                  <label className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
                     Category
                   </label>
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-2.5 space-y-1">
                     <button
                       onClick={() => setSelectedCategory('all')}
-                      className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                         selectedCategory === 'all'
-                          ? 'bg-[var(--color-primary-subtle)] font-bold text-[var(--color-primary)]'
-                          : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-surface)] hover:text-[var(--color-ink)]'
+                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+                          : 'text-[var(--color-ink-secondary)] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] hover:text-[var(--color-ink)]'
                       }`}
                     >
                       <span>All Categories</span>
@@ -209,10 +210,10 @@ function ResourcesContent() {
                         <button
                           key={cat.id}
                           onClick={() => setSelectedCategory(cat.slug)}
-                          className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                          className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                             selectedCategory === cat.slug
-                              ? 'bg-[var(--color-primary-subtle)] font-bold text-[var(--color-primary)]'
-                              : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-surface)] hover:text-[var(--color-ink)]'
+                              ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+                              : 'text-[var(--color-ink-secondary)] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] hover:text-[var(--color-ink)]'
                           }`}
                         >
                           <span className="truncate">{cat.name}</span>
@@ -224,17 +225,17 @@ function ResourcesContent() {
                 </div>
 
                 {/* 2. Department Filter */}
-                <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-4">
-                  <label className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                <div className="mt-6 border-t border-black/[0.04] dark:border-white/[0.06] pt-4">
+                  <label className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
                     Department / Office
                   </label>
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-2.5 space-y-1">
                     <button
                       onClick={() => setSelectedDepartment('all')}
-                      className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                         selectedDepartment === 'all'
-                          ? 'bg-[var(--color-primary-subtle)] font-bold text-[var(--color-primary)]'
-                          : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-surface)] hover:text-[var(--color-ink)]'
+                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+                          : 'text-[var(--color-ink-secondary)] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] hover:text-[var(--color-ink)]'
                       }`}
                     >
                       <span>All Offices</span>
@@ -245,10 +246,10 @@ function ResourcesContent() {
                         <button
                           key={dept.id}
                           onClick={() => setSelectedDepartment(dept.slug)}
-                          className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                          className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                             selectedDepartment === dept.slug
-                              ? 'bg-[var(--color-primary-subtle)] font-bold text-[var(--color-primary)]'
-                              : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-surface)] hover:text-[var(--color-ink)]'
+                              ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+                              : 'text-[var(--color-ink-secondary)] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] hover:text-[var(--color-ink)]'
                           }`}
                         >
                           <span className="truncate">
@@ -262,19 +263,19 @@ function ResourcesContent() {
                 </div>
 
                 {/* 3. Format Filter */}
-                <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-4">
-                  <label className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                <div className="mt-6 border-t border-black/[0.04] dark:border-white/[0.06] pt-4">
+                  <label className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
                     File Format
                   </label>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
                     {['all', 'pdf', 'docx', 'xlsx', 'pptx'].map((fmt) => (
                       <button
                         key={fmt}
                         onClick={() => setSelectedFormat(fmt)}
-                        className={`rounded-md px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
+                        className={`rounded-full px-3 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
                           selectedFormat === fmt
                             ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                            : 'border border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
+                            : 'border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
                         }`}
                       >
                         {fmt}
@@ -287,17 +288,17 @@ function ResourcesContent() {
 
             {/* Main Content Area */}
             <div className="lg:col-span-3">
-              {/* Sort Controls & View Mode */}
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-4 py-2.5 text-xs">
+              {/* Sort Controls & View Mode Bar (Apple Squircle Style) */}
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] px-5 py-3 text-xs shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
                 {/* Sort selector */}
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">Sort by:</span>
+                  <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">Sort:</span>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setSortBy('downloads')}
-                      className={`rounded px-2.5 py-1 font-medium transition-colors ${
+                      className={`rounded-full px-3 py-1 font-semibold transition-colors ${
                         sortBy === 'downloads'
-                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)] font-bold'
+                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
                           : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
                       }`}
                     >
@@ -305,9 +306,9 @@ function ResourcesContent() {
                     </button>
                     <button
                       onClick={() => setSortBy('recent')}
-                      className={`rounded px-2.5 py-1 font-medium transition-colors ${
+                      className={`rounded-full px-3 py-1 font-semibold transition-colors ${
                         sortBy === 'recent'
-                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)] font-bold'
+                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
                           : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
                       }`}
                     >
@@ -315,9 +316,9 @@ function ResourcesContent() {
                     </button>
                     <button
                       onClick={() => setSortBy('title')}
-                      className={`rounded px-2.5 py-1 font-medium transition-colors ${
+                      className={`rounded-full px-3 py-1 font-semibold transition-colors ${
                         sortBy === 'title'
-                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)] font-bold'
+                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
                           : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
                       }`}
                     >
@@ -327,11 +328,11 @@ function ResourcesContent() {
                 </div>
 
                 {/* Grid / List switcher */}
-                <div className="flex items-center gap-1 border-l border-[var(--color-rule-subtle)] pl-3">
+                <div className="flex items-center gap-1 border-l border-black/[0.04] dark:border-white/[0.06] pl-3">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`rounded p-1 text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] ${
-                      viewMode === 'grid' ? 'bg-[var(--color-paper-muted)] text-[var(--color-primary)]' : ''
+                    className={`rounded-full p-1.5 text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] ${
+                      viewMode === 'grid' ? 'bg-black/[0.04] dark:bg-white/[0.08] text-[var(--color-primary)]' : ''
                     }`}
                     title="Grid view"
                   >
@@ -339,8 +340,8 @@ function ResourcesContent() {
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`rounded p-1 text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] ${
-                      viewMode === 'list' ? 'bg-[var(--color-paper-muted)] text-[var(--color-primary)]' : ''
+                    className={`rounded-full p-1.5 text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] ${
+                      viewMode === 'list' ? 'bg-black/[0.04] dark:bg-white/[0.08] text-[var(--color-primary)]' : ''
                     }`}
                     title="List view"
                   >
@@ -351,11 +352,11 @@ function ResourcesContent() {
 
               {/* Resource Grid / List Output */}
               {filteredResources.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center">
+                <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#131b2e] p-12 text-center shadow-xs">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)]">
                     <MagnifyingGlass size={24} />
                   </div>
-                  <h3 className="mt-4 font-display text-base font-bold text-[var(--color-ink)]">
+                  <h3 className="mt-4 text-base font-bold text-[var(--color-ink)]">
                     No resources matched your criteria
                   </h3>
                   <p className="mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
@@ -363,7 +364,7 @@ function ResourcesContent() {
                   </p>
                   <button
                     onClick={clearAllFilters}
-                    className="mt-4 rounded-md bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[var(--color-primary-hover)]"
+                    className="mt-4 rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)]"
                   >
                     Reset All Filters
                   </button>
@@ -375,62 +376,58 @@ function ResourcesContent() {
                   ))}
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   {filteredResources.map((resource) => (
                     <div
                       key={resource.id}
-                      className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 shadow-xs transition-all hover:border-[var(--color-primary)] hover:shadow-md"
+                      className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"
                     >
-                      <div className="flex items-start gap-3.5">
-                        <span
-                          className={`mt-0.5 inline-flex shrink-0 items-center justify-center rounded px-2 py-1 font-mono text-[10.5px] font-bold ${
-                            resource.file_format === 'PDF'
-                              ? 'badge-pdf'
-                              : resource.file_format === 'DOCX'
-                              ? 'badge-docx'
-                              : resource.file_format === 'XLSX'
-                              ? 'badge-xlsx'
-                              : 'badge-pptx'
-                          }`}
-                        >
-                          {resource.file_format}
-                        </span>
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#0f172a] dark:bg-blue-600 text-white font-bold text-base shadow-xs">
+                          {resource.file_format === 'PDF'
+                            ? 'P'
+                            : resource.file_format === 'DOCX'
+                            ? 'W'
+                            : resource.file_format === 'XLSX'
+                            ? 'X'
+                            : resource.title.charAt(0)}
+                        </div>
 
                         <div>
                           <Link
                             href={`/resources/${resource.slug}`}
-                            className="font-display text-sm font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors"
+                            className="text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors tracking-tight"
                           >
                             {resource.title}
                           </Link>
                           <p className="mt-1 text-xs text-[var(--color-ink-muted)] line-clamp-1">
                             {resource.description}
                           </p>
-                          <div className="mt-1.5 flex items-center gap-3 text-[11px] text-[var(--color-ink-muted)]">
-                            <span className="font-medium text-[var(--color-ink-secondary)]">
+                          <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--color-ink-muted)]">
+                            <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.08] px-2.5 py-0.5 font-semibold text-[var(--color-ink-secondary)]">
                               {resource.department?.name}
                             </span>
-                            <span>·</span>
-                            <span>{resource.category?.name}</span>
-                            <span>·</span>
-                            <span className="font-mono">{resource.current_version}</span>
+                            <span className="rounded-full bg-black/[0.03] dark:bg-white/[0.06] px-2.5 py-0.5">
+                              {resource.category?.name}
+                            </span>
+                            <span className="font-mono text-[10.5px]">v{resource.current_version}</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                        <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
+                        <span className="font-mono text-[11px] text-[var(--color-ink-muted)] pr-2">
                           {resource.download_count} dl
                         </span>
                         <Link
                           href={`/resources/${resource.slug}`}
-                          className="rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
+                          className="rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] px-3.5 py-1.5 text-xs font-semibold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
                         >
                           View
                         </Link>
                         <button
                           onClick={() => handleDownload(resource)}
-                          className="rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-hover)]"
+                          className="rounded-full bg-[var(--color-primary)] px-4 py-1.5 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-2xs"
                         >
                           Download
                         </button>
@@ -447,7 +444,7 @@ function ResourcesContent() {
       <Footer />
 
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-dark-surface)] px-4 py-3 text-xs font-medium text-white shadow-xl animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-black/[0.08] dark:border-white/[0.12] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
           <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>

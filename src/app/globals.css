@@ -31,9 +31,10 @@
   --color-dark-ink: var(--color-dark-ink);
   --color-dark-muted: var(--color-dark-muted);
 
-  --font-display: var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif;
-  --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+  /* Apple SF Pro Typography System */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), -apple-system, system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), -apple-system, 'SF Mono', Menlo, monospace;
 }
 
 html, body {
@@ -42,6 +43,9 @@ html, body {
   font-family: var(--font-sans);
   overflow-x: clip;
   min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
 }
 
 /* Smooth color transition for themed elements during rain shower */
@@ -77,52 +81,52 @@ body, header, nav, main, section, footer, div, a, button, input, select, textare
   outline-offset: 2px;
 }
 
-/* Document badge styles */
+/* Soft Apple-style Document Badge System */
 .badge-pdf {
-  background-color: oklch(95% 0.04 25);
-  color: oklch(52% 0.22 25);
-  border: 1px solid oklch(88% 0.08 25);
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.16);
 }
 
 .badge-docx {
-  background-color: oklch(95% 0.04 240);
-  color: oklch(48% 0.20 240);
-  border: 1px solid oklch(88% 0.08 240);
+  background-color: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.16);
 }
 
 .badge-xlsx {
-  background-color: oklch(95% 0.04 150);
-  color: oklch(45% 0.18 150);
-  border: 1px solid oklch(88% 0.08 150);
+  background-color: rgba(16, 185, 129, 0.08);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.16);
 }
 
 .badge-pptx {
-  background-color: oklch(95% 0.04 45);
-  color: oklch(50% 0.20 45);
-  border: 1px solid oklch(88% 0.08 45);
+  background-color: rgba(245, 158, 11, 0.08);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.16);
 }
 
 /* Dark mode badge overrides */
 [data-theme='dark'] .badge-pdf {
-  background-color: oklch(25% 0.08 25);
-  color: oklch(80% 0.18 25);
-  border: 1px solid oklch(35% 0.12 25);
+  background-color: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 [data-theme='dark'] .badge-docx {
-  background-color: oklch(25% 0.08 240);
-  color: oklch(80% 0.18 240);
-  border: 1px solid oklch(35% 0.12 240);
+  background-color: rgba(59, 130, 246, 0.16);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
 }
 
 [data-theme='dark'] .badge-xlsx {
-  background-color: oklch(25% 0.08 150);
-  color: oklch(80% 0.18 150);
-  border: 1px solid oklch(35% 0.12 150);
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 [data-theme='dark'] .badge-pptx {
-  background-color: oklch(25% 0.08 45);
-  color: oklch(80% 0.18 45);
-  border: 1px solid oklch(35% 0.12 45);
+  background-color: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }

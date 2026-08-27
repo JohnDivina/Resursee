@@ -17,8 +17,6 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-  FilePdf,
-  CheckCircle,
   Sliders,
 } from '@phosphor-icons/react';
 
@@ -98,12 +96,10 @@ export default function ImageToPdfPage() {
         const imgItem = images[i];
         const imgObj = await loadImage(imgItem.previewUrl);
 
-        // Calculate fitted dimensions within A4 margins
         const availableW = pageWidth - margin * 2;
         const availableH = pageHeight - margin * 2;
 
         const imgRatio = imgObj.naturalWidth / imgObj.naturalHeight;
-        const availRatio = availableW / availableH;
 
         let finalW = availableW;
         let finalH = availableW / imgRatio;
@@ -161,21 +157,21 @@ export default function ImageToPdfPage() {
           </nav>
 
           {/* Heading */}
-          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule)] pb-6 sm:flex-row sm:items-end">
+          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-6 sm:flex-row sm:items-end">
             <div>
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-primary-subtle)] text-[var(--color-primary)]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-sky-500 text-white shadow-xs">
                   <FileArrowUp size={20} weight="bold" />
                 </span>
-                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+                <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                   PDF Utility
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.2 font-mono text-[9.5px] font-bold text-emerald-700 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[9.5px] font-bold text-emerald-700 border border-emerald-500/20">
                   <ShieldCheck size={12} weight="bold" />
                   <span>100% Client-Side</span>
                 </span>
               </div>
-              <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+              <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Image to PDF
               </h1>
               <p className="mt-1 text-xs text-[var(--color-ink-muted)] sm:text-sm">
@@ -185,7 +181,7 @@ export default function ImageToPdfPage() {
 
             <Link
               href="/tools"
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3 py-1.5 text-xs font-semibold text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] px-4 py-1.5 text-xs font-semibold text-[var(--color-ink-secondary)] hover:bg-black/[0.03]"
             >
               <ArrowLeft size={14} />
               <span>Back to all tools</span>
@@ -203,12 +199,12 @@ export default function ImageToPdfPage() {
                     handleFilesAdded(e.dataTransfer.files);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]/20 shadow-xs"
+                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-black/[0.1] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-sky-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
               >
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-subtle)] text-[var(--color-primary)] shadow-xs transition-transform group-hover:scale-110">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-sky-500 text-white shadow-md transition-transform group-hover:scale-110">
                   <UploadSimple size={32} weight="bold" />
                 </div>
-                <h3 className="mt-4 font-display text-lg font-bold text-[var(--color-ink)]">
+                <h3 className="mt-4 text-lg font-bold text-[var(--color-ink)]">
                   Choose images to convert into a PDF
                 </h3>
                 <p className="mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
@@ -216,7 +212,7 @@ export default function ImageToPdfPage() {
                 </p>
                 <button
                   type="button"
-                  className="mt-6 rounded-lg bg-[var(--color-primary)] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] pointer-events-none"
+                  className="mt-6 rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] pointer-events-none"
                 >
                   Select Multiple Images
                 </button>
@@ -238,16 +234,16 @@ export default function ImageToPdfPage() {
             <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
               {/* Left 2 Cols: Reorderable Page List */}
               <div className="space-y-6 lg:col-span-2">
-                <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
-                    <h3 className="font-display text-sm font-bold text-[var(--color-ink)]">
+                <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+                  <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3.5">
+                    <h3 className="text-sm font-bold text-[var(--color-ink)]">
                       PDF Pages ({images.length} pages)
                     </h3>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:underline"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[var(--color-primary)] hover:underline"
                       >
                         <Plus size={14} weight="bold" />
                         <span>Add more images</span>
@@ -267,24 +263,24 @@ export default function ImageToPdfPage() {
                     </div>
                   </div>
 
-                  {/* Image Pages Grid */}
+                  {/* Image Pages List */}
                   <div className="mt-6 space-y-3">
                     {images.map((item, index) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between gap-4 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3 transition-all hover:border-[var(--color-primary)]"
+                        className="flex items-center justify-between gap-4 rounded-[18px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] p-3.5 transition-all hover:border-[var(--color-primary)]"
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-paper-card)] border border-[var(--color-rule)] font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <div className="flex items-center gap-3.5">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-[#1e293b] border border-black/[0.06] font-mono text-xs font-bold text-[var(--color-ink)]">
                             {index + 1}
                           </span>
                           <img
                             src={item.previewUrl}
                             alt={item.name}
-                            className="h-12 w-12 rounded object-cover border border-[var(--color-rule)]"
+                            className="h-12 w-12 rounded-[10px] object-cover border border-black/[0.06]"
                           />
                           <div>
-                            <p className="font-display text-xs font-bold text-[var(--color-ink)] line-clamp-1">
+                            <p className="text-xs font-bold text-[var(--color-ink)] line-clamp-1">
                               {item.name}
                             </p>
                             <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)]">
@@ -299,7 +295,7 @@ export default function ImageToPdfPage() {
                             type="button"
                             onClick={() => handleMoveUp(index)}
                             disabled={index === 0}
-                            className="rounded p-1.5 text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)] disabled:opacity-30"
+                            className="rounded-full p-2 text-[var(--color-ink-muted)] hover:bg-black/[0.04] dark:hover:bg-white/[0.08] hover:text-[var(--color-ink)] disabled:opacity-30"
                             title="Move Page Up"
                           >
                             <ArrowUp size={15} />
@@ -308,7 +304,7 @@ export default function ImageToPdfPage() {
                             type="button"
                             onClick={() => handleMoveDown(index)}
                             disabled={index === images.length - 1}
-                            className="rounded p-1.5 text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)] disabled:opacity-30"
+                            className="rounded-full p-2 text-[var(--color-ink-muted)] hover:bg-black/[0.04] dark:hover:bg-white/[0.08] hover:text-[var(--color-ink)] disabled:opacity-30"
                             title="Move Page Down"
                           >
                             <ArrowDown size={15} />
@@ -316,7 +312,7 @@ export default function ImageToPdfPage() {
                           <button
                             type="button"
                             onClick={() => handleRemove(item.id)}
-                            className="rounded p-1.5 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
+                            className="rounded-full p-2 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
                             title="Remove Page"
                           >
                             <Trash size={15} />
@@ -330,17 +326,17 @@ export default function ImageToPdfPage() {
 
               {/* Right Col: PDF Settings */}
               <div className="space-y-6 lg:col-span-1">
-                <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs space-y-6">
-                  <div className="flex items-center gap-2 border-b border-[var(--color-rule-subtle)] pb-3">
+                <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-6">
+                  <div className="flex items-center gap-2 border-b border-black/[0.04] dark:border-white/[0.06] pb-3.5">
                     <Sliders size={18} className="text-[var(--color-primary)]" />
-                    <h3 className="font-display text-sm font-bold text-[var(--color-ink)]">
-                      PDF Document Options
+                    <h3 className="text-sm font-bold text-[var(--color-ink)]">
+                      PDF Options
                     </h3>
                   </div>
 
                   {/* Document Name */}
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       File Name (.pdf)
                     </label>
                     <input
@@ -348,13 +344,13 @@ export default function ImageToPdfPage() {
                       value={pdfName}
                       onChange={(e) => setPdfName(e.target.value)}
                       placeholder="e.g. clearance-packet-2026"
-                      className="w-full rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   {/* Orientation */}
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Page Orientation
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -366,10 +362,10 @@ export default function ImageToPdfPage() {
                           key={item.val}
                           type="button"
                           onClick={() => setOrientation(item.val)}
-                          className={`rounded-lg border p-2 text-center text-xs font-semibold transition-all ${
+                          className={`rounded-[14px] border p-2.5 text-center text-xs font-bold transition-all ${
                             orientation === item.val
                               ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]'
-                              : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
+                              : 'border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:bg-black/[0.03]'
                           }`}
                         >
                           {item.label}
@@ -380,7 +376,7 @@ export default function ImageToPdfPage() {
 
                   {/* Margins */}
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-[var(--color-ink)]">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
                       Page Margins
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -393,10 +389,10 @@ export default function ImageToPdfPage() {
                           key={item.val}
                           type="button"
                           onClick={() => setMargin(item.val)}
-                          className={`rounded-lg border p-2 text-center text-xs font-semibold transition-all ${
+                          className={`rounded-[14px] border p-2 text-center text-xs font-bold transition-all ${
                             margin === item.val
                               ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]'
-                              : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
+                              : 'border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:bg-black/[0.03]'
                           }`}
                         >
                           {item.label}
@@ -410,7 +406,7 @@ export default function ImageToPdfPage() {
                     type="button"
                     onClick={handleGeneratePdf}
                     disabled={isGenerating || images.length === 0}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 disabled:opacity-50"
                   >
                     <DownloadSimple size={16} weight="bold" />
                     <span>

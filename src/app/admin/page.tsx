@@ -8,7 +8,6 @@ import {
   UploadSimple,
   Plus,
   Trash,
-  PencilSimple,
   CheckCircle,
   XCircle,
   Eye,
@@ -16,13 +15,9 @@ import {
   Megaphone,
   ChartBar,
   Buildings,
-  Tag,
-  ArrowSquareOut,
   HouseLine,
-  ListDashes,
   UserCircle,
   EnvelopeSimple,
-  Info,
 } from '@phosphor-icons/react';
 import {
   mockResources,
@@ -124,7 +119,6 @@ export default function AdminDashboardPage() {
 
   const handleApproveSubmission = (submission: ResourceSubmission) => {
     if (submission.submission_type === 'update_existing' && submission.existing_resource_id) {
-      // Update existing resource version
       setResourcesList(
         resourcesList.map((r) =>
           r.id === submission.existing_resource_id
@@ -140,7 +134,6 @@ export default function AdminDashboardPage() {
       );
       showToast(`Updated "${submission.title}" to version ${submission.version_label}`);
     } else {
-      // Create new resource
       const slug = submission.title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -175,7 +168,6 @@ export default function AdminDashboardPage() {
       showToast(`Approved & published "${submission.title}" to the live catalog!`);
     }
 
-    // Mark submission as approved
     setSubmissionsList(
       submissionsList.map((s) =>
         s.id === submission.id
@@ -207,26 +199,26 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-paper-muted)]/40">
+    <div className="min-h-screen bg-[var(--color-paper-muted)]/30">
       {/* Admin Top Header */}
-      <header className="sticky top-0 z-40 border-b border-[var(--color-rule)] bg-[var(--color-dark-surface)] px-4 py-3 text-white shadow-md">
+      <header className="sticky top-0 z-40 border-b border-black/[0.08] dark:border-white/[0.1] bg-[#0f172a] px-4 py-3.5 text-white shadow-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white font-bold">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-blue-600 text-white font-bold">
                 🦦
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-display text-base font-bold tracking-tight text-white">
+                  <span className="text-base font-extrabold tracking-tight text-white">
                     Resursee
                   </span>
-                  <span className="rounded-sm bg-amber-500/20 px-1.5 py-0.2 font-mono text-[9px] font-bold text-amber-300 uppercase">
+                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 font-mono text-[9px] font-bold text-amber-300 uppercase">
                     Master Admin
                   </span>
                 </div>
                 <span className="block font-mono text-[10px] text-gray-400">
-                  Logged in as master_admin@university.edu
+                  master_admin@university.edu
                 </span>
               </div>
             </Link>
@@ -235,7 +227,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="inline-flex items-center gap-1 rounded-md border border-gray-700 bg-gray-800/80 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-700 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-800 px-3.5 py-1.5 text-xs font-semibold text-gray-200 hover:bg-gray-700 hover:text-white transition-colors"
             >
               <HouseLine size={14} />
               <span>Back to Public Hub</span>
@@ -246,31 +238,31 @@ export default function AdminDashboardPage() {
 
       {/* Main Admin Container */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* KPI Metrics Strip */}
+        {/* KPI Metrics Strip (Apple Squircle Solid White Cards) */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-xs">
+          <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-semibold text-[var(--color-ink-muted)] uppercase">
+              <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                 Active Resources
               </span>
               <FileText size={20} className="text-[var(--color-primary)]" />
             </div>
-            <p className="mt-2 font-display text-3xl font-bold text-[var(--color-ink)]">
+            <p className="mt-2 text-3xl font-extrabold text-[var(--color-ink)]">
               {resourcesList.length}
             </p>
-            <span className="mt-1 block text-xs text-emerald-600 font-medium">
+            <span className="mt-1 block text-xs text-emerald-600 font-semibold">
               ● All documents live & verified
             </span>
           </div>
 
-          <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-xs">
+          <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-semibold text-[var(--color-ink-muted)] uppercase">
+              <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                 Submissions Queue
               </span>
               <UploadSimple size={20} className="text-amber-600" />
             </div>
-            <p className="mt-2 font-display text-3xl font-bold text-[var(--color-ink)]">
+            <p className="mt-2 text-3xl font-extrabold text-[var(--color-ink)]">
               {pendingSubmissions.length}{' '}
               <span className="text-xs font-normal text-amber-700">pending review</span>
             </p>
@@ -279,14 +271,14 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-xs">
+          <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-semibold text-[var(--color-ink-muted)] uppercase">
+              <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                 Total Downloads
               </span>
               <ChartBar size={20} className="text-emerald-600" />
             </div>
-            <p className="mt-2 font-display text-3xl font-bold text-[var(--color-ink)]">
+            <p className="mt-2 text-3xl font-extrabold text-[var(--color-ink)]">
               {totalDownloads.toLocaleString()}
             </p>
             <span className="mt-1 block text-xs text-[var(--color-ink-muted)]">
@@ -294,14 +286,14 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-xs">
+          <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-semibold text-[var(--color-ink-muted)] uppercase">
+              <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                 News Feed Queue
               </span>
               <Megaphone size={20} className="text-indigo-600" />
             </div>
-            <p className="mt-2 font-display text-3xl font-bold text-[var(--color-ink)]">
+            <p className="mt-2 text-3xl font-extrabold text-[var(--color-ink)]">
               {pendingNews.length}{' '}
               <span className="text-xs font-normal text-indigo-600">pending RSS</span>
             </p>
@@ -312,31 +304,31 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Tab Selector & Primary Actions */}
-        <div className="mt-8 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule)] pb-4 sm:flex-row sm:items-center">
+        <div className="mt-8 flex flex-col items-start justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-5 sm:flex-row sm:items-center">
           {/* Tabs */}
-          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-1 text-xs">
+          <div className="flex flex-wrap items-center gap-1 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-1.5 text-xs shadow-2xs">
             <button
               onClick={() => setActiveTab('resources')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
                 activeTab === 'resources'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
                   : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
               }`}
             >
               <FileText size={15} />
-              <span>Resource Catalog ({resourcesList.length})</span>
+              <span>Catalog ({resourcesList.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('submissions')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
                 activeTab === 'submissions'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
                   : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
               }`}
             >
               <UploadSimple size={15} />
-              <span>Submissions Queue</span>
+              <span>Submissions</span>
               {pendingSubmissions.length > 0 && (
                 <span className="rounded-full bg-amber-500 px-1.5 py-0.2 font-mono text-[9px] font-bold text-white">
                   {pendingSubmissions.length}
@@ -346,14 +338,14 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={() => setActiveTab('news')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
                 activeTab === 'news'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
                   : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
               }`}
             >
               <Megaphone size={15} />
-              <span>News Queue</span>
+              <span>News</span>
               {pendingNews.length > 0 && (
                 <span className="rounded-full bg-indigo-500 px-1.5 py-0.2 font-mono text-[9px] font-bold text-white">
                   {pendingNews.length}
@@ -363,26 +355,26 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={() => setActiveTab('categories')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
                 activeTab === 'categories'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
                   : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
               }`}
             >
               <Buildings size={15} />
-              <span>Categories & Offices</span>
+              <span>Categories</span>
             </button>
 
             <button
               onClick={() => setActiveTab('logs')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
                 activeTab === 'logs'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
                   : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
               }`}
             >
               <ClockCounterClockwise size={15} />
-              <span>Audit Logs</span>
+              <span>Logs</span>
             </button>
           </div>
 
@@ -390,7 +382,7 @@ export default function AdminDashboardPage() {
           {activeTab === 'resources' && (
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] active:scale-95"
+              className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] active:scale-95"
             >
               <Plus size={16} weight="bold" />
               <span>Upload New Resource</span>
@@ -400,26 +392,26 @@ export default function AdminDashboardPage() {
 
         {/* TAB 1: Resources Management Table */}
         {activeTab === 'resources' && (
-          <div className="mt-6 overflow-hidden rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] shadow-xs">
+          <div className="mt-6 overflow-hidden rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-xs font-mono font-semibold uppercase text-[var(--color-ink-muted)]">
+                <thead className="border-b border-black/[0.04] dark:border-white/[0.06] bg-[var(--color-paper-muted)]/50 font-mono font-bold uppercase text-[var(--color-ink-muted)]">
                   <tr>
-                    <th className="px-5 py-3.5">Format / Title</th>
-                    <th className="px-5 py-3.5">Category</th>
-                    <th className="px-5 py-3.5">Department</th>
-                    <th className="px-5 py-3.5">Version</th>
-                    <th className="px-5 py-3.5">Downloads</th>
-                    <th className="px-5 py-3.5 text-right">Actions</th>
+                    <th className="px-6 py-4">Format / Title</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4">Department</th>
+                    <th className="px-6 py-4">Version</th>
+                    <th className="px-6 py-4">Downloads</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--color-rule-subtle)] text-[var(--color-ink)]">
+                <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.06] text-[var(--color-ink)]">
                   {resourcesList.map((res) => (
-                    <tr key={res.id} className="hover:bg-[var(--color-paper-surface)]/60 transition-colors">
-                      <td className="px-5 py-4">
+                    <tr key={res.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4">
                         <div className="flex items-start gap-3">
                           <span
-                            className={`mt-0.5 inline-flex shrink-0 items-center justify-center rounded px-2 py-0.5 font-mono text-[10px] font-bold ${
+                            className={`mt-0.5 inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
                               res.file_format === 'PDF'
                                 ? 'badge-pdf'
                                 : res.file_format === 'DOCX'
@@ -432,37 +424,37 @@ export default function AdminDashboardPage() {
                             {res.file_format}
                           </span>
                           <div>
-                            <p className="font-semibold text-[var(--color-ink)]">{res.title}</p>
+                            <p className="font-bold text-[var(--color-ink)]">{res.title}</p>
                             <p className="text-[11px] text-[var(--color-ink-muted)] line-clamp-1">{res.file_name}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 font-medium text-[var(--color-ink-secondary)]">
+                      <td className="px-6 py-4 font-medium text-[var(--color-ink-secondary)]">
                         {res.category?.name || 'General'}
                       </td>
-                      <td className="px-5 py-4">
-                        <span className="rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-surface)] px-2 py-0.5 font-mono text-[10.5px]">
+                      <td className="px-6 py-4">
+                        <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.08] px-2.5 py-1 font-mono text-[10.5px]">
                           {res.department?.abbreviation || 'UNIV'}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-mono font-medium text-[var(--color-ink-muted)]">
+                      <td className="px-6 py-4 font-mono font-medium text-[var(--color-ink-muted)]">
                         {res.current_version}
                       </td>
-                      <td className="px-5 py-4 font-mono font-bold text-[var(--color-primary)]">
+                      <td className="px-6 py-4 font-mono font-bold text-[var(--color-primary)]">
                         {res.download_count}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <Link
                             href={`/resources/${res.slug}`}
-                            className="rounded p-1.5 text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)]"
+                            className="rounded-full p-2 text-[var(--color-ink-muted)] hover:bg-black/[0.04] hover:text-[var(--color-ink)]"
                             title="Preview Public Page"
                           >
                             <Eye size={16} />
                           </Link>
                           <button
                             onClick={() => handleDeleteResource(res.id, res.title)}
-                            className="rounded p-1.5 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
+                            className="rounded-full p-2 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
                             title="Delete Resource"
                           >
                             <Trash size={16} />
@@ -477,16 +469,16 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 2: Community Submissions Review Queue */}
+        {/* TAB 2: Submissions Queue */}
         {activeTab === 'submissions' && (
           <div className="mt-6 space-y-6">
-            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-              <div className="border-b border-[var(--color-rule-subtle)] pb-4">
-                <h3 className="font-display text-base font-bold text-[var(--color-ink)]">
+            <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <div className="border-b border-black/[0.04] dark:border-white/[0.06] pb-4">
+                <h3 className="text-base font-bold text-[var(--color-ink)]">
                   Community Submissions Queue ({pendingSubmissions.length} Pending)
                 </h3>
                 <p className="text-xs text-[var(--color-ink-muted)]">
-                  Forms, syllabus templates, and document revisions submitted by faculty, staff, and students awaiting verification.
+                  Forms, syllabus templates, and document revisions submitted by faculty and students awaiting verification.
                 </p>
               </div>
 
@@ -499,14 +491,13 @@ export default function AdminDashboardPage() {
                   {pendingSubmissions.map((sub) => (
                     <div
                       key={sub.id}
-                      className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-5 shadow-xs transition-all hover:border-[var(--color-primary)]"
+                      className="rounded-[20px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] p-5 shadow-xs transition-all hover:border-[var(--color-primary)]"
                     >
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-2 flex-1">
-                          {/* Badges */}
                           <div className="flex flex-wrap items-center gap-2">
                             <span
-                              className={`inline-flex items-center justify-center rounded px-2 py-0.5 font-mono text-[10px] font-bold ${
+                              className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
                                 sub.file_format === 'PDF'
                                   ? 'badge-pdf'
                                   : sub.file_format === 'DOCX'
@@ -517,9 +508,9 @@ export default function AdminDashboardPage() {
                               {sub.file_format}
                             </span>
 
-                            <span className="rounded-sm bg-amber-500/20 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-800">
+                            <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 font-mono text-[10px] font-bold text-amber-800 dark:text-amber-300">
                               {sub.submission_type === 'update_existing'
-                                ? '● Revision to Existing'
+                                ? '● Revision'
                                 : '● New Resource'}
                             </span>
 
@@ -528,20 +519,17 @@ export default function AdminDashboardPage() {
                             </span>
                           </div>
 
-                          {/* Title */}
-                          <h4 className="font-display text-base font-bold text-[var(--color-ink)]">
+                          <h4 className="text-base font-bold text-[var(--color-ink)]">
                             {sub.title}
                           </h4>
 
-                          {/* Description */}
                           <p className="text-xs leading-relaxed text-[var(--color-ink-secondary)]">
                             {sub.description || 'No description provided.'}
                           </p>
 
-                          {/* Submitter Box */}
-                          <div className="rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 text-xs">
+                          <div className="rounded-[16px] border border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-3.5 text-xs">
                             <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--color-ink-muted)]">
-                              <div className="flex items-center gap-1 font-semibold text-[var(--color-ink)]">
+                              <div className="flex items-center gap-1 font-bold text-[var(--color-ink)]">
                                 <UserCircle size={15} className="text-[var(--color-primary)]" />
                                 <span>{sub.submitter_name}</span>
                                 <span className="font-mono font-normal uppercase text-[10px]">
@@ -555,18 +543,17 @@ export default function AdminDashboardPage() {
                               </div>
                             </div>
                             {sub.submission_notes && (
-                              <p className="mt-2 text-[11px] italic text-[var(--color-ink-secondary)] border-t border-[var(--color-rule-subtle)] pt-1.5">
+                              <p className="mt-2 text-[11px] italic text-[var(--color-ink-secondary)] border-t border-black/[0.04] pt-1.5">
                                 &quot;{sub.submission_notes}&quot;
                               </p>
                             )}
                           </div>
                         </div>
 
-                        {/* Actions */}
                         <div className="flex sm:flex-col items-center gap-2 shrink-0 self-end sm:self-auto">
                           <button
                             onClick={() => handleApproveSubmission(sub)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95"
+                            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95"
                           >
                             <CheckCircle size={15} weight="bold" />
                             <span>Approve & Publish</span>
@@ -574,7 +561,7 @@ export default function AdminDashboardPage() {
 
                           <button
                             onClick={() => handleRejectSubmission(sub.id)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                           >
                             <XCircle size={15} />
                             <span>Reject</span>
@@ -586,48 +573,16 @@ export default function AdminDashboardPage() {
                 </div>
               )}
             </div>
-
-            {/* Approved Submissions History */}
-            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-              <h3 className="font-display text-base font-bold text-[var(--color-ink)]">
-                Approved & Published Community Submissions
-              </h3>
-              <div className="mt-4 divide-y divide-[var(--color-rule-subtle)] text-xs">
-                {submissionsList
-                  .filter((s) => s.status === 'approved')
-                  .map((sub) => (
-                    <div key={sub.id} className="py-3 flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-[var(--color-ink)]">{sub.title}</p>
-                        <p className="text-[11px] text-[var(--color-ink-muted)]">
-                          Submitted by {sub.submitter_name} ({sub.submitter_email}) · Version {sub.version_label}
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-800">
-                        Published
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
           </div>
         )}
 
-        {/* TAB 3: News Review Queue */}
+        {/* TAB 3: News Queue */}
         {activeTab === 'news' && (
           <div className="mt-6 space-y-6">
-            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-              <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-4">
-                <div>
-                  <h3 className="font-display text-base font-bold text-[var(--color-ink)]">
-                    Pending News Ingestion ({pendingNews.length})
-                  </h3>
-                  <p className="text-xs text-[var(--color-ink-muted)]">
-                    Articles automatically detected via university RSS feeds awaiting administrator editorial approval.
-                  </p>
-                </div>
-              </div>
-
+            <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <h3 className="text-base font-bold text-[var(--color-ink)]">
+                Pending News Ingestion ({pendingNews.length})
+              </h3>
               {pendingNews.length === 0 ? (
                 <div className="py-8 text-center text-xs text-[var(--color-ink-muted)]">
                   ✓ Ingestion queue is clear. No pending articles awaiting review.
@@ -637,18 +592,13 @@ export default function AdminDashboardPage() {
                   {pendingNews.map((article) => (
                     <div
                       key={article.id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border border-indigo-200 bg-indigo-50/40 p-4"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[20px] border border-indigo-200 bg-indigo-50/40 dark:bg-indigo-950/20 p-4"
                     >
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-sm bg-indigo-600 px-1.5 py-0.2 font-mono text-[9px] font-bold text-white uppercase">
-                            Pending Review
-                          </span>
-                          <span className="text-[11px] font-medium text-[var(--color-ink-muted)]">
-                            Source: {article.department?.name || 'RSS Feed'}
-                          </span>
-                        </div>
-                        <h4 className="font-display text-sm font-bold text-[var(--color-ink)]">
+                        <span className="rounded-full bg-indigo-600 px-2 py-0.5 font-mono text-[9px] font-bold text-white uppercase">
+                          Pending Review
+                        </span>
+                        <h4 className="text-sm font-bold text-[var(--color-ink)]">
                           {article.title}
                         </h4>
                         <p className="text-xs text-[var(--color-ink-secondary)]">
@@ -659,14 +609,14 @@ export default function AdminDashboardPage() {
                       <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                         <button
                           onClick={() => handleApproveNews(article.id)}
-                          className="flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 active:scale-95"
+                          className="flex items-center gap-1 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700"
                         >
                           <CheckCircle size={15} weight="bold" />
-                          <span>Approve & Publish</span>
+                          <span>Approve</span>
                         </button>
                         <button
                           onClick={() => handleRejectNews(article.id)}
-                          className="flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                          className="flex items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                         >
                           <XCircle size={15} />
                           <span>Reject</span>
@@ -677,43 +627,21 @@ export default function AdminDashboardPage() {
                 </div>
               )}
             </div>
-
-            {/* Approved Articles */}
-            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-              <h3 className="font-display text-base font-bold text-[var(--color-ink)]">
-                Published News Articles ({approvedNews.length})
-              </h3>
-              <div className="mt-4 divide-y divide-[var(--color-rule-subtle)] text-xs">
-                {approvedNews.map((article) => (
-                  <div key={article.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-[var(--color-ink)]">{article.title}</p>
-                      <p className="text-[11px] text-[var(--color-ink-muted)]">
-                        {article.department?.name} · Published {article.published_at?.split('T')[0]}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-800">
-                      Live on Site
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
         {/* TAB 4: Categories & Departments */}
         {activeTab === 'categories' && (
           <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-              <h3 className="font-display text-base font-bold text-[var(--color-ink)]">
+            <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <h3 className="text-base font-bold text-[var(--color-ink)]">
                 Academic Categories ({mockCategories.length})
               </h3>
               <div className="mt-4 space-y-2">
                 {mockCategories.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between rounded-lg border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3 text-xs">
+                  <div key={cat.id} className="flex items-center justify-between rounded-[16px] border border-black/[0.04] bg-[var(--color-paper-surface)] p-3 text-xs">
                     <div>
-                      <p className="font-semibold text-[var(--color-ink)]">{cat.name}</p>
+                      <p className="font-bold text-[var(--color-ink)]">{cat.name}</p>
                       <p className="text-[11px] text-[var(--color-ink-muted)]">{cat.slug}</p>
                     </div>
                     <span className="font-mono text-[11px] text-[var(--color-primary)] font-bold">
@@ -724,18 +652,18 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-              <h3 className="font-display text-base font-bold text-[var(--color-ink)]">
+            <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <h3 className="text-base font-bold text-[var(--color-ink)]">
                 University Departments ({mockDepartments.length})
               </h3>
               <div className="mt-4 space-y-2">
                 {mockDepartments.map((dept) => (
-                  <div key={dept.id} className="flex items-center justify-between rounded-lg border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3 text-xs">
+                  <div key={dept.id} className="flex items-center justify-between rounded-[16px] border border-black/[0.04] bg-[var(--color-paper-surface)] p-3 text-xs">
                     <div>
-                      <p className="font-semibold text-[var(--color-ink)]">{dept.name}</p>
+                      <p className="font-bold text-[var(--color-ink)]">{dept.name}</p>
                       <p className="text-[11px] text-[var(--color-ink-muted)]">{dept.slug}</p>
                     </div>
-                    <span className="rounded bg-[var(--color-primary-subtle)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--color-primary)]">
+                    <span className="rounded-full bg-[var(--color-primary-subtle)] px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--color-primary)]">
                       {dept.abbreviation}
                     </span>
                   </div>
@@ -747,22 +675,18 @@ export default function AdminDashboardPage() {
 
         {/* TAB 5: Audit Logs */}
         {activeTab === 'logs' && (
-          <div className="mt-6 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs">
-            <h3 className="font-display text-base font-bold text-[var(--color-ink)]">
+          <div className="mt-6 rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <h3 className="text-base font-bold text-[var(--color-ink)]">
               Master System Activity & Audit Trail
             </h3>
-            <p className="text-xs text-[var(--color-ink-muted)]">
-              Real-time records of administrative creations, community approvals, and system edits.
-            </p>
-
-            <div className="mt-4 divide-y divide-[var(--color-rule-subtle)] text-xs">
+            <div className="mt-4 divide-y divide-black/[0.04] dark:divide-white/[0.06] text-xs">
               {mockActivityLogs.map((log) => (
                 <div key={log.id} className="py-3 flex items-center justify-between">
                   <div>
                     <span className="font-mono font-bold text-[var(--color-primary)]">{log.action}</span>
-                    <p className="mt-0.5 text-[var(--color-ink)] font-medium">{log.details?.title || log.entity_type}</p>
+                    <p className="mt-0.5 text-[var(--color-ink)] font-bold">{log.details?.title || log.entity_type}</p>
                     <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)]">
-                      Performed by {log.admin_email} · IP: {log.ip_address}
+                      Performed by {log.admin_email}
                     </span>
                   </div>
                   <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)]">
@@ -778,9 +702,9 @@ export default function AdminDashboardPage() {
       {/* Modal: Upload New Resource */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
-              <h3 className="font-display text-base font-bold text-[var(--color-ink)]">
+          <div className="relative w-full max-w-lg rounded-[28px] border border-black/[0.1] bg-white dark:bg-[#131b2e] p-6 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-black/[0.04] pb-3">
+              <h3 className="text-base font-bold text-[var(--color-ink)]">
                 Add New University Resource
               </h3>
               <button
@@ -793,35 +717,35 @@ export default function AdminDashboardPage() {
 
             <form onSubmit={handleAddResource} className="mt-4 space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-[var(--color-ink)]">Document Title *</label>
+                <label className="block font-bold text-[var(--color-ink)]">Document Title *</label>
                 <input
                   type="text"
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Request for Certification Form"
-                  className="mt-1 w-full rounded-md border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 outline-hidden focus:border-[var(--color-primary)]"
+                  placeholder="e.g. Leave of Absence Application"
+                  className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-[var(--color-ink)]">Description / Purpose</label>
+                <label className="block font-bold text-[var(--color-ink)]">Description</label>
                 <textarea
                   rows={2}
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Summary of what this document is for..."
-                  className="mt-1 w-full rounded-md border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 outline-hidden focus:border-[var(--color-primary)]"
+                  placeholder="Brief summary of requirements or procedures..."
+                  className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-[var(--color-ink)]">Category *</label>
+                  <label className="block font-bold text-[var(--color-ink)]">Category</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 outline-hidden"
+                    className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2 text-xs text-[var(--color-ink)] outline-hidden"
                   >
                     {mockCategories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -832,11 +756,11 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-[var(--color-ink)]">Issuing Department *</label>
+                  <label className="block font-bold text-[var(--color-ink)]">Department</label>
                   <select
                     value={newDepartment}
                     onChange={(e) => setNewDepartment(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 outline-hidden"
+                    className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2 text-xs text-[var(--color-ink)] outline-hidden"
                   >
                     {mockDepartments.map((d) => (
                       <option key={d.id} value={d.id}>
@@ -847,75 +771,19 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-semibold text-[var(--color-ink)]">File Format</label>
-                  <select
-                    value={newFormat}
-                    onChange={(e) => setNewFormat(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 outline-hidden font-mono uppercase"
-                  >
-                    <option value="PDF">PDF</option>
-                    <option value="DOCX">DOCX</option>
-                    <option value="XLSX">XLSX</option>
-                    <option value="PPTX">PPTX</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[var(--color-ink)]">Version Tag</label>
-                  <input
-                    type="text"
-                    value={newVersion}
-                    onChange={(e) => setNewVersion(e.target.value)}
-                    placeholder="2026.1"
-                    className="mt-1 w-full rounded-md border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 font-mono outline-hidden"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[var(--color-ink)]">Doc Type</label>
-                  <select
-                    value={newDocType}
-                    onChange={(e) => setNewDocType(e.target.value as DocumentType)}
-                    className="mt-1 w-full rounded-md border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 outline-hidden font-mono text-xs uppercase"
-                  >
-                    <option value="form">Form</option>
-                    <option value="template">Template</option>
-                    <option value="policy">Policy</option>
-                    <option value="memorandum">Memorandum</option>
-                    <option value="academic">Academic</option>
-                    <option value="research">Research</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="featured"
-                  checked={newIsFeatured}
-                  onChange={(e) => setNewIsFeatured(e.target.checked)}
-                  className="rounded border-[var(--color-rule-strong)] text-[var(--color-primary)]"
-                />
-                <label htmlFor="featured" className="font-medium text-[var(--color-ink)]">
-                  Feature this resource on homepage
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 border-t border-[var(--color-rule-subtle)] pt-4">
+              <div className="flex items-center justify-end gap-2 border-t border-black/[0.04] pt-4">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-surface)] px-4 py-2 font-semibold text-[var(--color-ink-secondary)]"
+                  className="rounded-full border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-[var(--color-primary)] px-4 py-2 font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-xs"
+                  className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)]"
                 >
-                  Save & Publish Resource
+                  Publish Resource
                 </button>
               </div>
             </form>
@@ -923,9 +791,8 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Toast Feedback */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-dark-surface)] px-4 py-3 text-xs font-medium text-white shadow-xl animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-black/[0.08] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
           <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
