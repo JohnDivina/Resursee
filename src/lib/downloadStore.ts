@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { mockResources } from './mockData';
 
 const DOWNLOAD_STORAGE_KEY = 'resursee-downloads-map';
 const DOWNLOAD_EVENT_NAME = 'resursee-download-updated';
@@ -14,6 +15,15 @@ export function getStoredDownloads(): Record<string, number> {
   } catch {
     return {};
   }
+}
+
+// Calculate the total real-time downloads across the entire catalog
+export function calculateTotalDownloads(): number {
+  const map = getStoredDownloads();
+  return mockResources.reduce((acc, res) => {
+    const count = map[res.id] !== undefined ? map[res.id] : res.download_count;
+    return acc + count;
+  }, 0);
 }
 
 // Increment download count for a given resource ID and broadcast in real-time
@@ -39,7 +49,7 @@ export function recordDownload(resourceId: string, baseCount = 0): number {
   }
 }
 
-// React hook to access real-time download count for a resource
+// React hook to access real-time download count for a specific resource
 export function useRealtimeDownloadCount(resourceId: string, initialCount = 0): number {
   const [count, setCount] = useState<number>(() => {
     if (typeof window === 'undefined') return initialCount;
@@ -48,7 +58,6 @@ export function useRealtimeDownloadCount(resourceId: string, initialCount = 0): 
   });
 
   useEffect(() => {
-    // Sync initial stored count
     const map = getStoredDownloads();
     if (map[resourceId] !== undefined) {
       setCount(map[resourceId]);
@@ -84,4 +93,32 @@ export function useRealtimeDownloadCount(resourceId: string, initialCount = 0): 
   }, [resourceId]);
 
   return count;
+}
+
+// React hook to access real-time total platform downloads/usage
+export function useRealtimeTotalDownloads(): number {
+  const [total, setTotal] = useState<number>(() => {
+    if (typeof window === 'undefined') {
+      return mockResources.reduce((acc, r) => acc + r.download_count, 0);
+    }
+    return calculateTotalDownloads();
+  });
+
+  useEffect(() => {
+    setTotal(calculateTotalDownloads());
+
+    const handleUpdate = () => {
+      setTotal(calculateTotalDownloads());
+    };
+
+    window.addEventListener(DOWNLOAD_EVENT_NAME, handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener(DOWNLOAD_EVENT_NAME, handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  return total;
 }
