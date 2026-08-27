@@ -6,7 +6,7 @@ import {
   MagnifyingGlass,
   ArrowRight,
 } from '@phosphor-icons/react';
-import ResourceShowcase from '@/components/home/ResourceShowcase';
+import PlatformShowcaseModal from '@/components/home/PlatformShowcaseModal';
 import StatsStrip from '@/components/home/StatsStrip';
 import InteractiveParticles from '@/components/motion/InteractiveParticles';
 import { mockResources, mockDepartments } from '@/lib/mockData';
@@ -53,16 +53,16 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
           .
         </h1>
 
-        {/* 2. Interactive Circular Button & Document Showcase */}
-        <ResourceShowcase resources={mockResources} />
+        {/* 2. Interactive "What can I use Resursee for?" Pop-Up Showcase Button */}
+        <PlatformShowcaseModal />
 
         {/* 3. Prominent Central Search Bar (Apple Squircle Style - Solid White in Light Mode) */}
         <div className="mx-auto mt-2 max-w-2xl">
           <form
             onSubmit={handleSearchSubmit}
-            className="group relative flex items-center rounded-[20px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_4px_var(--color-primary-glow)]"
+            className="group relative flex items-center rounded-[22px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_4px_var(--color-primary-glow)]"
           >
-            <div className="flex pl-3 text-[var(--color-primary)]">
+            <div className="flex pl-3.5 text-[var(--color-primary)]">
               <MagnifyingGlass size={22} weight="bold" />
             </div>
 
@@ -77,7 +77,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
 
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-[14px] bg-[var(--color-primary)] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 sm:px-5 sm:text-sm shrink-0"
+              className="flex items-center gap-1.5 rounded-[16px] bg-[var(--color-primary)] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 sm:px-5 sm:text-sm shrink-0"
             >
               <span>Search Hub</span>
               <ArrowRight size={16} weight="bold" />

@@ -22,13 +22,13 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     <Link
       href={`/resources/${resource.slug}`}
       data-thock="card"
-      className="group relative flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 cursor-pointer block text-left"
+      className="group relative flex min-h-[220px] sm:min-h-[240px] flex-col justify-between rounded-[26px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-7 md:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-2 hover:border-[var(--color-primary)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.35)] cursor-pointer block text-left"
     >
       <div>
         {/* Top Header: Squircle Format Icon Badge & Real-time Upvote/Download Counter */}
         <div className="flex items-start justify-between">
           {/* Squircle Format Icon Badge */}
-          <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[var(--color-primary)] text-white font-bold text-lg shadow-xs transition-transform group-hover:scale-105 select-none">
+          <div className="flex h-13 w-13 items-center justify-center rounded-[18px] bg-[var(--color-primary)] text-white font-bold text-lg shadow-xs transition-transform duration-300 ease-out group-hover:scale-110 select-none">
             {resource.file_format === 'PDF' ? (
               <span className="font-extrabold text-base">P</span>
             ) : resource.file_format === 'DOCX' ? (
@@ -41,31 +41,31 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
           </div>
 
           {/* Real-time Download Count Indicator */}
-          <div className="flex flex-col items-center">
-            <CaretUp size={15} weight="fill" className="text-emerald-600" />
-            <span className="font-mono text-xs font-bold text-[var(--color-ink)]">
+          <div className="flex items-center gap-1 rounded-full bg-[var(--color-paper-muted)] px-3 py-1 text-xs font-bold text-[var(--color-ink)] transition-colors group-hover:bg-[var(--color-primary-subtle)]">
+            <CaretUp size={14} weight="fill" className="text-emerald-600" />
+            <span className="font-mono text-xs font-bold">
               {realtimeDownloads}
             </span>
           </div>
         </div>
 
-        {/* Title (Clean, bold, tracking-tight) */}
-        <h3 className="mt-4 text-base sm:text-lg font-bold leading-snug text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors tracking-tight line-clamp-2">
+        {/* Title (Generous font size, relaxed line-height, bold tracking-tight) */}
+        <h3 className="mt-5 text-lg sm:text-xl font-bold leading-snug text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors duration-200 tracking-tight line-clamp-3">
           {resource.title}
         </h3>
       </div>
 
-      {/* Bottom Row: Category Pill & Issuing Office (replacing download button) */}
-      <div className="mt-5 pt-3.5 border-t border-[var(--color-rule-subtle)] flex items-center justify-between gap-2 text-xs">
+      {/* Bottom Row: Category Pill & Issuing Office */}
+      <div className="mt-6 pt-4 border-t border-[var(--color-rule-subtle)] flex flex-wrap items-center justify-between gap-3 text-xs">
         {/* Category Pill */}
-        <span className="rounded-full bg-[var(--color-paper-muted)] px-3 py-1 font-semibold text-xs text-[var(--color-ink-secondary)] truncate max-w-[130px]">
+        <span className="rounded-full bg-[var(--color-paper-muted)] px-3.5 py-1.5 font-semibold text-xs text-[var(--color-ink-secondary)]">
           {resource.category?.name || 'General'}
         </span>
 
-        {/* Issuing Office / Department Label (Replaced Download Button) */}
-        <div className="flex items-center gap-1.5 font-semibold text-[var(--color-ink-muted)] group-hover:text-[var(--color-primary)] transition-colors truncate max-w-[160px]">
-          <Buildings size={14} className="shrink-0 text-[var(--color-primary)]" />
-          <span className="truncate">{officeName}</span>
+        {/* Issuing Office / Department Label */}
+        <div className="flex items-center gap-1.5 font-semibold text-[var(--color-ink-muted)] group-hover:text-[var(--color-primary)] transition-colors duration-200">
+          <Buildings size={15} className="shrink-0 text-[var(--color-primary)]" />
+          <span className="truncate max-w-[180px] sm:max-w-[220px]">{officeName}</span>
         </div>
       </div>
     </Link>
