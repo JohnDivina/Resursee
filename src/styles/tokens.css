@@ -5,10 +5,10 @@
  */
 
 :root {
-  /* Paper & Surfaces (Light Mode - Solid Pure White Cards) */
-  --color-paper: #f8f9fc;
+  /* Paper & Surfaces (Light Mode - Reference AppBuildersPH #fbfdfb Canvas + Solid Pure White Cards) */
+  --color-paper: #fbfdfb;
   --color-paper-surface: #ffffff;
-  --color-paper-muted: #f1f3f9;
+  --color-paper-muted: #f2f4f3;
   --color-paper-card: #ffffff;
   --color-paper-elevated: #ffffff;
 

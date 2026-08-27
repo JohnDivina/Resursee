@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   MagnifyingGlass,
   ArrowRight,
+  UploadSimple,
+  FileText,
 } from '@phosphor-icons/react';
-import PlatformShowcaseModal from '@/components/home/PlatformShowcaseModal';
 import StatsStrip from '@/components/home/StatsStrip';
 import InteractiveParticles from '@/components/motion/InteractiveParticles';
 import { mockResources, mockDepartments } from '@/lib/mockData';
@@ -47,22 +49,69 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         {/* 1. Primary Tagline Headline (Apple SF Pro bold typography) */}
         <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.12] lg:text-6xl">
           Find the university resources you need{' '}
-          <span className="relative whitespace-nowrap text-[var(--color-primary)]">
+          <span className="relative whitespace-nowrap text-emerald-600 dark:text-emerald-400">
             <span>in seconds</span>
           </span>
           .
         </h1>
 
-        {/* 2. Interactive "What can I use Resursee for?" Pop-Up Showcase Button */}
-        <PlatformShowcaseModal />
+        {/* Subtitle */}
+        <p className="mx-auto mt-4 max-w-2xl text-sm sm:text-base leading-relaxed text-[var(--color-ink-muted)]">
+          Search, find, and download official university forms, academic templates, clearances, and campus tools in one centralized hub.
+        </p>
+
+        {/* 2. Dual Action Buttons + Social Proof Avatars (Exact reference design) */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+          {/* Primary Button: See all forms */}
+          <Link
+            href="/resources"
+            data-thock="card"
+            className="group flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-emerald-700 hover:shadow-lg active:scale-95 cursor-pointer"
+          >
+            <FileText size={17} weight="bold" />
+            <span>See all forms</span>
+            <ArrowRight size={15} weight="bold" className="transition-transform duration-200 group-hover:translate-x-1" />
+          </Link>
+
+          {/* Secondary Button: Contribute resources */}
+          <Link
+            href="/contribute"
+            data-thock="card"
+            className="group flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-muted)] px-6 py-3 text-sm font-bold text-[var(--color-ink)] shadow-2xs transition-all duration-200 hover:bg-[var(--color-paper-surface)] hover:border-[var(--color-primary)] active:scale-95 cursor-pointer"
+          >
+            <UploadSimple size={17} weight="bold" className="text-emerald-700 dark:text-emerald-400" />
+            <span>Contribute resources</span>
+          </Link>
+
+          {/* Social Proof Pill (Avatar stack + verified user count) */}
+          <div className="flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] py-1.5 pr-3.5 pl-2 shadow-2xs">
+            <div className="flex -space-x-2 overflow-hidden">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
+                JD
+              </span>
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
+                MC
+              </span>
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
+                KL
+              </span>
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
+                AP
+              </span>
+            </div>
+            <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400">
+              +5,425 students
+            </span>
+          </div>
+        </div>
 
         {/* 3. Prominent Central Search Bar (Apple Squircle Style - Solid White in Light Mode) */}
-        <div className="mx-auto mt-2 max-w-2xl">
+        <div className="mx-auto mt-8 max-w-2xl">
           <form
             onSubmit={handleSearchSubmit}
-            className="group relative flex items-center rounded-[22px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_4px_var(--color-primary-glow)]"
+            className="group relative flex items-center rounded-[22px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all focus-within:border-emerald-600 focus-within:shadow-[0_0_0_4px_rgba(16,185,129,0.14)]"
           >
-            <div className="flex pl-3.5 text-[var(--color-primary)]">
+            <div className="flex pl-3.5 text-emerald-600 dark:text-emerald-400">
               <MagnifyingGlass size={22} weight="bold" />
             </div>
 
@@ -77,7 +126,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
 
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-[16px] bg-[var(--color-primary)] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 sm:px-5 sm:text-sm shrink-0"
+              className="flex items-center gap-1.5 rounded-[16px] bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-95 sm:px-5 sm:text-sm shrink-0"
             >
               <span>Search Hub</span>
               <ArrowRight size={16} weight="bold" />

@@ -13,7 +13,7 @@ interface FeaturedLeaderboardProps {
   resources?: Resource[];
 }
 
-function LeaderboardRow({
+function LeaderboardItemCard({
   resource,
   rank,
   trendingDelta,
@@ -23,7 +23,7 @@ function LeaderboardRow({
   trendingDelta: number;
 }) {
   const realtimeCount = useRealtimeDownloadCount(resource.id, resource.download_count);
-  const officeName = resource.department?.name || resource.source_name || 'Academic Office';
+  const officeName = resource.department?.abbreviation || resource.source_name || 'Academic';
   const categoryName = resource.category?.name || 'General';
 
   // Format Icon
@@ -33,18 +33,18 @@ function LeaderboardRow({
     <Link
       href={`/resources/${resource.slug}`}
       data-thock="card"
-      className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 sm:px-6 transition-all duration-200 ease-out hover:bg-emerald-500/[0.03] dark:hover:bg-emerald-500/[0.06] block cursor-pointer"
+      className="group relative flex items-center justify-between gap-3 rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3.5 sm:p-4 transition-all duration-200 ease-out hover:bg-emerald-500/[0.03] hover:border-emerald-500/40 hover:shadow-xs cursor-pointer block text-left"
     >
-      {/* Left section: Rank + Squircle Icon + Text info */}
-      <div className="flex items-center gap-3.5 sm:gap-4.5 flex-1 min-w-0">
+      {/* Left side: Rank + Squircle Icon + Text info */}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Rank Number Badge */}
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100/80 dark:bg-emerald-950/60 font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100/90 dark:bg-emerald-950/70 font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">
           {rank}
         </div>
 
         {/* Squircle Format / App Icon */}
         <div
-          className={`flex h-12 w-12 sm:h-13 sm:w-13 shrink-0 items-center justify-center rounded-[16px] font-bold text-lg text-white shadow-2xs transition-transform duration-300 ease-out group-hover:scale-105 select-none ${
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] font-bold text-base text-white shadow-2xs transition-transform duration-200 group-hover:scale-105 select-none ${
             resource.file_format === 'PDF'
               ? 'bg-rose-600'
               : resource.file_format === 'DOCX'
@@ -55,11 +55,11 @@ function LeaderboardRow({
           }`}
         >
           {resource.file_format === 'PDF' ? (
-            <span className="font-extrabold text-base">P</span>
+            <span className="font-extrabold text-sm">P</span>
           ) : resource.file_format === 'DOCX' ? (
-            <span className="font-extrabold text-base">W</span>
+            <span className="font-extrabold text-sm">W</span>
           ) : resource.file_format === 'XLSX' ? (
-            <span className="font-extrabold text-base">X</span>
+            <span className="font-extrabold text-sm">X</span>
           ) : (
             <span>{firstLetter}</span>
           )}
@@ -67,38 +67,36 @@ function LeaderboardRow({
 
         {/* Text details */}
         <div className="min-w-0 flex-1">
-          {/* Category & Issuing Office Header */}
-          <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10.5px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-            <span>{categoryName}</span>
+          {/* Category & Department Header */}
+          <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+            <span className="truncate">{categoryName}</span>
             <span>•</span>
-            <span className="text-[var(--color-ink-muted)] truncate max-w-[220px]">
-              {officeName}
-            </span>
+            <span className="text-[var(--color-ink-muted)] shrink-0">{officeName}</span>
           </div>
 
           {/* Title */}
-          <h3 className="mt-0.5 text-base sm:text-[17px] font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors duration-200 tracking-tight line-clamp-1">
+          <h3 className="mt-0.5 text-sm font-bold text-[var(--color-ink)] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-200 tracking-tight truncate">
             {resource.title}
           </h3>
 
-          {/* Subtitle / Description */}
-          <p className="mt-0.5 text-xs text-[var(--color-ink-muted)] line-clamp-1 leading-relaxed">
-            {resource.description || 'Verified university resource document available for instant student & faculty download.'}
+          {/* One-liner summary */}
+          <p className="mt-0.5 text-[11px] text-[var(--color-ink-muted)] truncate">
+            {resource.description || 'Verified university clearance form and document.'}
           </p>
         </div>
       </div>
 
-      {/* Right section: Trending + Real-time Upvotes */}
-      <div className="flex items-center gap-2.5 sm:gap-3 self-end sm:self-center shrink-0">
+      {/* Right side: Trending + Upvotes */}
+      <div className="flex items-center gap-2 shrink-0">
         {/* Trending pill badge */}
-        <span className="rounded-full bg-emerald-100/90 dark:bg-emerald-950/70 px-2.5 py-0.5 font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300">
+        <span className="rounded-full bg-emerald-100/90 dark:bg-emerald-950/70 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
           +{trendingDelta}
         </span>
 
         {/* Upvote Box */}
-        <div className="flex flex-col items-center justify-center rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 min-w-[48px] shadow-2xs group-hover:border-emerald-500/50 group-hover:bg-emerald-500/[0.04] transition-colors">
-          <CaretUp size={13} weight="fill" className="text-emerald-600" />
-          <span className="font-mono text-xs font-bold text-[var(--color-ink)]">
+        <div className="flex flex-col items-center justify-center rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-2.5 py-1 min-w-[42px] shadow-2xs group-hover:border-emerald-500/40 transition-colors">
+          <CaretUp size={12} weight="fill" className="text-emerald-600" />
+          <span className="font-mono text-[11px] font-bold text-[var(--color-ink)]">
             {realtimeCount}
           </span>
         </div>
@@ -116,10 +114,10 @@ export default function FeaturedLeaderboard({
     return resources.reduce((acc, curr) => acc + curr.download_count, 0);
   }, [resources]);
 
-  // Ranked list sorted by downloads
+  // Ranked list of top 8 resources
   const rankedItems = useMemo(() => {
     const sorted = [...resources].sort((a, b) => b.download_count - a.download_count);
-    return sorted.slice(0, 7);
+    return sorted.slice(0, 8);
   }, [resources]);
 
   // Dynamic simulated delta based on time filter
@@ -132,10 +130,10 @@ export default function FeaturedLeaderboard({
 
   return (
     <section className="py-12 sm:py-16 bg-[var(--color-paper)]">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Main Leaderboard Card Container */}
-        <div className="overflow-hidden rounded-[26px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] shadow-[0_2px_16px_rgba(0,0,0,0.03)] transition-all">
-          {/* Card Header (Matches the reference screenshot) */}
+        <div className="overflow-hidden rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] shadow-[0_2px_16px_rgba(0,0,0,0.03)] transition-all">
+          {/* Card Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[var(--color-rule-subtle)] p-5 sm:p-7 bg-[var(--color-paper-card)]">
             <div>
               <span className="text-xs font-semibold text-[var(--color-ink-muted)]">
@@ -175,10 +173,10 @@ export default function FeaturedLeaderboard({
             </div>
           </div>
 
-          {/* Ranked List Rows */}
-          <div className="divide-y divide-[var(--color-rule-subtle)]">
+          {/* 2-Column Ranked Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 p-4 sm:p-6 bg-[var(--color-paper-card)]">
             {rankedItems.map((item, index) => (
-              <LeaderboardRow
+              <LeaderboardItemCard
                 key={item.id}
                 resource={item}
                 rank={index + 1}
@@ -191,7 +189,7 @@ export default function FeaturedLeaderboard({
           <div className="border-t border-[var(--color-rule-subtle)] bg-[var(--color-paper-muted)]/40 p-4 sm:p-5 text-center">
             <Link
               href="/resources"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[var(--color-primary)] hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
             >
               <span>Explore all university resources in directory</span>
               <ArrowRight size={15} weight="bold" />
