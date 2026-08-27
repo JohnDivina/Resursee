@@ -112,7 +112,7 @@ export default function PlatformShowcaseModal() {
 
   return (
     <>
-      {/* Landing Page Trigger Button */}
+      {/* Restored Landing Page Circular Button Trigger */}
       <div className="relative mx-auto my-6 flex flex-col items-center justify-center">
         <button
           type="button"
@@ -120,28 +120,34 @@ export default function PlatformShowcaseModal() {
           data-thock="card"
           aria-haspopup="dialog"
           aria-expanded={isOpen}
-          className="group relative flex items-center gap-3 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-5 py-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1 hover:border-[var(--color-primary)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] active:scale-95"
+          aria-label="What can I use Resursee for?"
+          className="group relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-[var(--color-primary)] hover:shadow-[0_0_24px_var(--color-primary-glow)] hover:scale-105 active:scale-95 cursor-pointer"
         >
-          {/* Subtle glowing ring pulse */}
-          <span className="pointer-events-none absolute inset-0 -m-0.5 rounded-full border border-[var(--color-primary)]/30 animate-pulse opacity-60" />
+          <span className="pointer-events-none absolute inset-0 -m-1 rounded-full border border-[var(--color-primary)]/25 animate-ping opacity-75" />
 
-          {/* Squircle Otter Badge */}
-          <div className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-[var(--color-primary-subtle)] text-[var(--color-primary)] transition-transform duration-300 ease-out group-hover:scale-110">
-            <span className="text-sm select-none">🦦</span>
+          <div className="relative flex items-center justify-center">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary-subtle)] text-[var(--color-primary)] transition-transform duration-300 group-hover:scale-110">
+              <span className="text-sm select-none">🦦</span>
+            </div>
+            <Sparkle
+              size={12}
+              weight="fill"
+              className="absolute -top-1 -right-1 text-amber-500 animate-pulse"
+            />
           </div>
+        </button>
 
-          <span className="text-xs sm:text-sm font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors">
-            What can I use Resursee for?
-          </span>
-
-          <span className="flex items-center gap-1 rounded-full bg-[var(--color-primary-subtle)] px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-primary)]">
-            <Sparkle size={11} weight="fill" className="text-amber-500" />
-            <span>Discover</span>
-          </span>
+        <button
+          type="button"
+          onClick={handleOpen}
+          className="mt-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
+        >
+          <span>What can I use Resursee for?</span>
+          <span className="text-[10px] text-[var(--color-primary)] font-bold">✨</span>
         </button>
       </div>
 
-      {/* Pop-Up Modal Dialog */}
+      {/* Pop-Up Modal Dialog (Z-50 full screen - never cut in half) */}
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
@@ -152,7 +158,7 @@ export default function PlatformShowcaseModal() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={handleClose}
-              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+              className="absolute inset-0 bg-black/60 backdrop-blur-md cursor-pointer"
             />
 
             {/* Modal Dialog Content Container */}
@@ -164,21 +170,21 @@ export default function PlatformShowcaseModal() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 16 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 w-full max-w-3xl overflow-hidden rounded-[32px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-[0_24px_64px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.6)]"
+              className="relative z-10 w-full max-w-3xl overflow-hidden rounded-[32px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-[0_24px_64px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.6)] text-left"
             >
               {/* Close Button */}
               <button
                 type="button"
                 onClick={handleClose}
                 aria-label="Close modal"
-                className="absolute top-5 right-5 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-all active:scale-95"
+                className="absolute top-5 right-5 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-all active:scale-95 cursor-pointer"
               >
                 <X size={18} weight="bold" />
               </button>
 
               {/* Modal Header */}
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--color-primary)] text-white font-bold text-lg shadow-xs select-none">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[var(--color-primary)] text-white font-bold text-xl shadow-xs select-none">
                   🦦
                 </span>
                 <div>
@@ -199,7 +205,7 @@ export default function PlatformShowcaseModal() {
                     href={item.href}
                     onClick={handleClose}
                     data-thock="card"
-                    className="group flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1 hover:border-[var(--color-primary)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.06)]"
+                    className="group flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1 hover:border-[var(--color-primary)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.06)] cursor-pointer"
                   >
                     <div>
                       <div className="flex items-center justify-between">
