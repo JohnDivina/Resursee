@@ -31,7 +31,8 @@ export default function ToolsPage() {
       category: 'Image Tools',
       description: 'Lossless & high-compression engine to reduce image file size for student portal forms.',
       icon: <ArrowsInLineHorizontal size={26} className="text-[var(--color-primary)]" />,
-      status: 'Ready',
+      href: '/tools/compress-image',
+      status: 'Live',
     },
     {
       id: 'resize-image',
@@ -39,7 +40,8 @@ export default function ToolsPage() {
       category: 'Image Tools',
       description: 'Scale photos to standard 2x2, 1x1 passport dimensions or custom pixel specifications.',
       icon: <CornersOut size={26} className="text-indigo-600" />,
-      status: 'Ready',
+      href: '/tools/resize-image',
+      status: 'Live',
     },
     {
       id: 'convert-image',
@@ -47,23 +49,26 @@ export default function ToolsPage() {
       category: 'Image Tools',
       description: 'Convert between PNG, JPG, and WebP formats instantly with client-side canvas.',
       icon: <ArrowsClockwise size={26} className="text-emerald-600" />,
-      status: 'Ready',
+      href: '/tools/convert-image',
+      status: 'Live',
     },
     {
       id: 'crop-image',
       name: 'Crop Image',
       category: 'Image Tools',
-      description: 'Interactive canvas crop tool for photos and document attachments.',
+      description: 'Interactive canvas crop tool with standard ID photo frames and pan controls.',
       icon: <Crop size={26} className="text-amber-600" />,
-      status: 'Ready',
+      href: '/tools/crop-image',
+      status: 'Live',
     },
     {
       id: 'pdf-to-image',
       name: 'PDF to Image',
       category: 'PDF Tools',
-      description: 'Render and extract high-resolution image pages from multi-page PDF documents.',
+      description: 'Render and extract high-resolution image pages directly from multi-page PDF documents.',
       icon: <FileArrowDown size={26} className="text-rose-600" />,
-      status: 'Ready',
+      href: '/tools/pdf-to-image',
+      status: 'Live',
     },
     {
       id: 'image-to-pdf',
@@ -71,7 +76,8 @@ export default function ToolsPage() {
       category: 'PDF Tools',
       description: 'Merge multiple image scans, receipts, or clearance slips into a unified clean PDF.',
       icon: <FileArrowUp size={26} className="text-sky-600" />,
-      status: 'Ready',
+      href: '/tools/image-to-pdf',
+      status: 'Live',
     },
   ];
 
@@ -138,9 +144,11 @@ export default function ToolsPage() {
                       {tool.category}
                     </span>
 
-                    <h2 className="mt-1 font-display text-lg font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors">
-                      {tool.name}
-                    </h2>
+                    <Link href={tool.href}>
+                      <h2 className="mt-1 font-display text-lg font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors">
+                        {tool.name}
+                      </h2>
+                    </Link>
 
                     <p className="mt-2 text-xs leading-relaxed text-[var(--color-ink-muted)]">
                       {tool.description}
@@ -151,14 +159,13 @@ export default function ToolsPage() {
                     <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
                       Client-side engine
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => alert(`${tool.name} is ready for client-side execution in the next update!`)}
+                    <Link
+                      href={tool.href}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all"
                     >
                       <span>Launch Tool</span>
                       <ArrowRight size={13} weight="bold" />
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ))}

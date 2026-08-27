@@ -32,7 +32,7 @@ export default function ToolsPreview() {
       category: 'Image',
       description: 'Reduce file size for university portal submissions while preserving clarity.',
       icon: <ArrowsInLineHorizontal size={22} className="text-[var(--color-primary)]" />,
-      href: '/tools',
+      href: '/tools/compress-image',
     },
     {
       id: 'resize-image',
@@ -40,7 +40,7 @@ export default function ToolsPreview() {
       category: 'Image',
       description: 'Scale photos to standard 2x2, 1x1 ID dimensions or custom pixel limits.',
       icon: <CornersOut size={22} className="text-indigo-600" />,
-      href: '/tools',
+      href: '/tools/resize-image',
     },
     {
       id: 'convert-image',
@@ -48,7 +48,7 @@ export default function ToolsPreview() {
       category: 'Image',
       description: 'Convert between PNG, JPG, and modern WebP formats in milliseconds.',
       icon: <ArrowsClockwise size={22} className="text-emerald-600" />,
-      href: '/tools',
+      href: '/tools/convert-image',
     },
     {
       id: 'crop-image',
@@ -56,7 +56,7 @@ export default function ToolsPreview() {
       category: 'Image',
       description: 'Precision crop photos to strict institutional aspect ratios.',
       icon: <Crop size={22} className="text-amber-600" />,
-      href: '/tools',
+      href: '/tools/crop-image',
     },
     {
       id: 'pdf-to-image',
@@ -64,7 +64,7 @@ export default function ToolsPreview() {
       category: 'PDF',
       description: 'Extract high-resolution PNG or JPG pages directly from PDF documents.',
       icon: <FileArrowDown size={22} className="text-rose-600" />,
-      href: '/tools',
+      href: '/tools/pdf-to-image',
     },
     {
       id: 'image-to-pdf',
@@ -72,7 +72,7 @@ export default function ToolsPreview() {
       category: 'PDF',
       description: 'Combine scanned clearance slips, IDs, and certificates into a single PDF.',
       icon: <FileArrowUp size={22} className="text-sky-600" />,
-      href: '/tools',
+      href: '/tools/image-to-pdf',
     },
   ];
 
