@@ -9,12 +9,67 @@ import {
   X,
   Sparkle,
   ArrowRight,
+  Buildings,
 } from '@phosphor-icons/react';
 import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
+import { useRealtimeDownloadCount } from '@/lib/downloadStore';
 
 interface ResourceShowcaseProps {
   resources?: Resource[];
+}
+
+function ShowcaseCardItem({ item }: { item: Resource }) {
+  const realtimeDownloads = useRealtimeDownloadCount(item.id, item.download_count);
+  const officeName = item.department?.name || item.source_name || 'Academic Affairs';
+
+  return (
+    <Link
+      href={`/resources/${item.slug}`}
+      data-thock="card"
+      className="group flex flex-col gap-3.5 rounded-[18px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper)] p-4 sm:p-5 transition-all hover:border-[var(--color-primary)] block"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
+              item.file_format === 'PDF'
+                ? 'badge-pdf'
+                : item.file_format === 'DOCX'
+                ? 'badge-docx'
+                : item.file_format === 'XLSX'
+                ? 'badge-xlsx'
+                : 'badge-pptx'
+            }`}
+          >
+            {item.file_format}
+          </span>
+          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">
+            v{item.current_version}
+          </span>
+        </div>
+
+        <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+          {realtimeDownloads} downloads
+        </span>
+      </div>
+
+      <h4 className="text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors tracking-tight line-clamp-2">
+        {item.title}
+      </h4>
+
+      <div className="flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-3 text-xs">
+        <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-ink-secondary)] truncate max-w-[280px]">
+          <Buildings size={13} className="text-[var(--color-primary)] shrink-0" />
+          <span className="truncate">{officeName}</span>
+        </span>
+        <span className="inline-flex items-center gap-1 font-bold text-[var(--color-primary)] group-hover:underline">
+          <span>Open document</span>
+          <ArrowRight size={13} weight="bold" />
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 export default function ResourceShowcase({
@@ -68,7 +123,7 @@ export default function ResourceShowcase({
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
-          aria-label={isOpen ? 'Collapse resource preview' : 'Preview university documents'}
+          aria-label={isOpen ? 'Collapse resource preview' : 'Preview documents'}
           className={`group relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[var(--color-primary)] hover:shadow-[0_0_24px_var(--color-primary-glow)] hover:scale-105 active:scale-95 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
             isOpen
               ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
@@ -159,57 +214,8 @@ export default function ResourceShowcase({
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -12 }}
                       transition={{ duration: 0.22, ease: 'easeOut' }}
-                      className="group flex flex-col gap-3.5 rounded-[18px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper)] p-4 sm:p-5 transition-all"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
-                              previewItems[currentIndex].file_format === 'PDF'
-                                ? 'badge-pdf'
-                                : previewItems[currentIndex].file_format === 'DOCX'
-                                ? 'badge-docx'
-                                : previewItems[currentIndex].file_format === 'XLSX'
-                                ? 'badge-xlsx'
-                                : 'badge-pptx'
-                            }`}
-                          >
-                            {previewItems[currentIndex].file_format}
-                          </span>
-                          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">
-                            v{previewItems[currentIndex].current_version}
-                          </span>
-                          <span className="rounded-full bg-[var(--color-primary-subtle)] px-2.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-primary)]">
-                            {previewItems[currentIndex].department?.abbreviation || 'OUR'}
-                          </span>
-                        </div>
-
-                        <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
-                          {previewItems[currentIndex].download_count} downloads
-                        </span>
-                      </div>
-
-                      <div>
-                        <h4 className="text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors tracking-tight line-clamp-1">
-                          {previewItems[currentIndex].title}
-                        </h4>
-                        <p className="mt-1 text-xs text-[var(--color-ink-muted)] line-clamp-2 leading-relaxed">
-                          {previewItems[currentIndex].description || 'Official verified university resource.'}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-3 text-xs">
-                        <span className="text-[11px] text-[var(--color-ink-secondary)]">
-                          Office: {previewItems[currentIndex].department?.name || 'Academic Affairs'}
-                        </span>
-                        <Link
-                          href={`/resources/${previewItems[currentIndex].slug}`}
-                          className="inline-flex items-center gap-1 font-bold text-[var(--color-primary)] hover:underline"
-                        >
-                          <span>Open document</span>
-                          <ArrowRight size={13} weight="bold" />
-                        </Link>
-                      </div>
+                      <ShowcaseCardItem item={previewItems[currentIndex]} />
                     </motion.div>
                   )}
                 </AnimatePresence>

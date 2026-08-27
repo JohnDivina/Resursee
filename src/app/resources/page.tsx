@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, Suspense } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
@@ -11,71 +10,105 @@ import {
   MagnifyingGlass,
   Funnel,
   SquaresFour,
-  ListDashes,
-  Buildings,
-  Tag,
+  ListBullets,
   ArrowsDownUp,
   X,
+  Buildings,
   CheckCircle,
-  DownloadSimple,
+  CaretUp,
 } from '@phosphor-icons/react';
 import { mockResources, mockCategories, mockDepartments } from '@/lib/mockData';
 import { Resource } from '@/types/database';
+import { useRealtimeDownloadCount } from '@/lib/downloadStore';
 
-function ResourcesContent() {
-  const searchParams = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
-  const initialCategory = searchParams.get('category') || 'all';
-  const initialDept = searchParams.get('dept') || 'all';
-  const initialType = searchParams.get('type') || 'all';
+function ListRowItem({ resource }: { resource: Resource }) {
+  const realtimeDownloads = useRealtimeDownloadCount(resource.id, resource.download_count);
+  const officeName = resource.department?.name || resource.source_name || 'Academic Office';
 
+  return (
+    <Link
+      href={`/resources/${resource.slug}`}
+      data-thock="card"
+      className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-primary)] text-white font-bold text-base shadow-xs group-hover:scale-105 transition-transform">
+          {resource.file_format === 'PDF'
+            ? 'P'
+            : resource.file_format === 'DOCX'
+            ? 'W'
+            : resource.file_format === 'XLSX'
+            ? 'X'
+            : resource.title.charAt(0)}
+        </div>
+
+        <div>
+          <h3 className="text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors tracking-tight">
+            {resource.title}
+          </h3>
+          <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--color-ink-muted)]">
+            <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-semibold text-[var(--color-ink-secondary)]">
+              {resource.category?.name}
+            </span>
+            <span className="font-mono text-[10.5px]">v{resource.current_version}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 self-end sm:self-auto shrink-0 text-xs">
+        <div className="flex items-center gap-1.5 font-semibold text-[var(--color-ink-muted)] group-hover:text-[var(--color-primary)] transition-colors">
+          <Buildings size={14} className="shrink-0 text-[var(--color-primary)]" />
+          <span>{officeName}</span>
+        </div>
+
+        <div className="flex items-center gap-1 rounded-full bg-[var(--color-paper-muted)] px-2.5 py-1 font-mono text-xs font-bold text-[var(--color-ink)]">
+          <CaretUp size={13} weight="fill" className="text-emerald-600" />
+          <span>{realtimeDownloads}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+export default function ResourcesDirectoryPage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [selectedDepartment, setSelectedDepartment] = useState(initialDept);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedFormat, setSelectedFormat] = useState('all');
-  const [sortBy, setSortBy] = useState<'downloads' | 'recent' | 'title'>('downloads');
+  const [sortBy, setSortBy] = useState<'downloads' | 'recent' | 'alphabetical'>('downloads');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Filter and sort logic
+  // Filtered and Sorted Resources
   const filteredResources = useMemo(() => {
     return mockResources
       .filter((res) => {
-        // Query match
-        const q = searchQuery.toLowerCase().trim();
-        if (q) {
-          const matchesTitle = res.title.toLowerCase().includes(q);
-          const matchesDesc = res.description?.toLowerCase().includes(q);
-          const matchesDept =
-            res.department?.name.toLowerCase().includes(q) ||
-            res.department?.abbreviation.toLowerCase().includes(q);
-          const matchesCategory = res.category?.name.toLowerCase().includes(q);
-          const matchesTag = res.tags?.some((t) => t.name.toLowerCase().includes(q));
-          if (!matchesTitle && !matchesDesc && !matchesDept && !matchesCategory && !matchesTag) {
+        // Query search
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchTitle = res.title.toLowerCase().includes(q);
+          const matchDesc = res.description?.toLowerCase().includes(q);
+          const matchDept = res.department?.name.toLowerCase().includes(q);
+          const matchCat = res.category?.name.toLowerCase().includes(q);
+          if (!matchTitle && !matchDesc && !matchDept && !matchCat) {
             return false;
           }
         }
 
         // Category filter
-        if (selectedCategory !== 'all') {
-          if (res.category?.slug !== selectedCategory && res.category_id !== selectedCategory) {
-            return false;
-          }
+        if (selectedCategory !== 'all' && res.category_id !== selectedCategory) {
+          return false;
         }
 
         // Department filter
-        if (selectedDepartment !== 'all') {
-          if (res.department?.slug !== selectedDepartment && res.department_id !== selectedDepartment) {
-            return false;
-          }
+        if (selectedDepartment !== 'all' && res.department_id !== selectedDepartment) {
+          return false;
         }
 
         // Format filter
-        if (selectedFormat !== 'all') {
-          if (res.file_format.toLowerCase() !== selectedFormat.toLowerCase()) {
-            return false;
-          }
+        if (selectedFormat !== 'all' && res.file_format !== selectedFormat) {
+          return false;
         }
 
         return true;
@@ -90,11 +123,6 @@ function ResourcesContent() {
         }
       });
   }, [searchQuery, selectedCategory, selectedDepartment, selectedFormat, sortBy]);
-
-  const handleDownload = (resource: Resource) => {
-    setToastMessage(`Downloading "${resource.title}" (${resource.file_format})`);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
 
   const clearAllFilters = () => {
     setSearchQuery('');
@@ -127,7 +155,7 @@ function ResourcesContent() {
               Home
             </Link>
             <span>/</span>
-            <span className="font-semibold text-[var(--color-ink)]">Resource Directory</span>
+            <span className="font-semibold text-[var(--color-ink)]">Resources Directory</span>
           </nav>
 
           {/* Page Heading & Search Filter Bar */}
@@ -137,10 +165,10 @@ function ResourcesContent() {
                 Document Repository
               </span>
               <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
-                University Resources Directory
+                Resources Directory
               </h1>
               <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm">
-                Showing {filteredResources.length} of {mockResources.length} verified university documents and forms.
+                Showing {filteredResources.length} of {mockResources.length} documents and forms.
               </p>
             </div>
 
@@ -167,118 +195,108 @@ function ResourcesContent() {
             </div>
           </div>
 
-          {/* Layout: Sidebar Filters + Main Grid */}
+          {/* Main Grid with Filter Sidebar + Results Area */}
           <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-4">
-            {/* Sidebar Filter Panel (Apple Squircle Solid White Card) */}
+            {/* Filter Sidebar */}
             <aside className="space-y-6 lg:col-span-1">
-              <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3.5">
-                  <div className="flex items-center gap-1.5 text-sm font-bold text-[var(--color-ink)]">
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+                  <div className="flex items-center gap-2">
                     <Funnel size={16} className="text-[var(--color-primary)]" />
-                    <span>Filter & Refine</span>
+                    <h2 className="text-sm font-bold text-[var(--color-ink)]">
+                      Filters
+                    </h2>
                   </div>
                   {hasActiveFilters && (
                     <button
                       onClick={clearAllFilters}
-                      className="text-xs font-bold text-[var(--color-primary)] hover:underline"
+                      className="text-[11px] font-bold text-[var(--color-primary)] hover:underline"
                     >
                       Reset All
                     </button>
                   )}
                 </div>
 
-                {/* 1. Category Filter */}
+                {/* Categories */}
                 <div className="mt-5">
-                  <label className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">
                     Category
                   </label>
-                  <div className="mt-2.5 space-y-1">
+                  <div className="mt-2 space-y-1">
                     <button
                       onClick={() => setSelectedCategory('all')}
-                      className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      className={`flex w-full items-center justify-between rounded-[12px] px-3 py-2 text-xs font-medium transition-colors ${
                         selectedCategory === 'all'
-                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                          : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)]'
+                          ? 'bg-[var(--color-primary-subtle)] font-bold text-[var(--color-primary)]'
+                          : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
                       }`}
                     >
                       <span>All Categories</span>
-                      <span className="font-mono text-[10.5px]">{mockResources.length}</span>
+                      <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
+                        {mockResources.length}
+                      </span>
                     </button>
+
                     {mockCategories.map((cat) => {
                       const count = mockResources.filter((r) => r.category_id === cat.id).length;
                       return (
                         <button
                           key={cat.id}
-                          onClick={() => setSelectedCategory(cat.slug)}
-                          className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                            selectedCategory === cat.slug
-                              ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                              : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)]'
+                          onClick={() => setSelectedCategory(cat.id)}
+                          className={`flex w-full items-center justify-between rounded-[12px] px-3 py-2 text-xs font-medium transition-colors ${
+                            selectedCategory === cat.id
+                              ? 'bg-[var(--color-primary-subtle)] font-bold text-[var(--color-primary)]'
+                              : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
                           }`}
                         >
                           <span className="truncate">{cat.name}</span>
-                          <span className="font-mono text-[10.5px]">{count}</span>
+                          <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
+                            {count}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* 2. Department Filter */}
-                <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-4">
-                  <label className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                {/* Departments */}
+                <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-5">
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">
                     Department / Office
                   </label>
-                  <div className="mt-2.5 space-y-1">
-                    <button
-                      onClick={() => setSelectedDepartment('all')}
-                      className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        selectedDepartment === 'all'
-                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                          : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)]'
-                      }`}
+                  <div className="mt-2">
+                    <select
+                      value={selectedDepartment}
+                      onChange={(e) => setSelectedDepartment(e.target.value)}
+                      className="w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
-                      <span>All Offices</span>
-                    </button>
-                    {mockDepartments.map((dept) => {
-                      const count = mockResources.filter((r) => r.department_id === dept.id).length;
-                      return (
-                        <button
-                          key={dept.id}
-                          onClick={() => setSelectedDepartment(dept.slug)}
-                          className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                            selectedDepartment === dept.slug
-                              ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                              : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)]'
-                          }`}
-                        >
-                          <span className="truncate">
-                            {dept.abbreviation} - {dept.name.split(' ')[0]}
-                          </span>
-                          <span className="font-mono text-[10.5px]">{count}</span>
-                        </button>
-                      );
-                    })}
+                      <option value="all">All Departments ({mockDepartments.length})</option>
+                      {mockDepartments.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.abbreviation} - {d.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                {/* 3. Format Filter */}
-                <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-4">
-                  <label className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                {/* Format Filter */}
+                <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-5">
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">
                     File Format
                   </label>
-                  <div className="mt-2.5 flex flex-wrap gap-1.5">
-                    {['all', 'pdf', 'docx', 'xlsx', 'pptx'].map((fmt) => (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {['all', 'PDF', 'DOCX', 'XLSX'].map((fmt) => (
                       <button
                         key={fmt}
                         onClick={() => setSelectedFormat(fmt)}
-                        className={`rounded-full px-3 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
+                        className={`rounded-[12px] border p-2 text-center text-xs font-mono font-bold transition-all ${
                           selectedFormat === fmt
-                            ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                            : 'border border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]'
+                            : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
                         }`}
                       >
-                        {fmt}
+                        {fmt === 'all' ? 'All' : fmt}
                       </button>
                     ))}
                   </div>
@@ -286,66 +304,48 @@ function ResourcesContent() {
               </div>
             </aside>
 
-            {/* Main Content Area */}
-            <div className="lg:col-span-3">
-              {/* Sort Controls & View Mode Bar (Apple Squircle Style) */}
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-5 py-3 text-xs shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                {/* Sort selector */}
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">Sort:</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setSortBy('downloads')}
-                      className={`rounded-full px-3 py-1 font-semibold transition-colors ${
-                        sortBy === 'downloads'
-                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                          : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
-                      }`}
-                    >
-                      Most Downloaded
-                    </button>
-                    <button
-                      onClick={() => setSortBy('recent')}
-                      className={`rounded-full px-3 py-1 font-semibold transition-colors ${
-                        sortBy === 'recent'
-                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                          : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
-                      }`}
-                    >
-                      Recently Updated
-                    </button>
-                    <button
-                      onClick={() => setSortBy('title')}
-                      className={`rounded-full px-3 py-1 font-semibold transition-colors ${
-                        sortBy === 'title'
-                          ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                          : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
-                      }`}
-                    >
-                      Title (A-Z)
-                    </button>
-                  </div>
+            {/* Results Grid / List Area */}
+            <div className="space-y-6 lg:col-span-3">
+              {/* Controls Bar: Sort By + View Toggle (Grid / List) */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                {/* Sort dropdown */}
+                <div className="flex items-center gap-2 text-xs">
+                  <ArrowsDownUp size={15} className="text-[var(--color-ink-muted)]" />
+                  <span className="font-semibold text-[var(--color-ink-secondary)]">Sort by:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="rounded-[10px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-2.5 py-1 text-xs font-semibold text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                  >
+                    <option value="downloads">Most Popular</option>
+                    <option value="recent">Recently Added</option>
+                    <option value="alphabetical">Alphabetical (A-Z)</option>
+                  </select>
                 </div>
 
-                {/* Grid / List switcher */}
-                <div className="flex items-center gap-1 border-l border-[var(--color-rule-subtle)] pl-3">
+                {/* View Mode Toggle: Grid vs List */}
+                <div className="flex items-center gap-1 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-1 text-xs">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`rounded-full p-1.5 text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] ${
-                      viewMode === 'grid' ? 'bg-[var(--color-paper-muted)] text-[var(--color-primary)]' : ''
+                    className={`rounded-full p-1.5 transition-colors ${
+                      viewMode === 'grid'
+                        ? 'bg-[var(--color-primary)] text-white shadow-2xs'
+                        : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                     }`}
-                    title="Grid view"
+                    title="Grid View"
                   >
-                    <SquaresFour size={16} weight={viewMode === 'grid' ? 'fill' : 'regular'} />
+                    <SquaresFour size={16} />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`rounded-full p-1.5 text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] ${
-                      viewMode === 'list' ? 'bg-[var(--color-paper-muted)] text-[var(--color-primary)]' : ''
+                    className={`rounded-full p-1.5 transition-colors ${
+                      viewMode === 'list'
+                        ? 'bg-[var(--color-primary)] text-white shadow-2xs'
+                        : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                     }`}
-                    title="List view"
+                    title="List View"
                   >
-                    <ListDashes size={16} weight={viewMode === 'list' ? 'bold' : 'regular'} />
+                    <ListBullets size={16} />
                   </button>
                 </div>
               </div>
@@ -372,67 +372,13 @@ function ResourcesContent() {
               ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                   {filteredResources.map((resource) => (
-                    <ResourceCard key={resource.id} resource={resource} onDownload={handleDownload} />
+                    <ResourceCard key={resource.id} resource={resource} />
                   ))}
                 </div>
               ) : (
                 <div className="space-y-3.5">
                   {filteredResources.map((resource) => (
-                    <div
-                      key={resource.id}
-                      className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-primary)] text-white font-bold text-base shadow-xs">
-                          {resource.file_format === 'PDF'
-                            ? 'P'
-                            : resource.file_format === 'DOCX'
-                            ? 'W'
-                            : resource.file_format === 'XLSX'
-                            ? 'X'
-                            : resource.title.charAt(0)}
-                        </div>
-
-                        <div>
-                          <Link
-                            href={`/resources/${resource.slug}`}
-                            className="text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors tracking-tight"
-                          >
-                            {resource.title}
-                          </Link>
-                          <p className="mt-1 text-xs text-[var(--color-ink-muted)] line-clamp-1">
-                            {resource.description}
-                          </p>
-                          <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--color-ink-muted)]">
-                            <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-semibold text-[var(--color-ink-secondary)]">
-                              {resource.department?.name}
-                            </span>
-                            <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5">
-                              {resource.category?.name}
-                            </span>
-                            <span className="font-mono text-[10.5px]">v{resource.current_version}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                        <span className="font-mono text-[11px] text-[var(--color-ink-muted)] pr-2">
-                          {resource.download_count} dl
-                        </span>
-                        <Link
-                          href={`/resources/${resource.slug}`}
-                          className="rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3.5 py-1.5 text-xs font-semibold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
-                        >
-                          View
-                        </Link>
-                        <button
-                          onClick={() => handleDownload(resource)}
-                          className="rounded-full bg-[var(--color-primary)] px-4 py-1.5 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-2xs"
-                        >
-                          Download
-                        </button>
-                      </div>
-                    </div>
+                    <ListRowItem key={resource.id} resource={resource} />
                   ))}
                 </div>
               )}
@@ -450,21 +396,5 @@ function ResourcesContent() {
         </div>
       )}
     </div>
-  );
-}
-
-export default function ResourcesPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[var(--color-paper)]">
-          <div className="font-mono text-xs text-[var(--color-ink-muted)] animate-pulse">
-            Loading university resource directory...
-          </div>
-        </div>
-      }
-    >
-      <ResourcesContent />
-    </Suspense>
   );
 }

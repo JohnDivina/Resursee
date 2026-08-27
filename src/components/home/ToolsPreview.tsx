@@ -7,10 +7,8 @@ import {
   CornersOut,
   ArrowsClockwise,
   Crop,
-  FilePdf,
   FileArrowDown,
   FileArrowUp,
-  ShieldCheck,
   ArrowRight,
 } from '@phosphor-icons/react';
 
@@ -88,21 +86,12 @@ export default function ToolsPreview() {
         {/* Section Header */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider">
-                Productivity Suite
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.2 font-mono text-[9.5px] font-bold text-emerald-700 border border-emerald-500/20">
-                <ShieldCheck size={12} weight="bold" />
-                <span>100% Client-Side · Zero Uploads</span>
-              </span>
-            </div>
+            <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider">
+              Productivity Suite
+            </span>
             <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Tools for getting things done.
             </h2>
-            <p className="mt-1.5 max-w-2xl text-xs sm:text-sm text-[var(--color-ink-muted)] leading-relaxed">
-              Browser-based file utilities engineered for student and faculty paperwork. Files are processed locally on your device with complete privacy.
-            </p>
           </div>
 
           <Link
@@ -120,6 +109,7 @@ export default function ToolsPreview() {
             <Link
               key={tool.id}
               href={tool.href}
+              data-thock="card"
               className="group relative flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5"
             >
               <div>
@@ -137,17 +127,9 @@ export default function ToolsPreview() {
                   {tool.name}
                 </h3>
 
-                <p className="mt-1 text-xs leading-relaxed text-[var(--color-ink-muted)] line-clamp-2">
+                <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-ink-muted)] line-clamp-2">
                   {tool.description}
                 </p>
-              </div>
-
-              <div className="mt-5 flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-3.5 text-xs font-semibold text-[var(--color-ink-secondary)]">
-                <span className="font-mono text-[11px] text-emerald-600 font-bold">100% In-Browser</span>
-                <div className="flex items-center gap-1 text-[var(--color-primary)] font-bold">
-                  <span>Open Tool</span>
-                  <ArrowRight size={13} weight="bold" className="transition-transform group-hover:translate-x-1" />
-                </div>
               </div>
             </Link>
           ))}
