@@ -46,7 +46,7 @@ export default function StatsStrip({
       {stats.map((stat, i) => (
         <div
           key={i}
-          className="flex flex-col items-center justify-center rounded-[20px] border border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-4 text-center shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-transform hover:scale-[1.02]"
+          className="flex flex-col items-center justify-center rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 text-center shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-transform hover:scale-[1.02]"
         >
           <span className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
             {stat.value}

@@ -100,7 +100,7 @@ export default function ToolsPage() {
 
       <main className="flex-1">
         {/* Top Banner */}
-        <section className="border-b border-black/[0.05] dark:border-white/[0.08] bg-[var(--color-paper-surface)] py-12 sm:py-16">
+        <section className="border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] py-12 sm:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)] mb-3">
               <Link href="/" className="flex items-center gap-1 hover:text-[var(--color-primary)]">
@@ -133,14 +133,14 @@ export default function ToolsPage() {
               {tools.map((tool) => (
                 <div
                   key={tool.id}
-                  className="group flex flex-col justify-between rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5"
+                  className="group flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5"
                 >
                   <div>
                     <div className="flex items-center justify-between">
                       <div className={`flex h-12 w-12 items-center justify-center rounded-[16px] ${tool.iconBg} shadow-xs transition-transform group-hover:scale-105`}>
                         {tool.icon}
                       </div>
-                      <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.08] px-3 py-1 font-semibold text-xs text-[var(--color-ink-secondary)]">
+                      <span className="rounded-full bg-[var(--color-paper-muted)] px-3 py-1 font-semibold text-xs text-[var(--color-ink-secondary)]">
                         {tool.category}
                       </span>
                     </div>
@@ -156,13 +156,13 @@ export default function ToolsPage() {
                     </p>
                   </div>
 
-                  <div className="mt-6 border-t border-black/[0.04] dark:border-white/[0.06] pt-3.5 flex items-center justify-between text-xs font-semibold">
+                  <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-3.5 flex items-center justify-between text-xs font-semibold">
                     <span className="font-mono text-[11px] text-emerald-600 font-bold">
                       100% In-Browser
                     </span>
                     <Link
                       href={tool.href}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-ink)] dark:bg-white text-white dark:text-black hover:bg-[var(--color-primary)] dark:hover:bg-blue-400 px-4 py-1.5 font-bold shadow-2xs transition-all active:scale-95"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white px-4 py-1.5 font-bold shadow-2xs transition-all active:scale-95"
                     >
                       <span>Launch Tool</span>
                       <ArrowRight size={13} weight="bold" />

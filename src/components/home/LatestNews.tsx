@@ -23,11 +23,11 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
   };
 
   return (
-    <section className="border-t border-black/[0.05] dark:border-white/[0.08] bg-[var(--color-paper-surface)] py-14 sm:py-20">
+    <section className="border-t border-[var(--color-rule-subtle)] bg-[var(--color-paper)] py-14 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end">
           <div>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-[var(--color-primary)] uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider">
               <Newspaper size={14} />
               <span>Campus Updates</span>
             </div>
@@ -49,7 +49,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
           {publishedNews.map((article) => (
             <article
               key={article.id}
-              className="group flex flex-col justify-between rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5"
+              className="group flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5"
             >
               {/* Image banner if available */}
               {article.image_url && (
@@ -99,7 +99,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
               </div>
 
               {/* Read Source Link */}
-              <div className="border-t border-black/[0.04] dark:border-white/[0.06] px-6 py-3.5 bg-[var(--color-paper-muted)]/40 flex items-center justify-between text-xs">
+              <div className="border-t border-[var(--color-rule-subtle)] px-6 py-3.5 bg-[var(--color-paper-muted)]/40 flex items-center justify-between text-xs">
                 <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">Official Notice</span>
                 <a
                   href={article.content_url}

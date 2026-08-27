@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
+/* Force Tailwind's `dark:` variant to follow data-theme='dark' attribute strictly */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 @theme inline {
   --color-paper: var(--color-paper);
   --color-paper-surface: var(--color-paper-surface);

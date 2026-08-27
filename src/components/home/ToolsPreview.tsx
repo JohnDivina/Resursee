@@ -83,13 +83,13 @@ export default function ToolsPreview() {
   ];
 
   return (
-    <section className="border-t border-black/[0.05] dark:border-white/[0.08] bg-[var(--color-paper-surface)] py-14 sm:py-20">
+    <section className="border-t border-[var(--color-rule-subtle)] bg-[var(--color-paper)] py-14 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] font-semibold text-[var(--color-primary)] uppercase tracking-wider">
+              <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider">
                 Productivity Suite
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.2 font-mono text-[9.5px] font-bold text-emerald-700 border border-emerald-500/20">
@@ -120,7 +120,7 @@ export default function ToolsPreview() {
             <Link
               key={tool.id}
               href={tool.href}
-              className="group relative flex flex-col justify-between rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5"
+              className="group relative flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5"
             >
               <div>
                 <div className="flex items-center justify-between">
@@ -128,7 +128,7 @@ export default function ToolsPreview() {
                   <div className={`flex h-12 w-12 items-center justify-center rounded-[16px] ${tool.iconBg} shadow-xs transition-transform group-hover:scale-105`}>
                     {tool.icon}
                   </div>
-                  <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.08] px-3 py-1 font-semibold text-xs text-[var(--color-ink-secondary)]">
+                  <span className="rounded-full bg-[var(--color-paper-muted)] px-3 py-1 font-semibold text-xs text-[var(--color-ink-secondary)]">
                     {tool.category}
                   </span>
                 </div>
@@ -142,7 +142,7 @@ export default function ToolsPreview() {
                 </p>
               </div>
 
-              <div className="mt-5 flex items-center justify-between border-t border-black/[0.04] dark:border-white/[0.06] pt-3.5 text-xs font-semibold text-[var(--color-ink-secondary)]">
+              <div className="mt-5 flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-3.5 text-xs font-semibold text-[var(--color-ink-secondary)]">
                 <span className="font-mono text-[11px] text-emerald-600 font-bold">100% In-Browser</span>
                 <div className="flex items-center gap-1 text-[var(--color-primary)] font-bold">
                   <span>Open Tool</span>

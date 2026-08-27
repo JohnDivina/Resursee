@@ -149,7 +149,7 @@ export default function ResizeImagePage() {
           </nav>
 
           {/* Heading */}
-          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-6 sm:flex-row sm:items-end">
+          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 sm:flex-row sm:items-end">
             <div>
               <div className="flex items-center gap-2">
                 <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-indigo-600 text-white shadow-xs">
@@ -173,7 +173,7 @@ export default function ResizeImagePage() {
 
             <Link
               href="/tools"
-              className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] px-4 py-1.5 text-xs font-semibold text-[var(--color-ink-secondary)] hover:bg-black/[0.03]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-4 py-1.5 text-xs font-semibold text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]"
             >
               <ArrowLeft size={14} />
               <span>Back to all tools</span>
@@ -191,7 +191,7 @@ export default function ResizeImagePage() {
                     handleFileSelect(e.dataTransfer.files[0]);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-black/[0.1] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-indigo-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
+                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-indigo-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-indigo-600 text-white shadow-md transition-transform group-hover:scale-110">
                   <UploadSimple size={32} weight="bold" />
@@ -225,8 +225,8 @@ export default function ResizeImagePage() {
             <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
               {/* Preview Box */}
               <div className="space-y-6 lg:col-span-2">
-                <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-                  <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] pb-3.5">
+                <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+                  <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3.5">
                     <h3 className="text-sm font-bold text-[var(--color-ink)]">
                       Preview ({targetWidth} × {targetHeight} px)
                     </h3>
@@ -240,7 +240,7 @@ export default function ResizeImagePage() {
                     </button>
                   </div>
 
-                  <div className="mt-6 flex h-80 items-center justify-center overflow-hidden rounded-[18px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] p-4">
+                  <div className="mt-6 flex h-80 items-center justify-center overflow-hidden rounded-[18px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-4">
                     {originalUrl && (
                       <img
                         src={originalUrl}
@@ -265,8 +265,8 @@ export default function ResizeImagePage() {
 
               {/* Controls */}
               <div className="space-y-6 lg:col-span-1">
-                <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-6">
-                  <div className="flex items-center gap-2 border-b border-black/[0.04] dark:border-white/[0.06] pb-3.5">
+                <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-6">
+                  <div className="flex items-center gap-2 border-b border-[var(--color-rule-subtle)] pb-3.5">
                     <Sliders size={18} className="text-[var(--color-primary)]" />
                     <h3 className="text-sm font-bold text-[var(--color-ink)]">
                       Dimension Controls
@@ -285,7 +285,7 @@ export default function ResizeImagePage() {
                         max="8000"
                         value={targetWidth}
                         onChange={(e) => handleWidthChange(parseInt(e.target.value) || 0)}
-                        className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs font-bold text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                        className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs font-bold text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                       />
                     </div>
 
@@ -299,7 +299,7 @@ export default function ResizeImagePage() {
                         max="8000"
                         value={targetHeight}
                         onChange={(e) => handleHeightChange(parseInt(e.target.value) || 0)}
-                        className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs font-bold text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                        className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs font-bold text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                       />
                     </div>
 
@@ -310,7 +310,7 @@ export default function ResizeImagePage() {
                       className={`flex w-full items-center justify-center gap-2 rounded-full border p-2.5 text-xs font-bold transition-colors ${
                         lockAspectRatio
                           ? 'border-[var(--color-primary-subtle)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                          : 'border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)]'
+                          : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)]'
                       }`}
                     >
                       {lockAspectRatio ? <LockKey size={15} weight="bold" /> : <LockKeyOpen size={15} />}
@@ -329,7 +329,7 @@ export default function ResizeImagePage() {
                           key={preset.name}
                           type="button"
                           onClick={() => applyPreset(preset)}
-                          className="rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 text-left hover:border-[var(--color-primary)] hover:bg-black/[0.03] transition-colors"
+                          className="rounded-[14px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-2.5 text-left hover:border-[var(--color-primary)] hover:bg-[var(--color-paper-muted)] transition-colors"
                         >
                           <span className="block text-xs font-bold text-[var(--color-ink)]">
                             {preset.label}

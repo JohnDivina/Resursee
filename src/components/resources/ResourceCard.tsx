@@ -8,9 +8,6 @@ import {
   Buildings,
   CheckCircle,
   ClockCounterClockwise,
-  FileText,
-  FileDoc,
-  FilePdf,
 } from '@phosphor-icons/react';
 import { Resource } from '@/types/database';
 
@@ -22,14 +19,6 @@ interface ResourceCardProps {
 export default function ResourceCard({ resource, onDownload }: ResourceCardProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
-
-  const formatFileSize = (bytes: number) => {
-    if (!bytes || bytes === 0) return '0 KB';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
 
   const handleDownloadClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,16 +36,16 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
     }, 600);
   };
 
-  // Get initial or icon representation
+  // Get initial representation
   const firstLetter = resource.title.trim().charAt(0).toUpperCase();
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5">
+    <div className="group relative flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(0,0,0,0.07)] hover:-translate-y-0.5">
       {/* Top Header: Squircle Icon Badge & Upvote/Download Pill */}
       <div>
         <div className="flex items-start justify-between">
           {/* iOS Squircle Icon Badge */}
-          <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#0f172a] dark:bg-blue-600 text-white font-bold text-lg shadow-xs transition-transform group-hover:scale-105 select-none">
+          <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[var(--color-primary)] text-white font-bold text-lg shadow-xs transition-transform group-hover:scale-105 select-none">
             {resource.file_format === 'PDF' ? (
               <span className="font-extrabold text-base">P</span>
             ) : resource.file_format === 'DOCX' ? (
@@ -94,13 +83,13 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
       </div>
 
       {/* Bottom Row: Category Pill & Details / Download */}
-      <div className="mt-5 pt-3.5 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between gap-2">
+      <div className="mt-5 pt-3.5 border-t border-[var(--color-rule-subtle)] flex items-center justify-between gap-2">
         {/* Category Pill */}
         <div className="flex items-center gap-1.5 overflow-hidden">
-          <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.08] px-3 py-1 font-semibold text-xs text-[var(--color-ink-secondary)] truncate">
+          <span className="rounded-full bg-[var(--color-paper-muted)] px-3 py-1 font-semibold text-xs text-[var(--color-ink-secondary)] truncate">
             {resource.category?.name || 'General'}
           </span>
-          <span className="hidden sm:inline rounded-full bg-black/[0.03] dark:bg-white/[0.06] px-2.5 py-1 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
+          <span className="hidden sm:inline rounded-full bg-[var(--color-paper-muted)] px-2.5 py-1 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
             {resource.department?.abbreviation || 'UNIV'}
           </span>
         </div>
@@ -114,7 +103,7 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
             className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold shadow-2xs transition-all active:scale-95 ${
               downloaded
                 ? 'bg-emerald-600 text-white'
-                : 'bg-[var(--color-ink)] text-white hover:bg-[var(--color-primary)] dark:bg-white dark:text-black dark:hover:bg-blue-400'
+                : 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]'
             }`}
           >
             {downloading ? (

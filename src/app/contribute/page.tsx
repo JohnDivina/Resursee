@@ -117,7 +117,7 @@ export default function ContributePage() {
           </nav>
 
           {/* Header Banner */}
-          <div className="mt-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-6">
+          <div className="mt-4 border-b border-[var(--color-rule-subtle)] pb-6">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-[var(--color-primary-subtle)] text-base">
                 🦦
@@ -144,7 +144,7 @@ export default function ContributePage() {
 
           {/* SUCCESS STATE */}
           {isSubmitted ? (
-            <div className="mt-8 rounded-[28px] border-2 border-emerald-500/30 bg-white dark:bg-[#131b2e] p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.06)] animate-in zoom-in-95">
+            <div className="mt-8 rounded-[28px] border-2 border-emerald-500/30 bg-[var(--color-paper-card)] p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.06)] animate-in zoom-in-95">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600">
                 <CheckCircle size={36} weight="fill" />
               </div>
@@ -155,7 +155,7 @@ export default function ContributePage() {
                 Thank you, <span className="font-bold text-[var(--color-ink)]">{submitterName}</span>. Your submission has been securely queued in the Master Admin Review Queue.
               </p>
 
-              <div className="mx-auto mt-6 max-w-sm rounded-[16px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] p-3 font-mono text-xs">
+              <div className="mx-auto mt-6 max-w-sm rounded-[16px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3 font-mono text-xs">
                 <span className="text-[var(--color-ink-muted)]">Tracking Reference:</span>{' '}
                 <span className="font-bold text-[var(--color-primary)]">{submissionId}</span>
               </div>
@@ -163,7 +163,7 @@ export default function ContributePage() {
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <button
                   onClick={handleReset}
-                  className="rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] px-5 py-2.5 text-xs font-bold text-[var(--color-ink)] hover:bg-black/[0.03]"
+                  className="rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-5 py-2.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
                 >
                   Submit Another Resource
                 </button>
@@ -179,7 +179,7 @@ export default function ContributePage() {
             /* SUBMISSION FORM */
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
               {/* SECTION 1: Submission Type */}
-              <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <h2 className="text-base font-bold text-[var(--color-ink)]">
                   1. What are you submitting?
                 </h2>
@@ -193,7 +193,7 @@ export default function ContributePage() {
                     className={`flex items-start gap-3 rounded-[18px] border p-4 text-left transition-all ${
                       submissionType === 'new_resource'
                         ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] ring-2 ring-[var(--color-primary)]'
-                        : 'border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] hover:bg-black/[0.02]'
+                        : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)]'
                     }`}
                   >
                     <FileText size={22} className="text-[var(--color-primary)] shrink-0 mt-0.5" />
@@ -213,7 +213,7 @@ export default function ContributePage() {
                     className={`flex items-start gap-3 rounded-[18px] border p-4 text-left transition-all ${
                       submissionType === 'update_existing'
                         ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] ring-2 ring-[var(--color-primary)]'
-                        : 'border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] hover:bg-black/[0.02]'
+                        : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)]'
                     }`}
                   >
                     <ClockCounterClockwise size={22} className="text-amber-600 shrink-0 mt-0.5" />
@@ -237,7 +237,7 @@ export default function ContributePage() {
                       value={existingResourceId}
                       onChange={(e) => handleExistingResourceSelect(e.target.value)}
                       required
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.1] bg-white dark:bg-[#1e293b] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-white dark:bg-[#1e293b] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
                       <option value="">-- Choose a document from the current directory --</option>
                       {mockResources.map((res) => (
@@ -251,7 +251,7 @@ export default function ContributePage() {
               </div>
 
               {/* SECTION 2: Document Details */}
-              <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-4">
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
                 <h2 className="text-base font-bold text-[var(--color-ink)]">
                   2. Document Details
                 </h2>
@@ -266,7 +266,7 @@ export default function ContributePage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Application for Academic Overload & Cross-Enrollment Form"
-                    className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                   />
                 </div>
 
@@ -279,7 +279,7 @@ export default function ContributePage() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Provide a brief summary of what this document is used for and who requires it..."
-                    className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                   />
                 </div>
 
@@ -291,7 +291,7 @@ export default function ContributePage() {
                     <select
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
                     >
                       {mockCategories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -308,7 +308,7 @@ export default function ContributePage() {
                     <select
                       value={departmentId}
                       onChange={(e) => setDepartmentId(e.target.value)}
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
                     >
                       {mockDepartments.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -327,7 +327,7 @@ export default function ContributePage() {
                     <select
                       value={fileFormat}
                       onChange={(e) => setFileFormat(e.target.value)}
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs uppercase outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs uppercase outline-hidden"
                     >
                       <option value="PDF">PDF</option>
                       <option value="DOCX">DOCX</option>
@@ -345,7 +345,7 @@ export default function ContributePage() {
                       value={versionLabel}
                       onChange={(e) => setVersionLabel(e.target.value)}
                       placeholder="2026.1"
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs outline-hidden"
                     />
                   </div>
 
@@ -356,7 +356,7 @@ export default function ContributePage() {
                     <select
                       value={docType}
                       onChange={(e) => setDocType(e.target.value as DocumentType)}
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs uppercase outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs uppercase outline-hidden"
                     >
                       <option value="form">Form</option>
                       <option value="template">Template</option>
@@ -370,7 +370,7 @@ export default function ContributePage() {
               </div>
 
               {/* SECTION 3: File Attachment */}
-              <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-4">
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
                 <h2 className="text-base font-bold text-[var(--color-ink)]">
                   3. File Attachment & Official Source
                 </h2>
@@ -379,7 +379,7 @@ export default function ContributePage() {
                   <label className="block text-xs font-bold text-[var(--color-ink)]">
                     Upload Document File (.pdf, .docx, .xlsx, .pptx)
                   </label>
-                  <label className="mt-2 flex flex-col items-center justify-center rounded-[20px] border-2 border-dashed border-black/[0.1] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-6 text-center cursor-pointer transition-colors hover:border-[var(--color-primary)]">
+                  <label className="mt-2 flex flex-col items-center justify-center rounded-[20px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-6 text-center cursor-pointer transition-colors hover:border-[var(--color-primary)]">
                     <UploadSimple size={28} className="text-[var(--color-primary)]" />
                     <span className="mt-2 text-xs font-bold text-[var(--color-ink)]">
                       {fileName ? fileName : 'Click to select a file from your computer'}
@@ -406,7 +406,7 @@ export default function ContributePage() {
                       value={sourceUrl}
                       onChange={(e) => setSourceUrl(e.target.value)}
                       placeholder="https://university.edu/registrar/forms"
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
 
@@ -419,14 +419,14 @@ export default function ContributePage() {
                       value={sourceName}
                       onChange={(e) => setSourceName(e.target.value)}
                       placeholder="e.g. Office of the University Registrar"
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* SECTION 4: Submitter Information */}
-              <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] space-y-4">
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
                 <h2 className="text-base font-bold text-[var(--color-ink)]">
                   4. Submitter Information
                 </h2>
@@ -442,7 +442,7 @@ export default function ContributePage() {
                       value={submitterName}
                       onChange={(e) => setSubmitterName(e.target.value)}
                       placeholder="Juan Dela Cruz"
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
 
@@ -456,7 +456,7 @@ export default function ContributePage() {
                       value={submitterEmail}
                       onChange={(e) => setSubmitterEmail(e.target.value)}
                       placeholder="jdelacruz@university.edu"
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
 
@@ -467,7 +467,7 @@ export default function ContributePage() {
                     <select
                       value={submitterRole}
                       onChange={(e) => setSubmitterRole(e.target.value as any)}
-                      className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
                     >
                       <option value="student">Student</option>
                       <option value="faculty">Faculty Member</option>
@@ -487,13 +487,13 @@ export default function ContributePage() {
                     value={submissionNotes}
                     onChange={(e) => setSubmissionNotes(e.target.value)}
                     placeholder="Provide any additional context, effective dates, or verification notes..."
-                    className="mt-1.5 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                   />
                 </div>
               </div>
 
               {/* Form Actions */}
-              <div className="flex items-center justify-between border-t border-black/[0.05] dark:border-white/[0.08] pt-6">
+              <div className="flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-6">
                 <Link
                   href="/"
                   className="text-xs font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"

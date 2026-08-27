@@ -31,7 +31,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative overflow-hidden border-b border-black/[0.05] dark:border-white/[0.08] bg-[var(--color-paper-surface)] py-16 sm:py-24">
+    <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper)] py-16 sm:py-24">
       {/* Interactive Constellation Particles & Magnetic Cursor Lines */}
       <InteractiveParticles
         particleCount={48}
@@ -56,11 +56,11 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         {/* 2. Interactive Circular Button & Document Showcase */}
         <ResourceShowcase resources={mockResources} />
 
-        {/* 3. Prominent Central Search Bar (Apple Squircle Style) */}
+        {/* 3. Prominent Central Search Bar (Apple Squircle Style - Solid White in Light Mode) */}
         <div className="mx-auto mt-2 max-w-2xl">
           <form
             onSubmit={handleSearchSubmit}
-            className="group relative flex items-center rounded-[20px] border border-black/[0.08] dark:border-white/[0.12] bg-white dark:bg-[#131b2e] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_4px_var(--color-primary-glow)]"
+            className="group relative flex items-center rounded-[20px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_4px_var(--color-primary-glow)]"
           >
             <div className="flex pl-3 text-[var(--color-primary)]">
               <MagnifyingGlass size={22} weight="bold" />
@@ -85,7 +85,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
           </form>
         </div>
 
-        {/* 4. Dynamic Statistics Strip (Verified %, Offices, Revisions, Active Docs) */}
+        {/* 4. Dynamic Statistics Strip */}
         <StatsStrip resources={mockResources} departments={mockDepartments} />
       </div>
     </section>

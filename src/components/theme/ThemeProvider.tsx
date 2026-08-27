@@ -63,6 +63,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const initialTheme: Theme = savedTheme || 'light';
     setTheme(initialTheme);
     document.documentElement.setAttribute('data-theme', initialTheme);
+    if (initialTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     setMounted(true);
   }, []);
 
@@ -72,6 +77,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     // Apply the theme change immediately so the CSS smooth color transition starts
     document.documentElement.setAttribute('data-theme', targetTheme);
+    if (targetTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     setTheme(targetTheme);
     localStorage.setItem('resursee-theme', targetTheme);
 

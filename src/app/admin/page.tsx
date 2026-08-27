@@ -240,7 +240,7 @@ export default function AdminDashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* KPI Metrics Strip (Apple Squircle Solid White Cards) */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                 Active Resources
@@ -255,7 +255,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                 Submissions Queue
@@ -271,7 +271,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                 Total Downloads
@@ -286,7 +286,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                 News Feed Queue
@@ -304,9 +304,9 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Tab Selector & Primary Actions */}
-        <div className="mt-8 flex flex-col items-start justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-5 sm:flex-row sm:items-center">
+        <div className="mt-8 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-5 sm:flex-row sm:items-center">
           {/* Tabs */}
-          <div className="flex flex-wrap items-center gap-1 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-1.5 text-xs shadow-2xs">
+          <div className="flex flex-wrap items-center gap-1 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-1.5 text-xs shadow-2xs">
             <button
               onClick={() => setActiveTab('resources')}
               className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
@@ -392,10 +392,10 @@ export default function AdminDashboardPage() {
 
         {/* TAB 1: Resources Management Table */}
         {activeTab === 'resources' && (
-          <div className="mt-6 overflow-hidden rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="mt-6 overflow-hidden rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-black/[0.04] dark:border-white/[0.06] bg-[var(--color-paper-muted)]/50 font-mono font-bold uppercase text-[var(--color-ink-muted)]">
+                <thead className="border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-muted)]/50 font-mono font-bold uppercase text-[var(--color-ink-muted)]">
                   <tr>
                     <th className="px-6 py-4">Format / Title</th>
                     <th className="px-6 py-4">Category</th>
@@ -405,9 +405,9 @@ export default function AdminDashboardPage() {
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.06] text-[var(--color-ink)]">
+                <tbody className="divide-y divide-[var(--color-rule-subtle)] text-[var(--color-ink)]">
                   {resourcesList.map((res) => (
-                    <tr key={res.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                    <tr key={res.id} className="hover:bg-[var(--color-paper-muted)]/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-start gap-3">
                           <span
@@ -433,7 +433,7 @@ export default function AdminDashboardPage() {
                         {res.category?.name || 'General'}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.08] px-2.5 py-1 font-mono text-[10.5px]">
+                        <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-1 font-mono text-[10.5px]">
                           {res.department?.abbreviation || 'UNIV'}
                         </span>
                       </td>
@@ -447,7 +447,7 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <Link
                             href={`/resources/${res.slug}`}
-                            className="rounded-full p-2 text-[var(--color-ink-muted)] hover:bg-black/[0.04] hover:text-[var(--color-ink)]"
+                            className="rounded-full p-2 text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)]"
                             title="Preview Public Page"
                           >
                             <Eye size={16} />
@@ -472,8 +472,8 @@ export default function AdminDashboardPage() {
         {/* TAB 2: Submissions Queue */}
         {activeTab === 'submissions' && (
           <div className="mt-6 space-y-6">
-            <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-              <div className="border-b border-black/[0.04] dark:border-white/[0.06] pb-4">
+            <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <div className="border-b border-[var(--color-rule-subtle)] pb-4">
                 <h3 className="text-base font-bold text-[var(--color-ink)]">
                   Community Submissions Queue ({pendingSubmissions.length} Pending)
                 </h3>
@@ -491,7 +491,7 @@ export default function AdminDashboardPage() {
                   {pendingSubmissions.map((sub) => (
                     <div
                       key={sub.id}
-                      className="rounded-[20px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-paper-surface)] p-5 shadow-xs transition-all hover:border-[var(--color-primary)]"
+                      className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 shadow-xs transition-all hover:border-[var(--color-primary)]"
                     >
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-2 flex-1">
@@ -527,7 +527,7 @@ export default function AdminDashboardPage() {
                             {sub.description || 'No description provided.'}
                           </p>
 
-                          <div className="rounded-[16px] border border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-3.5 text-xs">
+                          <div className="rounded-[16px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] p-3.5 text-xs">
                             <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--color-ink-muted)]">
                               <div className="flex items-center gap-1 font-bold text-[var(--color-ink)]">
                                 <UserCircle size={15} className="text-[var(--color-primary)]" />
@@ -543,7 +543,7 @@ export default function AdminDashboardPage() {
                               </div>
                             </div>
                             {sub.submission_notes && (
-                              <p className="mt-2 text-[11px] italic text-[var(--color-ink-secondary)] border-t border-black/[0.04] pt-1.5">
+                              <p className="mt-2 text-[11px] italic text-[var(--color-ink-secondary)] border-t border-[var(--color-rule-subtle)] pt-1.5">
                                 &quot;{sub.submission_notes}&quot;
                               </p>
                             )}
@@ -561,7 +561,7 @@ export default function AdminDashboardPage() {
 
                           <button
                             onClick={() => handleRejectSubmission(sub.id)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                           >
                             <XCircle size={15} />
                             <span>Reject</span>
@@ -579,7 +579,7 @@ export default function AdminDashboardPage() {
         {/* TAB 3: News Queue */}
         {activeTab === 'news' && (
           <div className="mt-6 space-y-6">
-            <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
               <h3 className="text-base font-bold text-[var(--color-ink)]">
                 Pending News Ingestion ({pendingNews.length})
               </h3>
@@ -616,7 +616,7 @@ export default function AdminDashboardPage() {
                         </button>
                         <button
                           onClick={() => handleRejectNews(article.id)}
-                          className="flex items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                          className="flex items-center gap-1 rounded-full border border-gray-300 bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                         >
                           <XCircle size={15} />
                           <span>Reject</span>
@@ -633,13 +633,13 @@ export default function AdminDashboardPage() {
         {/* TAB 4: Categories & Departments */}
         {activeTab === 'categories' && (
           <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
               <h3 className="text-base font-bold text-[var(--color-ink)]">
                 Academic Categories ({mockCategories.length})
               </h3>
               <div className="mt-4 space-y-2">
                 {mockCategories.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between rounded-[16px] border border-black/[0.04] bg-[var(--color-paper-surface)] p-3 text-xs">
+                  <div key={cat.id} className="flex items-center justify-between rounded-[16px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3 text-xs">
                     <div>
                       <p className="font-bold text-[var(--color-ink)]">{cat.name}</p>
                       <p className="text-[11px] text-[var(--color-ink-muted)]">{cat.slug}</p>
@@ -652,13 +652,13 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
               <h3 className="text-base font-bold text-[var(--color-ink)]">
                 University Departments ({mockDepartments.length})
               </h3>
               <div className="mt-4 space-y-2">
                 {mockDepartments.map((dept) => (
-                  <div key={dept.id} className="flex items-center justify-between rounded-[16px] border border-black/[0.04] bg-[var(--color-paper-surface)] p-3 text-xs">
+                  <div key={dept.id} className="flex items-center justify-between rounded-[16px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3 text-xs">
                     <div>
                       <p className="font-bold text-[var(--color-ink)]">{dept.name}</p>
                       <p className="text-[11px] text-[var(--color-ink-muted)]">{dept.slug}</p>
@@ -675,11 +675,11 @@ export default function AdminDashboardPage() {
 
         {/* TAB 5: Audit Logs */}
         {activeTab === 'logs' && (
-          <div className="mt-6 rounded-[24px] border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#131b2e] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="mt-6 rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <h3 className="text-base font-bold text-[var(--color-ink)]">
               Master System Activity & Audit Trail
             </h3>
-            <div className="mt-4 divide-y divide-black/[0.04] dark:divide-white/[0.06] text-xs">
+            <div className="mt-4 divide-y divide-[var(--color-rule-subtle)] text-xs">
               {mockActivityLogs.map((log) => (
                 <div key={log.id} className="py-3 flex items-center justify-between">
                   <div>
@@ -702,8 +702,8 @@ export default function AdminDashboardPage() {
       {/* Modal: Upload New Resource */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg rounded-[28px] border border-black/[0.1] bg-white dark:bg-[#131b2e] p-6 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-black/[0.04] pb-3">
+          <div className="relative w-full max-w-lg rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
               <h3 className="text-base font-bold text-[var(--color-ink)]">
                 Add New University Resource
               </h3>
@@ -724,7 +724,7 @@ export default function AdminDashboardPage() {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="e.g. Leave of Absence Application"
-                  className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                 />
               </div>
 
@@ -735,7 +735,7 @@ export default function AdminDashboardPage() {
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="Brief summary of requirements or procedures..."
-                  className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                 />
               </div>
 
@@ -745,7 +745,7 @@ export default function AdminDashboardPage() {
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2 text-xs text-[var(--color-ink)] outline-hidden"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 text-xs text-[var(--color-ink)] outline-hidden"
                   >
                     {mockCategories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -760,7 +760,7 @@ export default function AdminDashboardPage() {
                   <select
                     value={newDepartment}
                     onChange={(e) => setNewDepartment(e.target.value)}
-                    className="mt-1 w-full rounded-[14px] border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] p-2 text-xs text-[var(--color-ink)] outline-hidden"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 text-xs text-[var(--color-ink)] outline-hidden"
                   >
                     {mockDepartments.map((d) => (
                       <option key={d.id} value={d.id}>
@@ -771,7 +771,7 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-black/[0.04] pt-4">
+              <div className="flex items-center justify-end gap-2 border-t border-[var(--color-rule-subtle)] pt-4">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
@@ -792,7 +792,7 @@ export default function AdminDashboardPage() {
       )}
 
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-black/[0.08] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
           <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
