@@ -1,23 +1,27 @@
 'use client';
 
 /**
- * Resursee Ultra-Low Latency Sound Engine
- * Pre-renders tactile mechanical keyboard "thock" audio buffers in memory.
- * Provides instantaneous (<0.2ms) playback on hover with zero CPU overhead
- * and auto-unlocks AudioContext on the first subtle mouse movement after refresh.
+ * Resursee Studio Web Audio Engine
+ * High-fidelity, zero-crack mechanical keyboard "thock" synthesizer.
+ *
+ * Features:
+ * - Master Dynamics Compressor + Soft Limiter (prevents digital clipping & crackling on rapid multi-hovers)
+ * - Anti-pop Cosine & Linear Fade Envelopes (zero DC offsets or abrupt oscillator cutoffs)
+ * - Single-voice Polyphony Management (smooth voice stealing with 3ms crossfade)
+ * - Auto-Unlock on any pointer movement, scroll, or gesture
+ * - Natural acoustic micro-pitch variation (±4%)
  */
 
 let audioCtx: AudioContext | null = null;
+let masterCompressor: DynamicsCompressorNode | null = null;
 let masterGain: GainNode | null = null;
+let dcBlocker: BiquadFilterNode | null = null;
+let noiseBuffer: AudioBuffer | null = null;
 let isSoundEnabled = true;
 
-// Pre-computed memory buffers for instant sub-millisecond playback
-const thockBuffers: AudioBuffer[] = [];
-const deepThockBuffers: AudioBuffer[] = [];
-const softClickBuffers: AudioBuffer[] = [];
-let isBuffersReady = false;
+// Active voice gain nodes to smoothly fade out on rapid overlapping hovers
+const activeVoiceGains: GainNode[] = [];
 
-// Get or initialize AudioContext
 export function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
 
@@ -27,16 +31,29 @@ export function getAudioContext(): AudioContext | null {
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 
     if (AudioContextClass) {
-      audioCtx = new AudioContextClass({
-        latencyHint: 'interactive', // Lowest possible latency
-      });
+      audioCtx = new AudioContextClass({ latencyHint: 'interactive' });
 
+      // 1. DC Blocker (Highpass at 25Hz to eliminate any sub-bass DC offset clicks)
+      dcBlocker = audioCtx.createBiquadFilter();
+      dcBlocker.type = 'highpass';
+      dcBlocker.frequency.setValueAtTime(25, audioCtx.currentTime);
+
+      // 2. Dynamics Compressor (Soft Limiter to eliminate cracking/distortion on overlapping hovers)
+      masterCompressor = audioCtx.createDynamicsCompressor();
+      masterCompressor.threshold.setValueAtTime(-6, audioCtx.currentTime);
+      masterCompressor.knee.setValueAtTime(8, audioCtx.currentTime);
+      masterCompressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+      masterCompressor.attack.setValueAtTime(0.002, audioCtx.currentTime);
+      masterCompressor.release.setValueAtTime(0.04, audioCtx.currentTime);
+
+      // 3. Master Gain
       masterGain = audioCtx.createGain();
       masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
-      masterGain.connect(audioCtx.destination);
 
-      // Pre-synthesize all sound variations in memory
-      generateAllBuffers(audioCtx);
+      // Chain: Voice -> DC Blocker -> Compressor -> Master Gain -> Destination
+      dcBlocker.connect(masterCompressor);
+      masterCompressor.connect(masterGain);
+      masterGain.connect(audioCtx.destination);
     }
   }
 
@@ -47,83 +64,23 @@ export function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
-/**
- * Generate a single acoustic mechanical switch thock PCM buffer
- */
-function createThockBuffer(
-  ctx: AudioContext,
-  baseFreq: number,
-  duration: number,
-  noiseIntensity: number
-): AudioBuffer {
-  const sampleRate = ctx.sampleRate;
-  const numSamples = Math.floor(sampleRate * duration);
-  const buffer = ctx.createBuffer(1, numSamples, sampleRate);
-  const channelData = buffer.getChannelData(0);
+// Generate smoothed noise buffer for tactile keycap collision (no harsh transients)
+function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
+  if (noiseBuffer) return noiseBuffer;
 
-  let phase = 0;
+  const length = Math.floor(ctx.sampleRate * 0.006); // 6ms
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
 
-  for (let i = 0; i < numSamples; i++) {
-    const t = i / sampleRate;
-    const progress = i / numSamples;
-
-    // 1. Exponential frequency drop (pitch swoop down: 230Hz -> 65Hz)
-    const currentFreq = baseFreq * Math.pow(0.28, progress * 1.8);
-    phase += (2 * Math.PI * currentFreq) / sampleRate;
-
-    // 2. Primary harmonic rich body (blend of triangle and warm sine)
-    const triangle = (2 / Math.PI) * Math.asin(Math.sin(phase));
-    const sine = Math.sin(phase);
-    const bodyWave = triangle * 0.65 + sine * 0.35;
-
-    // Fast exponential amplitude decay
-    const bodyEnv = Math.exp(-progress * 7.5);
-
-    // 3. Sub-bass acoustic resonance (80Hz thump)
-    const subWave = Math.sin(phase * 0.45) * Math.exp(-progress * 9.0);
-
-    // 4. Initial keycap stem transient impact (first 6ms band-passed click)
-    let click = 0;
-    if (t < 0.007) {
-      const clickProgress = t / 0.007;
-      const noise = (Math.random() * 2 - 1) * Math.exp(-clickProgress * 4.5);
-      const clickTone = Math.sin(2 * Math.PI * 1100 * t) * (1 - clickProgress);
-      click = (noise * 0.6 + clickTone * 0.4) * noiseIntensity;
-    }
-
-    // Combine layers with smooth envelope clamp
-    const sample = (bodyWave * 0.62 * bodyEnv + subWave * 0.32 + click * 0.45);
-    channelData[i] = Math.max(-1, Math.min(1, sample));
+  for (let i = 0; i < length; i++) {
+    const progress = i / length;
+    // Windowed decay curve (Hanning window shape) to prevent boundary clicks
+    const windowFactor = Math.sin(Math.PI * progress);
+    data[i] = (Math.random() * 2 - 1) * windowFactor * Math.exp(-progress * 3);
   }
 
+  noiseBuffer = buffer;
   return buffer;
-}
-
-/**
- * Pre-synthesize all variations into memory arrays
- */
-function generateAllBuffers(ctx: AudioContext) {
-  if (isBuffersReady) return;
-
-  // 1. Standard Thocks (pitch variations around 220Hz)
-  const standardPitches = [205, 215, 222, 230, 238];
-  for (const pitch of standardPitches) {
-    thockBuffers.push(createThockBuffer(ctx, pitch, 0.048, 0.38));
-  }
-
-  // 2. Deep Thocks for Cards (pitch variations around 175Hz)
-  const deepPitches = [165, 172, 180, 188];
-  for (const pitch of deepPitches) {
-    deepThockBuffers.push(createThockBuffer(ctx, pitch, 0.052, 0.45));
-  }
-
-  // 3. Crisp Soft Clicks for Pills / Badges (pitch variations around 285Hz)
-  const softPitches = [260, 275, 290, 305];
-  for (const pitch of softPitches) {
-    softClickBuffers.push(createThockBuffer(ctx, pitch, 0.038, 0.30));
-  }
-
-  isBuffersReady = true;
 }
 
 export function setSoundEnabled(enabled: boolean) {
@@ -141,50 +98,136 @@ export function getSoundEnabled(): boolean {
 }
 
 /**
- * Instant Zero-Latency Playback Helper (<0.1ms execution time)
+ * Play a rich, punchy, tactile mechanical keyboard "Thock"
+ * @param pitchMultiplier - pitch modifier (0.85 = deep thock, 1.2 = light tick)
+ * @param volume - audible loudness (0.22 - 0.32 is loud & punchy)
  */
-function playBuffer(buffers: AudioBuffer[], volume: number) {
-  if (!isSoundEnabled || buffers.length === 0) return;
-
-  const ctx = getAudioContext();
-  if (!ctx || !masterGain) return;
+export function playThock(pitchMultiplier = 1, volume = 0.26) {
+  if (!isSoundEnabled) return;
 
   try {
-    // Pick random buffer variation for organic mechanical feel
-    const buffer = buffers[Math.floor(Math.random() * buffers.length)];
+    const ctx = getAudioContext();
+    if (!ctx || !dcBlocker) return;
 
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
 
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    const now = ctx.currentTime;
 
-    source.connect(gain);
-    gain.connect(masterGain);
+    // Smoothly fade out previous voice to prevent voice stacking and audio pops
+    while (activeVoiceGains.length > 0) {
+      const prevGain = activeVoiceGains.pop();
+      if (prevGain) {
+        try {
+          prevGain.gain.cancelScheduledValues(now);
+          prevGain.gain.setValueAtTime(prevGain.gain.value, now);
+          prevGain.gain.linearRampToValueAtTime(0.00001, now + 0.004);
+        } catch {
+          // ignore
+        }
+      }
+    }
 
-    source.start(0);
-  } catch (err) {
-    // Ignore audio context errors if not ready
+    // Voice Master Gain Node
+    const voiceGain = ctx.createGain();
+    voiceGain.gain.setValueAtTime(1.0, now);
+    voiceGain.connect(dcBlocker);
+    activeVoiceGains.push(voiceGain);
+
+    // Clean up voice after duration
+    setTimeout(() => {
+      const idx = activeVoiceGains.indexOf(voiceGain);
+      if (idx !== -1) activeVoiceGains.splice(idx, 1);
+    }, 70);
+
+    // Organic micro-pitch variation (±4%)
+    const randomPitch = 1 + (Math.random() * 0.08 - 0.04);
+    const scale = pitchMultiplier * randomPitch;
+
+    // --- 1. Deep Mechanical Bottom-Out Thump (Triangle + Lowpass) ---
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    const oscFilter = ctx.createBiquadFilter();
+
+    osc.type = 'triangle';
+    const startFreq = 230 * scale;
+    const endFreq = 70 * scale;
+
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + 0.038);
+
+    oscFilter.type = 'lowpass';
+    oscFilter.frequency.setValueAtTime(550, now);
+    oscFilter.Q.setValueAtTime(1.8, now);
+
+    // Smooth envelope: instant attack -> natural exponential decay -> zero
+    oscGain.gain.setValueAtTime(0.00001, now);
+    oscGain.gain.linearRampToValueAtTime(volume * 1.1, now + 0.002);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.042);
+    oscGain.gain.linearRampToValueAtTime(0, now + 0.045);
+
+    osc.connect(oscFilter);
+    oscFilter.connect(oscGain);
+    oscGain.connect(voiceGain);
+
+    osc.start(now);
+    osc.stop(now + 0.048);
+
+    // --- 2. Keycap Stem Tactile Click (Filtered noise tap) ---
+    const noise = ctx.createBufferSource();
+    noise.buffer = getNoiseBuffer(ctx);
+
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(1100 * scale, now);
+    noiseFilter.Q.setValueAtTime(2.5, now);
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(volume * 0.55, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
+    noiseGain.gain.linearRampToValueAtTime(0, now + 0.015);
+
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(voiceGain);
+
+    noise.start(now);
+    noise.stop(now + 0.018);
+
+    // --- 3. Deep Sub-Acoustic Body (Sine) ---
+    const subOsc = ctx.createOscillator();
+    const subGain = ctx.createGain();
+
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(115 * scale, now);
+    subOsc.frequency.exponentialRampToValueAtTime(50 * scale, now + 0.035);
+
+    subGain.gain.setValueAtTime(0.00001, now);
+    subGain.gain.linearRampToValueAtTime(volume * 0.85, now + 0.002);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
+    subGain.gain.linearRampToValueAtTime(0, now + 0.042);
+
+    subOsc.connect(subGain);
+    subGain.connect(voiceGain);
+
+    subOsc.start(now);
+    subOsc.stop(now + 0.045);
+  } catch {
+    // Fail silently
   }
 }
 
 /**
- * Standard mechanical switch thock (Buttons, links, navigation)
+ * Soft tick for smaller tags and pill items
  */
-export function playThock(pitchMultiplier = 1, volume = 0.12) {
-  playBuffer(thockBuffers, volume);
+export function playSoftClick(volume = 0.18) {
+  playThock(1.3, volume);
 }
 
 /**
- * Deep, heavy thock (Cards, search bar, major CTA buttons)
+ * Deep, heavy mechanical thock for large cards, modals, and search inputs
  */
-export function playDeepThock(volume = 0.14) {
-  playBuffer(deepThockBuffers, volume);
-}
-
-/**
- * Crisp soft tactile click (Pills, badges, pagination dots)
- */
-export function playSoftClick(volume = 0.09) {
-  playBuffer(softClickBuffers, volume);
+export function playDeepThock(volume = 0.28) {
+  playThock(0.88, volume);
 }

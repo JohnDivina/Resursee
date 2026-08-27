@@ -37,9 +37,6 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     const initial = getSoundEnabled();
     setSoundEnabledState(initial);
     setSoundEnabled(initial);
-
-    // Eagerly pre-warm audio context and synthesize memory buffers
-    getAudioContext();
   }, []);
 
   const toggleSound = useCallback(() => {
@@ -48,78 +45,63 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       setSoundEnabled(next);
       if (next) {
         getAudioContext();
-        setTimeout(() => playThock(1, 0.12), 10);
+        setTimeout(() => playThock(1, 0.28), 30);
       }
       return next;
     });
   }, []);
 
-  // 1. Immediate Autoplay Auto-Unlock on any initial pointer or keyboard movement
+  // Global hover sound listener + early gesture unlock
   useEffect(() => {
-    const unlockAudio = () => {
-      const ctx = getAudioContext();
-      if (ctx && ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
+    // Eagerly unlock AudioContext on ANY early user interaction (moving mouse, scrolling, touching)
+    const earlyUnlockEvents = ['pointermove', 'mousemove', 'wheel', 'scroll', 'touchstart', 'pointerdown', 'keydown'];
+
+    const handleEarlyUnlock = () => {
+      getAudioContext();
     };
 
-    // Listen to any initial user interaction (including mere mouse cursor movement or scrolling)
-    window.addEventListener('mousemove', unlockAudio, { once: true, passive: true });
-    window.addEventListener('pointermove', unlockAudio, { once: true, passive: true });
-    window.addEventListener('wheel', unlockAudio, { once: true, passive: true });
-    window.addEventListener('scroll', unlockAudio, { once: true, passive: true });
-    window.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
-    window.addEventListener('keydown', unlockAudio, { once: true, passive: true });
+    earlyUnlockEvents.forEach((evt) => {
+      window.addEventListener(evt, handleEarlyUnlock, { passive: true, once: true });
+    });
 
-    return () => {
-      window.removeEventListener('mousemove', unlockAudio);
-      window.removeEventListener('pointermove', unlockAudio);
-      window.removeEventListener('wheel', unlockAudio);
-      window.removeEventListener('scroll', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
-    };
-  }, []);
-
-  // 2. High-Performance, Zero-Latency Hover Detection
-  useEffect(() => {
-    if (!soundEnabled) return;
+    if (!soundEnabled) {
+      return () => {
+        earlyUnlockEvents.forEach((evt) => {
+          window.removeEventListener(evt, handleEarlyUnlock);
+        });
+      };
+    }
 
     const interactiveSelector =
-      'a, button, [role="button"], input, select, textarea, [data-thock], .hover-thock, summary, [tabindex="0"]';
+      'a, button, [role="button"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], select, [data-thock], .hover-thock, summary, [tabindex="0"]';
 
-    const handleMouseOver = (e: MouseEvent) => {
+    const handlePointerOver = (e: PointerEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      // Find closest interactive parent
+      // Find closest interactive element
       const interactiveEl = target.closest(interactiveSelector);
 
       if (interactiveEl) {
+        // If we entered a new distinct interactive element
         if (interactiveEl !== lastHoveredElementRef.current) {
           lastHoveredElementRef.current = interactiveEl;
 
           const now = performance.now();
-          // Rate-limit to max 1 sound per 25ms to prevent audio clipping during rapid swipes
-          if (now - lastPlayTimeRef.current > 25) {
+          // Rate-limit to max 1 sound per 35ms for silky-smooth rapid swipes
+          if (now - lastPlayTimeRef.current > 35) {
             lastPlayTimeRef.current = now;
 
-            // Differentiate sound based on element type
-            const isCard =
-              interactiveEl.matches('[data-thock="card"]') ||
-              interactiveEl.classList.contains('group') ||
-              interactiveEl.tagName === 'ARTICLE';
-
-            const isPill =
-              interactiveEl.matches('span, kbd, [data-thock="soft"]') ||
-              interactiveEl.classList.contains('rounded-full');
+            // Pitch & depth scaling based on element importance
+            const isCard = interactiveEl.matches('[data-thock="card"], .group') || interactiveEl.classList.contains('group');
+            const isPill = interactiveEl.matches('span, kbd, [data-thock="soft"]');
 
             if (isCard) {
-              playDeepThock(0.13);
+              playDeepThock(0.28);
             } else if (isPill) {
-              playSoftClick(0.09);
+              playSoftClick(0.18);
             } else {
-              playThock(1.0, 0.11);
+              playThock(1.0, 0.24);
             }
           }
         }
@@ -128,11 +110,13 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Use capturing mouseover for the fastest possible event delivery
-    document.addEventListener('mouseover', handleMouseOver, { capture: true, passive: true });
+    window.addEventListener('pointerover', handlePointerOver, { passive: true });
 
     return () => {
-      document.removeEventListener('mouseover', handleMouseOver, { capture: true });
+      window.removeEventListener('pointerover', handlePointerOver);
+      earlyUnlockEvents.forEach((evt) => {
+        window.removeEventListener(evt, handleEarlyUnlock);
+      });
     };
   }, [soundEnabled]);
 
