@@ -49,7 +49,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         {/* 1. Primary Tagline Headline (Apple SF Pro bold typography) */}
         <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.12] lg:text-6xl">
           Find the university resources you need{' '}
-          <span className="relative whitespace-nowrap text-emerald-600 dark:text-emerald-400">
+          <span className="relative whitespace-nowrap text-[var(--color-primary)]">
             <span>in seconds</span>
           </span>
           .
@@ -60,16 +60,16 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
           Search, find, and download official university forms, academic templates, clearances, and campus tools in one centralized hub.
         </p>
 
-        {/* 2. Dual Action Buttons + Social Proof Avatars (Exact reference design) */}
+        {/* 2. Dual Action Buttons + Social Proof Avatars (Unified Blue Theme) */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-          {/* Primary Button: See all forms */}
+          {/* Primary Button: See all documents */}
           <Link
             href="/resources"
             data-thock="card"
-            className="group flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-emerald-700 hover:shadow-lg active:scale-95 cursor-pointer"
+            className="group flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-3 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-[var(--color-primary-hover)] hover:shadow-lg active:scale-95 cursor-pointer"
           >
             <FileText size={17} weight="bold" />
-            <span>See all forms</span>
+            <span>See all documents</span>
             <ArrowRight size={15} weight="bold" className="transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
 
@@ -79,27 +79,27 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
             data-thock="card"
             className="group flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-muted)] px-6 py-3 text-sm font-bold text-[var(--color-ink)] shadow-2xs transition-all duration-200 hover:bg-[var(--color-paper-surface)] hover:border-[var(--color-primary)] active:scale-95 cursor-pointer"
           >
-            <UploadSimple size={17} weight="bold" className="text-emerald-700 dark:text-emerald-400" />
+            <UploadSimple size={17} weight="bold" className="text-[var(--color-primary)]" />
             <span>Contribute resources</span>
           </Link>
 
-          {/* Social Proof Pill (Avatar stack + verified user count) */}
+          {/* Social Proof Pill (Avatar stack + verified student count) */}
           <div className="flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] py-1.5 pr-3.5 pl-2 shadow-2xs">
             <div className="flex -space-x-2 overflow-hidden">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 font-bold text-[10px] text-white ring-2 ring-white select-none">
                 JD
               </span>
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 font-bold text-[10px] text-white ring-2 ring-white select-none">
                 MC
               </span>
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 font-bold text-[10px] text-white ring-2 ring-white select-none">
                 KL
               </span>
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
                 AP
               </span>
             </div>
-            <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400">
+            <span className="font-mono text-xs font-bold text-[var(--color-primary)]">
               +5,425 students
             </span>
           </div>
@@ -109,9 +109,9 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         <div className="mx-auto mt-8 max-w-2xl">
           <form
             onSubmit={handleSearchSubmit}
-            className="group relative flex items-center rounded-[22px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all focus-within:border-emerald-600 focus-within:shadow-[0_0_0_4px_rgba(16,185,129,0.14)]"
+            className="group relative flex items-center rounded-[22px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_4px_var(--color-primary-glow)]"
           >
-            <div className="flex pl-3.5 text-emerald-600 dark:text-emerald-400">
+            <div className="flex pl-3.5 text-[var(--color-primary)]">
               <MagnifyingGlass size={22} weight="bold" />
             </div>
 
@@ -126,7 +126,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
 
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-[16px] bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-95 sm:px-5 sm:text-sm shrink-0"
+              className="flex items-center gap-1.5 rounded-[16px] bg-[var(--color-primary)] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 sm:px-5 sm:text-sm shrink-0"
             >
               <span>Search Hub</span>
               <ArrowRight size={16} weight="bold" />

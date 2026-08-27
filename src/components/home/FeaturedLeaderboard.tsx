@@ -33,12 +33,12 @@ function LeaderboardItemCard({
     <Link
       href={`/resources/${resource.slug}`}
       data-thock="card"
-      className="group relative flex items-center justify-between gap-3 rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3.5 sm:p-4 transition-all duration-200 ease-out hover:bg-emerald-500/[0.03] hover:border-emerald-500/40 hover:shadow-xs cursor-pointer block text-left"
+      className="group relative flex items-center justify-between gap-3 rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3.5 sm:p-4 transition-all duration-200 ease-out hover:bg-[var(--color-primary-subtle)]/30 hover:border-[var(--color-primary)]/40 hover:shadow-xs cursor-pointer block text-left"
     >
       {/* Left side: Rank + Squircle Icon + Text info */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Rank Number Badge */}
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100/90 dark:bg-emerald-950/70 font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-subtle)] font-mono text-xs font-bold text-[var(--color-primary)]">
           {rank}
         </div>
 
@@ -68,14 +68,14 @@ function LeaderboardItemCard({
         {/* Text details */}
         <div className="min-w-0 flex-1">
           {/* Category & Department Header */}
-          <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+          <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
             <span className="truncate">{categoryName}</span>
             <span>•</span>
             <span className="text-[var(--color-ink-muted)] shrink-0">{officeName}</span>
           </div>
 
           {/* Title */}
-          <h3 className="mt-0.5 text-sm font-bold text-[var(--color-ink)] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-200 tracking-tight truncate">
+          <h3 className="mt-0.5 text-sm font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors duration-200 tracking-tight truncate">
             {resource.title}
           </h3>
 
@@ -89,13 +89,13 @@ function LeaderboardItemCard({
       {/* Right side: Trending + Upvotes */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Trending pill badge */}
-        <span className="rounded-full bg-emerald-100/90 dark:bg-emerald-950/70 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+        <span className="rounded-full bg-[var(--color-primary-subtle)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--color-primary)]">
           +{trendingDelta}
         </span>
 
         {/* Upvote Box */}
-        <div className="flex flex-col items-center justify-center rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-2.5 py-1 min-w-[42px] shadow-2xs group-hover:border-emerald-500/40 transition-colors">
-          <CaretUp size={12} weight="fill" className="text-emerald-600" />
+        <div className="flex flex-col items-center justify-center rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-2.5 py-1 min-w-[42px] shadow-2xs group-hover:border-[var(--color-primary)]/40 transition-colors">
+          <CaretUp size={12} weight="fill" className="text-[var(--color-primary)]" />
           <span className="font-mono text-[11px] font-bold text-[var(--color-ink)]">
             {realtimeCount}
           </span>
@@ -142,7 +142,7 @@ export default function FeaturedLeaderboard({
               <h2 className="mt-0.5 text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--color-ink)]">
                 {totalDownloads.toLocaleString()}{' '}
                 <span className="font-semibold text-lg sm:text-xl text-[var(--color-ink-secondary)]">
-                  community upvotes
+                  community downloads
                 </span>
               </h2>
             </div>
@@ -163,7 +163,7 @@ export default function FeaturedLeaderboard({
                   onClick={() => setTimeFilter(tab.id)}
                   className={`rounded-full px-3 py-1 transition-all ${
                     timeFilter === tab.id
-                      ? 'bg-emerald-600 text-white font-bold shadow-2xs'
+                      ? 'bg-[var(--color-primary)] text-white font-bold shadow-2xs'
                       : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   }`}
                 >
@@ -189,7 +189,7 @@ export default function FeaturedLeaderboard({
           <div className="border-t border-[var(--color-rule-subtle)] bg-[var(--color-paper-muted)]/40 p-4 sm:p-5 text-center">
             <Link
               href="/resources"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[var(--color-primary)] hover:underline"
             >
               <span>Explore all university resources in directory</span>
               <ArrowRight size={15} weight="bold" />
