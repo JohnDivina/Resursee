@@ -1,26 +1,128 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "../styles/tokens.css";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--color-paper);
+  --color-paper-surface: var(--color-paper-surface);
+  --color-paper-muted: var(--color-paper-muted);
+  --color-paper-card: var(--color-paper-card);
+  --color-ink: var(--color-ink);
+  --color-ink-secondary: var(--color-ink-secondary);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-rule: var(--color-rule);
+  --color-rule-subtle: var(--color-rule-subtle);
+  --color-rule-strong: var(--color-rule-strong);
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-active: var(--color-primary-active);
+  --color-primary-glow: var(--color-primary-glow);
+  --color-primary-subtle: var(--color-primary-subtle);
+  --color-accent-amber: var(--color-accent-amber);
+  --color-accent-amber-subtle: var(--color-accent-amber-subtle);
+  --color-accent-amber-glow: var(--color-accent-amber-glow);
+  --color-accent-emerald: var(--color-accent-emerald);
+  --color-accent-emerald-subtle: var(--color-accent-emerald-subtle);
+  --color-accent-rose: var(--color-accent-rose);
+  --color-accent-rose-subtle: var(--color-accent-rose-subtle);
+  --color-dark-surface: var(--color-dark-surface);
+  --color-dark-card: var(--color-dark-card);
+  --color-dark-border: var(--color-dark-border);
+  --color-dark-ink: var(--color-dark-ink);
+  --color-dark-muted: var(--color-dark-muted);
+
+  --font-display: var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  min-height: 100dvh;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Smooth color transition for themed elements during rain shower */
+body, header, nav, main, section, footer, div, a, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, article {
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-paper-muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-rule-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-muted);
+}
+
+/* Focus visible styling */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Document badge styles */
+.badge-pdf {
+  background-color: oklch(95% 0.04 25);
+  color: oklch(52% 0.22 25);
+  border: 1px solid oklch(88% 0.08 25);
+}
+
+.badge-docx {
+  background-color: oklch(95% 0.04 240);
+  color: oklch(48% 0.20 240);
+  border: 1px solid oklch(88% 0.08 240);
+}
+
+.badge-xlsx {
+  background-color: oklch(95% 0.04 150);
+  color: oklch(45% 0.18 150);
+  border: 1px solid oklch(88% 0.08 150);
+}
+
+.badge-pptx {
+  background-color: oklch(95% 0.04 45);
+  color: oklch(50% 0.20 45);
+  border: 1px solid oklch(88% 0.08 45);
+}
+
+/* Dark mode badge overrides */
+[data-theme='dark'] .badge-pdf {
+  background-color: oklch(25% 0.08 25);
+  color: oklch(80% 0.18 25);
+  border: 1px solid oklch(35% 0.12 25);
+}
+
+[data-theme='dark'] .badge-docx {
+  background-color: oklch(25% 0.08 240);
+  color: oklch(80% 0.18 240);
+  border: 1px solid oklch(35% 0.12 240);
+}
+
+[data-theme='dark'] .badge-xlsx {
+  background-color: oklch(25% 0.08 150);
+  color: oklch(80% 0.18 150);
+  border: 1px solid oklch(35% 0.12 150);
+}
+
+[data-theme='dark'] .badge-pptx {
+  background-color: oklch(25% 0.08 45);
+  color: oklch(80% 0.18 45);
+  border: 1px solid oklch(35% 0.12 45);
 }

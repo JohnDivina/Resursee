@@ -1,0 +1,249 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  FileText,
+  CaretLeft,
+  CaretRight,
+  X,
+  Sparkle,
+  ArrowRight,
+  Eye,
+  CheckCircle,
+} from '@phosphor-icons/react';
+import { Resource } from '@/types/database';
+import { mockResources } from '@/lib/mockData';
+
+interface ResourceShowcaseProps {
+  resources?: Resource[];
+}
+
+export default function ResourceShowcase({
+  resources = mockResources,
+}: ResourceShowcaseProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const showcaseRef = useRef<HTMLDivElement>(null);
+
+  // Focus only on active top resources for the showcase (up to 6 items)
+  const previewItems = resources.slice(0, 6);
+
+  // Auto-rotation when open and not hovered
+  useEffect(() => {
+    if (!isOpen || isPaused) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % previewItems.length);
+    }, 3200);
+
+    return () => clearInterval(interval);
+  }, [isOpen, isPaused, previewItems.length]);
+
+  // Handle escape key to collapse
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  const handleNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % previewItems.length);
+  };
+
+  const handlePrev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + previewItems.length) % previewItems.length);
+  };
+
+  return (
+    <div
+      ref={showcaseRef}
+      className="relative mx-auto my-6 flex flex-col items-center justify-center transition-all"
+    >
+      {/* 1. Initial State: The Interactive Circle Button */}
+      <div className="flex flex-col items-center">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          aria-label={isOpen ? 'Collapse resource preview' : 'Preview university documents'}
+          className={`group relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-md transition-all duration-300 hover:border-[var(--color-primary)] hover:shadow-[0_0_24px_var(--color-primary-glow)] hover:scale-105 active:scale-95 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+            isOpen
+              ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+              : ''
+          }`}
+        >
+          {/* Subtle Ambient Pulse Ring */}
+          {!isOpen && (
+            <span className="pointer-events-none absolute inset-0 -m-1 rounded-full border border-[var(--color-primary)]/25 animate-ping opacity-75" />
+          )}
+
+          {/* Central Rotating Icon / Mascot Indicator */}
+          <div className="relative flex items-center justify-center">
+            {isOpen ? (
+              <X size={20} weight="bold" className="transition-transform rotate-0 group-hover:rotate-90 duration-200" />
+            ) : (
+              <div className="relative flex items-center justify-center">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary-subtle)] text-[var(--color-primary)] transition-transform group-hover:scale-110">
+                  <span className="text-sm select-none">🦦</span>
+                </div>
+                <Sparkle
+                  size={12}
+                  weight="fill"
+                  className="absolute -top-1 -right-1 text-amber-500 animate-pulse"
+                />
+              </div>
+            )}
+          </div>
+        </button>
+
+        {/* Minimal Context Pill Below Circle */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="mt-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-primary)] transition-colors"
+        >
+          <span>{isOpen ? 'Close preview' : 'Quick document showcase'}</span>
+          <span className="text-[10px] text-[var(--color-primary)]">{isOpen ? '▲' : '▼'}</span>
+        </button>
+      </div>
+
+      {/* 2. Expanded State: Animated Resource Carousel Showcase */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, scale: 0.95, y: -8 }}
+            animate={{ opacity: 1, height: 'auto', scale: 1, y: 0 }}
+            exit={{ opacity: 0, height: 0, scale: 0.95, y: -8 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-xl overflow-hidden pt-4"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
+            <div className="relative rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-xl backdrop-blur-md">
+              {/* Carousel Header & Controls */}
+              <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-[var(--color-primary)] animate-pulse" />
+                  <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                    Document Showcase · {currentIndex + 1} of {previewItems.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handlePrev}
+                    className="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] hover:border-[var(--color-primary)] transition-colors"
+                    aria-label="Previous document"
+                  >
+                    <CaretLeft size={14} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] hover:border-[var(--color-primary)] transition-colors"
+                    aria-label="Next document"
+                  >
+                    <CaretRight size={14} weight="bold" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Document Card Item */}
+              <div className="py-3">
+                <AnimatePresence mode="wait">
+                  {previewItems[currentIndex] && (
+                    <motion.div
+                      key={previewItems[currentIndex].id}
+                      initial={{ opacity: 0, x: 12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -12 }}
+                      transition={{ duration: 0.22, ease: 'easeOut' }}
+                      className="group flex flex-col gap-3 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-4 transition-all hover:border-[var(--color-primary)]"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center justify-center rounded px-2 py-0.5 font-mono text-[10px] font-bold ${
+                              previewItems[currentIndex].file_format === 'PDF'
+                                ? 'badge-pdf'
+                                : previewItems[currentIndex].file_format === 'DOCX'
+                                ? 'badge-docx'
+                                : previewItems[currentIndex].file_format === 'XLSX'
+                                ? 'badge-xlsx'
+                                : 'badge-pptx'
+                            }`}
+                          >
+                            {previewItems[currentIndex].file_format}
+                          </span>
+                          <span className="rounded-md border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-2 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">
+                            v{previewItems[currentIndex].current_version}
+                          </span>
+                          <span className="rounded-md bg-[var(--color-primary-subtle)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--color-primary)]">
+                            {previewItems[currentIndex].department?.abbreviation || 'OUR'}
+                          </span>
+                        </div>
+
+                        <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+                          {previewItems[currentIndex].download_count} downloads
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="font-display text-sm sm:text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">
+                          {previewItems[currentIndex].title}
+                        </h4>
+                        <p className="mt-1 text-xs text-[var(--color-ink-muted)] line-clamp-2 leading-relaxed">
+                          {previewItems[currentIndex].description || 'Official verified university resource.'}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-2.5 text-xs">
+                        <span className="text-[11px] text-[var(--color-ink-secondary)]">
+                          Office: {previewItems[currentIndex].department?.name || 'Academic Affairs'}
+                        </span>
+                        <Link
+                          href={`/resources/${previewItems[currentIndex].slug}`}
+                          className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary)] hover:underline"
+                        >
+                          <span>Open document</span>
+                          <ArrowRight size={13} weight="bold" />
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Progress Dots Indicator */}
+              <div className="flex items-center justify-center gap-1.5 pt-1">
+                {previewItems.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setCurrentIndex(idx)}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === currentIndex
+                        ? 'w-6 bg-[var(--color-primary)]'
+                        : 'w-1.5 bg-[var(--color-rule-strong)] hover:bg-[var(--color-ink-muted)]'
+                    }`}
+                    aria-label={`Jump to document ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
