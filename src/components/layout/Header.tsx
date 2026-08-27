@@ -11,6 +11,7 @@ import {
   Wrench,
 } from '@phosphor-icons/react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
+import SoundToggle from '@/components/sound/SoundToggle';
 
 interface HeaderProps {
   onOpenSearch?: () => void;
@@ -61,7 +62,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           </Link>
         </nav>
 
-        {/* Action Toolbar: Search ⌘K Pill + Dark Mode Rain Toggle + Admin Portal */}
+        {/* Action Toolbar: Search ⌘K Pill + Sound Toggle + Dark Mode Rain Toggle + Admin Portal */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Instant ⌘K Search Pill */}
           <button
@@ -76,6 +77,9 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               <Command size={10} />K
             </kbd>
           </button>
+
+          {/* Tactile Mechanical Thock Sound Toggle */}
+          <SoundToggle />
 
           {/* Dark Mode Rain Drops Transition Toggle */}
           <ThemeToggle />

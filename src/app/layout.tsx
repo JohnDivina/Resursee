@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { SoundProvider } from '@/components/sound/SoundProvider';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -51,7 +52,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 font-sans">
         <ThemeProvider>
-          {children}
+          <SoundProvider>
+            {children}
+          </SoundProvider>
         </ThemeProvider>
       </body>
     </html>
