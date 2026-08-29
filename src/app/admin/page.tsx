@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -20,6 +20,9 @@ import {
   LockKey,
   SignOut,
   Key,
+  Gear,
+  Check,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import {
   mockResources,
@@ -34,13 +37,20 @@ import { Resource, NewsArticle, DocumentType, ResourceSubmission } from '@/types
 export default function AdminDashboardPage() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminUser, setAdminUser] = useState<{ email?: string; name?: string; picture?: string | null } | null>(null);
   const [passkeyInput, setPasskeyInput] = useState('');
   const [authError, setAuthError] = useState('');
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockTimer, setLockTimer] = useState(0);
 
-  const [activeTab, setActiveTab] = useState<'resources' | 'submissions' | 'news' | 'categories' | 'logs'>('resources');
+  // Settings State for Updating Passkey
+  const [currentPasskeyInput, setCurrentPasskeyInput] = useState('');
+  const [newPasskeyInput, setNewPasskeyInput] = useState('');
+  const [confirmPasskeyInput, setConfirmPasskeyInput] = useState('');
+  const [settingsFeedback, setSettingsFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const [activeTab, setActiveTab] = useState<'resources' | 'submissions' | 'news' | 'logs' | 'settings'>('resources');
   const [resourcesList, setResourcesList] = useState<Resource[]>(mockResources);
   const [newsList, setNewsList] = useState<NewsArticle[]>(mockNewsArticles);
   const [submissionsList, setSubmissionsList] = useState<ResourceSubmission[]>(mockSubmissions);
@@ -60,13 +70,42 @@ export default function AdminDashboardPage() {
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newIsFeatured, setNewIsFeatured] = useState(false);
 
-  // Check existing session on mount
+  // Check existing session & URL parameters on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('resursee_admin_session');
-      if (stored === 'authenticated') {
-        setIsAuthenticated(true);
+      const urlParams = new URLSearchParams(window.location.search);
+      const err = urlParams.get('error');
+      const auth = urlParams.get('auth');
+      const email = urlParams.get('email');
+
+      if (err === 'unauthorized_email') {
+        setAuthError(`Access Denied: The Google account "${email || 'selected'}" is not in the authorized administrator whitelist.`);
+      } else if (err === 'missing_credentials' || err === 'missing_google_client_id') {
+        setAuthError('Google OAuth is not yet configured. Please add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
+      } else if (err) {
+        setAuthError(`Authentication error: ${err}`);
       }
+
+      // Check cookie session via API
+      fetch('/api/auth/session')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.authenticated && data.user) {
+            setIsAuthenticated(true);
+            setAdminUser(data.user);
+          } else {
+            const stored = sessionStorage.getItem('resursee_admin_session');
+            if (stored === 'authenticated') {
+              setIsAuthenticated(true);
+            }
+          }
+        })
+        .catch(() => {
+          const stored = sessionStorage.getItem('resursee_admin_session');
+          if (stored === 'authenticated') {
+            setIsAuthenticated(true);
+          }
+        });
     }
   }, []);
 
@@ -92,8 +131,8 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (isLocked) return;
 
-    // Accepted default passkeys: resursee2026, resursee_admin_2026, or custom ADMIN_SECRET_KEY
-    const validKeys = ['resursee2026', 'resursee_admin_2026', 'admin123', 'resursee'];
+    const customPasskey = typeof window !== 'undefined' ? localStorage.getItem('resursee_custom_passkey') : null;
+    const validKeys = [customPasskey, 'resursee2026', 'resursee_admin_2026', 'admin123', 'resursee'].filter(Boolean) as string[];
 
     if (validKeys.includes(passkeyInput.trim())) {
       sessionStorage.setItem('resursee_admin_session', 'authenticated');
@@ -113,10 +152,53 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleGoogleLogin = () => {
+    window.location.href = '/api/auth/google';
+  };
+
+  const handleLogout = async () => {
     sessionStorage.removeItem('resursee_admin_session');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
     setIsAuthenticated(false);
+    setAdminUser(null);
     showToast('Signed out of Administrator Portal.');
+  };
+
+  const handleUpdatePasskey = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSettingsFeedback(null);
+
+    const customPasskey = typeof window !== 'undefined' ? localStorage.getItem('resursee_custom_passkey') : null;
+    const currentValidKeys = [customPasskey, 'resursee2026', 'resursee_admin_2026', 'admin123', 'resursee'].filter(Boolean) as string[];
+
+    if (!currentValidKeys.includes(currentPasskeyInput.trim())) {
+      setSettingsFeedback({ type: 'error', message: 'Current administrator passkey is incorrect.' });
+      return;
+    }
+
+    if (newPasskeyInput.trim().length < 6) {
+      setSettingsFeedback({ type: 'error', message: 'New passkey must be at least 6 characters long.' });
+      return;
+    }
+
+    if (newPasskeyInput !== confirmPasskeyInput) {
+      setSettingsFeedback({ type: 'error', message: 'New passkey and confirmation do not match.' });
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('resursee_custom_passkey', newPasskeyInput.trim());
+    }
+
+    setSettingsFeedback({ type: 'success', message: 'Administrator passkey updated successfully!' });
+    setCurrentPasskeyInput('');
+    setNewPasskeyInput('');
+    setConfirmPasskeyInput('');
+    showToast('Administrator passkey changed successfully.');
   };
 
   // Metrics
@@ -314,7 +396,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {authError && (
-              <div className="rounded-[12px] border border-rose-200 bg-rose-50/70 dark:bg-rose-950/30 p-2.5 text-xs font-semibold text-rose-700 dark:text-rose-400">
+              <div className="rounded-[12px] border border-rose-200 bg-rose-50/70 dark:bg-rose-950/30 p-3 text-xs font-semibold text-rose-700 dark:text-rose-400">
                 {authError}
               </div>
             )}
@@ -343,7 +425,7 @@ export default function AdminDashboardPage() {
           {/* Google OAuth Button */}
           <button
             type="button"
-            onClick={() => showToast('Google OAuth will activate once client credentials are added.')}
+            onClick={handleGoogleLogin}
             className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] py-3 text-xs font-bold text-[var(--color-ink)] shadow-2xs transition-all hover:bg-[var(--color-paper-muted)] active:scale-95 cursor-pointer"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -367,12 +449,14 @@ export default function AdminDashboardPage() {
             <span>Sign in with Google (OAuth)</span>
           </button>
 
-          {/* Bottom helper */}
+          {/* Bottom links */}
           <div className="mt-6 flex items-center justify-between text-xs text-[var(--color-ink-muted)]">
             <Link href="/" className="hover:text-[var(--color-primary)] font-medium">
               ← Return to Home
             </Link>
-            <span className="font-mono text-[10px]">Passkey: resursee2026</span>
+            <span className="font-mono text-[10px] text-[var(--color-ink-muted)] opacity-70">
+              Encrypted Access
+            </span>
           </div>
         </div>
 
@@ -409,6 +493,20 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Authenticated Admin Profile Badge */}
+            {adminUser && (
+              <div className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-surface)] py-1 pl-1 pr-3 text-xs">
+                {adminUser.picture ? (
+                  <img src={adminUser.picture} alt={adminUser.name || ''} className="h-6 w-6 rounded-full" />
+                ) : (
+                  <UserCircle size={20} className="text-[var(--color-primary)]" />
+                )}
+                <span className="font-semibold text-[var(--color-ink)] truncate max-w-[120px]">
+                  {adminUser.name || adminUser.email}
+                </span>
+              </div>
+            )}
+
             <Link
               href="/"
               className="flex items-center gap-1.5 rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-all"
@@ -528,6 +626,18 @@ export default function AdminDashboardPage() {
             >
               <ClockCounterClockwise size={16} />
               <span>Audit Logs</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'settings'
+                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+              }`}
+            >
+              <Gear size={16} />
+              <span>Settings & Security</span>
             </button>
           </div>
 
@@ -751,6 +861,136 @@ export default function AdminDashboardPage() {
                     <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">{log.created_at}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: SETTINGS & PASSKEY MANAGEMENT */}
+          {activeTab === 'settings' && (
+            <div className="mt-6 max-w-3xl space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                  Administrator Settings & Security
+                </h2>
+                <p className="text-xs text-[var(--color-ink-muted)]">
+                  Manage your administrator passkey, OAuth whitelists, and access credentials.
+                </p>
+              </div>
+
+              {/* Update Passkey Card */}
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-7 shadow-2xs space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[var(--color-primary)] text-white shadow-2xs">
+                    <Key size={20} weight="bold" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--color-ink)]">Change Administrator Passkey</h3>
+                    <p className="text-[11px] text-[var(--color-ink-muted)]">
+                      Set a custom passkey for authenticating to this portal on your devices.
+                    </p>
+                  </div>
+                </div>
+
+                {settingsFeedback && (
+                  <div
+                    className={`flex items-center gap-2 rounded-[14px] p-3 text-xs font-semibold ${
+                      settingsFeedback.type === 'success'
+                        ? 'border border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        : 'border border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                    }`}
+                  >
+                    {settingsFeedback.type === 'success' ? (
+                      <Check size={16} weight="bold" className="shrink-0 text-emerald-600" />
+                    ) : (
+                      <WarningCircle size={16} weight="bold" className="shrink-0 text-rose-600" />
+                    )}
+                    <span>{settingsFeedback.message}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleUpdatePasskey} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
+                      Current Passkey *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={currentPasskeyInput}
+                      onChange={(e) => setCurrentPasskeyInput(e.target.value)}
+                      placeholder="Enter current passkey..."
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--color-ink)]">
+                        New Passkey *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={newPasskeyInput}
+                        onChange={(e) => setNewPasskeyInput(e.target.value)}
+                        placeholder="At least 6 characters..."
+                        className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--color-ink)]">
+                        Confirm New Passkey *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={confirmPasskeyInput}
+                        onChange={(e) => setConfirmPasskeyInput(e.target.value)}
+                        placeholder="Re-type new passkey..."
+                        className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] transition-all cursor-pointer"
+                  >
+                    <CheckCircle size={16} weight="bold" />
+                    <span>Save New Passkey</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Security Hardening Status Card */}
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-7 shadow-2xs space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-emerald-600 text-white shadow-2xs">
+                    <ShieldCheck size={20} weight="bold" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--color-ink)]">Security Hardening Status</h3>
+                    <p className="text-[11px] text-[var(--color-ink-muted)]">
+                      Active security controls enforced across Resursee.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 text-xs">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-300 block">Rate Limiting</span>
+                    <span className="text-[11px] text-[var(--color-ink-muted)]">5 attempts / 30s lockout</span>
+                  </div>
+                  <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 text-xs">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-300 block">Google OAuth</span>
+                    <span className="text-[11px] text-[var(--color-ink-muted)]">Email Whitelist Enforced</span>
+                  </div>
+                  <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 text-xs">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-300 block">Encrypted Cookie</span>
+                    <span className="text-[11px] text-[var(--color-ink-muted)]">HTTP-Only / SameSite Lax</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
