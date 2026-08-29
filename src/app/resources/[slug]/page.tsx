@@ -59,12 +59,24 @@ export default function ResourceDetailPage() {
       // Record real-time persistent download increment
       recordDownload(resource.id, resource.download_count);
 
+      // Trigger browser file download
+      try {
+        const link = document.createElement('a');
+        link.href = resource.file_path || `/documents/${resource.file_name}`;
+        link.download = resource.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch {
+        // ignore
+      }
+
       setDownloading(false);
       setDownloaded(true);
       setToastMessage(`Downloaded "${resource.title}" (${resource.file_format})`);
       setTimeout(() => setDownloaded(false), 3000);
       setTimeout(() => setToastMessage(null), 3500);
-    }, 600);
+    }, 400);
   };
 
   return (
