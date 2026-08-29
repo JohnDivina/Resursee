@@ -17,9 +17,10 @@ import {
   Newspaper,
   Buildings,
 } from '@phosphor-icons/react';
-import { mockCategories, mockDepartments } from '@/lib/mockData';
-import { DocumentType, SubmissionType, Resource, ResourceSubmission, NewsArticle } from '@/types/database';
+import { DocumentType, SubmissionType, Resource, ResourceSubmission, NewsArticle, Category, Department } from '@/types/database';
 import { getLiveResources } from '@/lib/resourceStore';
+import { getLiveCategories } from '@/lib/categoryStore';
+import { getLiveDepartments } from '@/lib/departmentStore';
 import { addSubmission } from '@/lib/submissionStore';
 import { addNewsArticle } from '@/lib/newsStore';
 
@@ -31,14 +32,16 @@ export default function ContributePage() {
   const [submissionId, setSubmissionId] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [liveResources, setLiveResources] = useState<Resource[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
 
   // Form Fields for Documents
   const [submissionType, setSubmissionType] = useState<SubmissionType>('new_resource');
   const [existingResourceId, setExistingResourceId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [categoryId, setCategoryId] = useState(mockCategories[0].id);
-  const [departmentId, setDepartmentId] = useState(mockDepartments[0].id);
+  const [categoryId, setCategoryId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
   const [docType, setDocType] = useState<DocumentType>('form');
   const [fileFormat, setFileFormat] = useState('PDF');
   const [versionLabel, setVersionLabel] = useState('2026.1');
@@ -54,7 +57,7 @@ export default function ContributePage() {
   // Form Fields for Campus News & Bulletins
   const [newsTitle, setNewsTitle] = useState('');
   const [newsSummary, setNewsSummary] = useState('');
-  const [newsDepartmentId, setNewsDepartmentId] = useState(mockDepartments[0].id);
+  const [newsDepartmentId, setNewsDepartmentId] = useState('');
   const [newsUrl, setNewsUrl] = useState('');
   const [newsImageUrl, setNewsImageUrl] = useState('');
   const [newsSubmitterName, setNewsSubmitterName] = useState('');
@@ -62,20 +65,63 @@ export default function ContributePage() {
   const [newsSubmitterRole, setNewsSubmitterRole] = useState<'student' | 'faculty' | 'staff' | 'alumni' | 'other'>('student');
   const [newsNotes, setNewsNotes] = useState('');
 
-  useEffect(() => {
+  const refreshDynamicData = () => {
     setLiveResources(getLiveResources());
-    const handleUpdate = () => setLiveResources(getLiveResources());
-    window.addEventListener('resursee_catalog_updated', handleUpdate);
-    return () => window.removeEventListener('resursee_catalog_updated', handleUpdate);
-  }, []);
+    const cats = getLiveCategories();
+    setCategoriesList(cats);
+    if (cats.length > 0 && !categoryId) setCategoryId(cats[0].id);
 
+    const depts = getLiveDepartments();
+    setDepartmentsList(depts);
+    if (depts.length > 0 && !departmentId) {
+      setDepartmentId(depts[0].id);
+      setNewsDepartmentId(depts[0].id);
+    }
+  };
+
+  useEffect(() => {
+    refreshDynamicData();
+
+    const handleCatalogUpdate = () => setLiveResources(getLiveResources());
+    const handleCategoryUpdate = () => {
+      const cats = getLiveCategories();
+      setCategoriesList(cats);
+      if (cats.length > 0 && !categoryId) setCategoryId(cats[0].id);
+    };
+    const handleDeptUpdate = () => {
+      const depts = getLiveDepartments();
+      setDepartmentsList(depts);
+      if (depts.length > 0 && !departmentId) {
+        setDepartmentId(depts[0].id);
+        setNewsDepartmentId(depts[0].id);
+      }
+    };
+
+    window.addEventListener('resursee_catalog_updated', handleCatalogUpdate);
+    window.addEventListener('resursee_categories_updated', handleCategoryUpdate);
+    window.addEventListener('resursee_departments_updated', handleDeptUpdate);
+    window.addEventListener('storage', refreshDynamicData);
+
+    return () => {
+      window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
+      window.removeEventListener('resursee_categories_updated', handleCategoryUpdate);
+      window.removeEventListener('resursee_departments_updated', handleDeptUpdate);
+      window.removeEventListener('storage', refreshDynamicData);
+    };
+  }, [categoryId, departmentId]);
+
+  // Automated File Format Extraction & Mapping
   const processSelectedFile = (file: File) => {
     setSelectedFile(file);
     setFileName(file.name);
-    const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
-    if (['PDF', 'DOCX', 'XLSX', 'PPTX'].includes(ext)) {
-      setFileFormat(ext);
-    }
+
+    // Extract exact file extension without dot
+    const parts = file.name.split('.');
+    const ext = parts.length > 1 ? parts.pop()?.toUpperCase() || 'PDF' : 'PDF';
+    
+    // Automatically set the file format to the exact file type
+    setFileFormat(ext);
+
     if (!title) {
       const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ');
       setTitle(cleanName);
@@ -169,8 +215,8 @@ export default function ContributePage() {
       id: generatedId,
       title,
       description: description || null,
-      category_id: categoryId,
-      department_id: departmentId,
+      category_id: categoryId || (categoriesList[0]?.id ?? 'cat-1'),
+      department_id: departmentId || (departmentsList[0]?.id ?? 'dept-1'),
       document_type: docType,
       file_name: fileName || (selectedFile ? selectedFile.name : `${title.toLowerCase().replace(/\s+/g, '-')}.${fileFormat.toLowerCase()}`),
       file_format: fileFormat,
@@ -188,8 +234,8 @@ export default function ContributePage() {
       submission_notes: submissionNotes || null,
       status: 'pending',
       created_at: new Date().toISOString(),
-      category: mockCategories.find((c) => c.id === categoryId),
-      department: mockDepartments.find((d) => d.id === departmentId),
+      category: categoriesList.find((c) => c.id === categoryId),
+      department: departmentsList.find((d) => d.id === departmentId),
     };
 
     // 1. Save to Client Submission Store for immediate Admin dashboard display
@@ -222,12 +268,14 @@ export default function ContributePage() {
 
     const generatedId = `NEWS-${Math.floor(100000 + Math.random() * 900000)}`;
 
+    const targetDeptId = newsDepartmentId || (departmentsList[0]?.id ?? 'dept-1');
+
     const newArticle: NewsArticle = {
       id: generatedId,
       title: newsTitle,
       summary: newsSummary,
-      department_id: newsDepartmentId,
-      department: mockDepartments.find((d) => d.id === newsDepartmentId),
+      department_id: targetDeptId,
+      department: departmentsList.find((d) => d.id === targetDeptId),
       content_url: newsUrl || 'https://university.edu/news',
       image_url: newsImageUrl || null,
       status: 'pending',
@@ -429,7 +477,7 @@ export default function ContributePage() {
                 )}
               </div>
 
-              {/* Drag & Drop Dropzone */}
+              {/* Drag & Drop Dropzone with Automated File Format Detection */}
               <div
                 onDragOver={handleDragOver}
                 onDragEnter={handleDragOver}
@@ -447,7 +495,7 @@ export default function ContributePage() {
                   type="file"
                   id="file-upload"
                   onChange={handleFileChange}
-                  accept=".pdf,.docx,.xlsx,.pptx"
+                  accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.csv,.zip,.txt"
                   className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
                 />
 
@@ -464,9 +512,16 @@ export default function ContributePage() {
                 </h3>
                 <p className="mt-1 text-xs text-[var(--color-ink-muted)] max-w-sm">
                   {selectedFile
-                    ? `${(selectedFile.size / 1024).toFixed(1)} KB • Format: ${fileFormat} • Click or drop again to replace`
-                    : 'Supports PDF, Word (.docx), Excel (.xlsx), and PowerPoint (.pptx) up to 25MB'}
+                    ? `${(selectedFile.size / 1024).toFixed(1)} KB • Detected Format: .${fileFormat.toLowerCase()} • Click or drop again to replace`
+                    : 'Supports PDF, Word (.docx, .doc), Excel (.xlsx, .xls), PowerPoint (.pptx, .ppt), CSV, and Archives up to 25MB'}
                 </p>
+
+                {selectedFile && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle size={14} weight="fill" />
+                    <span>Automatically detected format: <strong>{fileFormat} (.{fileFormat.toLowerCase()})</strong></span>
+                  </div>
+                )}
               </div>
 
               {/* Document Details Grid */}
@@ -497,7 +552,7 @@ export default function ContributePage() {
                       onChange={(e) => setCategoryId(e.target.value)}
                       className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
-                      {mockCategories.map((c) => (
+                      {categoriesList.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
@@ -510,7 +565,7 @@ export default function ContributePage() {
                       onChange={(e) => setDepartmentId(e.target.value)}
                       className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
-                      {mockDepartments.map((d) => (
+                      {departmentsList.map((d) => (
                         <option key={d.id} value={d.id}>{d.name} ({d.abbreviation})</option>
                       ))}
                     </select>
@@ -534,16 +589,26 @@ export default function ContributePage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">File Format</label>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
+                      File Format (Auto-Detected)
+                    </label>
                     <select
                       value={fileFormat}
                       onChange={(e) => setFileFormat(e.target.value)}
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs font-semibold text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
                       <option value="PDF">PDF (.pdf)</option>
-                      <option value="DOCX">Word (.docx)</option>
-                      <option value="XLSX">Excel (.xlsx)</option>
+                      <option value="DOCX">Word Document (.docx)</option>
+                      <option value="DOC">Word 97-2003 (.doc)</option>
+                      <option value="XLSX">Excel Workbook (.xlsx)</option>
+                      <option value="XLS">Excel 97-2003 (.xls)</option>
                       <option value="PPTX">PowerPoint (.pptx)</option>
+                      <option value="PPT">PowerPoint 97-2003 (.ppt)</option>
+                      <option value="CSV">CSV Spreadsheet (.csv)</option>
+                      <option value="ZIP">ZIP Archive (.zip)</option>
+                      {!['PDF', 'DOCX', 'DOC', 'XLSX', 'XLS', 'PPTX', 'PPT', 'CSV', 'ZIP'].includes(fileFormat) && (
+                        <option value={fileFormat}>{fileFormat} (.{fileFormat.toLowerCase()})</option>
+                      )}
                     </select>
                   </div>
 
@@ -665,7 +730,7 @@ export default function ContributePage() {
                       onChange={(e) => setNewsDepartmentId(e.target.value)}
                       className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
-                      {mockDepartments.map((d) => (
+                      {departmentsList.map((d) => (
                         <option key={d.id} value={d.id}>{d.name} ({d.abbreviation})</option>
                       ))}
                     </select>

@@ -37,11 +37,12 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  description: string | null;
-  parent_id: string | null;
+  description?: string | null;
+  parent_id?: string | null;
   sort_order: number;
   is_active: boolean;
   icon?: string | null;
+  icon_name?: string | null;
   created_at: string;
 }
 
@@ -50,7 +51,8 @@ export interface Department {
   name: string;
   slug: string;
   abbreviation: string;
-  description: string | null;
+  description?: string | null;
+  website_url?: string | null;
   is_active: boolean;
   created_at: string;
 }

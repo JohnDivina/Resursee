@@ -33,21 +33,30 @@ import {
   ArrowsClockwise,
   BellRinging,
   ArrowSquareOut,
+  Folder,
 } from '@phosphor-icons/react';
 import {
-  mockCategories,
-  mockDepartments,
   mockNewsArticles,
   mockActivityLogs,
   mockSubmissions,
 } from '@/lib/mockData';
-import { Resource, NewsArticle, DocumentType, ResourceSubmission } from '@/types/database';
+import { Resource, NewsArticle, DocumentType, ResourceSubmission, Category, Department } from '@/types/database';
 import {
   getLiveResources,
   deleteResourceById,
   addCustomResource,
   updateExistingResource,
 } from '@/lib/resourceStore';
+import {
+  getLiveCategories,
+  addCategory,
+  deleteCategoryById,
+} from '@/lib/categoryStore';
+import {
+  getLiveDepartments,
+  addDepartment,
+  deleteDepartmentById,
+} from '@/lib/departmentStore';
 import {
   getLiveSubmissions,
   updateSubmissionStatus,
@@ -99,8 +108,10 @@ export default function AdminDashboardPage() {
   const [confirmPasskeyInput, setConfirmPasskeyInput] = useState('');
   const [settingsFeedback, setSettingsFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'resources' | 'submissions' | 'news' | 'staff' | 'logs' | 'settings'>('resources');
+  const [activeTab, setActiveTab] = useState<'resources' | 'submissions' | 'categories' | 'offices' | 'news' | 'staff' | 'logs' | 'settings'>('resources');
   const [resourcesList, setResourcesList] = useState<Resource[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
   const [newsList, setNewsList] = useState<NewsArticle[]>([]);
   const [newsFilter, setNewsFilter] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
   const [submissionsList, setSubmissionsList] = useState<ResourceSubmission[]>([]);
@@ -112,14 +123,28 @@ export default function AdminDashboardPage() {
   // Form State for Adding a New Resource
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [newCategory, setNewCategory] = useState(mockCategories[0].id);
-  const [newDepartment, setNewDepartment] = useState(mockDepartments[0].id);
+  const [newCategory, setNewCategory] = useState('');
+  const [newDepartment, setNewDepartment] = useState('');
   const [newDocType, setNewDocType] = useState<DocumentType>('form');
   const [newFormat, setNewFormat] = useState('PDF');
   const [newVersion, setNewVersion] = useState('2026.1');
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newIsFeatured, setNewIsFeatured] = useState(false);
+
+  // Category Creation Modal State
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [catName, setCatName] = useState('');
+  const [catDescription, setCatDescription] = useState('');
+  const [catSlug, setCatSlug] = useState('');
+
+  // Office Creation Modal State
+  const [isAddOfficeOpen, setIsAddOfficeOpen] = useState(false);
+  const [officeName, setOfficeName] = useState('');
+  const [officeAbbreviation, setOfficeAbbreviation] = useState('');
+  const [officeSlug, setOfficeSlug] = useState('');
+  const [officeWebsite, setOfficeWebsite] = useState('');
+  const [officeDescription, setOfficeDescription] = useState('');
 
   const isMasterAdmin = adminUser?.role === 'master_admin' || (!adminUser && isAuthenticated);
   const isModerator = adminUser?.role === 'moderator';
@@ -129,7 +154,7 @@ export default function AdminDashboardPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Load persistent live resources, submissions, and news
+  // Load persistent live data
   const refreshResources = () => {
     setResourcesList(getLiveResources());
   };
@@ -142,31 +167,53 @@ export default function AdminDashboardPage() {
     setNewsList(getLiveNewsArticles());
   };
 
+  const refreshCategories = () => {
+    const cats = getLiveCategories();
+    setCategoriesList(cats);
+    if (cats.length > 0 && !newCategory) setNewCategory(cats[0].id);
+  };
+
+  const refreshDepartments = () => {
+    const depts = getLiveDepartments();
+    setDepartmentsList(depts);
+    if (depts.length > 0 && !newDepartment) setNewDepartment(depts[0].id);
+  };
+
   useEffect(() => {
     refreshResources();
     refreshSubmissions();
     refreshNews();
+    refreshCategories();
+    refreshDepartments();
 
     // Listen to cross-component and cross-tab updates
     const handleCatalogUpdate = () => refreshResources();
     const handleSubmissionsUpdate = () => refreshSubmissions();
     const handleNewsUpdate = () => refreshNews();
+    const handleCategoryUpdate = () => refreshCategories();
+    const handleDeptUpdate = () => refreshDepartments();
 
     window.addEventListener('resursee_catalog_updated', handleCatalogUpdate);
     window.addEventListener('resursee_submissions_updated', handleSubmissionsUpdate);
     window.addEventListener('resursee_news_updated', handleNewsUpdate);
+    window.addEventListener('resursee_categories_updated', handleCategoryUpdate);
+    window.addEventListener('resursee_departments_updated', handleDeptUpdate);
     window.addEventListener('storage', () => {
       handleCatalogUpdate();
       handleSubmissionsUpdate();
       handleNewsUpdate();
+      handleCategoryUpdate();
+      handleDeptUpdate();
     });
 
     return () => {
       window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
       window.removeEventListener('resursee_submissions_updated', handleSubmissionsUpdate);
       window.removeEventListener('resursee_news_updated', handleNewsUpdate);
+      window.removeEventListener('resursee_categories_updated', handleCategoryUpdate);
+      window.removeEventListener('resursee_departments_updated', handleDeptUpdate);
     };
-  }, []);
+  }, [newCategory, newDepartment]);
 
   // Fetch session
   const checkSession = async (manual = false) => {
@@ -409,8 +456,8 @@ export default function AdminDashboardPage() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
-    const selectedCatObj = mockCategories.find((c) => c.id === newCategory);
-    const selectedDeptObj = mockDepartments.find((d) => d.id === newDepartment);
+    const selectedCatObj = categoriesList.find((c) => c.id === newCategory);
+    const selectedDeptObj = departmentsList.find((d) => d.id === newDepartment);
 
     const newResourceItem: Resource = {
       id: `res-${Date.now()}`,
@@ -508,8 +555,8 @@ export default function AdminDashboardPage() {
         created_by: `user-${submission.submitter_name}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        category: submission.category || mockCategories.find((c) => c.id === submission.category_id),
-        department: submission.department || mockDepartments.find((d) => d.id === submission.department_id),
+        category: submission.category || categoriesList.find((c) => c.id === submission.category_id),
+        department: submission.department || departmentsList.find((d) => d.id === submission.department_id),
       };
 
       const updated = addCustomResource(newRes);
@@ -579,6 +626,74 @@ export default function AdminDashboardPage() {
       const updated = deleteNewsArticleById(id);
       setNewsList(updated);
       showToast(`Deleted bulletin "${title}".`);
+    }
+  };
+
+  const handleCreateCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!catName.trim()) return;
+
+    const slug = catSlug.trim() || catName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const newCat: Category = {
+      id: `cat-${Date.now()}`,
+      name: catName.trim(),
+      slug,
+      description: catDescription.trim() || null,
+      icon_name: 'folder',
+      sort_order: categoriesList.length + 1,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+
+    const updated = addCategory(newCat);
+    setCategoriesList(updated);
+    setIsAddCategoryOpen(false);
+    setCatName('');
+    setCatDescription('');
+    setCatSlug('');
+    showToast(`Created category "${newCat.name}" successfully!`);
+  };
+
+  const handleDeleteCategory = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to delete the category "${name}"? Documents in this category will remain intact.`)) {
+      const updated = deleteCategoryById(id);
+      setCategoriesList(updated);
+      showToast(`Category "${name}" deleted.`);
+    }
+  };
+
+  const handleCreateOffice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!officeName.trim() || !officeAbbreviation.trim()) return;
+
+    const slug = officeSlug.trim() || officeAbbreviation.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const newDept: Department = {
+      id: `dept-${Date.now()}`,
+      name: officeName.trim(),
+      slug,
+      abbreviation: officeAbbreviation.trim().toUpperCase(),
+      description: officeDescription.trim() || null,
+      website_url: officeWebsite.trim() || null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+
+    const updated = addDepartment(newDept);
+    setDepartmentsList(updated);
+    setIsAddOfficeOpen(false);
+    setOfficeName('');
+    setOfficeAbbreviation('');
+    setOfficeSlug('');
+    setOfficeWebsite('');
+    setOfficeDescription('');
+    showToast(`Added campus office "${newDept.name}" (${newDept.abbreviation}) successfully!`);
+  };
+
+  const handleDeleteOffice = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to remove the campus office "${name}"?`)) {
+      const updated = deleteDepartmentById(id);
+      setDepartmentsList(updated);
+      showToast(`Office "${name}" removed.`);
     }
   };
 
@@ -947,6 +1062,30 @@ export default function AdminDashboardPage() {
             </button>
 
             <button
+              onClick={() => setActiveTab('categories')}
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'categories'
+                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+              }`}
+            >
+              <Folder size={16} />
+              <span>Categories ({categoriesList.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('offices')}
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'offices'
+                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+              }`}
+            >
+              <Buildings size={16} />
+              <span>Offices ({departmentsList.length})</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('news')}
               className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeTab === 'news'
@@ -1247,6 +1386,156 @@ export default function AdminDashboardPage() {
                     No {submissionFilter === 'all' ? '' : submissionFilter} submissions found.
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: CATEGORIES MANAGEMENT */}
+          {activeTab === 'categories' && (
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                    Document Categories ({categoriesList.length})
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-muted)]">
+                    Manage taxonomy categories (e.g. DOST, Financial Forms, Clearance, Academic Guidelines).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddCategoryOpen(true)}
+                  className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] transition-all cursor-pointer"
+                >
+                  <Plus size={16} weight="bold" />
+                  <span>Create New Category</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categoriesList.map((cat) => {
+                  const docCount = resourcesList.filter((r) => r.category_id === cat.id).length;
+                  return (
+                    <div
+                      key={cat.id}
+                      className="flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[var(--color-primary-subtle)] text-[var(--color-primary)]">
+                              <Folder size={18} weight="bold" />
+                            </div>
+                            <span className="font-mono text-xs font-bold text-[var(--color-primary)]">
+                              {cat.slug}
+                            </span>
+                          </div>
+                          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink)]">
+                            {docCount} {docCount === 1 ? 'Doc' : 'Docs'}
+                          </span>
+                        </div>
+
+                        <h3 className="mt-3 text-base font-bold text-[var(--color-ink)]">{cat.name}</h3>
+                        <p className="mt-1 text-xs text-[var(--color-ink-muted)] line-clamp-2">
+                          {cat.description || 'General administrative document category.'}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-[var(--color-rule-subtle)] flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">Sort Order: #{cat.sort_order}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                          className="flex items-center gap-1 font-semibold text-rose-600 hover:underline cursor-pointer"
+                        >
+                          <Trash size={14} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: CAMPUS OFFICES & PARTNER AGENCIES */}
+          {activeTab === 'offices' && (
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                    Campus Offices & Partner Agencies ({departmentsList.length})
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-muted)]">
+                    Configure issuing departments, colleges, and external agencies (e.g. DOST, CHED, Registrar).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddOfficeOpen(true)}
+                  className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] transition-all cursor-pointer"
+                >
+                  <Plus size={16} weight="bold" />
+                  <span>Add Campus Office / Agency</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {departmentsList.map((dept) => {
+                  const docCount = resourcesList.filter((r) => r.department_id === dept.id).length;
+                  return (
+                    <div
+                      key={dept.id}
+                      className="flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold text-xs">
+                              {dept.abbreviation.slice(0, 3)}
+                            </div>
+                            <span className="font-mono text-xs font-bold text-[var(--color-ink)]">
+                              {dept.abbreviation}
+                            </span>
+                          </div>
+                          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink)]">
+                            {docCount} {docCount === 1 ? 'Doc' : 'Docs'}
+                          </span>
+                        </div>
+
+                        <h3 className="mt-3 text-sm font-bold text-[var(--color-ink)]">{dept.name}</h3>
+                        <p className="mt-1 text-xs text-[var(--color-ink-muted)] line-clamp-2">
+                          {dept.description || `Official administrative office and issuing department.`}
+                        </p>
+
+                        {dept.website_url && (
+                          <a
+                            href={dept.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-[var(--color-primary)] hover:underline"
+                          >
+                            <span>Visit Portal</span>
+                            <ArrowSquareOut size={11} />
+                          </a>
+                        )}
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-[var(--color-rule-subtle)] flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">Slug: {dept.slug}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOffice(dept.id, dept.name)}
+                          className="flex items-center gap-1 font-semibold text-rose-600 hover:underline cursor-pointer"
+                        >
+                          <Trash size={14} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1706,11 +1995,16 @@ export default function AdminDashboardPage() {
         </div>
       </main>
 
-      {/* Add Resource Modal */}
+      {/* Publish New Resource Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-xl rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xl">
-            <h2 className="text-lg font-bold text-[var(--color-ink)]">Publish New Resource</h2>
+          <div className="w-full max-w-xl rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+              <h2 className="text-lg font-bold text-[var(--color-ink)]">Publish Directory Document</h2>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+                <X size={18} />
+              </button>
+            </div>
             <form onSubmit={handleAddResource} className="mt-4 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[var(--color-ink)]">Document Title *</label>
@@ -1735,7 +2029,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[var(--color-ink)]">Category</label>
                   <select
@@ -1743,7 +2037,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setNewCategory(e.target.value)}
                     className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden"
                   >
-                    {mockCategories.map((c) => (
+                    {categoriesList.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
@@ -1752,17 +2046,49 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Issuing Office / Agency</label>
+                  <select
+                    value={newDepartment}
+                    onChange={(e) => setNewDepartment(e.target.value)}
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden"
+                  >
+                    {departmentsList.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} ({d.abbreviation})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block text-xs font-bold text-[var(--color-ink)]">Format</label>
                   <select
                     value={newFormat}
                     onChange={(e) => setNewFormat(e.target.value)}
                     className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden"
                   >
-                    <option value="PDF">PDF</option>
-                    <option value="DOCX">Word (DOCX)</option>
-                    <option value="XLSX">Excel (XLSX)</option>
-                    <option value="PPTX">PowerPoint (PPTX)</option>
+                    <option value="PDF">PDF (.pdf)</option>
+                    <option value="DOCX">Word Document (.docx)</option>
+                    <option value="DOC">Word 97-2003 (.doc)</option>
+                    <option value="XLSX">Excel (.xlsx)</option>
+                    <option value="XLS">Excel 97-2003 (.xls)</option>
+                    <option value="PPTX">PowerPoint (.pptx)</option>
+                    <option value="CSV">CSV (.csv)</option>
+                    <option value="ZIP">ZIP (.zip)</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Version Label</label>
+                  <input
+                    type="text"
+                    value={newVersion}
+                    onChange={(e) => setNewVersion(e.target.value)}
+                    placeholder="2026.1"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-mono outline-hidden"
+                  />
                 </div>
               </div>
 
@@ -1779,6 +2105,177 @@ export default function AdminDashboardPage() {
                   className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-xs cursor-pointer"
                 >
                   Publish Resource
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Category Modal */}
+      {isAddCategoryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+              <div className="flex items-center gap-2">
+                <Folder size={20} className="text-[var(--color-primary)]" />
+                <h2 className="text-lg font-bold text-[var(--color-ink)]">Create New Document Category</h2>
+              </div>
+              <button onClick={() => setIsAddCategoryOpen(false)} className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateCategory} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={catName}
+                  onChange={(e) => {
+                    setCatName(e.target.value);
+                    if (!catSlug) {
+                      setCatSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
+                    }
+                  }}
+                  placeholder="e.g. DOST Grants & Compliance"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Category Slug (URL identifier)</label>
+                <input
+                  type="text"
+                  value={catSlug}
+                  onChange={(e) => setCatSlug(e.target.value)}
+                  placeholder="e.g. dost-grants"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-mono outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Description / Scope</label>
+                <textarea
+                  rows={3}
+                  value={catDescription}
+                  onChange={(e) => setCatDescription(e.target.value)}
+                  placeholder="Brief description of documents falling under this category..."
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCategoryOpen(false)}
+                  className="rounded-full px-4 py-2 text-xs font-bold text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-xs cursor-pointer"
+                >
+                  Create Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Campus Office / Partner Agency Modal */}
+      {isAddOfficeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+              <div className="flex items-center gap-2">
+                <Buildings size={20} className="text-[var(--color-primary)]" />
+                <h2 className="text-lg font-bold text-[var(--color-ink)]">Add Campus Office or Agency</h2>
+              </div>
+              <button onClick={() => setIsAddOfficeOpen(false)} className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateOffice} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Office / Agency Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={officeName}
+                  onChange={(e) => setOfficeName(e.target.value)}
+                  placeholder="e.g. Department of Science and Technology - Regional Office"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Abbreviation / Acronym *</label>
+                  <input
+                    type="text"
+                    required
+                    value={officeAbbreviation}
+                    onChange={(e) => {
+                      setOfficeAbbreviation(e.target.value);
+                      if (!officeSlug) {
+                        setOfficeSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                      }
+                    }}
+                    placeholder="e.g. DOST"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-bold outline-hidden focus:border-[var(--color-primary)] uppercase"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Slug (URL tag)</label>
+                  <input
+                    type="text"
+                    value={officeSlug}
+                    onChange={(e) => setOfficeSlug(e.target.value)}
+                    placeholder="e.g. dost"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-mono outline-hidden focus:border-[var(--color-primary)]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Official Website / Portal URL</label>
+                <input
+                  type="url"
+                  value={officeWebsite}
+                  onChange={(e) => setOfficeWebsite(e.target.value)}
+                  placeholder="https://dost.gov.ph"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-mono outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Description</label>
+                <textarea
+                  rows={2}
+                  value={officeDescription}
+                  onChange={(e) => setOfficeDescription(e.target.value)}
+                  placeholder="Mandate and document issuance role..."
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setIsAddOfficeOpen(false)}
+                  className="rounded-full px-4 py-2 text-xs font-bold text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-xs cursor-pointer"
+                >
+                  Add Office / Agency
                 </button>
               </div>
             </form>

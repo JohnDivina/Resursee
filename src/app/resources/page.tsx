@@ -17,10 +17,12 @@ import {
   CheckCircle,
   CaretUp,
 } from '@phosphor-icons/react';
-import { mockResources, mockCategories, mockDepartments } from '@/lib/mockData';
-import { Resource } from '@/types/database';
+import { mockResources } from '@/lib/mockData';
+import { Resource, Category, Department } from '@/types/database';
 import { useRealtimeDownloadCount } from '@/lib/downloadStore';
 import { getLiveResources } from '@/lib/resourceStore';
+import { getLiveCategories } from '@/lib/categoryStore';
+import { getLiveDepartments } from '@/lib/departmentStore';
 
 function ListRowItem({ resource }: { resource: Resource }) {
   const realtimeDownloads = useRealtimeDownloadCount(resource.id, resource.download_count);
@@ -80,16 +82,33 @@ export default function ResourcesDirectoryPage() {
   const [sortBy, setSortBy] = useState<'downloads' | 'recent' | 'alphabetical'>('downloads');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [liveResources, setLiveResources] = useState<Resource[]>(mockResources);
+  const [liveResources, setLiveResources] = useState<Resource[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
+
+  const refreshLiveStores = () => {
+    setLiveResources(getLiveResources());
+    setCategoriesList(getLiveCategories());
+    setDepartmentsList(getLiveDepartments());
+  };
 
   useEffect(() => {
-    setLiveResources(getLiveResources());
-    const handleUpdate = () => setLiveResources(getLiveResources());
-    window.addEventListener('resursee_catalog_updated', handleUpdate);
-    window.addEventListener('storage', handleUpdate);
+    refreshLiveStores();
+
+    const handleCatalogUpdate = () => setLiveResources(getLiveResources());
+    const handleCategoryUpdate = () => setCategoriesList(getLiveCategories());
+    const handleDeptUpdate = () => setDepartmentsList(getLiveDepartments());
+
+    window.addEventListener('resursee_catalog_updated', handleCatalogUpdate);
+    window.addEventListener('resursee_categories_updated', handleCategoryUpdate);
+    window.addEventListener('resursee_departments_updated', handleDeptUpdate);
+    window.addEventListener('storage', refreshLiveStores);
+
     return () => {
-      window.removeEventListener('resursee_catalog_updated', handleUpdate);
-      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
+      window.removeEventListener('resursee_categories_updated', handleCategoryUpdate);
+      window.removeEventListener('resursee_departments_updated', handleDeptUpdate);
+      window.removeEventListener('storage', refreshLiveStores);
     };
   }, []);
 
@@ -250,7 +269,7 @@ export default function ResourcesDirectoryPage() {
                       </span>
                     </button>
 
-                    {mockCategories.map((cat) => {
+                    {categoriesList.map((cat) => {
                       const count = liveResources.filter((r) => r.category_id === cat.id).length;
                       return (
                         <button
@@ -283,8 +302,8 @@ export default function ResourcesDirectoryPage() {
                       onChange={(e) => setSelectedDepartment(e.target.value)}
                       className="w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
-                      <option value="all">All Departments ({mockDepartments.length})</option>
-                      {mockDepartments.map((d) => (
+                      <option value="all">All Offices ({departmentsList.length})</option>
+                      {departmentsList.map((d) => (
                         <option key={d.id} value={d.id}>
                           {d.abbreviation} - {d.name}
                         </option>

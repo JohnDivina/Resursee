@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getLiveResources } from './resourceStore';
 import { mockResources } from './mockData';
 
 const DOWNLOAD_STORAGE_KEY = 'resursee-downloads-map';
@@ -17,11 +18,12 @@ export function getStoredDownloads(): Record<string, number> {
   }
 }
 
-// Calculate the total real-time downloads across the entire catalog
+// Calculate the total real-time downloads across the entire live catalog
 export function calculateTotalDownloads(): number {
   const map = getStoredDownloads();
-  return mockResources.reduce((acc, res) => {
-    const count = map[res.id] !== undefined ? map[res.id] : res.download_count;
+  const resources = typeof window !== 'undefined' ? getLiveResources() : mockResources;
+  return resources.reduce((acc, res) => {
+    const count = map[res.id] !== undefined ? map[res.id] : (res.download_count || 0);
     return acc + count;
   }, 0);
 }
@@ -112,10 +114,12 @@ export function useRealtimeTotalDownloads(): number {
     };
 
     window.addEventListener(DOWNLOAD_EVENT_NAME, handleUpdate);
+    window.addEventListener('resursee_catalog_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
     return () => {
       window.removeEventListener(DOWNLOAD_EVENT_NAME, handleUpdate);
+      window.removeEventListener('resursee_catalog_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
