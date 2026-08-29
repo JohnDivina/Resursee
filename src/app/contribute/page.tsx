@@ -120,6 +120,35 @@ export default function ContributePage() {
 
     setIsSubmitting(true);
 
+    let fileDataUrl: string | undefined = undefined;
+    let serverFilePath: string | undefined = undefined;
+
+    if (selectedFile) {
+      try {
+        fileDataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(selectedFile);
+        });
+
+        const uploadForm = new FormData();
+        uploadForm.append('file', selectedFile);
+        const uploadRes = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: uploadForm,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          if (uploadData.filePath) {
+            serverFilePath = uploadData.filePath;
+          }
+        }
+      } catch {
+        // continue
+      }
+    }
+
     const generatedId = `SUB-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newSub: ResourceSubmission = {
@@ -129,10 +158,11 @@ export default function ContributePage() {
       category_id: categoryId,
       department_id: departmentId,
       document_type: docType,
-      file_name: fileName || `${title.toLowerCase().replace(/\s+/g, '-')}.${fileFormat.toLowerCase()}`,
+      file_name: fileName || (selectedFile ? selectedFile.name : `${title.toLowerCase().replace(/\s+/g, '-')}.${fileFormat.toLowerCase()}`),
       file_format: fileFormat,
       file_size: selectedFile ? selectedFile.size : 350000,
-      file_path: selectedFile ? `/documents/${selectedFile.name}` : undefined,
+      file_path: serverFilePath || (selectedFile ? `/documents/${selectedFile.name}` : undefined),
+      file_data: fileDataUrl || undefined,
       version_label: versionLabel,
       source_name: sourceName || null,
       source_url: sourceUrl || null,
@@ -156,7 +186,7 @@ export default function ContributePage() {
       await fetch('/api/submissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSub),
+        body: JSON.stringify({ action: 'create', ...newSub }),
       });
     } catch {
       // ignore

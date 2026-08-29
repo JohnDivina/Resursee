@@ -26,6 +26,7 @@ import { mockResources } from '@/lib/mockData';
 import { Resource } from '@/types/database';
 import { getLiveResources } from '@/lib/resourceStore';
 import { useRealtimeDownloadCount, recordDownload } from '@/lib/downloadStore';
+import { downloadResourceFile } from '@/lib/documentDownloader';
 
 export default function ResourceDetailPage() {
   const params = useParams();
@@ -86,30 +87,22 @@ export default function ResourceDetailPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     setDownloading(true);
-    setTimeout(() => {
-      // Record real-time persistent download increment
-      recordDownload(activeResource.id, activeResource.download_count);
+    // Record real-time persistent download increment
+    recordDownload(activeResource.id, activeResource.download_count);
 
-      // Trigger browser file download
-      try {
-        const link = document.createElement('a');
-        link.href = activeResource.file_path || `/documents/${activeResource.file_name}`;
-        link.download = activeResource.file_name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch {
-        // ignore
-      }
+    try {
+      await downloadResourceFile(activeResource);
+    } catch {
+      // ignore
+    }
 
-      setDownloading(false);
-      setDownloaded(true);
-      setToastMessage(`Downloaded "${activeResource.title}" (${activeResource.file_format})`);
-      setTimeout(() => setDownloaded(false), 3000);
-      setTimeout(() => setToastMessage(null), 3500);
-    }, 400);
+    setDownloading(false);
+    setDownloaded(true);
+    setToastMessage(`Downloaded "${activeResource.title}" (${activeResource.file_format})`);
+    setTimeout(() => setDownloaded(false), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   return (

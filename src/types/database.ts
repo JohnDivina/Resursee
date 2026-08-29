@@ -74,6 +74,7 @@ export interface Resource {
   file_name: string;
   file_format: string; // e.g. "PDF", "DOCX", "XLSX"
   file_size: number; // in bytes
+  file_data?: string | null;
   current_version: string;
   status: ResourceStatus;
   source_name: string | null;
@@ -128,6 +129,7 @@ export interface ResourceSubmission {
   file_format: string;
   file_size: number;
   file_path?: string;
+  file_data?: string | null;
   version_label: string;
   source_name: string | null;
   source_url: string | null;

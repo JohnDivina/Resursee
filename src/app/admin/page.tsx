@@ -480,6 +480,7 @@ export default function AdminDashboardPage() {
         file_name: submission.file_name,
         file_format: submission.file_format,
         file_size: submission.file_size,
+        file_data: submission.file_data,
         current_version: submission.version_label,
         status: 'active',
         source_name: submission.source_name,
