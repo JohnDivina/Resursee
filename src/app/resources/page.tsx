@@ -86,7 +86,11 @@ export default function ResourcesDirectoryPage() {
     setLiveResources(getLiveResources());
     const handleUpdate = () => setLiveResources(getLiveResources());
     window.addEventListener('resursee_catalog_updated', handleUpdate);
-    return () => window.removeEventListener('resursee_catalog_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('resursee_catalog_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   // Filtered and Sorted Resources
@@ -131,7 +135,7 @@ export default function ResourcesDirectoryPage() {
           return a.title.localeCompare(b.title);
         }
       });
-  }, [searchQuery, selectedCategory, selectedDepartment, selectedFormat, sortBy]);
+  }, [liveResources, searchQuery, selectedCategory, selectedDepartment, selectedFormat, sortBy]);
 
   const clearAllFilters = () => {
     setSearchQuery('');

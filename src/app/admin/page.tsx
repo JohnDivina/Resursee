@@ -46,6 +46,10 @@ import {
   deleteResourceById,
   addCustomResource,
 } from '@/lib/resourceStore';
+import {
+  getLiveSubmissions,
+  updateSubmissionStatus,
+} from '@/lib/submissionStore';
 
 interface AdminUserSession {
   email: string;
@@ -88,7 +92,7 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'resources' | 'submissions' | 'news' | 'staff' | 'logs' | 'settings'>('resources');
   const [resourcesList, setResourcesList] = useState<Resource[]>([]);
   const [newsList, setNewsList] = useState<NewsArticle[]>(mockNewsArticles);
-  const [submissionsList, setSubmissionsList] = useState<ResourceSubmission[]>(mockSubmissions);
+  const [submissionsList, setSubmissionsList] = useState<ResourceSubmission[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -113,18 +117,49 @@ export default function AdminDashboardPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Load persistent live resources
+  // Load persistent live resources & submissions
   const refreshResources = () => {
     setResourcesList(getLiveResources());
   };
 
+  const refreshSubmissions = async () => {
+    const live = getLiveSubmissions();
+    setSubmissionsList(live);
+    try {
+      const res = await fetch(`/api/submissions?t=${Date.now()}`);
+      const data = await res.json();
+      if (data.submissions && data.submissions.length > 0) {
+        // Merge with local live
+        const map = new Map<string, ResourceSubmission>();
+        [...data.submissions, ...live].forEach((s: ResourceSubmission) => {
+          if (!map.has(s.id)) map.set(s.id, s);
+        });
+        setSubmissionsList(Array.from(map.values()));
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     refreshResources();
+    refreshSubmissions();
 
-    // Listen to cross-component updates
+    // Listen to cross-component and cross-tab updates
     const handleCatalogUpdate = () => refreshResources();
+    const handleSubmissionsUpdate = () => refreshSubmissions();
+
     window.addEventListener('resursee_catalog_updated', handleCatalogUpdate);
-    return () => window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
+    window.addEventListener('resursee_submissions_updated', handleSubmissionsUpdate);
+    window.addEventListener('storage', (e) => {
+      handleCatalogUpdate();
+      handleSubmissionsUpdate();
+    });
+
+    return () => {
+      window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
+      window.removeEventListener('resursee_submissions_updated', handleSubmissionsUpdate);
+    };
   }, []);
 
   // Fetch session
@@ -473,20 +508,22 @@ export default function AdminDashboardPage() {
       showToast(`Approved & published "${submission.title}" to the live catalog!`);
     }
 
-    setSubmissionsList(
-      submissionsList.map((s) =>
-        s.id === submission.id
-          ? { ...s, status: 'approved', reviewed_by: adminUser?.name || 'admin', reviewed_at: new Date().toISOString() }
-          : s
-      )
+    const updatedSubmissions = updateSubmissionStatus(
+      submission.id,
+      'approved',
+      adminUser?.name || 'Administrator'
     );
+    setSubmissionsList(updatedSubmissions);
     setSelectedSubmission(null);
   };
 
   const handleRejectSubmission = (id: string) => {
-    setSubmissionsList(
-      submissionsList.map((s) => (s.id === id ? { ...s, status: 'rejected', reviewed_by: adminUser?.name || 'admin' } : s))
+    const updatedSubmissions = updateSubmissionStatus(
+      id,
+      'rejected',
+      adminUser?.name || 'Administrator'
     );
+    setSubmissionsList(updatedSubmissions);
     showToast('Submission rejected.');
     setSelectedSubmission(null);
   };

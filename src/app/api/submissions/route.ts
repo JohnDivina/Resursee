@@ -1,12 +1,47 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { mockSubmissions, mockCategories, mockDepartments } from '@/lib/mockData';
 import { ResourceSubmission } from '@/types/database';
+
+const dataFilePath = path.join(process.cwd(), 'src/data/submissions.json');
+
+function loadSubmissions(): ResourceSubmission[] {
+  try {
+    if (fs.existsSync(dataFilePath)) {
+      const raw = fs.readFileSync(dataFilePath, 'utf-8');
+      const parsed: ResourceSubmission[] = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const map = new Map<string, ResourceSubmission>();
+        [...parsed, ...mockSubmissions].forEach((s) => {
+          if (!map.has(s.id)) map.set(s.id, s);
+        });
+        return Array.from(map.values());
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return mockSubmissions;
+}
+
+function saveSubmissions(list: ResourceSubmission[]) {
+  try {
+    const dir = path.dirname(dataFilePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(dataFilePath, JSON.stringify(list, null, 2), 'utf-8');
+  } catch {
+    // ignore in read-only environment
+  }
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
 
-  let results = [...mockSubmissions];
+  let results = loadSubmissions();
 
   if (status && status !== 'all') {
     results = results.filter((s) => s.status === status);
@@ -28,6 +63,8 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    const currentList = loadSubmissions();
 
     const newSubmission: ResourceSubmission = {
       id: `sub-${Date.now()}`,
@@ -51,7 +88,12 @@ export async function POST(request: Request) {
       submission_notes: body.submission_notes || null,
       status: 'pending',
       created_at: new Date().toISOString(),
+      category: mockCategories.find((c) => c.id === body.category_id),
+      department: mockDepartments.find((d) => d.id === body.department_id),
     };
+
+    const updated = [newSubmission, ...currentList];
+    saveSubmissions(updated);
 
     return NextResponse.json({
       success: true,
