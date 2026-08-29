@@ -8,6 +8,7 @@ import {
   setSoundEnabled,
   getSoundEnabled,
   getAudioContext,
+  unlockAudioEngine,
 } from '@/lib/soundEffects';
 
 interface SoundContextType {
@@ -33,6 +34,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const lastHoveredElementRef = useRef<Element | null>(null);
   const lastPlayTimeRef = useRef<number>(0);
 
+  // Sync initial sound state
   useEffect(() => {
     const initial = getSoundEnabled();
     setSoundEnabledState(initial);
@@ -44,30 +46,29 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       const next = !prev;
       setSoundEnabled(next);
       if (next) {
-        getAudioContext();
-        setTimeout(() => playThock(1, 0.28), 30);
+        unlockAudioEngine();
+        setTimeout(() => playThock(1, 0.32), 20);
       }
       return next;
     });
   }, []);
 
-  // Global hover sound listener + early gesture unlock
+  // Global Interaction Unlock & Hover Audio Handler
   useEffect(() => {
-    // Eagerly unlock AudioContext on ANY early user interaction (moving mouse, scrolling, touching)
-    const earlyUnlockEvents = ['pointermove', 'mousemove', 'wheel', 'scroll', 'touchstart', 'pointerdown', 'keydown'];
-
-    const handleEarlyUnlock = () => {
-      getAudioContext();
+    // 1. Unlock browser audio hardware on first user gesture (pointerdown, click, touch, keydown)
+    const unlockEvents = ['pointerdown', 'mousedown', 'click', 'touchstart', 'keydown'];
+    const handleGestureUnlock = () => {
+      unlockAudioEngine();
     };
 
-    earlyUnlockEvents.forEach((evt) => {
-      window.addEventListener(evt, handleEarlyUnlock, { passive: true, once: true });
+    unlockEvents.forEach((evt) => {
+      window.addEventListener(evt, handleGestureUnlock, { capture: true, passive: true });
     });
 
     if (!soundEnabled) {
       return () => {
-        earlyUnlockEvents.forEach((evt) => {
-          window.removeEventListener(evt, handleEarlyUnlock);
+        unlockEvents.forEach((evt) => {
+          window.removeEventListener(evt, handleGestureUnlock, { capture: true });
         });
       };
     }
@@ -79,43 +80,62 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      // Find closest interactive element
+      // Eagerly wake up AudioContext if it was suspended
+      getAudioContext();
+
+      // Find the closest interactive ancestor
       const interactiveEl = target.closest(interactiveSelector);
 
       if (interactiveEl) {
-        // If we entered a new distinct interactive element
+        // If entering a new distinct interactive target
         if (interactiveEl !== lastHoveredElementRef.current) {
           lastHoveredElementRef.current = interactiveEl;
 
           const now = performance.now();
-          // Rate-limit to max 1 sound per 35ms for silky-smooth rapid swipes
-          if (now - lastPlayTimeRef.current > 35) {
+          // Rate-limit throttle to max 1 thock per 28ms to prevent audio spam on high-DPI mouse sweeps
+          if (now - lastPlayTimeRef.current > 28) {
             lastPlayTimeRef.current = now;
 
-            // Pitch & depth scaling based on element importance
-            const isCard = interactiveEl.matches('[data-thock="card"], .group') || interactiveEl.classList.contains('group');
-            const isPill = interactiveEl.matches('span, kbd, [data-thock="soft"]');
+            // Pitch & depth scaling based on element type
+            const isCard =
+              interactiveEl.matches('[data-thock="card"]') ||
+              interactiveEl.classList.contains('group') ||
+              interactiveEl.tagName === 'ARTICLE';
+
+            const isPill =
+              interactiveEl.matches('[data-thock="soft"]') ||
+              interactiveEl.matches('kbd');
 
             if (isCard) {
-              playDeepThock(0.28);
+              playDeepThock(0.32);
             } else if (isPill) {
-              playSoftClick(0.18);
+              playSoftClick(0.22);
             } else {
-              playThock(1.0, 0.24);
+              playThock(1.0, 0.28);
             }
           }
         }
       } else {
+        // Pointer is on whitespace or non-interactive background
+        lastHoveredElementRef.current = null;
+      }
+    };
+
+    const handlePointerOut = (e: PointerEvent) => {
+      const related = e.relatedTarget as HTMLElement | null;
+      if (!related || !related.closest(interactiveSelector)) {
         lastHoveredElementRef.current = null;
       }
     };
 
     window.addEventListener('pointerover', handlePointerOver, { passive: true });
+    window.addEventListener('pointerout', handlePointerOut, { passive: true });
 
     return () => {
       window.removeEventListener('pointerover', handlePointerOver);
-      earlyUnlockEvents.forEach((evt) => {
-        window.removeEventListener(evt, handleEarlyUnlock);
+      window.removeEventListener('pointerout', handlePointerOut);
+      unlockEvents.forEach((evt) => {
+        window.removeEventListener(evt, handleGestureUnlock, { capture: true });
       });
     };
   }, [soundEnabled]);

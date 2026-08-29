@@ -1,27 +1,24 @@
 'use client';
 
 /**
- * Resursee Studio Web Audio Engine
- * High-fidelity, zero-crack mechanical keyboard "thock" synthesizer.
+ * Resursee Studio Web Audio Engine (Ultra-Reliable High-Fidelity Mechanical Thock)
  *
- * Features:
- * - Master Dynamics Compressor + Soft Limiter (prevents digital clipping & crackling on rapid multi-hovers)
- * - Anti-pop Cosine & Linear Fade Envelopes (zero DC offsets or abrupt oscillator cutoffs)
- * - Single-voice Polyphony Management (smooth voice stealing with 3ms crossfade)
- * - Auto-Unlock on any pointer movement, scroll, or gesture
- * - Natural acoustic micro-pitch variation (±4%)
+ * Robust zero-latency audio engine engineered to overcome browser autoplay policies,
+ * suspension states, and rapid hovering transitions.
  */
 
 let audioCtx: AudioContext | null = null;
-let masterCompressor: DynamicsCompressorNode | null = null;
 let masterGain: GainNode | null = null;
-let dcBlocker: BiquadFilterNode | null = null;
-let noiseBuffer: AudioBuffer | null = null;
+let masterCompressor: DynamicsCompressorNode | null = null;
 let isSoundEnabled = true;
+let isUnlocked = false;
 
-// Active voice gain nodes to smoothly fade out on rapid overlapping hovers
+// Active voice gains for smooth cross-fading
 const activeVoiceGains: GainNode[] = [];
 
+/**
+ * Initialize / retrieve AudioContext with automatic unlock and resume handlers
+ */
 export function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
 
@@ -33,30 +30,24 @@ export function getAudioContext(): AudioContext | null {
     if (AudioContextClass) {
       audioCtx = new AudioContextClass({ latencyHint: 'interactive' });
 
-      // 1. DC Blocker (Highpass at 25Hz to eliminate any sub-bass DC offset clicks)
-      dcBlocker = audioCtx.createBiquadFilter();
-      dcBlocker.type = 'highpass';
-      dcBlocker.frequency.setValueAtTime(25, audioCtx.currentTime);
-
-      // 2. Dynamics Compressor (Soft Limiter to eliminate cracking/distortion on overlapping hovers)
+      // Master dynamics compressor (smooth limiter to prevent clipping)
       masterCompressor = audioCtx.createDynamicsCompressor();
-      masterCompressor.threshold.setValueAtTime(-6, audioCtx.currentTime);
-      masterCompressor.knee.setValueAtTime(8, audioCtx.currentTime);
-      masterCompressor.ratio.setValueAtTime(12, audioCtx.currentTime);
-      masterCompressor.attack.setValueAtTime(0.002, audioCtx.currentTime);
-      masterCompressor.release.setValueAtTime(0.04, audioCtx.currentTime);
+      masterCompressor.threshold.setValueAtTime(-3, audioCtx.currentTime);
+      masterCompressor.knee.setValueAtTime(4, audioCtx.currentTime);
+      masterCompressor.ratio.setValueAtTime(6, audioCtx.currentTime);
+      masterCompressor.attack.setValueAtTime(0.001, audioCtx.currentTime);
+      masterCompressor.release.setValueAtTime(0.025, audioCtx.currentTime);
 
-      // 3. Master Gain
+      // Master output gain
       masterGain = audioCtx.createGain();
-      masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(1.15, audioCtx.currentTime);
 
-      // Chain: Voice -> DC Blocker -> Compressor -> Master Gain -> Destination
-      dcBlocker.connect(masterCompressor);
       masterCompressor.connect(masterGain);
       masterGain.connect(audioCtx.destination);
     }
   }
 
+  // Always attempt to resume if suspended
   if (audioCtx && audioCtx.state === 'suspended') {
     audioCtx.resume().catch(() => {});
   }
@@ -64,23 +55,33 @@ export function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
-// Generate smoothed noise buffer for tactile keycap collision (no harsh transients)
-function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
-  if (noiseBuffer) return noiseBuffer;
+/**
+ * Warm up and unlock browser audio hardware permanently on first interaction
+ */
+export function unlockAudioEngine() {
+  if (isUnlocked && audioCtx && audioCtx.state === 'running') return;
 
-  const length = Math.floor(ctx.sampleRate * 0.006); // 6ms
-  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
+  const ctx = getAudioContext();
+  if (!ctx) return;
 
-  for (let i = 0; i < length; i++) {
-    const progress = i / length;
-    // Windowed decay curve (Hanning window shape) to prevent boundary clicks
-    const windowFactor = Math.sin(Math.PI * progress);
-    data[i] = (Math.random() * 2 - 1) * windowFactor * Math.exp(-progress * 3);
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      isUnlocked = true;
+    }).catch(() => {});
+  } else if (ctx.state === 'running') {
+    isUnlocked = true;
   }
 
-  noiseBuffer = buffer;
-  return buffer;
+  // Play an inaudible 1-sample buffer to force the browser audio pipeline to spin up
+  try {
+    const silentBuffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = silentBuffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch {
+    // ignore
+  }
 }
 
 export function setSoundEnabled(enabled: boolean) {
@@ -98,136 +99,155 @@ export function getSoundEnabled(): boolean {
 }
 
 /**
- * Play a rich, punchy, tactile mechanical keyboard "Thock"
- * @param pitchMultiplier - pitch modifier (0.85 = deep thock, 1.2 = light tick)
- * @param volume - audible loudness (0.22 - 0.32 is loud & punchy)
+ * Synthesizes a punchy, tactile mechanical keyboard "thock"
+ * @param pitchMultiplier - pitch scaling factor (0.8 = deep thock, 1.2 = light switch click)
+ * @param volume - audible loudness (0.2 - 0.4)
  */
-export function playThock(pitchMultiplier = 1, volume = 0.26) {
+export function playThock(pitchMultiplier = 1.0, volume = 0.32) {
   if (!isSoundEnabled) return;
 
   try {
     const ctx = getAudioContext();
-    if (!ctx || !dcBlocker) return;
+    if (!ctx || !masterCompressor) return;
 
+    // If suspended, resume and play immediately upon resolution
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+      ctx.resume().then(() => {
+        executeThockSynthesis(ctx, pitchMultiplier, volume);
+      }).catch(() => {});
+      return;
     }
 
+    executeThockSynthesis(ctx, pitchMultiplier, volume);
+  } catch {
+    // Fail silently without blocking UI
+  }
+}
+
+function executeThockSynthesis(ctx: AudioContext, pitchMultiplier: number, volume: number) {
+  try {
     const now = ctx.currentTime;
 
-    // Smoothly fade out previous voice to prevent voice stacking and audio pops
+    // Smoothly fade out previous voice to prevent voice stacking and digital distortion
     while (activeVoiceGains.length > 0) {
       const prevGain = activeVoiceGains.pop();
       if (prevGain) {
         try {
           prevGain.gain.cancelScheduledValues(now);
           prevGain.gain.setValueAtTime(prevGain.gain.value, now);
-          prevGain.gain.linearRampToValueAtTime(0.00001, now + 0.004);
+          prevGain.gain.linearRampToValueAtTime(0.0001, now + 0.003);
         } catch {
           // ignore
         }
       }
     }
 
-    // Voice Master Gain Node
+    // Voice Gain Node
     const voiceGain = ctx.createGain();
     voiceGain.gain.setValueAtTime(1.0, now);
-    voiceGain.connect(dcBlocker);
+    voiceGain.connect(masterCompressor!);
     activeVoiceGains.push(voiceGain);
 
-    // Clean up voice after duration
     setTimeout(() => {
       const idx = activeVoiceGains.indexOf(voiceGain);
       if (idx !== -1) activeVoiceGains.splice(idx, 1);
-    }, 70);
+    }, 60);
 
-    // Organic micro-pitch variation (±4%)
-    const randomPitch = 1 + (Math.random() * 0.08 - 0.04);
+    // Natural micro-pitch variation (±3%)
+    const randomPitch = 1 + (Math.random() * 0.06 - 0.03);
     const scale = pitchMultiplier * randomPitch;
 
-    // --- 1. Deep Mechanical Bottom-Out Thump (Triangle + Lowpass) ---
+    // --- 1. Deep Mechanical Bottom-Out Thump (Triangle wave) ---
     const osc = ctx.createOscillator();
     const oscGain = ctx.createGain();
     const oscFilter = ctx.createBiquadFilter();
 
     osc.type = 'triangle';
-    const startFreq = 230 * scale;
-    const endFreq = 70 * scale;
+    const startFreq = 260 * scale;
+    const endFreq = 65 * scale;
 
     osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + 0.038);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + 0.036);
 
     oscFilter.type = 'lowpass';
-    oscFilter.frequency.setValueAtTime(550, now);
-    oscFilter.Q.setValueAtTime(1.8, now);
+    oscFilter.frequency.setValueAtTime(650, now);
+    oscFilter.Q.setValueAtTime(2.0, now);
 
-    // Smooth envelope: instant attack -> natural exponential decay -> zero
-    oscGain.gain.setValueAtTime(0.00001, now);
-    oscGain.gain.linearRampToValueAtTime(volume * 1.1, now + 0.002);
-    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.042);
-    oscGain.gain.linearRampToValueAtTime(0, now + 0.045);
+    oscGain.gain.setValueAtTime(0.0001, now);
+    oscGain.gain.linearRampToValueAtTime(volume * 1.25, now + 0.002);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+    oscGain.gain.linearRampToValueAtTime(0, now + 0.043);
 
     osc.connect(oscFilter);
     oscFilter.connect(oscGain);
     oscGain.connect(voiceGain);
 
     osc.start(now);
-    osc.stop(now + 0.048);
+    osc.stop(now + 0.045);
 
-    // --- 2. Keycap Stem Tactile Click (Filtered noise tap) ---
+    // --- 2. Keycap Stem Click (Noise transient tap) ---
+    const noiseLength = Math.floor(ctx.sampleRate * 0.005); // 5ms
+    const noiseBuf = ctx.createBuffer(1, noiseLength, ctx.sampleRate);
+    const noiseData = noiseBuf.getChannelData(0);
+
+    for (let i = 0; i < noiseLength; i++) {
+      const progress = i / noiseLength;
+      noiseData[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * progress) * (1 - progress);
+    }
+
     const noise = ctx.createBufferSource();
-    noise.buffer = getNoiseBuffer(ctx);
+    noise.buffer = noiseBuf;
 
     const noiseFilter = ctx.createBiquadFilter();
     noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.setValueAtTime(1100 * scale, now);
-    noiseFilter.Q.setValueAtTime(2.5, now);
+    noiseFilter.frequency.setValueAtTime(1300 * scale, now);
+    noiseFilter.Q.setValueAtTime(3.0, now);
 
     const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(volume * 0.55, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
-    noiseGain.gain.linearRampToValueAtTime(0, now + 0.015);
+    noiseGain.gain.setValueAtTime(volume * 0.65, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.01);
+    noiseGain.gain.linearRampToValueAtTime(0, now + 0.012);
 
     noise.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
     noiseGain.connect(voiceGain);
 
     noise.start(now);
-    noise.stop(now + 0.018);
+    noise.stop(now + 0.015);
 
-    // --- 3. Deep Sub-Acoustic Body (Sine) ---
+    // --- 3. Sub-Acoustic Body Resonance (Sine wave) ---
     const subOsc = ctx.createOscillator();
     const subGain = ctx.createGain();
 
     subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(115 * scale, now);
-    subOsc.frequency.exponentialRampToValueAtTime(50 * scale, now + 0.035);
+    subOsc.frequency.setValueAtTime(125 * scale, now);
+    subOsc.frequency.exponentialRampToValueAtTime(45 * scale, now + 0.032);
 
-    subGain.gain.setValueAtTime(0.00001, now);
-    subGain.gain.linearRampToValueAtTime(volume * 0.85, now + 0.002);
-    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
-    subGain.gain.linearRampToValueAtTime(0, now + 0.042);
+    subGain.gain.setValueAtTime(0.0001, now);
+    subGain.gain.linearRampToValueAtTime(volume * 0.95, now + 0.002);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+    subGain.gain.linearRampToValueAtTime(0, now + 0.038);
 
     subOsc.connect(subGain);
     subGain.connect(voiceGain);
 
     subOsc.start(now);
-    subOsc.stop(now + 0.045);
+    subOsc.stop(now + 0.04);
   } catch {
-    // Fail silently
+    // Ignore audio rendering errors
   }
 }
 
 /**
- * Soft tick for smaller tags and pill items
+ * Soft tick for smaller tags, links, and pill items
  */
-export function playSoftClick(volume = 0.18) {
-  playThock(1.3, volume);
+export function playSoftClick(volume = 0.22) {
+  playThock(1.28, volume);
 }
 
 /**
- * Deep, heavy mechanical thock for large cards, modals, and search inputs
+ * Deep, heavy mechanical thock for large cards, buttons, and search inputs
  */
-export function playDeepThock(volume = 0.28) {
-  playThock(0.88, volume);
+export function playDeepThock(volume = 0.35) {
+  playThock(0.85, volume);
 }
