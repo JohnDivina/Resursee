@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getApprovedModerators, addPendingRequest } from '@/app/api/admin/staff/route';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const adminEmailsRaw = process.env.ADMIN_EMAILS || '';
+  const adminEmailsRaw = process.env.ADMIN_EMAILS || process.env.MASTER_ADMIN_EMAILS || '';
 
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(new URL('/admin?error=missing_credentials', origin));
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/admin?error=token_exchange_failed', origin));
     }
 
-    // 2. Fetch User Profile
+    // 2. Fetch Google User Profile
     const userinfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
@@ -49,30 +50,50 @@ export async function GET(request: Request) {
     const profile = await userinfoResponse.json();
     const userEmail = (profile.email || '').toLowerCase().trim();
 
-    // 3. Validate against Admin Whitelist
-    const adminEmails = adminEmailsRaw
+    // 3. Determine Role
+    const masterAdminEmails = adminEmailsRaw
       .split(',')
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
-    // If ADMIN_EMAILS is configured, enforce strict whitelist.
-    // If not configured yet, allow the verified Google user who set up the credentials.
-    if (adminEmails.length > 0 && !adminEmails.includes(userEmail)) {
-      return NextResponse.redirect(new URL(`/admin?error=unauthorized_email&email=${encodeURIComponent(userEmail)}`, origin));
+    let role: 'master_admin' | 'moderator' | 'pending' = 'pending';
+
+    const isMasterAdmin = masterAdminEmails.length > 0 && masterAdminEmails.includes(userEmail);
+    const approvedList = getApprovedModerators();
+    const isApprovedModerator = approvedList.some((m) => m.email.toLowerCase() === userEmail);
+
+    if (isMasterAdmin) {
+      role = 'master_admin';
+    } else if (isApprovedModerator) {
+      role = 'moderator';
+    } else {
+      role = 'pending';
+      // Record access request in pending queue
+      addPendingRequest({
+        email: userEmail,
+        name: profile.name || userEmail,
+        picture: profile.picture || null,
+      });
     }
 
-    // 4. Create Session Data
+    // 4. Create Session Object
     const sessionData = {
       email: userEmail,
       name: profile.name || 'Administrator',
       picture: profile.picture || null,
-      authenticated: true,
+      role,
+      authenticated: role !== 'pending',
       timestamp: Date.now(),
     };
 
-    const response = NextResponse.redirect(new URL('/admin?auth=google_success', origin));
+    const redirectTarget =
+      role === 'pending'
+        ? `/admin?auth=pending_approval&email=${encodeURIComponent(userEmail)}&name=${encodeURIComponent(profile.name || '')}`
+        : '/admin?auth=google_success';
 
-    // Set secure HTTP-only cookie
+    const response = NextResponse.redirect(new URL(redirectTarget, origin));
+
+    // Set secure HTTP-only session cookie
     response.cookies.set('resursee_admin_token', Buffer.from(JSON.stringify(sessionData)).toString('base64'), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
