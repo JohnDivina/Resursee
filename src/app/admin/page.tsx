@@ -34,6 +34,7 @@ import {
   BellRinging,
   ArrowSquareOut,
   Folder,
+  PencilSimple,
 } from '@phosphor-icons/react';
 import {
   mockNewsArticles,
@@ -51,11 +52,13 @@ import {
   getLiveCategories,
   addCategory,
   deleteCategoryById,
+  updateCategory,
 } from '@/lib/categoryStore';
 import {
   getLiveDepartments,
   addDepartment,
   deleteDepartmentById,
+  updateDepartment,
 } from '@/lib/departmentStore';
 import {
   getLiveSubmissions,
@@ -132,19 +135,32 @@ export default function AdminDashboardPage() {
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newIsFeatured, setNewIsFeatured] = useState(false);
 
-  // Category Creation Modal State
+  // Category Creation & Editing Modal State
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [catName, setCatName] = useState('');
   const [catDescription, setCatDescription] = useState('');
   const [catSlug, setCatSlug] = useState('');
 
-  // Office Creation Modal State
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editCatName, setEditCatName] = useState('');
+  const [editCatSlug, setEditCatSlug] = useState('');
+  const [editCatDescription, setEditCatDescription] = useState('');
+  const [editCatSortOrder, setEditCatSortOrder] = useState(1);
+
+  // Office Creation & Editing Modal State
   const [isAddOfficeOpen, setIsAddOfficeOpen] = useState(false);
   const [officeName, setOfficeName] = useState('');
   const [officeAbbreviation, setOfficeAbbreviation] = useState('');
   const [officeSlug, setOfficeSlug] = useState('');
   const [officeWebsite, setOfficeWebsite] = useState('');
   const [officeDescription, setOfficeDescription] = useState('');
+
+  const [editingOffice, setEditingOffice] = useState<Department | null>(null);
+  const [editOfficeName, setEditOfficeName] = useState('');
+  const [editOfficeAbbreviation, setEditOfficeAbbreviation] = useState('');
+  const [editOfficeSlug, setEditOfficeSlug] = useState('');
+  const [editOfficeWebsite, setEditOfficeWebsite] = useState('');
+  const [editOfficeDescription, setEditOfficeDescription] = useState('');
 
   const isMasterAdmin = adminUser?.role === 'master_admin' || (!adminUser && isAuthenticated);
   const isModerator = adminUser?.role === 'moderator';
@@ -412,12 +428,16 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     setSettingsFeedback(null);
 
+    const isGoogleMaster = isMasterAdmin;
     const customPasskey = typeof window !== 'undefined' ? localStorage.getItem('resursee_custom_passkey') : null;
     const currentValidKeys = [customPasskey, 'resursee2026', 'resursee_admin_2026', 'admin123', 'resursee'].filter(Boolean) as string[];
 
-    if (!currentValidKeys.includes(currentPasskeyInput.trim())) {
-      setSettingsFeedback({ type: 'error', message: 'Current administrator passkey is incorrect.' });
-      return;
+    // If not authenticated via Google Master session, verify current passkey
+    if (!isGoogleMaster && customPasskey) {
+      if (!currentValidKeys.includes(currentPasskeyInput.trim())) {
+        setSettingsFeedback({ type: 'error', message: 'Current administrator passkey is incorrect.' });
+        return;
+      }
     }
 
     if (newPasskeyInput.trim().length < 6) {
@@ -438,7 +458,7 @@ export default function AdminDashboardPage() {
     setCurrentPasskeyInput('');
     setNewPasskeyInput('');
     setConfirmPasskeyInput('');
-    showToast('Administrator passkey changed successfully.');
+    showToast('Administrator passkey saved successfully.');
   };
 
   // Metrics
@@ -695,6 +715,54 @@ export default function AdminDashboardPage() {
       setDepartmentsList(updated);
       showToast(`Office "${name}" removed.`);
     }
+  };
+
+  const openEditCategory = (cat: Category) => {
+    setEditingCategory(cat);
+    setEditCatName(cat.name);
+    setEditCatSlug(cat.slug);
+    setEditCatDescription(cat.description || '');
+    setEditCatSortOrder(cat.sort_order || 1);
+  };
+
+  const handleSaveEditCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory || !editCatName.trim()) return;
+
+    const updated = updateCategory(editingCategory.id, {
+      name: editCatName.trim(),
+      slug: editCatSlug.trim() || editCatName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      description: editCatDescription.trim() || null,
+      sort_order: Number(editCatSortOrder) || 1,
+    });
+    setCategoriesList(updated);
+    setEditingCategory(null);
+    showToast(`Updated category "${editCatName.trim()}" successfully!`);
+  };
+
+  const openEditOffice = (dept: Department) => {
+    setEditingOffice(dept);
+    setEditOfficeName(dept.name);
+    setEditOfficeAbbreviation(dept.abbreviation);
+    setEditOfficeSlug(dept.slug);
+    setEditOfficeWebsite(dept.website_url || '');
+    setEditOfficeDescription(dept.description || '');
+  };
+
+  const handleSaveEditOffice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOffice || !editOfficeName.trim() || !editOfficeAbbreviation.trim()) return;
+
+    const updated = updateDepartment(editingOffice.id, {
+      name: editOfficeName.trim(),
+      abbreviation: editOfficeAbbreviation.trim().toUpperCase(),
+      slug: editOfficeSlug.trim() || editOfficeAbbreviation.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      website_url: editOfficeWebsite.trim() || null,
+      description: editOfficeDescription.trim() || null,
+    });
+    setDepartmentsList(updated);
+    setEditingOffice(null);
+    showToast(`Updated campus office "${editOfficeName.trim()}" successfully!`);
   };
 
   // --- ⌛ INITIAL SESSION VERIFICATION SCREEN (Prevents login screen flash on refresh) ---
@@ -1443,14 +1511,24 @@ export default function AdminDashboardPage() {
 
                       <div className="mt-4 pt-3 border-t border-[var(--color-rule-subtle)] flex items-center justify-between text-xs">
                         <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">Sort Order: #{cat.sort_order}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                          className="flex items-center gap-1 font-semibold text-rose-600 hover:underline cursor-pointer"
-                        >
-                          <Trash size={14} />
-                          <span>Delete</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => openEditCategory(cat)}
+                            className="flex items-center gap-1 font-semibold text-[var(--color-primary)] hover:underline cursor-pointer"
+                          >
+                            <PencilSimple size={14} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                            className="flex items-center gap-1 font-semibold text-rose-600 hover:underline cursor-pointer"
+                          >
+                            <Trash size={14} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1524,14 +1602,24 @@ export default function AdminDashboardPage() {
 
                       <div className="mt-4 pt-3 border-t border-[var(--color-rule-subtle)] flex items-center justify-between text-xs">
                         <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">Slug: {dept.slug}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteOffice(dept.id, dept.name)}
-                          className="flex items-center gap-1 font-semibold text-rose-600 hover:underline cursor-pointer"
-                        >
-                          <Trash size={14} />
-                          <span>Delete</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => openEditOffice(dept)}
+                            className="flex items-center gap-1 font-semibold text-[var(--color-primary)] hover:underline cursor-pointer"
+                          >
+                            <PencilSimple size={14} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOffice(dept.id, dept.name)}
+                            className="flex items-center gap-1 font-semibold text-rose-600 hover:underline cursor-pointer"
+                          >
+                            <Trash size={14} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1907,19 +1995,31 @@ export default function AdminDashboardPage() {
                 )}
 
                 <form onSubmit={handleUpdatePasskey} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Current Passkey *
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={currentPasskeyInput}
-                      onChange={(e) => setCurrentPasskeyInput(e.target.value)}
-                      placeholder="Enter current passkey..."
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
-                    />
-                  </div>
+                  {isMasterAdmin ? (
+                    <div className="rounded-[16px] bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-3.5 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
+                      <ShieldCheck size={20} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold block">Authenticated with Master Google Workspace</span>
+                        <span className="text-[11px] text-blue-800 dark:text-blue-300">
+                          Signed in as <strong>{adminUser?.email || 'Master Administrator'}</strong>. You do not need an existing passkey. Set your custom emergency passkey below.
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--color-ink)]">
+                        Current Passkey *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={currentPasskeyInput}
+                        onChange={(e) => setCurrentPasskeyInput(e.target.value)}
+                        placeholder="Enter current passkey..."
+                        className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
@@ -2276,6 +2376,181 @@ export default function AdminDashboardPage() {
                   className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-xs cursor-pointer"
                 >
                   Add Office / Agency
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Category Modal */}
+      {editingCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+              <div className="flex items-center gap-2">
+                <PencilSimple size={20} className="text-[var(--color-primary)]" />
+                <h2 className="text-lg font-bold text-[var(--color-ink)]">Edit Document Category</h2>
+              </div>
+              <button onClick={() => setEditingCategory(null)} className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEditCategory} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editCatName}
+                  onChange={(e) => setEditCatName(e.target.value)}
+                  placeholder="e.g. DOST Grants & Compliance"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Category Slug</label>
+                  <input
+                    type="text"
+                    required
+                    value={editCatSlug}
+                    onChange={(e) => setEditCatSlug(e.target.value)}
+                    placeholder="e.g. dost-grants"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-mono outline-hidden focus:border-[var(--color-primary)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Display Sort Order</label>
+                  <input
+                    type="number"
+                    value={editCatSortOrder}
+                    onChange={(e) => setEditCatSortOrder(Number(e.target.value))}
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-mono outline-hidden focus:border-[var(--color-primary)]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Description / Scope</label>
+                <textarea
+                  rows={3}
+                  value={editCatDescription}
+                  onChange={(e) => setEditCatDescription(e.target.value)}
+                  placeholder="Brief description of documents falling under this category..."
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setEditingCategory(null)}
+                  className="rounded-full px-4 py-2 text-xs font-bold text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-xs cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Campus Office Modal */}
+      {editingOffice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+              <div className="flex items-center gap-2">
+                <PencilSimple size={20} className="text-[var(--color-primary)]" />
+                <h2 className="text-lg font-bold text-[var(--color-ink)]">Edit Campus Office / Agency</h2>
+              </div>
+              <button onClick={() => setEditingOffice(null)} className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEditOffice} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Office / Agency Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editOfficeName}
+                  onChange={(e) => setEditOfficeName(e.target.value)}
+                  placeholder="e.g. Department of Science and Technology - Regional Office"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Abbreviation / Acronym *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editOfficeAbbreviation}
+                    onChange={(e) => setEditOfficeAbbreviation(e.target.value)}
+                    placeholder="e.g. DOST"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-bold outline-hidden focus:border-[var(--color-primary)] uppercase"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Slug (URL tag)</label>
+                  <input
+                    type="text"
+                    required
+                    value={editOfficeSlug}
+                    onChange={(e) => setEditOfficeSlug(e.target.value)}
+                    placeholder="e.g. dost"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-mono outline-hidden focus:border-[var(--color-primary)]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Official Website / Portal URL</label>
+                <input
+                  type="url"
+                  value={editOfficeWebsite}
+                  onChange={(e) => setEditOfficeWebsite(e.target.value)}
+                  placeholder="https://dost.gov.ph"
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] font-mono outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Description</label>
+                <textarea
+                  rows={2}
+                  value={editOfficeDescription}
+                  onChange={(e) => setEditOfficeDescription(e.target.value)}
+                  placeholder="Mandate and document issuance role..."
+                  className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setEditingOffice(null)}
+                  className="rounded-full px-4 py-2 text-xs font-bold text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-xs cursor-pointer"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>
