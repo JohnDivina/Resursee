@@ -2,10 +2,10 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { CaretUp, ArrowRight } from '@phosphor-icons/react';
+import { CaretUp, CaretDown, ArrowRight, Fire, ChartLineUp } from '@phosphor-icons/react';
 import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
-import { useRealtimeDownloadCount } from '@/lib/downloadStore';
+import { getStoredDownloads } from '@/lib/downloadStore';
 import { getLiveResources } from '@/lib/resourceStore';
 
 type TimeFilter = 'today' | 'week' | 'month' | 'all';
@@ -17,18 +17,22 @@ interface FeaturedLeaderboardProps {
 function LeaderboardItemCard({
   resource,
   rank,
-  trendingDelta,
+  liveDownloads,
+  previousRank,
 }: {
   resource: Resource;
   rank: number;
-  trendingDelta: number;
+  liveDownloads: number;
+  previousRank: number;
 }) {
-  const realtimeCount = useRealtimeDownloadCount(resource.id, resource.download_count);
   const officeName = resource.department?.abbreviation || resource.source_name || 'Academic';
   const categoryName = resource.category?.name || 'General';
 
   // Format Icon
   const firstLetter = resource.title.trim().charAt(0).toUpperCase();
+
+  // Rank movement
+  const rankDiff = previousRank - rank; // positive means climbed up
 
   return (
     <Link
@@ -39,7 +43,15 @@ function LeaderboardItemCard({
       {/* Left side: Rank + Squircle Icon + Text info */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Rank Number Badge */}
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-subtle)] font-mono text-xs font-bold text-[var(--color-primary)]">
+        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold ${
+          rank === 1
+            ? 'bg-amber-400 text-slate-950 shadow-xs'
+            : rank === 2
+            ? 'bg-slate-300 text-slate-900'
+            : rank === 3
+            ? 'bg-amber-700/20 text-amber-800 dark:text-amber-300'
+            : 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+        }`}>
           {rank}
         </div>
 
@@ -87,18 +99,32 @@ function LeaderboardItemCard({
         </div>
       </div>
 
-      {/* Right side: Trending + Upvotes */}
+      {/* Right side: Trending + Live Downloads */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Trending pill badge */}
-        <span className="rounded-full bg-[var(--color-primary-subtle)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--color-primary)]">
-          +{trendingDelta}
-        </span>
+        {/* Rank Trend Indicator */}
+        <div className="flex items-center gap-0.5 font-mono text-[11px] font-bold">
+          {rankDiff > 0 ? (
+            <span className="flex items-center text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full">
+              <CaretUp size={12} weight="bold" />
+              <span>+{rankDiff}</span>
+            </span>
+          ) : rankDiff < 0 ? (
+            <span className="flex items-center text-rose-500 bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 rounded-full">
+              <CaretDown size={12} weight="bold" />
+              <span>{rankDiff}</span>
+            </span>
+          ) : (
+            <span className="flex items-center text-[var(--color-ink-muted)] bg-[var(--color-paper-muted)] px-2 py-0.5 rounded-full text-[10px]">
+              • Hot
+            </span>
+          )}
+        </div>
 
-        {/* Upvote Box */}
-        <div className="flex flex-col items-center justify-center rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-2.5 py-1 min-w-[42px] shadow-2xs group-hover:border-[var(--color-primary)]/40 transition-colors">
-          <CaretUp size={12} weight="fill" className="text-[var(--color-primary)]" />
-          <span className="font-mono text-[11px] font-bold text-[var(--color-ink)]">
-            {realtimeCount}
+        {/* Real-Time Total Downloads Box */}
+        <div className="flex flex-col items-center justify-center rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-3 py-1 min-w-[54px] shadow-2xs group-hover:border-[var(--color-primary)]/40 transition-colors">
+          <CaretUp size={12} weight="fill" className="text-emerald-600" />
+          <span className="font-mono text-xs font-bold text-[var(--color-ink)]">
+            {liveDownloads.toLocaleString()}
           </span>
         </div>
       </div>
@@ -111,101 +137,115 @@ export default function FeaturedLeaderboard({
 }: FeaturedLeaderboardProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('today');
   const [liveList, setLiveList] = useState<Resource[]>(initialResources || mockResources);
+  const [downloadsMap, setDownloadsMap] = useState<Record<string, number>>({});
 
-  useEffect(() => {
+  const refreshData = () => {
     setLiveList(getLiveResources());
-    const handleUpdate = () => setLiveList(getLiveResources());
-    window.addEventListener('resursee_catalog_updated', handleUpdate);
-    return () => window.removeEventListener('resursee_catalog_updated', handleUpdate);
-  }, []);
-
-  const effectiveResources = liveList;
-
-  const totalDownloads = useMemo(() => {
-    return effectiveResources.reduce((acc, curr) => acc + curr.download_count, 0);
-  }, [effectiveResources]);
-
-  // Ranked list of top 8 resources
-  const rankedItems = useMemo(() => {
-    const sorted = [...effectiveResources].sort((a, b) => b.download_count - a.download_count);
-    return sorted.slice(0, 8);
-  }, [effectiveResources]);
-
-  // Dynamic simulated delta based on time filter
-  const getTrendingDelta = (index: number) => {
-    if (timeFilter === 'today') return Math.max(1, 8 - index * 2);
-    if (timeFilter === 'week') return Math.max(2, 24 - index * 3);
-    if (timeFilter === 'month') return Math.max(5, 85 - index * 10);
-    return Math.max(10, 150 - index * 18);
+    setDownloadsMap(getStoredDownloads());
   };
 
-  return (
-    <section className="py-12 sm:py-16 bg-[var(--color-paper)]">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        {/* Main Leaderboard Card Container */}
-        <div className="overflow-hidden rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] shadow-[0_2px_16px_rgba(0,0,0,0.03)] transition-all">
-          {/* Card Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[var(--color-rule-subtle)] p-5 sm:p-7 bg-[var(--color-paper-card)]">
-            <div>
-              <span className="text-xs font-semibold text-[var(--color-ink-muted)]">
-                Community leaderboard
-              </span>
-              <h2 className="mt-0.5 text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--color-ink)]">
-                {totalDownloads.toLocaleString()}{' '}
-                <span className="font-semibold text-lg sm:text-xl text-[var(--color-ink-secondary)]">
-                  community downloads
-                </span>
-              </h2>
-            </div>
+  useEffect(() => {
+    refreshData();
 
-            {/* Time Filter Pill Switcher */}
-            <div className="flex items-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-1 text-xs font-semibold">
-              {(
-                [
-                  { id: 'today', label: 'Today' },
-                  { id: 'week', label: 'This week' },
-                  { id: 'month', label: 'This month' },
-                  { id: 'all', label: 'All time' },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setTimeFilter(tab.id)}
-                  className={`rounded-full px-3 py-1 transition-all ${
-                    timeFilter === tab.id
-                      ? 'bg-[var(--color-primary)] text-white font-bold shadow-2xs'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+    const handleCatalogUpdate = () => refreshData();
+    const handleDownloadUpdate = () => setDownloadsMap(getStoredDownloads());
+
+    window.addEventListener('resursee_catalog_updated', handleCatalogUpdate);
+    window.addEventListener('resursee-download-updated', handleDownloadUpdate);
+    window.addEventListener('storage', handleCatalogUpdate);
+
+    return () => {
+      window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
+      window.removeEventListener('resursee-download-updated', handleDownloadUpdate);
+      window.removeEventListener('storage', handleCatalogUpdate);
+    };
+  }, []);
+
+  // Compute live download count for each resource
+  const getResourceDownloads = (r: Resource) => {
+    return downloadsMap[r.id] !== undefined ? downloadsMap[r.id] : r.download_count;
+  };
+
+  // Dynamically sorted leaderboard based on real-time downloads
+  const rankedItems = useMemo(() => {
+    const sorted = [...liveList].sort((a, b) => {
+      const countA = getResourceDownloads(a);
+      const countB = getResourceDownloads(b);
+      return countB - countA;
+    });
+    return sorted.slice(0, 8);
+  }, [liveList, downloadsMap]);
+
+  const totalDownloads = useMemo(() => {
+    return liveList.reduce((acc, curr) => acc + getResourceDownloads(curr), 0);
+  }, [liveList, downloadsMap]);
+
+  return (
+    <section className="py-12 sm:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 md:flex-row md:items-end">
+          <div>
+            <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
+              <Fire size={16} weight="fill" className="text-amber-500" />
+              <span>Real-Time Popularity</span>
             </div>
+            <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+              Community Leaderboard
+            </h2>
+            <p className="mt-1 text-xs text-[var(--color-ink-muted)] sm:text-sm">
+              Top requested and verified university documents across campus ({totalDownloads.toLocaleString()} verified downloads)
+            </p>
           </div>
 
-          {/* 2-Column Ranked Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 p-4 sm:p-6 bg-[var(--color-paper-card)]">
-            {rankedItems.map((item, index) => (
-              <LeaderboardItemCard
-                key={item.id}
-                resource={item}
-                rank={index + 1}
-                trendingDelta={getTrendingDelta(index)}
-              />
+          {/* Timeframe Filter Tabs */}
+          <div className="flex items-center gap-1 rounded-[16px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-1 shadow-2xs">
+            {(['today', 'week', 'month', 'all'] as TimeFilter[]).map((tf) => (
+              <button
+                key={tf}
+                type="button"
+                onClick={() => setTimeFilter(tf)}
+                className={`rounded-[12px] px-3 py-1.5 font-mono text-xs font-bold capitalize transition-all cursor-pointer ${
+                  timeFilter === tf
+                    ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                }`}
+              >
+                {tf === 'all' ? 'All-Time' : tf}
+              </button>
             ))}
           </div>
+        </div>
 
-          {/* Leaderboard Footer */}
-          <div className="border-t border-[var(--color-rule-subtle)] bg-[var(--color-paper-muted)]/40 p-4 sm:p-5 text-center">
-            <Link
-              href="/resources"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[var(--color-primary)] hover:underline"
-            >
-              <span>Explore all university resources in directory</span>
-              <ArrowRight size={15} weight="bold" />
-            </Link>
-          </div>
+        {/* Leaderboard Grid */}
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+          {rankedItems.map((resource, index) => {
+            const currentRank = index + 1;
+            const liveDownloads = getResourceDownloads(resource);
+            // Dynamic previous rank baseline to illustrate trend
+            const baseRank = liveList.findIndex((r) => r.id === resource.id) + 1;
+
+            return (
+              <LeaderboardItemCard
+                key={resource.id}
+                resource={resource}
+                rank={currentRank}
+                liveDownloads={liveDownloads}
+                previousRank={baseRank || currentRank}
+              />
+            );
+          })}
+        </div>
+
+        {/* View full directory link */}
+        <div className="mt-8 text-center">
+          <Link
+            href="/resources"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-6 py-2.5 text-xs font-bold text-[var(--color-ink)] shadow-2xs transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+          >
+            <span>Explore Complete Document Catalog ({liveList.length} Files)</span>
+            <ArrowRight size={14} weight="bold" />
+          </Link>
         </div>
       </div>
     </section>

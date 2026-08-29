@@ -32,6 +32,7 @@ import {
   Sparkle,
   ArrowsClockwise,
   BellRinging,
+  ArrowSquareOut,
 } from '@phosphor-icons/react';
 import {
   mockCategories,
@@ -45,6 +46,7 @@ import {
   getLiveResources,
   deleteResourceById,
   addCustomResource,
+  updateExistingResource,
 } from '@/lib/resourceStore';
 import {
   getLiveSubmissions,
@@ -52,6 +54,11 @@ import {
   deleteSubmissionById,
   clearReviewedSubmissions,
 } from '@/lib/submissionStore';
+import {
+  getLiveNewsArticles,
+  deleteNewsArticleById,
+  updateNewsStatus,
+} from '@/lib/newsStore';
 
 interface AdminUserSession {
   email: string;
@@ -94,7 +101,8 @@ export default function AdminDashboardPage() {
 
   const [activeTab, setActiveTab] = useState<'resources' | 'submissions' | 'news' | 'staff' | 'logs' | 'settings'>('resources');
   const [resourcesList, setResourcesList] = useState<Resource[]>([]);
-  const [newsList, setNewsList] = useState<NewsArticle[]>(mockNewsArticles);
+  const [newsList, setNewsList] = useState<NewsArticle[]>([]);
+  const [newsFilter, setNewsFilter] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
   const [submissionsList, setSubmissionsList] = useState<ResourceSubmission[]>([]);
   const [submissionFilter, setSubmissionFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -121,7 +129,7 @@ export default function AdminDashboardPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Load persistent live resources & submissions
+  // Load persistent live resources, submissions, and news
   const refreshResources = () => {
     setResourcesList(getLiveResources());
   };
@@ -130,24 +138,33 @@ export default function AdminDashboardPage() {
     setSubmissionsList(getLiveSubmissions());
   };
 
+  const refreshNews = () => {
+    setNewsList(getLiveNewsArticles());
+  };
+
   useEffect(() => {
     refreshResources();
     refreshSubmissions();
+    refreshNews();
 
     // Listen to cross-component and cross-tab updates
     const handleCatalogUpdate = () => refreshResources();
     const handleSubmissionsUpdate = () => refreshSubmissions();
+    const handleNewsUpdate = () => refreshNews();
 
     window.addEventListener('resursee_catalog_updated', handleCatalogUpdate);
     window.addEventListener('resursee_submissions_updated', handleSubmissionsUpdate);
-    window.addEventListener('storage', (e) => {
+    window.addEventListener('resursee_news_updated', handleNewsUpdate);
+    window.addEventListener('storage', () => {
       handleCatalogUpdate();
       handleSubmissionsUpdate();
+      handleNewsUpdate();
     });
 
     return () => {
       window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
       window.removeEventListener('resursee_submissions_updated', handleSubmissionsUpdate);
+      window.removeEventListener('resursee_news_updated', handleNewsUpdate);
     };
   }, []);
 
@@ -451,15 +468,16 @@ export default function AdminDashboardPage() {
     if (submission.submission_type === 'update_existing' && submission.existing_resource_id) {
       const target = resourcesList.find((r) => r.id === submission.existing_resource_id);
       if (target) {
-        const updatedTarget = {
-          ...target,
+        const updated = updateExistingResource(target.id, {
           current_version: submission.version_label,
           file_format: submission.file_format,
           file_name: submission.file_name,
+          file_size: submission.file_size,
+          file_path: submission.file_path || target.file_path,
+          file_data: submission.file_data || target.file_data,
           updated_at: new Date().toISOString(),
-        };
-        addCustomResource(updatedTarget);
-        refreshResources();
+        });
+        setResourcesList(updated);
       }
       showToast(`Updated "${submission.title}" to version ${submission.version_label}`);
     } else {
@@ -545,15 +563,23 @@ export default function AdminDashboardPage() {
   };
 
   const handleApproveNews = (id: string) => {
-    setNewsList(
-      newsList.map((n) => (n.id === id ? { ...n, status: 'approved', published_at: new Date().toISOString() } : n))
-    );
+    const updated = updateNewsStatus(id, 'approved', adminUser?.name || 'Administrator');
+    setNewsList(updated);
     showToast('News article approved and published to the live campus hub!');
   };
 
   const handleRejectNews = (id: string) => {
-    setNewsList(newsList.map((n) => (n.id === id ? { ...n, status: 'rejected' } : n)));
+    const updated = updateNewsStatus(id, 'rejected', adminUser?.name || 'Administrator');
+    setNewsList(updated);
     showToast('Article marked as rejected.');
+  };
+
+  const handleDeleteNews = (id: string, title: string) => {
+    if (confirm(`Are you sure you want to permanently delete the bulletin "${title}"?`)) {
+      const updated = deleteNewsArticleById(id);
+      setNewsList(updated);
+      showToast(`Deleted bulletin "${title}".`);
+    }
   };
 
   // --- ⌛ INITIAL SESSION VERIFICATION SCREEN (Prevents login screen flash on refresh) ---
@@ -1228,45 +1254,156 @@ export default function AdminDashboardPage() {
           {/* TAB 3: NEWS & BULLETINS */}
           {activeTab === 'news' && (
             <div className="mt-6 space-y-4">
-              <h2 className="text-lg font-bold text-[var(--color-ink)]">
-                Campus News & Bulletins ({newsList.length})
-              </h2>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                    Campus News & Bulletins ({newsList.length})
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-muted)]">
+                    Review, approve, and manage official university circulars and announcements.
+                  </p>
+                </div>
+              </div>
+
+              {/* Sub-Filters: All · Approved · Pending · Rejected */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setNewsFilter('all')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    newsFilter === 'all'
+                      ? 'bg-[var(--color-ink)] text-white dark:bg-white dark:text-black shadow-2xs'
+                      : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  All ({newsList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewsFilter('approved')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    newsFilter === 'approved'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  Live / Approved ({newsList.filter((n) => n.status === 'approved').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewsFilter('pending')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    newsFilter === 'pending'
+                      ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                      : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  Pending Review ({newsList.filter((n) => n.status === 'pending').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewsFilter('rejected')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    newsFilter === 'rejected'
+                      ? 'bg-rose-600 text-white shadow-2xs'
+                      : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  Rejected ({newsList.filter((n) => n.status === 'rejected').length})
+                </button>
+              </div>
 
               <div className="grid grid-cols-1 gap-4">
-                {newsList.map((art) => (
-                  <div
-                    key={art.id}
-                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-[var(--color-primary)] uppercase">
-                          {art.department?.name || art.source?.name || 'Official Bulletin'}
-                        </span>
-                        <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
-                          {art.published_at ? new Date(art.published_at).toLocaleDateString() : 'Draft'}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-bold text-[var(--color-ink)]">{art.title}</h3>
-                      <p className="text-xs text-[var(--color-ink-muted)] line-clamp-2">{art.summary}</p>
-                    </div>
+                {newsList
+                  .filter((art) => newsFilter === 'all' || art.status === newsFilter)
+                  .map((art) => (
+                    <div
+                      key={art.id}
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                    >
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                              art.status === 'pending'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                : art.status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            }`}
+                          >
+                            {art.status === 'approved' ? 'Live on Campus Feed' : art.status}
+                          </span>
 
-                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                      {art.status === 'pending' ? (
+                          <span className="font-mono text-xs font-bold text-[var(--color-primary)] uppercase">
+                            {art.department?.name || art.source?.name || 'Official Office'}
+                          </span>
+
+                          <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
+                            • {art.published_at ? new Date(art.published_at).toLocaleDateString() : 'Draft'}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-bold text-[var(--color-ink)]">{art.title}</h3>
+                        <p className="text-xs text-[var(--color-ink-muted)] line-clamp-2">{art.summary}</p>
+
+                        {art.content_url && (
+                          <div className="pt-1">
+                            <a
+                              href={art.content_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 font-mono text-[11px] font-bold text-[var(--color-primary)] hover:underline"
+                            >
+                              <span>View Source URL</span>
+                              <ArrowSquareOut size={12} />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        {art.status === 'pending' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleApproveNews(art.id)}
+                              className="flex items-center gap-1 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all cursor-pointer"
+                            >
+                              <CheckCircle size={15} weight="bold" />
+                              <span>Approve & Publish</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRejectNews(art.id)}
+                              className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
+                            >
+                              <XCircle size={15} weight="bold" />
+                              <span>Reject</span>
+                            </button>
+                          </>
+                        )}
+
+                        {/* Delete Bulletin Button */}
                         <button
-                          onClick={() => handleApproveNews(art.id)}
-                          className="rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer"
+                          type="button"
+                          onClick={() => handleDeleteNews(art.id, art.title)}
+                          className="rounded-lg p-2 text-[var(--color-ink-muted)] hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                          title="Delete Bulletin"
                         >
-                          Approve
+                          <Trash size={16} weight="bold" />
                         </button>
-                      ) : (
-                        <span className="rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
-                          Live
-                        </span>
-                      )}
+                      </div>
                     </div>
+                  ))}
+
+                {newsList.filter((art) => newsFilter === 'all' || art.status === newsFilter).length === 0 && (
+                  <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-8 text-center text-xs text-[var(--color-ink-muted)] italic">
+                    No {newsFilter === 'all' ? '' : newsFilter} news bulletins found.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -14,14 +14,28 @@ import {
   MagnifyingGlass,
   CheckCircle,
 } from '@phosphor-icons/react';
-import { mockNewsArticles, mockDepartments, mockResources } from '@/lib/mockData';
+import { mockDepartments, mockResources } from '@/lib/mockData';
+import { NewsArticle } from '@/types/database';
+import { getLiveNewsArticles } from '@/lib/newsStore';
 
 export default function NewsPage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [selectedDept, setSelectedDept] = useState('all');
   const [newsQuery, setNewsQuery] = useState('');
+  const [liveNews, setLiveNews] = useState<NewsArticle[]>([]);
 
-  const publishedNews = mockNewsArticles.filter((article) => {
+  useEffect(() => {
+    setLiveNews(getLiveNewsArticles());
+    const handleUpdate = () => setLiveNews(getLiveNewsArticles());
+    window.addEventListener('resursee_news_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('resursee_news_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  const publishedNews = liveNews.filter((article) => {
     if (article.status !== 'approved') return false;
     if (selectedDept !== 'all' && article.department?.slug !== selectedDept) return false;
     if (newsQuery.trim()) {

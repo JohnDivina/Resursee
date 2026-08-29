@@ -13,21 +13,26 @@ import {
   ClockCounterClockwise,
   CloudArrowUp,
   FileArrowUp,
+  Megaphone,
+  Newspaper,
+  Buildings,
 } from '@phosphor-icons/react';
 import { mockCategories, mockDepartments } from '@/lib/mockData';
-import { DocumentType, SubmissionType, Resource, ResourceSubmission } from '@/types/database';
+import { DocumentType, SubmissionType, Resource, ResourceSubmission, NewsArticle } from '@/types/database';
 import { getLiveResources } from '@/lib/resourceStore';
 import { addSubmission } from '@/lib/submissionStore';
+import { addNewsArticle } from '@/lib/newsStore';
 
 export default function ContributePage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
+  const [activeMode, setActiveMode] = useState<'document' | 'news'>('document');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionId, setSubmissionId] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [liveResources, setLiveResources] = useState<Resource[]>([]);
 
-  // Form Fields
+  // Form Fields for Documents
   const [submissionType, setSubmissionType] = useState<SubmissionType>('new_resource');
   const [existingResourceId, setExistingResourceId] = useState('');
   const [title, setTitle] = useState('');
@@ -44,8 +49,18 @@ export default function ContributePage() {
   const [submitterEmail, setSubmitterEmail] = useState('');
   const [submitterRole, setSubmitterRole] = useState<'student' | 'faculty' | 'staff' | 'alumni' | 'other'>('student');
   const [submissionNotes, setSubmissionNotes] = useState('');
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Form Fields for Campus News & Bulletins
+  const [newsTitle, setNewsTitle] = useState('');
+  const [newsSummary, setNewsSummary] = useState('');
+  const [newsDepartmentId, setNewsDepartmentId] = useState(mockDepartments[0].id);
+  const [newsUrl, setNewsUrl] = useState('');
+  const [newsImageUrl, setNewsImageUrl] = useState('');
+  const [newsSubmitterName, setNewsSubmitterName] = useState('');
+  const [newsSubmitterEmail, setNewsSubmitterEmail] = useState('');
+  const [newsSubmitterRole, setNewsSubmitterRole] = useState<'student' | 'faculty' | 'staff' | 'alumni' | 'other'>('student');
+  const [newsNotes, setNewsNotes] = useState('');
 
   useEffect(() => {
     setLiveResources(getLiveResources());
@@ -90,7 +105,6 @@ export default function ContributePage() {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processSelectedFile(e.dataTransfer.files[0]);
     }
@@ -111,7 +125,7 @@ export default function ContributePage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleDocumentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !submitterName.trim() || !submitterEmail.trim()) {
       alert('Please fill out all required fields marked with *');
@@ -192,33 +206,42 @@ export default function ContributePage() {
       // ignore
     }
 
-    // 3. Post to Netlify Forms (multipart/form-data)
-    try {
-      const formData = new FormData();
-      formData.append('form-name', 'resource-submissions');
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('category', categoryId);
-      formData.append('department', departmentId);
-      formData.append('documentType', docType);
-      formData.append('versionLabel', versionLabel);
-      formData.append('sourceName', sourceName);
-      formData.append('sourceUrl', sourceUrl);
-      formData.append('submitterName', submitterName);
-      formData.append('submitterEmail', submitterEmail);
-      formData.append('submitterRole', submitterRole);
-      formData.append('submissionNotes', submissionNotes);
-      if (selectedFile) {
-        formData.append('attachment', selectedFile);
-      }
+    setSubmissionId(generatedId);
+    setIsSubmitting(false);
+    setIsSubmitted(true);
+  };
 
-      await fetch('/', {
-        method: 'POST',
-        body: formData,
-      });
-    } catch {
-      // Netlify handles form submission gracefully
+  const handleNewsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsTitle.trim() || !newsSummary.trim() || !newsSubmitterName.trim() || !newsSubmitterEmail.trim()) {
+      alert('Please fill out all required fields marked with *');
+      return;
     }
+
+    setIsSubmitting(true);
+
+    const generatedId = `NEWS-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const newArticle: NewsArticle = {
+      id: generatedId,
+      title: newsTitle,
+      summary: newsSummary,
+      department_id: newsDepartmentId,
+      department: mockDepartments.find((d) => d.id === newsDepartmentId),
+      content_url: newsUrl || 'https://university.edu/news',
+      image_url: newsImageUrl || null,
+      status: 'pending',
+      is_featured: false,
+      external_id: null,
+      source_id: null,
+      reviewed_by: null,
+      published_at: null,
+      fetched_at: new Date().toISOString(),
+      reviewed_at: null,
+      created_at: new Date().toISOString(),
+    };
+
+    addNewsArticle(newArticle);
 
     setSubmissionId(generatedId);
     setIsSubmitting(false);
@@ -234,6 +257,11 @@ export default function ContributePage() {
     setSubmissionNotes('');
     setSourceUrl('');
     setSourceName('');
+    setNewsTitle('');
+    setNewsSummary('');
+    setNewsUrl('');
+    setNewsImageUrl('');
+    setNewsNotes('');
   };
 
   return (
@@ -252,103 +280,111 @@ export default function ContributePage() {
               Home
             </Link>
             <span>/</span>
-            <span className="text-[var(--color-ink)] font-semibold">Contribute Document</span>
+            <span className="text-[var(--color-ink)] font-semibold">
+              {activeMode === 'document' ? 'Contribute Document' : 'Submit Campus Bulletin'}
+            </span>
           </nav>
 
           {/* Page Header */}
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6">
             <div>
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                Community Repository
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                Community Contributions
               </span>
-              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)]">
-                Submit a University Resource
+              <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+                {activeMode === 'document' ? 'Submit University Document' : 'Submit Campus News Circular'}
               </h1>
-              <p className="mt-1 text-xs sm:text-sm text-[var(--color-ink-muted)]">
-                Help fellow students and faculty by uploading verified forms, memo templates, and documents.
+              <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm">
+                Share official academic forms, syllabus templates, or campus bulletin circulars for administrative verification.
               </p>
             </div>
 
-            <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 text-xs">
-              <ShieldCheck size={20} className="text-emerald-600 shrink-0" />
-              <div>
-                <span className="font-bold text-[var(--color-ink)] block">Admin Verified</span>
-                <span className="text-[11px] text-[var(--color-ink-muted)]">All uploads undergo staff review</span>
-              </div>
+            {/* Mode Switcher Tabs */}
+            <div className="flex items-center gap-1 rounded-[18px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-1.5 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => { setActiveMode('document'); setIsSubmitted(false); }}
+                className={`flex items-center gap-2 rounded-[14px] px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+                  activeMode === 'document'
+                    ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                }`}
+              >
+                <FileText size={16} weight="bold" />
+                <span>Document / Form</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveMode('news'); setIsSubmitted(false); }}
+                className={`flex items-center gap-2 rounded-[14px] px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+                  activeMode === 'news'
+                    ? 'bg-amber-500 text-slate-950 shadow-xs'
+                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                }`}
+              >
+                <Megaphone size={16} weight="bold" />
+                <span>News & Bulletin</span>
+              </button>
             </div>
           </div>
 
           {/* SUCCESS SCREEN */}
           {isSubmitted ? (
-            <div className="mt-8 rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-8 sm:p-12 text-center shadow-lg space-y-5 animate-in fade-in zoom-in-95">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <div className="mt-8 rounded-[28px] border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-8 sm:p-12 text-center shadow-lg animate-in fade-in zoom-in-95">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle size={40} weight="fill" />
               </div>
+              <h2 className="mt-4 text-xl sm:text-2xl font-extrabold text-[var(--color-ink)]">
+                {activeMode === 'document' ? 'Document Submission Queued!' : 'Campus News Bulletin Submitted!'}
+              </h2>
+              <p className="mx-auto mt-2 max-w-md text-xs sm:text-sm text-[var(--color-ink-secondary)]">
+                Thank you for your contribution! Your submission has been securely queued and is now visible to the University Administration for review.
+              </p>
 
-              <div>
-                <span className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-3 py-1 font-mono text-xs font-bold uppercase">
-                  Submission Queued
-                </span>
-                <h2 className="mt-3 text-2xl font-extrabold text-[var(--color-ink)]">
-                  Thank You for Your Contribution!
-                </h2>
-                <p className="mt-2 text-xs sm:text-sm text-[var(--color-ink-muted)] max-w-md mx-auto">
-                  Your submission for <strong className="text-[var(--color-ink)]">"{title}"</strong> has been queued for review. You can track this submission using your ID.
-                </p>
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-[var(--color-paper-card)] px-4 py-1.5 font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                <span>Tracking ID:</span>
+                <span className="font-extrabold text-[var(--color-primary)]">{submissionId}</span>
               </div>
 
-              <div className="mx-auto max-w-xs rounded-[16px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3 text-center">
-                <span className="font-mono text-xs font-bold text-[var(--color-ink-muted)] uppercase block">
-                  Submission Tracking ID
-                </span>
-                <span className="font-mono text-lg font-black text-[var(--color-primary)]">
-                  {submissionId}
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <button
-                  type="button"
                   onClick={handleReset}
-                  className="w-full sm:w-auto rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] transition-all cursor-pointer"
+                  className="rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] transition-all cursor-pointer"
                 >
-                  Submit Another Resource
+                  Submit Another Entry
                 </button>
                 <Link
-                  href="/resources"
-                  className="w-full sm:w-auto rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-6 py-2.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-all text-center"
+                  href={activeMode === 'document' ? '/resources' : '/news'}
+                  className="rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-6 py-2.5 text-xs font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] transition-all"
                 >
-                  Browse Document Catalog
+                  {activeMode === 'document' ? 'Browse Directory' : 'View Campus News'}
                 </Link>
               </div>
             </div>
-          ) : (
-            /* SUBMISSION FORM */
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-              {/* SECTION 1: Submission Type */}
-              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
-                <h2 className="text-base font-bold text-[var(--color-ink)]">
-                  1. Contribution Type
-                </h2>
-
+          ) : activeMode === 'document' ? (
+            /* --- FORM 1: DOCUMENT / FORM CONTRIBUTION --- */
+            <form onSubmit={handleDocumentSubmit} className="mt-8 space-y-8">
+              {/* Submission Type Switcher */}
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-2xs space-y-4">
+                <label className="block text-xs font-bold text-[var(--color-ink)] uppercase tracking-wider">
+                  Contribution Type
+                </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setSubmissionType('new_resource')}
+                    onClick={() => { setSubmissionType('new_resource'); setExistingResourceId(''); }}
                     className={`flex items-start gap-3 rounded-[18px] border p-4 text-left transition-all cursor-pointer ${
                       submissionType === 'new_resource'
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/30 ring-2 ring-[var(--color-primary)]'
-                        : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)]'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/40 shadow-xs'
+                        : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:border-[var(--color-rule-strong)]'
                     }`}
                   >
-                    <FileText size={22} className="text-[var(--color-primary)] shrink-0 mt-0.5" />
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white text-xs font-bold">
+                      +
+                    </div>
                     <div>
-                      <span className="text-xs font-bold text-[var(--color-ink)] block">
-                        New Document / Form
-                      </span>
-                      <p className="mt-1 text-[11px] text-[var(--color-ink-muted)]">
-                        A document not yet cataloged on Resursee.
-                      </p>
+                      <span className="text-xs font-bold text-[var(--color-ink)] block">New Document / Form</span>
+                      <span className="text-[11px] text-[var(--color-ink-muted)]">Add a form not yet in the repository catalog</span>
                     </div>
                   </button>
 
@@ -357,37 +393,35 @@ export default function ContributePage() {
                     onClick={() => setSubmissionType('update_existing')}
                     className={`flex items-start gap-3 rounded-[18px] border p-4 text-left transition-all cursor-pointer ${
                       submissionType === 'update_existing'
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/30 ring-2 ring-[var(--color-primary)]'
-                        : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)]'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/40 shadow-xs'
+                        : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:border-[var(--color-rule-strong)]'
                     }`}
                   >
-                    <ClockCounterClockwise size={22} className="text-amber-500 shrink-0 mt-0.5" />
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500 text-slate-950 text-xs font-bold">
+                      <ClockCounterClockwise size={15} weight="bold" />
+                    </div>
                     <div>
-                      <span className="text-xs font-bold text-[var(--color-ink)] block">
-                        Updated Revision / Superseded Form
-                      </span>
-                      <p className="mt-1 text-[11px] text-[var(--color-ink-muted)]">
-                        A new revision of a document that already exists on Resursee.
-                      </p>
+                      <span className="text-xs font-bold text-[var(--color-ink)] block">Updated Revision</span>
+                      <span className="text-[11px] text-[var(--color-ink-muted)]">Update an existing document to a newer 2026 revision</span>
                     </div>
                   </button>
                 </div>
 
                 {submissionType === 'update_existing' && (
-                  <div className="mt-4 rounded-[18px] border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 p-4">
-                    <label className="block text-xs font-bold text-amber-900 dark:text-amber-300">
-                      Select Existing Document to Update *
+                  <div className="pt-3 border-t border-[var(--color-rule-subtle)] animate-in fade-in">
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
+                      Select Document to Update <span className="text-rose-500">*</span>
                     </label>
                     <select
                       value={existingResourceId}
                       onChange={(e) => handleExistingResourceSelect(e.target.value)}
                       required
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-white dark:bg-[#1e293b] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
-                      <option value="">-- Choose a document from the current directory --</option>
+                      <option value="">-- Choose Existing Document --</option>
                       {liveResources.map((res) => (
                         <option key={res.id} value={res.id}>
-                          [{res.file_format}] {res.title} (Current: {res.current_version})
+                          {res.title} (Current: v{res.current_version})
                         </option>
                       ))}
                     </select>
@@ -395,290 +429,345 @@ export default function ContributePage() {
                 )}
               </div>
 
-              {/* SECTION 2: Document Details */}
-              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
-                <h2 className="text-base font-bold text-[var(--color-ink)]">
-                  2. Document Details
-                </h2>
+              {/* Drag & Drop Dropzone */}
+              <div
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`group relative flex flex-col items-center justify-center rounded-[28px] border-2 border-dashed p-8 sm:p-12 text-center transition-all ${
+                  isDragging
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/50 scale-[1.01]'
+                    : selectedFile
+                    ? 'border-emerald-500/50 bg-emerald-50/20 dark:bg-emerald-950/10'
+                    : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] hover:border-[var(--color-primary)] hover:bg-[var(--color-paper-muted)]/50'
+                }`}
+              >
+                <input
+                  type="file"
+                  id="file-upload"
+                  onChange={handleFileChange}
+                  accept=".pdf,.docx,.xlsx,.pptx"
+                  className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+                />
+
+                <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] transition-transform group-hover:scale-110 ${
+                  selectedFile
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+                }`}>
+                  {selectedFile ? <FileArrowUp size={36} weight="bold" /> : <CloudArrowUp size={36} weight="bold" />}
+                </div>
+
+                <h3 className="mt-4 text-base font-bold text-[var(--color-ink)]">
+                  {selectedFile ? `Attached: ${selectedFile.name}` : 'Drag and Drop your document file here'}
+                </h3>
+                <p className="mt-1 text-xs text-[var(--color-ink-muted)] max-w-sm">
+                  {selectedFile
+                    ? `${(selectedFile.size / 1024).toFixed(1)} KB • Format: ${fileFormat} • Click or drop again to replace`
+                    : 'Supports PDF, Word (.docx), Excel (.xlsx), and PowerPoint (.pptx) up to 25MB'}
+                </p>
+              </div>
+
+              {/* Document Details Grid */}
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xs space-y-5">
+                <h3 className="text-sm font-bold text-[var(--color-ink)] border-b border-[var(--color-rule-subtle)] pb-3">
+                  Document Specification
+                </h3>
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    Official Document Title *
+                    Document Title <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Application for Academic Overload & Cross-Enrollment Form"
+                    placeholder="e.g., Application for Transcript of Records & Academic Certification"
                     className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    Summary / Purpose of Document
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Provide a brief summary of what this document is used for and who requires it..."
-                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Academic Category *
-                    </label>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">Category</label>
                     <select
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
                       {mockCategories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
+                        <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Issuing Department / Office *
-                    </label>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">Department / Office</label>
                     <select
                       value={departmentId}
                       onChange={(e) => setDepartmentId(e.target.value)}
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
                       {mockDepartments.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.abbreviation} - {d.name}
-                        </option>
+                        <option key={d.id} value={d.id}>{d.name} ({d.abbreviation})</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      File Format
-                    </label>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">Document Type</label>
                     <select
-                      value={fileFormat}
-                      onChange={(e) => setFileFormat(e.target.value)}
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs uppercase outline-hidden"
+                      value={docType}
+                      onChange={(e) => setDocType(e.target.value as DocumentType)}
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     >
-                      <option value="PDF">PDF</option>
-                      <option value="DOCX">DOCX (Word)</option>
-                      <option value="XLSX">XLSX (Excel)</option>
-                      <option value="PPTX">PPTX (PowerPoint)</option>
+                      <option value="form">Official Form</option>
+                      <option value="template">Template</option>
+                      <option value="memorandum">Memorandum</option>
+                      <option value="policy">Policy / Guideline</option>
+                      <option value="report">Report / Publication</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Version Label
-                    </label>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">File Format</label>
+                    <select
+                      value={fileFormat}
+                      onChange={(e) => setFileFormat(e.target.value)}
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    >
+                      <option value="PDF">PDF (.pdf)</option>
+                      <option value="DOCX">Word (.docx)</option>
+                      <option value="XLSX">Excel (.xlsx)</option>
+                      <option value="PPTX">PowerPoint (.pptx)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">Version Label</label>
                     <input
                       type="text"
                       value={versionLabel}
                       onChange={(e) => setVersionLabel(e.target.value)}
                       placeholder="e.g. 2026.1"
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs text-[var(--color-ink)] outline-hidden"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)] font-mono"
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Document Type
-                    </label>
-                    <select
-                      value={docType}
-                      onChange={(e) => setDocType(e.target.value as DocumentType)}
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 font-mono text-xs uppercase outline-hidden"
-                    >
-                      <option value="form">Form</option>
-                      <option value="template">Template</option>
-                      <option value="policy">Policy</option>
-                      <option value="memorandum">Memorandum</option>
-                      <option value="academic">Academic</option>
-                      <option value="research">Research</option>
-                    </select>
-                  </div>
                 </div>
-              </div>
-
-              {/* SECTION 3: Drag and Drop File Attachment */}
-              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
-                <h2 className="text-base font-bold text-[var(--color-ink)]">
-                  3. File Attachment & Official Source
-                </h2>
 
                 <div>
-                  <label className="block text-xs font-bold text-[var(--color-ink)] mb-1">
-                    Upload Document File (.pdf, .docx, .xlsx, .pptx)
-                  </label>
-
-                  {/* Drag and Drop Zone with Visual State */}
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragEnter={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={`relative flex flex-col items-center justify-center rounded-[22px] border-2 border-dashed p-8 text-center transition-all cursor-pointer ${
-                      isDragging
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/40 scale-[1.01]'
-                        : fileName
-                        ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20'
-                        : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:border-[var(--color-primary)]'
-                    }`}
-                  >
-                    <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
-                      {fileName ? (
-                        <div className="flex flex-col items-center">
-                          <FileArrowUp size={36} weight="duotone" className="text-emerald-600 dark:text-emerald-400 animate-bounce" />
-                          <span className="mt-2 text-sm font-bold text-[var(--color-ink)]">
-                            {fileName}
-                          </span>
-                          <span className="mt-0.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                            File attached successfully! Drag another or click to change.
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center">
-                          <CloudArrowUp size={36} weight="duotone" className="text-[var(--color-primary)]" />
-                          <span className="mt-2 text-xs sm:text-sm font-bold text-[var(--color-ink)]">
-                            Drag & drop your document here, or <span className="text-[var(--color-primary)] underline">browse</span>
-                          </span>
-                          <span className="mt-1 text-[11px] text-[var(--color-ink-muted)]">
-                            Supports PDF, DOCX, XLSX, PPTX (up to 25MB)
-                          </span>
-                        </div>
-                      )}
-
-                      <input
-                        type="file"
-                        accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Official Source Webpage URL
-                    </label>
-                    <input
-                      type="url"
-                      value={sourceUrl}
-                      onChange={(e) => setSourceUrl(e.target.value)}
-                      placeholder="https://university.edu/registrar/forms"
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Source Bureau / Issuing Office Name
-                    </label>
-                    <input
-                      type="text"
-                      value={sourceName}
-                      onChange={(e) => setSourceName(e.target.value)}
-                      placeholder="e.g. Office of the University Registrar"
-                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
-                    />
-                  </div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Description / Purpose</label>
+                  <textarea
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Brief description of what this document is used for..."
+                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                  />
                 </div>
               </div>
 
-              {/* SECTION 4: Submitter Information */}
-              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
-                <h2 className="text-base font-bold text-[var(--color-ink)]">
-                  4. Submitter Information
-                </h2>
+              {/* Submitter Provenance */}
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xs space-y-4">
+                <h3 className="text-sm font-bold text-[var(--color-ink)] border-b border-[var(--color-rule-subtle)] pb-3">
+                  Submitter Information
+                </h3>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Your Full Name *
+                      Your Full Name <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={submitterName}
                       onChange={(e) => setSubmitterName(e.target.value)}
-                      placeholder="e.g. Juan Dela Cruz"
+                      placeholder="Juan Dela Cruz"
                       className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      University / Contact Email *
+                      Your Email Address <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="email"
                       required
                       value={submitterEmail}
                       onChange={(e) => setSubmitterEmail(e.target.value)}
-                      placeholder="e.g. juan.delacruz@clsu.edu.ph"
+                      placeholder="juan@clsu.edu.ph"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)] font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">Your Campus Role</label>
+                    <select
+                      value={submitterRole}
+                      onChange={(e) => setSubmitterRole(e.target.value as any)}
                       className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    >
+                      <option value="student">Student</option>
+                      <option value="faculty">Faculty Member</option>
+                      <option value="staff">Administrative Staff</option>
+                      <option value="alumni">Alumni</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-4 text-sm font-bold text-white shadow-md hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <UploadSimple size={18} weight="bold" />
+                <span>{isSubmitting ? 'Uploading & Queuing Document...' : 'Submit Document for Review'}</span>
+              </button>
+            </form>
+          ) : (
+            /* --- FORM 2: CAMPUS NEWS & BULLETIN CONTRIBUTION --- */
+            <form onSubmit={handleNewsSubmit} className="mt-8 space-y-8">
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xs space-y-5">
+                <div className="flex items-center gap-2 border-b border-[var(--color-rule-subtle)] pb-3">
+                  <Megaphone size={20} className="text-amber-500" />
+                  <h3 className="text-sm font-bold text-[var(--color-ink)]">
+                    Official Announcement Details
+                  </h3>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">
+                    Bulletin / Circular Title <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newsTitle}
+                    onChange={(e) => setNewsTitle(e.target.value)}
+                    placeholder="e.g. Call for Applications: 2026 University Research Grants & Student Aid"
+                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">Issuing Department / Office</label>
+                    <select
+                      value={newsDepartmentId}
+                      onChange={(e) => setNewsDepartmentId(e.target.value)}
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    >
+                      {mockDepartments.map((d) => (
+                        <option key={d.id} value={d.id}>{d.name} ({d.abbreviation})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">Source Announcement Webpage URL</label>
+                    <input
+                      type="url"
+                      value={newsUrl}
+                      onChange={(e) => setNewsUrl(e.target.value)}
+                      placeholder="https://university.edu/announcements/circular-2026"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)] font-mono"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    University Affiliation Role
+                    Summary / Announcement Body <span className="text-rose-500">*</span>
                   </label>
-                  <select
-                    value={submitterRole}
-                    onChange={(e) => setSubmitterRole(e.target.value as any)}
-                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden"
-                  >
-                    <option value="student">Student</option>
-                    <option value="faculty">Faculty / Instructor</option>
-                    <option value="staff">Administrative Staff</option>
-                    <option value="alumni">Alumni</option>
-                    <option value="other">Other / Guest</option>
-                  </select>
+                  <textarea
+                    rows={4}
+                    required
+                    value={newsSummary}
+                    onChange={(e) => setNewsSummary(e.target.value)}
+                    placeholder="Provide the complete summary, guidelines, dates, and instructions for the university community..."
+                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    Verification Notes for Reviewers
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={submissionNotes}
-                    onChange={(e) => setSubmissionNotes(e.target.value)}
-                    placeholder="e.g. Received directly from the department head on August 2026..."
-                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Featured Banner Image URL (Optional)</label>
+                  <input
+                    type="url"
+                    value={newsImageUrl}
+                    onChange={(e) => setNewsImageUrl(e.target.value)}
+                    placeholder="https://images.unsplash.com/photo-..."
+                    className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)] font-mono"
                   />
                 </div>
               </div>
 
-              {/* Submission Submit Button */}
-              <div className="flex items-center justify-end gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-7 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 disabled:opacity-50 cursor-pointer"
-                >
-                  <UploadSimple size={18} weight="bold" />
-                  <span>{isSubmitting ? 'Uploading & Queuing...' : 'Submit Document for Review'}</span>
-                </button>
+              {/* Submitter Provenance */}
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xs space-y-4">
+                <h3 className="text-sm font-bold text-[var(--color-ink)] border-b border-[var(--color-rule-subtle)] pb-3">
+                  Submitter Information
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
+                      Your Full Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newsSubmitterName}
+                      onChange={(e) => setNewsSubmitterName(e.target.value)}
+                      placeholder="Maria Santos"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">
+                      Your Email Address <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={newsSubmitterEmail}
+                      onChange={(e) => setNewsSubmitterEmail(e.target.value)}
+                      placeholder="maria@clsu.edu.ph"
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)] font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-ink)]">Campus Organization / Role</label>
+                    <select
+                      value={newsSubmitterRole}
+                      onChange={(e) => setNewsSubmitterRole(e.target.value as any)}
+                      className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
+                    >
+                      <option value="student">Student / Org Officer</option>
+                      <option value="faculty">Faculty Member</option>
+                      <option value="staff">Department Administrator</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
               </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 py-4 text-sm font-bold text-slate-950 shadow-md hover:bg-amber-400 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Megaphone size={18} weight="bold" />
+                <span>{isSubmitting ? 'Submitting Bulletin...' : 'Submit News Bulletin for Verification'}</span>
+              </button>
             </form>
           )}
         </div>

@@ -36,8 +36,13 @@ export default function StatsStrip({
       ? Math.round((activeResources.length / resources.length) * 100)
       : 100;
 
-  // 2. Dynamic Active Campus Offices Count
-  const activeOfficesCount = departments.filter((d) => d.is_active).length;
+  // 2. Dynamic Campus Offices Count (Unique offices/departments with active documents)
+  const uniqueOffices = new Set(
+    activeResources
+      .map((r) => r.department_id || r.department?.name || r.source_name)
+      .filter(Boolean)
+  );
+  const activeOfficesCount = uniqueOffices.size;
 
   // 3. Dynamic Latest Document Revision Year
   const latestRevisionYear =
