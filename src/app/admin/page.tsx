@@ -71,6 +71,7 @@ interface StaffMember {
 
 export default function AdminDashboardPage() {
   // Authentication & RBAC State
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState<AdminUserSession | null>(null);
   const [isPendingApproval, setIsPendingApproval] = useState(false);
@@ -214,6 +215,7 @@ export default function AdminDashboardPage() {
       // Fallback
     } finally {
       if (manual) setIsCheckingStatus(false);
+      setIsLoadingSession(false);
     }
   };
 
@@ -567,6 +569,25 @@ export default function AdminDashboardPage() {
     setNewsList(newsList.map((n) => (n.id === id ? { ...n, status: 'rejected' } : n)));
     showToast('Article marked as rejected.');
   };
+
+  // --- ⌛ INITIAL SESSION VERIFICATION SCREEN (Prevents login screen flash on refresh) ---
+  if (isLoadingSession) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-paper)]">
+        <div className="flex flex-col items-center gap-3 animate-in fade-in duration-150">
+          <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-[var(--color-primary)] text-white shadow-lg text-2xl font-bold animate-pulse select-none">
+            🦦
+          </div>
+          <div className="flex items-center gap-2">
+            <ArrowsClockwise size={14} className="animate-spin text-[var(--color-primary)]" />
+            <span className="font-mono text-xs font-bold text-[var(--color-ink-muted)]">
+              Verifying security session...
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // --- ⏳ PENDING MASTER ADMIN APPROVAL GATE SCREEN ---
   if (isPendingApproval) {
