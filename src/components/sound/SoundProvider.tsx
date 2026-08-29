@@ -34,11 +34,16 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const lastHoveredElementRef = useRef<Element | null>(null);
   const lastPlayTimeRef = useRef<number>(0);
 
-  // Sync initial sound state
+  // Sync initial sound state from localStorage (defaults to true)
   useEffect(() => {
     const initial = getSoundEnabled();
     setSoundEnabledState(initial);
     setSoundEnabled(initial);
+
+    // Expose for testing in console if needed
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __playThock: typeof playThock }).__playThock = playThock;
+    }
   }, []);
 
   const toggleSound = useCallback(() => {
@@ -47,7 +52,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       setSoundEnabled(next);
       if (next) {
         unlockAudioEngine();
-        setTimeout(() => playThock(1, 0.32), 20);
+        setTimeout(() => playThock(1, 0.4), 10);
       }
       return next;
     });
@@ -55,12 +60,12 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
   // Global Interaction Unlock & Hover Audio Handler
   useEffect(() => {
-    // 1. Unlock browser audio hardware on first user gesture (pointerdown, click, touch, keydown)
-    const unlockEvents = ['pointerdown', 'mousedown', 'click', 'touchstart', 'keydown'];
+    // 1. Permanent interaction listeners to unlock AudioContext
     const handleGestureUnlock = () => {
       unlockAudioEngine();
     };
 
+    const unlockEvents = ['pointerdown', 'mousedown', 'click', 'touchstart', 'keydown', 'wheel', 'scroll'];
     unlockEvents.forEach((evt) => {
       window.addEventListener(evt, handleGestureUnlock, { capture: true, passive: true });
     });
@@ -76,27 +81,22 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     const interactiveSelector =
       'a, button, [role="button"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], select, [data-thock], .hover-thock, summary, [tabindex="0"]';
 
-    const handlePointerOver = (e: PointerEvent) => {
+    const handlePointerOver = (e: MouseEvent | PointerEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-
-      // Eagerly wake up AudioContext if it was suspended
-      getAudioContext();
 
       // Find the closest interactive ancestor
       const interactiveEl = target.closest(interactiveSelector);
 
       if (interactiveEl) {
-        // If entering a new distinct interactive target
         if (interactiveEl !== lastHoveredElementRef.current) {
           lastHoveredElementRef.current = interactiveEl;
 
           const now = performance.now();
-          // Rate-limit throttle to max 1 thock per 28ms to prevent audio spam on high-DPI mouse sweeps
-          if (now - lastPlayTimeRef.current > 28) {
+          // Rate-limit throttle to max 1 thock per 25ms
+          if (now - lastPlayTimeRef.current > 25) {
             lastPlayTimeRef.current = now;
 
-            // Pitch & depth scaling based on element type
             const isCard =
               interactiveEl.matches('[data-thock="card"]') ||
               interactiveEl.classList.contains('group') ||
@@ -107,33 +107,32 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
               interactiveEl.matches('kbd');
 
             if (isCard) {
-              playDeepThock(0.32);
+              playDeepThock(0.42);
             } else if (isPill) {
-              playSoftClick(0.22);
+              playSoftClick(0.28);
             } else {
-              playThock(1.0, 0.28);
+              playThock(1.0, 0.38);
             }
           }
         }
       } else {
-        // Pointer is on whitespace or non-interactive background
         lastHoveredElementRef.current = null;
       }
     };
 
-    const handlePointerOut = (e: PointerEvent) => {
-      const related = e.relatedTarget as HTMLElement | null;
+    const handlePointerOut = (e: MouseEvent | PointerEvent) => {
+      const related = (e as MouseEvent).relatedTarget as HTMLElement | null;
       if (!related || !related.closest(interactiveSelector)) {
         lastHoveredElementRef.current = null;
       }
     };
 
-    window.addEventListener('pointerover', handlePointerOver, { passive: true });
-    window.addEventListener('pointerout', handlePointerOut, { passive: true });
+    window.addEventListener('mouseover', handlePointerOver, { passive: true });
+    window.addEventListener('mouseout', handlePointerOut, { passive: true });
 
     return () => {
-      window.removeEventListener('pointerover', handlePointerOver);
-      window.removeEventListener('pointerout', handlePointerOut);
+      window.removeEventListener('mouseover', handlePointerOver);
+      window.removeEventListener('mouseout', handlePointerOut);
       unlockEvents.forEach((evt) => {
         window.removeEventListener(evt, handleGestureUnlock, { capture: true });
       });

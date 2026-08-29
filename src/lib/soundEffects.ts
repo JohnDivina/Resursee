@@ -1,84 +1,113 @@
 'use client';
 
 /**
- * Resursee Studio Web Audio Engine (Ultra-Reliable High-Fidelity Mechanical Thock)
+ * Resursee Studio Audio Engine (Bulletproof Mechanical Thock Synthesizer)
  *
- * Robust zero-latency audio engine engineered to overcome browser autoplay policies,
- * suspension states, and rapid hovering transitions.
+ * Combines low-latency Web Audio API real-time synthesis with instant-ready
+ * pre-rendered PCM buffers to guarantee 100% reliable audible playback on all browsers.
  */
 
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
-let masterCompressor: DynamicsCompressorNode | null = null;
 let isSoundEnabled = true;
-let isUnlocked = false;
+let hasUnlocked = false;
 
-// Active voice gains for smooth cross-fading
-const activeVoiceGains: GainNode[] = [];
+// Pre-rendered AudioBuffers for instantaneous zero-latency playback
+let preRenderedThockBuffer: AudioBuffer | null = null;
+let preRenderedDeepThockBuffer: AudioBuffer | null = null;
+let preRenderedClickBuffer: AudioBuffer | null = null;
 
 /**
- * Initialize / retrieve AudioContext with automatic unlock and resume handlers
+ * Get or create the master AudioContext
  */
 export function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
 
-  if (!audioCtx) {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  try {
+    if (!audioCtx) {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 
-    if (AudioContextClass) {
-      audioCtx = new AudioContextClass({ latencyHint: 'interactive' });
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass({ latencyHint: 'interactive' });
+        masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+        masterGain.connect(audioCtx.destination);
 
-      // Master dynamics compressor (smooth limiter to prevent clipping)
-      masterCompressor = audioCtx.createDynamicsCompressor();
-      masterCompressor.threshold.setValueAtTime(-3, audioCtx.currentTime);
-      masterCompressor.knee.setValueAtTime(4, audioCtx.currentTime);
-      masterCompressor.ratio.setValueAtTime(6, audioCtx.currentTime);
-      masterCompressor.attack.setValueAtTime(0.001, audioCtx.currentTime);
-      masterCompressor.release.setValueAtTime(0.025, audioCtx.currentTime);
-
-      // Master output gain
-      masterGain = audioCtx.createGain();
-      masterGain.gain.setValueAtTime(1.15, audioCtx.currentTime);
-
-      masterCompressor.connect(masterGain);
-      masterGain.connect(audioCtx.destination);
+        // Pre-render acoustic switch buffers
+        generatePreRenderedBuffers(audioCtx);
+      }
     }
-  }
 
-  // Always attempt to resume if suspended
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+  } catch {
+    // ignore
   }
 
   return audioCtx;
 }
 
 /**
- * Warm up and unlock browser audio hardware permanently on first interaction
+ * Pre-synthesizes high-fidelity PCM audio buffers into memory for zero-delay playback
  */
-export function unlockAudioEngine() {
-  if (isUnlocked && audioCtx && audioCtx.state === 'running') return;
+function generatePreRenderedBuffers(ctx: AudioContext) {
+  try {
+    preRenderedThockBuffer = createThockBuffer(ctx, 1.0, 0.085);
+    preRenderedDeepThockBuffer = createThockBuffer(ctx, 0.78, 0.095);
+    preRenderedClickBuffer = createThockBuffer(ctx, 1.35, 0.065);
+  } catch {
+    // ignore
+  }
+}
 
-  const ctx = getAudioContext();
-  if (!ctx) return;
+function createThockBuffer(ctx: AudioContext, pitchScale: number, duration: number): AudioBuffer {
+  const sampleRate = ctx.sampleRate || 44100;
+  const numSamples = Math.floor(sampleRate * duration);
+  const buffer = ctx.createBuffer(1, numSamples, sampleRate);
+  const data = buffer.getChannelData(0);
 
-  if (ctx.state === 'suspended') {
-    ctx.resume().then(() => {
-      isUnlocked = true;
-    }).catch(() => {});
-  } else if (ctx.state === 'running') {
-    isUnlocked = true;
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const decay = Math.exp(-t * (40 / pitchScale));
+
+    // 1. Bottom-out mechanical switch drop
+    const freq = 240 * pitchScale * Math.exp(-t * 28) + 55 * pitchScale;
+    const thump = Math.sin(2 * Math.PI * freq * t) * decay;
+
+    // 2. Keycap stem snap transient
+    const noiseDecay = Math.exp(-t * 160);
+    const noise = (Math.random() * 2 - 1) * Math.sin(2 * Math.PI * (1350 * pitchScale) * t) * noiseDecay;
+
+    // 3. Acoustic body resonance
+    const body = Math.sin(2 * Math.PI * (80 * pitchScale) * t) * Math.exp(-t * 30);
+
+    const sample = (thump * 0.65 + noise * 0.35 + body * 0.4) * 0.85;
+    data[i] = Math.max(-1, Math.min(1, sample));
   }
 
-  // Play an inaudible 1-sample buffer to force the browser audio pipeline to spin up
+  return buffer;
+}
+
+/**
+ * Force unlock AudioContext on any user gesture (pointer/click/touch/key)
+ */
+export function unlockAudioEngine() {
+  if (hasUnlocked && audioCtx && audioCtx.state === 'running') return;
+
   try {
-    const silentBuffer = ctx.createBuffer(1, 1, 22050);
-    const source = ctx.createBufferSource();
-    source.buffer = silentBuffer;
-    source.connect(ctx.destination);
-    source.start(0);
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        hasUnlocked = true;
+      }).catch(() => {});
+    } else {
+      hasUnlocked = true;
+    }
   } catch {
     // ignore
   }
@@ -99,155 +128,94 @@ export function getSoundEnabled(): boolean {
 }
 
 /**
- * Synthesizes a punchy, tactile mechanical keyboard "thock"
- * @param pitchMultiplier - pitch scaling factor (0.8 = deep thock, 1.2 = light switch click)
- * @param volume - audible loudness (0.2 - 0.4)
+ * Play a rich tactile mechanical "Thock"
+ * @param pitchMultiplier - pitch scaling (1.0 = standard, 0.8 = deep thock, 1.3 = soft click)
+ * @param volume - volume level (0.2 to 0.6)
  */
-export function playThock(pitchMultiplier = 1.0, volume = 0.32) {
+export function playThock(pitchMultiplier = 1.0, volume = 0.38) {
   if (!isSoundEnabled) return;
 
   try {
     const ctx = getAudioContext();
-    if (!ctx || !masterCompressor) return;
+    if (!ctx) return;
 
-    // If suspended, resume and play immediately upon resolution
+    // If context is still suspended, try resuming and play
     if (ctx.state === 'suspended') {
       ctx.resume().then(() => {
-        executeThockSynthesis(ctx, pitchMultiplier, volume);
+        triggerPlayback(ctx, pitchMultiplier, volume);
       }).catch(() => {});
       return;
     }
 
-    executeThockSynthesis(ctx, pitchMultiplier, volume);
-  } catch {
-    // Fail silently without blocking UI
-  }
-}
-
-function executeThockSynthesis(ctx: AudioContext, pitchMultiplier: number, volume: number) {
-  try {
-    const now = ctx.currentTime;
-
-    // Smoothly fade out previous voice to prevent voice stacking and digital distortion
-    while (activeVoiceGains.length > 0) {
-      const prevGain = activeVoiceGains.pop();
-      if (prevGain) {
-        try {
-          prevGain.gain.cancelScheduledValues(now);
-          prevGain.gain.setValueAtTime(prevGain.gain.value, now);
-          prevGain.gain.linearRampToValueAtTime(0.0001, now + 0.003);
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    // Voice Gain Node
-    const voiceGain = ctx.createGain();
-    voiceGain.gain.setValueAtTime(1.0, now);
-    voiceGain.connect(masterCompressor!);
-    activeVoiceGains.push(voiceGain);
-
-    setTimeout(() => {
-      const idx = activeVoiceGains.indexOf(voiceGain);
-      if (idx !== -1) activeVoiceGains.splice(idx, 1);
-    }, 60);
-
-    // Natural micro-pitch variation (±3%)
-    const randomPitch = 1 + (Math.random() * 0.06 - 0.03);
-    const scale = pitchMultiplier * randomPitch;
-
-    // --- 1. Deep Mechanical Bottom-Out Thump (Triangle wave) ---
-    const osc = ctx.createOscillator();
-    const oscGain = ctx.createGain();
-    const oscFilter = ctx.createBiquadFilter();
-
-    osc.type = 'triangle';
-    const startFreq = 260 * scale;
-    const endFreq = 65 * scale;
-
-    osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + 0.036);
-
-    oscFilter.type = 'lowpass';
-    oscFilter.frequency.setValueAtTime(650, now);
-    oscFilter.Q.setValueAtTime(2.0, now);
-
-    oscGain.gain.setValueAtTime(0.0001, now);
-    oscGain.gain.linearRampToValueAtTime(volume * 1.25, now + 0.002);
-    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
-    oscGain.gain.linearRampToValueAtTime(0, now + 0.043);
-
-    osc.connect(oscFilter);
-    oscFilter.connect(oscGain);
-    oscGain.connect(voiceGain);
-
-    osc.start(now);
-    osc.stop(now + 0.045);
-
-    // --- 2. Keycap Stem Click (Noise transient tap) ---
-    const noiseLength = Math.floor(ctx.sampleRate * 0.005); // 5ms
-    const noiseBuf = ctx.createBuffer(1, noiseLength, ctx.sampleRate);
-    const noiseData = noiseBuf.getChannelData(0);
-
-    for (let i = 0; i < noiseLength; i++) {
-      const progress = i / noiseLength;
-      noiseData[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * progress) * (1 - progress);
-    }
-
-    const noise = ctx.createBufferSource();
-    noise.buffer = noiseBuf;
-
-    const noiseFilter = ctx.createBiquadFilter();
-    noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.setValueAtTime(1300 * scale, now);
-    noiseFilter.Q.setValueAtTime(3.0, now);
-
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(volume * 0.65, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.01);
-    noiseGain.gain.linearRampToValueAtTime(0, now + 0.012);
-
-    noise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(voiceGain);
-
-    noise.start(now);
-    noise.stop(now + 0.015);
-
-    // --- 3. Sub-Acoustic Body Resonance (Sine wave) ---
-    const subOsc = ctx.createOscillator();
-    const subGain = ctx.createGain();
-
-    subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(125 * scale, now);
-    subOsc.frequency.exponentialRampToValueAtTime(45 * scale, now + 0.032);
-
-    subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(volume * 0.95, now + 0.002);
-    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
-    subGain.gain.linearRampToValueAtTime(0, now + 0.038);
-
-    subOsc.connect(subGain);
-    subGain.connect(voiceGain);
-
-    subOsc.start(now);
-    subOsc.stop(now + 0.04);
+    triggerPlayback(ctx, pitchMultiplier, volume);
   } catch {
     // Ignore audio rendering errors
   }
 }
 
-/**
- * Soft tick for smaller tags, links, and pill items
- */
-export function playSoftClick(volume = 0.22) {
-  playThock(1.28, volume);
+function triggerPlayback(ctx: AudioContext, pitchMultiplier: number, volume: number) {
+  try {
+    // Method 1: Use Pre-rendered Buffer with playbackRate for zero latency
+    let bufferToUse = preRenderedThockBuffer;
+    if (pitchMultiplier <= 0.85) bufferToUse = preRenderedDeepThockBuffer;
+    else if (pitchMultiplier >= 1.25) bufferToUse = preRenderedClickBuffer;
+
+    if (!bufferToUse) {
+      generatePreRenderedBuffers(ctx);
+      bufferToUse = preRenderedThockBuffer;
+    }
+
+    if (bufferToUse) {
+      const source = ctx.createBufferSource();
+      const gainNode = ctx.createGain();
+
+      source.buffer = bufferToUse;
+      // Slight pitch variation (±2%)
+      source.playbackRate.value = pitchMultiplier * (1 + (Math.random() * 0.04 - 0.02));
+
+      // Instant attack, clean volume
+      gainNode.gain.setValueAtTime(volume * 1.3, ctx.currentTime);
+
+      source.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      source.start(ctx.currentTime);
+      return;
+    }
+
+    // Method 2: Fallback Real-time Synthesis
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220 * pitchMultiplier, now);
+    osc.frequency.exponentialRampToValueAtTime(55 * pitchMultiplier, now + 0.04);
+
+    // Instant attack at t=now, exponential decay
+    gain.gain.setValueAtTime(volume * 1.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.08);
+  } catch {
+    // Fail silently
+  }
 }
 
 /**
- * Deep, heavy mechanical thock for large cards, buttons, and search inputs
+ * Soft tick for pills, small badges, and tags
  */
-export function playDeepThock(volume = 0.35) {
-  playThock(0.85, volume);
+export function playSoftClick(volume = 0.28) {
+  playThock(1.3, volume);
+}
+
+/**
+ * Deep heavy mechanical thock for large cards, buttons, and search inputs
+ */
+export function playDeepThock(volume = 0.42) {
+  playThock(0.8, volume);
 }
