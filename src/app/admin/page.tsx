@@ -30,9 +30,10 @@ import {
   List,
   X,
   Sparkle,
+  ArrowsClockwise,
+  BellRinging,
 } from '@phosphor-icons/react';
 import {
-  mockResources,
   mockCategories,
   mockDepartments,
   mockNewsArticles,
@@ -40,6 +41,11 @@ import {
   mockSubmissions,
 } from '@/lib/mockData';
 import { Resource, NewsArticle, DocumentType, ResourceSubmission } from '@/types/database';
+import {
+  getLiveResources,
+  deleteResourceById,
+  addCustomResource,
+} from '@/lib/resourceStore';
 
 interface AdminUserSession {
   email: string;
@@ -62,12 +68,12 @@ export default function AdminDashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState<AdminUserSession | null>(null);
   const [isPendingApproval, setIsPendingApproval] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [passkeyInput, setPasskeyInput] = useState('');
   const [authError, setAuthError] = useState('');
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockTimer, setLockTimer] = useState(0);
-  const [mobileAdminMenuOpen, setMobileAdminMenuOpen] = useState(false);
 
   // Staff Management State (Master Admin Only)
   const [pendingStaffRequests, setPendingStaffRequests] = useState<StaffMember[]>([]);
@@ -80,7 +86,7 @@ export default function AdminDashboardPage() {
   const [settingsFeedback, setSettingsFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const [activeTab, setActiveTab] = useState<'resources' | 'submissions' | 'news' | 'staff' | 'logs' | 'settings'>('resources');
-  const [resourcesList, setResourcesList] = useState<Resource[]>(mockResources);
+  const [resourcesList, setResourcesList] = useState<Resource[]>([]);
   const [newsList, setNewsList] = useState<NewsArticle[]>(mockNewsArticles);
   const [submissionsList, setSubmissionsList] = useState<ResourceSubmission[]>(mockSubmissions);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -99,84 +105,102 @@ export default function AdminDashboardPage() {
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newIsFeatured, setNewIsFeatured] = useState(false);
 
-  const isMasterAdmin = adminUser?.role === 'master_admin' || !adminUser; // Passkey logins act as master admin
+  const isMasterAdmin = adminUser?.role === 'master_admin' || (!adminUser && isAuthenticated);
   const isModerator = adminUser?.role === 'moderator';
 
-  // Fetch session & staff state on mount
-  const checkSession = () => {
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Load persistent live resources
+  const refreshResources = () => {
+    setResourcesList(getLiveResources());
+  };
+
+  useEffect(() => {
+    refreshResources();
+
+    // Listen to cross-component updates
+    const handleCatalogUpdate = () => refreshResources();
+    window.addEventListener('resursee_catalog_updated', handleCatalogUpdate);
+    return () => window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
+  }, []);
+
+  // Fetch session
+  const checkSession = async (manual = false) => {
     if (typeof window === 'undefined') return;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const err = urlParams.get('error');
-    const authParam = urlParams.get('auth');
-    const emailParam = urlParams.get('email');
-    const nameParam = urlParams.get('name');
+    if (manual) setIsCheckingStatus(true);
 
-    if (authParam === 'pending_approval') {
-      setIsPendingApproval(true);
-      setAdminUser({
-        email: emailParam || '',
-        name: nameParam || 'Google User',
-        role: 'pending',
-        authenticated: false,
-      });
-      return;
-    }
+    try {
+      const res = await fetch(`/api/auth/session?t=${Date.now()}`);
+      const data = await res.json();
 
-    if (err === 'unauthorized_email') {
-      setAuthError(`Access Denied: The Google account "${emailParam || 'selected'}" is not authorized.`);
-    } else if (err === 'missing_credentials' || err === 'missing_google_client_id') {
-      setAuthError('Google OAuth is not yet configured. Please add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
-    } else if (err) {
-      setAuthError(`Authentication error: ${err}`);
-    }
-
-    fetch('/api/auth/session')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
-          if (data.user.role === 'pending') {
-            setIsPendingApproval(true);
-            setIsAuthenticated(false);
-          } else {
-            setIsAuthenticated(true);
-            setIsPendingApproval(false);
-            setAdminUser(data.user);
-          }
+      if (data.authenticated && data.user) {
+        if (data.user.role === 'pending') {
+          setIsPendingApproval(true);
+          setIsAuthenticated(false);
+          setAdminUser(data.user);
+          if (manual) showToast('Status: Still pending approval from Master Admin.');
         } else {
-          const stored = sessionStorage.getItem('resursee_admin_session');
-          if (stored === 'authenticated') {
-            setIsAuthenticated(true);
-            setAdminUser({
-              email: 'master.admin@university.edu',
-              name: 'Master Admin',
-              role: 'master_admin',
-              authenticated: true,
-            });
-          }
+          // Successfully authorized / upgraded!
+          setIsAuthenticated(true);
+          setIsPendingApproval(false);
+          setAdminUser(data.user);
+          // Clean URL parameters
+          window.history.replaceState({}, '', '/admin');
+          if (manual) showToast(`Welcome back, ${data.user.name}! Access verified.`);
         }
-      })
-      .catch(() => {
+      } else {
         const stored = sessionStorage.getItem('resursee_admin_session');
         if (stored === 'authenticated') {
           setIsAuthenticated(true);
+          setIsPendingApproval(false);
+          setAdminUser({
+            email: 'master.admin@university.edu',
+            name: 'Master Admin',
+            role: 'master_admin',
+            authenticated: true,
+          });
+        } else {
+          const urlParams = new URLSearchParams(window.location.search);
+          const authParam = urlParams.get('auth');
+          if (authParam === 'pending_approval') {
+            setIsPendingApproval(true);
+            setIsAuthenticated(false);
+          }
         }
-      });
+      }
+    } catch {
+      // Fallback
+    } finally {
+      if (manual) setIsCheckingStatus(false);
+    }
   };
 
-  const fetchStaffData = () => {
-    fetch('/api/admin/staff')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.approvedModerators) setApprovedModerators(data.approvedModerators);
-        if (data.pendingRequests) setPendingStaffRequests(data.pendingRequests);
-      })
-      .catch(() => {});
+  // Fetch pending and approved staff members
+  const fetchStaffData = async () => {
+    try {
+      const res = await fetch(`/api/admin/staff?t=${Date.now()}`);
+      const data = await res.json();
+      if (data.approvedModerators) setApprovedModerators(data.approvedModerators);
+      if (data.pendingRequests) setPendingStaffRequests(data.pendingRequests);
+    } catch {
+      // ignore
+    }
   };
 
   useEffect(() => {
     checkSession();
     fetchStaffData();
+
+    // Poll staff requests every 10 seconds for real-time notification
+    const interval = setInterval(() => {
+      fetchStaffData();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Lockout countdown timer
@@ -216,6 +240,7 @@ export default function AdminDashboardPage() {
       });
       setAuthError('');
       setPasskeyInput('');
+      window.history.replaceState({}, '', '/admin');
     } else {
       const nextAttempts = failedAttempts + 1;
       setFailedAttempts(nextAttempts);
@@ -243,6 +268,7 @@ export default function AdminDashboardPage() {
     setIsAuthenticated(false);
     setIsPendingApproval(false);
     setAdminUser(null);
+    window.history.replaceState({}, '', '/admin');
     showToast('Signed out of Administrator Portal.');
   };
 
@@ -332,11 +358,6 @@ export default function AdminDashboardPage() {
   const pendingNews = newsList.filter((n) => n.status === 'pending');
   const approvedNews = newsList.filter((n) => n.status === 'approved');
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
-
   const handleAddResource = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -374,7 +395,8 @@ export default function AdminDashboardPage() {
       department: selectedDeptObj,
     };
 
-    setResourcesList([newResourceItem, ...resourcesList]);
+    const updated = addCustomResource(newResourceItem);
+    setResourcesList(updated);
     setIsAddModalOpen(false);
     showToast(`Successfully published "${newTitle}"`);
 
@@ -386,32 +408,34 @@ export default function AdminDashboardPage() {
     setNewIsFeatured(false);
   };
 
+  // Persistent Deletion Handler (Master Admin Only)
   const handleDeleteResource = (id: string, title: string) => {
     if (!isMasterAdmin) {
       alert('Permission Denied: Only the Master Administrator can delete documents from the catalog.');
       return;
     }
-    if (confirm(`Are you sure you want to delete "${title}"?`)) {
-      setResourcesList(resourcesList.filter((r) => r.id !== id));
-      showToast(`Deleted "${title}"`);
+
+    if (confirm(`Are you sure you want to delete "${title}"? This will permanently remove it from the public catalog.`)) {
+      const updated = deleteResourceById(id);
+      setResourcesList(updated);
+      showToast(`Deleted "${title}" from catalog.`);
     }
   };
 
   const handleApproveSubmission = (submission: ResourceSubmission) => {
     if (submission.submission_type === 'update_existing' && submission.existing_resource_id) {
-      setResourcesList(
-        resourcesList.map((r) =>
-          r.id === submission.existing_resource_id
-            ? {
-                ...r,
-                current_version: submission.version_label,
-                file_format: submission.file_format,
-                file_name: submission.file_name,
-                updated_at: new Date().toISOString(),
-              }
-            : r
-        )
-      );
+      const target = resourcesList.find((r) => r.id === submission.existing_resource_id);
+      if (target) {
+        const updatedTarget = {
+          ...target,
+          current_version: submission.version_label,
+          file_format: submission.file_format,
+          file_name: submission.file_name,
+          updated_at: new Date().toISOString(),
+        };
+        addCustomResource(updatedTarget);
+        refreshResources();
+      }
       showToast(`Updated "${submission.title}" to version ${submission.version_label}`);
     } else {
       const slug = submission.title
@@ -444,7 +468,8 @@ export default function AdminDashboardPage() {
         department: submission.department || mockDepartments.find((d) => d.id === submission.department_id),
       };
 
-      setResourcesList([newRes, ...resourcesList]);
+      const updated = addCustomResource(newRes);
+      setResourcesList(updated);
       showToast(`Approved & published "${submission.title}" to the live catalog!`);
     }
 
@@ -505,17 +530,19 @@ export default function AdminDashboardPage() {
               <span>What happens next?</span>
             </div>
             <p className="text-[11px] text-[var(--color-ink-muted)] leading-relaxed">
-              Once approved, you will be granted <strong>Document Moderator</strong> permissions to verify student contributions and publish bulletins. You will not have permissions to delete directory files.
+              Once approved by the Master Admin, you will be granted <strong>Document Moderator</strong> permissions to verify student contributions and publish bulletins. You will not have permissions to delete directory files.
             </p>
           </div>
 
           <div className="flex flex-col gap-2 pt-2">
             <button
               type="button"
-              onClick={checkSession}
-              className="w-full rounded-[14px] bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all cursor-pointer"
+              disabled={isCheckingStatus}
+              onClick={() => checkSession(true)}
+              className="flex items-center justify-center gap-2 w-full rounded-[14px] bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
             >
-              Check Approval Status
+              <ArrowsClockwise size={16} className={isCheckingStatus ? 'animate-spin' : ''} />
+              <span>{isCheckingStatus ? 'Checking Authorization...' : 'Check Approval Status'}</span>
             </button>
             <button
               type="button"
@@ -526,6 +553,14 @@ export default function AdminDashboardPage() {
             </button>
           </div>
         </div>
+
+        {/* Action Toast Feedback */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
+            <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
       </div>
     );
   }
@@ -655,6 +690,26 @@ export default function AdminDashboardPage() {
   // --- 🔓 AUTHENTICATED DASHBOARD VIEW ---
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
+      {/* 🚨 Master Admin Floating Notification Banner for Pending Staff Requests */}
+      {isMasterAdmin && pendingStaffRequests.length > 0 && (
+        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold shadow-md">
+          <div className="mx-auto flex max-w-7xl items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BellRinging size={18} weight="fill" className="animate-bounce" />
+              <span>
+                <strong>Action Required:</strong> {pendingStaffRequests.length} user(s) requested Staff Moderator permissions.
+              </span>
+            </div>
+            <button
+              onClick={() => setActiveTab('staff')}
+              className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              Review Requests →
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Admin Top Navigation */}
       <header className="sticky top-0 z-30 border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
@@ -668,7 +723,7 @@ export default function AdminDashboardPage() {
                 <span
                   className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
                     isMasterAdmin
-                      ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
+                      ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 ring-1 ring-amber-500/30'
                       : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                   }`}
                 >
@@ -676,7 +731,7 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
               <span className="text-[11px] text-[var(--color-ink-muted)]">
-                {isMasterAdmin ? 'Full Governance & Sovereignty' : 'Document Review & Verification'}
+                {isMasterAdmin ? 'Full Governance & Deletion Controls' : 'Document Review & Verification Only'}
               </span>
             </div>
           </div>
@@ -733,7 +788,7 @@ export default function AdminDashboardPage() {
 
             <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
               <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
-                <span className="text-xs font-medium">Contributions</span>
+                <span className="text-xs font-medium">Pending Contributions</span>
                 <UploadSimple size={18} className="text-amber-500" />
               </div>
               <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400">
@@ -743,7 +798,7 @@ export default function AdminDashboardPage() {
 
             <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
               <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
-                <span className="text-xs font-medium">Downloads</span>
+                <span className="text-xs font-medium">Total Downloads</span>
                 <ChartBar size={18} className="text-emerald-500" />
               </div>
               <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
@@ -809,7 +864,7 @@ export default function AdminDashboardPage() {
             {isMasterAdmin && (
               <button
                 onClick={() => setActiveTab('staff')}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 relative ${
                   activeTab === 'staff'
                     ? 'bg-[var(--color-primary)] text-white shadow-2xs'
                     : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
@@ -818,8 +873,8 @@ export default function AdminDashboardPage() {
                 <Users size={16} />
                 <span>Staff & Permissions</span>
                 {pendingStaffRequests.length > 0 && (
-                  <span className="rounded-full bg-rose-500 text-white px-1.5 py-0.2 text-[10px] font-bold">
-                    {pendingStaffRequests.length}
+                  <span className="rounded-full bg-rose-500 text-white px-2 py-0.5 text-[10px] font-bold animate-pulse">
+                    {pendingStaffRequests.length} Pending
                   </span>
                 )}
               </button>
@@ -908,10 +963,10 @@ export default function AdminDashboardPage() {
                             <td className="px-5 py-4 text-right">
                               <button
                                 onClick={() => handleDeleteResource(res.id, res.title)}
-                                className="rounded-lg p-1.5 text-[var(--color-ink-muted)] hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
-                                title="Delete resource (Master Admin Only)"
+                                className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                title="Delete document permanently"
                               >
-                                <Trash size={16} />
+                                <Trash size={16} weight="bold" />
                               </button>
                             </td>
                           )}
@@ -1073,24 +1128,33 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Pending Requests Section */}
-              <div className="rounded-[24px] border border-amber-300 dark:border-amber-700/50 bg-amber-50/40 dark:bg-amber-950/20 p-6 shadow-2xs space-y-4">
-                <div className="flex items-center gap-2.5">
-                  <UserPlus size={20} className="text-amber-600 dark:text-amber-400" />
-                  <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
-                    Pending Moderator Access Requests ({pendingStaffRequests.length})
-                  </h3>
+              <div className="rounded-[24px] border-2 border-amber-400 dark:border-amber-600/70 bg-amber-50/60 dark:bg-amber-950/30 p-6 shadow-md space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <UserPlus size={22} className="text-amber-600 dark:text-amber-400" />
+                    <h3 className="text-base font-bold text-amber-950 dark:text-amber-100">
+                      Pending Moderator Access Requests ({pendingStaffRequests.length})
+                    </h3>
+                  </div>
+                  <button
+                    onClick={fetchStaffData}
+                    className="flex items-center gap-1 text-xs font-bold text-amber-800 dark:text-amber-300 hover:underline cursor-pointer"
+                  >
+                    <ArrowsClockwise size={14} />
+                    <span>Refresh</span>
+                  </button>
                 </div>
 
                 {pendingStaffRequests.length === 0 ? (
                   <p className="text-xs text-[var(--color-ink-muted)] italic py-2">
-                    No pending staff requests. When someone logs in with an unapproved Google account, their request will appear here.
+                    No pending staff requests. When someone logs in with an unapproved Google account, their request will appear here with an alert banner.
                   </p>
                 ) : (
                   <div className="space-y-3">
                     {pendingStaffRequests.map((req) => (
                       <div
                         key={req.email}
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-[18px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 shadow-2xs"
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-[18px] border border-amber-300 dark:border-amber-700 bg-[var(--color-paper-card)] p-4 shadow-sm"
                       >
                         <div className="flex items-center gap-3">
                           {req.picture ? (
@@ -1109,14 +1173,14 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center gap-2 self-end sm:self-center">
                           <button
                             onClick={() => handleApproveStaff(req)}
-                            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all cursor-pointer"
+                            className="flex items-center gap-1 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-all cursor-pointer"
                           >
                             <Check size={14} weight="bold" />
                             <span>Approve as Moderator</span>
                           </button>
                           <button
                             onClick={() => handleRejectStaff(req.email)}
-                            className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
+                            className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
                           >
                             <X size={14} weight="bold" />
                             <span>Reject</span>

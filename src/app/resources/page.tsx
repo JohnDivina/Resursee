@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -20,6 +20,7 @@ import {
 import { mockResources, mockCategories, mockDepartments } from '@/lib/mockData';
 import { Resource } from '@/types/database';
 import { useRealtimeDownloadCount } from '@/lib/downloadStore';
+import { getLiveResources } from '@/lib/resourceStore';
 
 function ListRowItem({ resource }: { resource: Resource }) {
   const realtimeDownloads = useRealtimeDownloadCount(resource.id, resource.download_count);
@@ -79,10 +80,18 @@ export default function ResourcesDirectoryPage() {
   const [sortBy, setSortBy] = useState<'downloads' | 'recent' | 'alphabetical'>('downloads');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [liveResources, setLiveResources] = useState<Resource[]>(mockResources);
+
+  useEffect(() => {
+    setLiveResources(getLiveResources());
+    const handleUpdate = () => setLiveResources(getLiveResources());
+    window.addEventListener('resursee_catalog_updated', handleUpdate);
+    return () => window.removeEventListener('resursee_catalog_updated', handleUpdate);
+  }, []);
 
   // Filtered and Sorted Resources
   const filteredResources = useMemo(() => {
-    return mockResources
+    return liveResources
       .filter((res) => {
         // Query search
         if (searchQuery.trim()) {

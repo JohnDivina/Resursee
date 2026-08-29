@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { CaretUp, ArrowRight } from '@phosphor-icons/react';
 import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
 import { useRealtimeDownloadCount } from '@/lib/downloadStore';
+import { getLiveResources } from '@/lib/resourceStore';
 
 type TimeFilter = 'today' | 'week' | 'month' | 'all';
 
@@ -106,19 +107,29 @@ function LeaderboardItemCard({
 }
 
 export default function FeaturedLeaderboard({
-  resources = mockResources,
+  resources: initialResources,
 }: FeaturedLeaderboardProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('today');
+  const [liveList, setLiveList] = useState<Resource[]>(initialResources || mockResources);
+
+  useEffect(() => {
+    setLiveList(getLiveResources());
+    const handleUpdate = () => setLiveList(getLiveResources());
+    window.addEventListener('resursee_catalog_updated', handleUpdate);
+    return () => window.removeEventListener('resursee_catalog_updated', handleUpdate);
+  }, []);
+
+  const effectiveResources = liveList;
 
   const totalDownloads = useMemo(() => {
-    return resources.reduce((acc, curr) => acc + curr.download_count, 0);
-  }, [resources]);
+    return effectiveResources.reduce((acc, curr) => acc + curr.download_count, 0);
+  }, [effectiveResources]);
 
   // Ranked list of top 8 resources
   const rankedItems = useMemo(() => {
-    const sorted = [...resources].sort((a, b) => b.download_count - a.download_count);
+    const sorted = [...effectiveResources].sort((a, b) => b.download_count - a.download_count);
     return sorted.slice(0, 8);
-  }, [resources]);
+  }, [effectiveResources]);
 
   // Dynamic simulated delta based on time filter
   const getTrendingDelta = (index: number) => {

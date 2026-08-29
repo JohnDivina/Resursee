@@ -1,59 +1,121 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import fs from 'fs';
+import path from 'path';
 
-// In-memory / Cookie / Store registry for Netlify Serverless environment
-let approvedModerators: { email: string; name: string; picture?: string | null; approvedAt: string }[] = [];
-let pendingRequests: { email: string; name: string; picture?: string | null; requestedAt: string }[] = [];
-
-export function getApprovedModerators() {
-  return approvedModerators;
+interface StaffUser {
+  email: string;
+  name: string;
+  picture?: string | null;
+  approvedAt?: string;
+  requestedAt?: string;
 }
 
-export function getPendingRequests() {
-  return pendingRequests;
+interface StaffRegistry {
+  approvedModerators: StaffUser[];
+  pendingRequests: StaffUser[];
+}
+
+let inMemoryRegistry: StaffRegistry = {
+  approvedModerators: [],
+  pendingRequests: [],
+};
+
+const dataFilePath = path.join(process.cwd(), 'src/data/staff_registry.json');
+
+function loadRegistry(): StaffRegistry {
+  try {
+    if (fs.existsSync(dataFilePath)) {
+      const raw = fs.readFileSync(dataFilePath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      inMemoryRegistry = {
+        approvedModerators: parsed.approvedModerators || [],
+        pendingRequests: parsed.pendingRequests || [],
+      };
+    }
+  } catch {
+    // Fallback to in-memory
+  }
+  return inMemoryRegistry;
+}
+
+function saveRegistry(data: StaffRegistry) {
+  inMemoryRegistry = data;
+  try {
+    const dir = path.dirname(dataFilePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch {
+    // ignore in read-only environments
+  }
+}
+
+export function getApprovedModerators(): StaffUser[] {
+  const reg = loadRegistry();
+  return reg.approvedModerators;
+}
+
+export function getPendingRequests(): StaffUser[] {
+  const reg = loadRegistry();
+  return reg.pendingRequests;
 }
 
 export function addPendingRequest(user: { email: string; name: string; picture?: string | null }) {
-  const existing = pendingRequests.find((r) => r.email === user.email);
-  if (!existing && !approvedModerators.some((m) => m.email === user.email)) {
-    pendingRequests.push({ ...user, requestedAt: new Date().toISOString() });
+  const reg = loadRegistry();
+  const normalizedEmail = user.email.toLowerCase().trim();
+
+  const isAlreadyApproved = reg.approvedModerators.some((m) => m.email.toLowerCase() === normalizedEmail);
+  const isAlreadyPending = reg.pendingRequests.some((r) => r.email.toLowerCase() === normalizedEmail);
+
+  if (!isAlreadyApproved && !isAlreadyPending) {
+    reg.pendingRequests.unshift({
+      email: normalizedEmail,
+      name: user.name || normalizedEmail,
+      picture: user.picture || null,
+      requestedAt: new Date().toISOString(),
+    });
+    saveRegistry(reg);
   }
 }
 
 export async function GET() {
-  return NextResponse.json({
-    approvedModerators,
-    pendingRequests,
-  });
+  const reg = loadRegistry();
+  return NextResponse.json(reg);
 }
 
 export async function POST(request: Request) {
   try {
     const { action, email, name, picture } = await request.json();
+    const reg = loadRegistry();
+    const normalizedEmail = (email || '').toLowerCase().trim();
 
     if (action === 'approve') {
       // Remove from pending
-      pendingRequests = pendingRequests.filter((r) => r.email !== email);
+      reg.pendingRequests = reg.pendingRequests.filter((r) => r.email.toLowerCase() !== normalizedEmail);
       // Add to approved
-      if (!approvedModerators.some((m) => m.email === email)) {
-        approvedModerators.push({
-          email,
-          name: name || email,
+      if (!reg.approvedModerators.some((m) => m.email.toLowerCase() === normalizedEmail)) {
+        reg.approvedModerators.unshift({
+          email: normalizedEmail,
+          name: name || normalizedEmail,
           picture: picture || null,
           approvedAt: new Date().toISOString(),
         });
       }
-      return NextResponse.json({ success: true, approvedModerators, pendingRequests });
+      saveRegistry(reg);
+      return NextResponse.json({ success: true, ...reg });
     }
 
     if (action === 'reject') {
-      pendingRequests = pendingRequests.filter((r) => r.email !== email);
-      return NextResponse.json({ success: true, pendingRequests });
+      reg.pendingRequests = reg.pendingRequests.filter((r) => r.email.toLowerCase() !== normalizedEmail);
+      saveRegistry(reg);
+      return NextResponse.json({ success: true, ...reg });
     }
 
     if (action === 'revoke') {
-      approvedModerators = approvedModerators.filter((m) => m.email !== email);
-      return NextResponse.json({ success: true, approvedModerators });
+      reg.approvedModerators = reg.approvedModerators.filter((m) => m.email.toLowerCase() !== normalizedEmail);
+      saveRegistry(reg);
+      return NextResponse.json({ success: true, ...reg });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
