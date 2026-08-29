@@ -46,6 +46,17 @@ export function addSubmission(submission: ResourceSubmission): ResourceSubmissio
   const deletedIds = getDeletedSubmissionIds().filter((id) => id !== submission.id);
   localStorage.setItem(DELETED_SUBMISSIONS_KEY, JSON.stringify(deletedIds));
 
+  // Async sync to server
+  try {
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'create', ...submission }),
+    }).catch(() => {});
+  } catch {
+    // ignore
+  }
+
   window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   return updated;
 }
@@ -68,6 +79,18 @@ export function updateSubmissionStatus(
       : s
   );
   localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(updated));
+
+  // Async sync to server
+  try {
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_status', id, status, reviewed_by: reviewedBy }),
+    }).catch(() => {});
+  } catch {
+    // ignore
+  }
+
   window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   return updated;
 }
@@ -82,6 +105,18 @@ export function deleteSubmissionById(id: string): ResourceSubmission[] {
 
   const current = getLiveSubmissions().filter((s) => s.id !== id);
   localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(current));
+
+  // Async sync to server
+  try {
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id }),
+    }).catch(() => {});
+  } catch {
+    // ignore
+  }
+
   window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   return current;
 }
@@ -97,6 +132,18 @@ export function clearReviewedSubmissions(): ResourceSubmission[] {
 
   const remaining = current.filter((s) => s.status === 'pending');
   localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(remaining));
+
+  // Async sync to server
+  try {
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clear_reviewed' }),
+    }).catch(() => {});
+  } catch {
+    // ignore
+  }
+
   window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   return remaining;
 }

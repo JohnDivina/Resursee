@@ -181,7 +181,7 @@ export default function ResourcesDirectoryPage() {
                 Resources Directory
               </h1>
               <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm">
-                Showing {filteredResources.length} of {mockResources.length} documents and forms.
+                Showing {filteredResources.length} of {liveResources.length} documents and forms.
               </p>
             </div>
 
@@ -246,12 +246,12 @@ export default function ResourcesDirectoryPage() {
                     >
                       <span>All Categories</span>
                       <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
-                        {mockResources.length}
+                        {liveResources.length}
                       </span>
                     </button>
 
                     {mockCategories.map((cat) => {
-                      const count = mockResources.filter((r) => r.category_id === cat.id).length;
+                      const count = liveResources.filter((r) => r.category_id === cat.id).length;
                       return (
                         <button
                           key={cat.id}

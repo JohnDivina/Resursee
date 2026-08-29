@@ -126,23 +126,8 @@ export default function AdminDashboardPage() {
     setResourcesList(getLiveResources());
   };
 
-  const refreshSubmissions = async () => {
-    const live = getLiveSubmissions();
-    setSubmissionsList(live);
-    try {
-      const res = await fetch(`/api/submissions?t=${Date.now()}`);
-      const data = await res.json();
-      if (data.submissions && data.submissions.length > 0) {
-        // Merge with local live
-        const map = new Map<string, ResourceSubmission>();
-        [...data.submissions, ...live].forEach((s: ResourceSubmission) => {
-          if (!map.has(s.id)) map.set(s.id, s);
-        });
-        setSubmissionsList(Array.from(map.values()));
-      }
-    } catch {
-      // ignore
-    }
+  const refreshSubmissions = () => {
+    setSubmissionsList(getLiveSubmissions());
   };
 
   useEffect(() => {
