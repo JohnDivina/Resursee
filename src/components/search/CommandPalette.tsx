@@ -14,6 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { Resource } from '@/types/database';
 import { mockResources, mockCategories, mockDepartments } from '@/lib/mockData';
+import { getLiveResources } from '@/lib/resourceStore';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -24,12 +25,26 @@ interface CommandPaletteProps {
 export default function CommandPalette({
   isOpen,
   onClose,
-  resources = mockResources,
+  resources: initialResources,
 }: CommandPaletteProps) {
+  const [liveResources, setLiveResources] = useState<Resource[]>(initialResources || mockResources);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    setLiveResources(getLiveResources());
+    const handleUpdate = () => setLiveResources(getLiveResources());
+    window.addEventListener('resursee_catalog_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('resursee_catalog_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  const resources = liveResources;
 
   useEffect(() => {
     if (isOpen) {

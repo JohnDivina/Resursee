@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Resource, Department } from '@/types/database';
 import { mockResources, mockDepartments } from '@/lib/mockData';
+import { getLiveResources } from '@/lib/resourceStore';
 
 interface StatsStripProps {
   resources?: Resource[];
@@ -10,9 +11,24 @@ interface StatsStripProps {
 }
 
 export default function StatsStrip({
-  resources = mockResources,
+  resources: initialResources,
   departments = mockDepartments,
 }: StatsStripProps) {
+  const [liveResources, setLiveResources] = useState<Resource[]>(initialResources || mockResources);
+
+  useEffect(() => {
+    setLiveResources(getLiveResources());
+    const handleUpdate = () => setLiveResources(getLiveResources());
+    window.addEventListener('resursee_catalog_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('resursee_catalog_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  const resources = liveResources;
+
   // 1. Dynamic Verified Percentage (active items / total items)
   const activeResources = resources.filter((r) => r.status === 'active');
   const verifiedPercentage =

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
@@ -19,12 +19,25 @@ import {
 } from '@phosphor-icons/react';
 import { mockCategories, mockResources } from '@/lib/mockData';
 import { Resource } from '@/types/database';
+import { getLiveResources } from '@/lib/resourceStore';
 
 export default function CategoryDetailPage() {
   const params = useParams();
   const slug = params?.slug as string;
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [liveResources, setLiveResources] = useState<Resource[]>(mockResources);
+
+  useEffect(() => {
+    setLiveResources(getLiveResources());
+    const handleUpdate = () => setLiveResources(getLiveResources());
+    window.addEventListener('resursee_catalog_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('resursee_catalog_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   const category = mockCategories.find((c) => c.slug === slug);
 
@@ -32,7 +45,7 @@ export default function CategoryDetailPage() {
     return notFound();
   }
 
-  const categoryResources = mockResources.filter((r) => r.category_id === category.id);
+  const categoryResources = liveResources.filter((r) => r.category_id === category.id);
 
   const handleDownload = (resource: Resource) => {
     setToastMessage(`Downloading "${resource.title}" (${resource.file_format})`);
