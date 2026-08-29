@@ -4,22 +4,33 @@ import { ResourceSubmission } from '@/types/database';
 import { mockSubmissions } from '@/lib/mockData';
 
 const SUBMISSIONS_STORAGE_KEY = 'resursee_contributed_submissions';
+const DELETED_SUBMISSIONS_KEY = 'resursee_deleted_submission_ids';
+
+export function getDeletedSubmissionIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DELETED_SUBMISSIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function getLiveSubmissions(): ResourceSubmission[] {
   if (typeof window === 'undefined') return mockSubmissions;
   try {
+    const deletedIds = getDeletedSubmissionIds();
     const raw = localStorage.getItem(SUBMISSIONS_STORAGE_KEY);
+    let list: ResourceSubmission[] = [];
+
     if (!raw) {
+      list = mockSubmissions;
       localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(mockSubmissions));
-      return mockSubmissions;
+    } else {
+      list = JSON.parse(raw);
     }
-    const custom: ResourceSubmission[] = JSON.parse(raw);
-    // Combine custom with mockSubmissions ensuring uniqueness by id
-    const map = new Map<string, ResourceSubmission>();
-    [...custom, ...mockSubmissions].forEach((s) => {
-      if (!map.has(s.id)) map.set(s.id, s);
-    });
-    return Array.from(map.values());
+
+    return list.filter((s) => !deletedIds.includes(s.id));
   } catch {
     return mockSubmissions;
   }
@@ -30,6 +41,11 @@ export function addSubmission(submission: ResourceSubmission): ResourceSubmissio
   const current = getLiveSubmissions();
   const updated = [submission, ...current.filter((s) => s.id !== submission.id)];
   localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(updated));
+
+  // Ensure it's not in deleted IDs
+  const deletedIds = getDeletedSubmissionIds().filter((id) => id !== submission.id);
+  localStorage.setItem(DELETED_SUBMISSIONS_KEY, JSON.stringify(deletedIds));
+
   window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   return updated;
 }
@@ -54,4 +70,33 @@ export function updateSubmissionStatus(
   localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   return updated;
+}
+
+export function deleteSubmissionById(id: string): ResourceSubmission[] {
+  if (typeof window === 'undefined') return [];
+  const deletedIds = getDeletedSubmissionIds();
+  if (!deletedIds.includes(id)) {
+    const updatedDeleted = [...deletedIds, id];
+    localStorage.setItem(DELETED_SUBMISSIONS_KEY, JSON.stringify(updatedDeleted));
+  }
+
+  const current = getLiveSubmissions().filter((s) => s.id !== id);
+  localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(current));
+  window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
+  return current;
+}
+
+export function clearReviewedSubmissions(): ResourceSubmission[] {
+  if (typeof window === 'undefined') return [];
+  const current = getLiveSubmissions();
+  const reviewedIds = current.filter((s) => s.status !== 'pending').map((s) => s.id);
+
+  const deletedIds = getDeletedSubmissionIds();
+  const newDeletedIds = Array.from(new Set([...deletedIds, ...reviewedIds]));
+  localStorage.setItem(DELETED_SUBMISSIONS_KEY, JSON.stringify(newDeletedIds));
+
+  const remaining = current.filter((s) => s.status === 'pending');
+  localStorage.setItem(SUBMISSIONS_STORAGE_KEY, JSON.stringify(remaining));
+  window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
+  return remaining;
 }

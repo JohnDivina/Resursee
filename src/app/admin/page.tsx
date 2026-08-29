@@ -49,6 +49,8 @@ import {
 import {
   getLiveSubmissions,
   updateSubmissionStatus,
+  deleteSubmissionById,
+  clearReviewedSubmissions,
 } from '@/lib/submissionStore';
 
 interface AdminUserSession {
@@ -93,6 +95,7 @@ export default function AdminDashboardPage() {
   const [resourcesList, setResourcesList] = useState<Resource[]>([]);
   const [newsList, setNewsList] = useState<NewsArticle[]>(mockNewsArticles);
   const [submissionsList, setSubmissionsList] = useState<ResourceSubmission[]>([]);
+  const [submissionFilter, setSubmissionFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -526,6 +529,31 @@ export default function AdminDashboardPage() {
     setSubmissionsList(updatedSubmissions);
     showToast('Submission rejected.');
     setSelectedSubmission(null);
+  };
+
+  const handleDeleteSingleSubmission = (id: string, title: string) => {
+    if (confirm(`Remove "${title}" from the contribution review history?`)) {
+      const updated = deleteSubmissionById(id);
+      setSubmissionsList(updated);
+      showToast(`Removed "${title}" from history.`);
+    }
+  };
+
+  const handleClearReviewedSubmissions = () => {
+    const reviewedCount = submissionsList.filter((s) => s.status !== 'pending').length;
+    if (reviewedCount === 0) {
+      showToast('No reviewed or rejected submissions to clear.');
+      return;
+    }
+    if (
+      confirm(
+        `Are you sure you want to clear all ${reviewedCount} reviewed and rejected submissions from history? Active pending submissions will remain intact.`
+      )
+    ) {
+      const updated = clearReviewedSubmissions();
+      setSubmissionsList(updated);
+      showToast(`Cleared ${reviewedCount} reviewed submissions.`);
+    }
   };
 
   const handleApproveNews = (id: string) => {
@@ -1019,7 +1047,7 @@ export default function AdminDashboardPage() {
           {/* TAB 2: CONTRIBUTED FILES / SUBMISSIONS QUEUE */}
           {activeTab === 'submissions' && (
             <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-bold text-[var(--color-ink)]">
                     Community Contributed Files ({submissionsList.length})
@@ -1028,80 +1056,164 @@ export default function AdminDashboardPage() {
                     Review and verify documents submitted by students and faculty before publishing.
                   </p>
                 </div>
+
+                {/* Clear Reviewed & Rejected History Button */}
+                {submissionsList.some((s) => s.status !== 'pending') && (
+                  <button
+                    type="button"
+                    onClick={handleClearReviewedSubmissions}
+                    className="flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer shadow-2xs"
+                  >
+                    <Trash size={14} weight="bold" />
+                    <span>Clear Reviewed & Rejected ({submissionsList.filter((s) => s.status !== 'pending').length})</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Sub-Filters: All · Pending · Approved · Rejected */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setSubmissionFilter('all')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    submissionFilter === 'all'
+                      ? 'bg-[var(--color-ink)] text-white dark:bg-white dark:text-black shadow-2xs'
+                      : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  All ({submissionsList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubmissionFilter('pending')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    submissionFilter === 'pending'
+                      ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                      : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  Pending ({submissionsList.filter((s) => s.status === 'pending').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubmissionFilter('approved')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    submissionFilter === 'approved'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  Approved ({submissionsList.filter((s) => s.status === 'approved').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubmissionFilter('rejected')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    submissionFilter === 'rejected'
+                      ? 'bg-rose-600 text-white shadow-2xs'
+                      : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  Rejected ({submissionsList.filter((s) => s.status === 'rejected').length})
+                </button>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                {submissionsList.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
-                  >
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
-                            sub.status === 'pending'
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                              : sub.status === 'approved'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                              : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                          }`}
-                        >
-                          {sub.status}
-                        </span>
+                {submissionsList
+                  .filter((s) => submissionFilter === 'all' || s.status === submissionFilter)
+                  .map((sub) => (
+                    <div
+                      key={sub.id}
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                    >
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                              sub.status === 'pending'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                : sub.status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            }`}
+                          >
+                            {sub.status}
+                          </span>
 
-                        <span className="font-mono text-xs text-[var(--color-ink-muted)]">
-                          Submitted by {sub.submitter_name} ({sub.submitter_role})
-                        </span>
+                          <span className="font-mono text-xs text-[var(--color-ink-muted)]">
+                            Submitted by {sub.submitter_name} ({sub.submitter_role})
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-bold text-[var(--color-ink)]">
+                          {sub.title}
+                        </h3>
+
+                        <p className="text-xs text-[var(--color-ink-muted)] line-clamp-1">
+                          {sub.description || sub.submission_notes || 'No description provided.'}
+                        </p>
+
+                        <div className="flex items-center gap-3 text-[11px] text-[var(--color-ink-muted)] font-mono pt-1">
+                          <span>Format: {sub.file_format}</span>
+                          <span>•</span>
+                          <span>File: {sub.file_name}</span>
+                          <span>•</span>
+                          <span>Email: {sub.submitter_email}</span>
+                          {sub.reviewed_by && (
+                            <>
+                              <span>•</span>
+                              <span className="text-emerald-600 dark:text-emerald-400">Reviewed by {sub.reviewed_by}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
 
-                      <h3 className="text-base font-bold text-[var(--color-ink)]">
-                        {sub.title}
-                      </h3>
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        {sub.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleApproveSubmission(sub)}
+                              className="flex items-center gap-1 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all cursor-pointer"
+                            >
+                              <CheckCircle size={15} weight="bold" />
+                              <span>Approve & Publish</span>
+                            </button>
 
-                      <p className="text-xs text-[var(--color-ink-muted)] line-clamp-1">
-                        {sub.description || sub.submission_notes || 'No description provided.'}
-                      </p>
+                            <button
+                              onClick={() => handleRejectSubmission(sub.id)}
+                              className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
+                            >
+                              <XCircle size={15} weight="bold" />
+                              <span>Reject</span>
+                            </button>
+                          </>
+                        )}
 
-                      <div className="flex items-center gap-3 text-[11px] text-[var(--color-ink-muted)] font-mono pt-1">
-                        <span>Format: {sub.file_format}</span>
-                        <span>•</span>
-                        <span>File: {sub.file_name}</span>
-                        <span>•</span>
-                        <span>Email: {sub.submitter_email}</span>
+                        {sub.status !== 'pending' && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-[var(--color-ink-muted)] italic">
+                              {sub.status === 'approved' ? 'Published' : 'Rejected'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSingleSubmission(sub.id, sub.title)}
+                              className="rounded-lg p-1.5 text-[var(--color-ink-muted)] hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                              title="Delete from history"
+                            >
+                              <Trash size={16} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  ))}
 
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                      {sub.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => handleApproveSubmission(sub)}
-                            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all cursor-pointer"
-                          >
-                            <CheckCircle size={15} weight="bold" />
-                            <span>Approve & Publish</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleRejectSubmission(sub.id)}
-                            className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
-                          >
-                            <XCircle size={15} weight="bold" />
-                            <span>Reject</span>
-                          </button>
-                        </>
-                      )}
-
-                      {sub.status !== 'pending' && (
-                        <span className="font-mono text-xs text-[var(--color-ink-muted)] italic">
-                          Reviewed
-                        </span>
-                      )}
-                    </div>
+                {submissionsList.filter((s) => submissionFilter === 'all' || s.status === submissionFilter).length === 0 && (
+                  <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-8 text-center text-xs text-[var(--color-ink-muted)] italic">
+                    No {submissionFilter === 'all' ? '' : submissionFilter} submissions found.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
