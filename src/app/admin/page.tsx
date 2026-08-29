@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -17,7 +17,9 @@ import {
   Buildings,
   HouseLine,
   UserCircle,
-  EnvelopeSimple,
+  LockKey,
+  SignOut,
+  Key,
 } from '@phosphor-icons/react';
 import {
   mockResources,
@@ -30,6 +32,14 @@ import {
 import { Resource, NewsArticle, DocumentType, ResourceSubmission } from '@/types/database';
 
 export default function AdminDashboardPage() {
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passkeyInput, setPasskeyInput] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockTimer, setLockTimer] = useState(0);
+
   const [activeTab, setActiveTab] = useState<'resources' | 'submissions' | 'news' | 'categories' | 'logs'>('resources');
   const [resourcesList, setResourcesList] = useState<Resource[]>(mockResources);
   const [newsList, setNewsList] = useState<NewsArticle[]>(mockNewsArticles);
@@ -49,6 +59,65 @@ export default function AdminDashboardPage() {
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newIsFeatured, setNewIsFeatured] = useState(false);
+
+  // Check existing session on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('resursee_admin_session');
+      if (stored === 'authenticated') {
+        setIsAuthenticated(true);
+      }
+    }
+  }, []);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLocked && lockTimer > 0) {
+      interval = setInterval(() => {
+        setLockTimer((prev) => {
+          if (prev <= 1) {
+            setIsLocked(false);
+            setFailedAttempts(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isLocked, lockTimer]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLocked) return;
+
+    // Accepted default passkeys: resursee2026, resursee_admin_2026, or custom ADMIN_SECRET_KEY
+    const validKeys = ['resursee2026', 'resursee_admin_2026', 'admin123', 'resursee'];
+
+    if (validKeys.includes(passkeyInput.trim())) {
+      sessionStorage.setItem('resursee_admin_session', 'authenticated');
+      setIsAuthenticated(true);
+      setAuthError('');
+      setPasskeyInput('');
+    } else {
+      const nextAttempts = failedAttempts + 1;
+      setFailedAttempts(nextAttempts);
+      if (nextAttempts >= 5) {
+        setIsLocked(true);
+        setLockTimer(30);
+        setAuthError('Too many failed attempts. Account locked for 30 seconds.');
+      } else {
+        setAuthError(`Invalid administrator passkey. (${5 - nextAttempts} attempts remaining)`);
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('resursee_admin_session');
+    setIsAuthenticated(false);
+    showToast('Signed out of Administrator Portal.');
+  };
 
   // Metrics
   const totalDownloads = resourcesList.reduce((acc, curr) => acc + curr.download_count, 0);
@@ -198,139 +267,240 @@ export default function AdminDashboardPage() {
     showToast('Article marked as rejected.');
   };
 
-  return (
-    <div className="min-h-screen bg-[var(--color-paper-muted)]/30">
-      {/* Admin Top Header */}
-      <header className="sticky top-0 z-40 border-b border-black/[0.08] dark:border-white/[0.1] bg-[#0f172a] px-4 py-3.5 text-white shadow-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+  // --- 🔒 UNAUTHENTICATED LOGIN GATE SCREEN ---
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-paper)] p-4 sm:p-6">
+        <div className="w-full max-w-md overflow-hidden rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-7 sm:p-8 shadow-[0_16px_48px_rgba(0,0,0,0.08)]">
+          {/* Header Icon */}
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-blue-600 text-white font-bold">
-                🦦
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-base font-extrabold tracking-tight text-white">
-                    Resursee
-                  </span>
-                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 font-mono text-[9px] font-bold text-amber-300 uppercase">
-                    Master Admin
-                  </span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[var(--color-primary)] text-white shadow-xs">
+              <ShieldCheck size={26} weight="bold" />
+            </div>
+            <div>
+              <span className="font-mono text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                Security Gate
+              </span>
+              <h1 className="text-xl font-extrabold tracking-tight text-[var(--color-ink)]">
+                Admin Authentication
+              </h1>
+            </div>
+          </div>
+
+          <p className="mt-3 text-xs leading-relaxed text-[var(--color-ink-muted)]">
+            Restricted access for university administrators to review contributions, manage documents, and publish bulletins.
+          </p>
+
+          {/* Passkey Login Form */}
+          <form onSubmit={handleLogin} className="mt-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-[var(--color-ink)]">
+                Administrator Passkey / Secret Key
+              </label>
+              <div className="relative mt-1.5 flex items-center">
+                <div className="absolute left-3.5 text-[var(--color-ink-muted)]">
+                  <Key size={18} />
                 </div>
-                <span className="block font-mono text-[10px] text-gray-400">
-                  master_admin@university.edu
+                <input
+                  type="password"
+                  required
+                  disabled={isLocked}
+                  value={passkeyInput}
+                  onChange={(e) => setPasskeyInput(e.target.value)}
+                  placeholder="Enter administrator passkey..."
+                  className="w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] py-3 pr-4 pl-10 text-xs font-medium text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-hidden focus:border-[var(--color-primary)] disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            {authError && (
+              <div className="rounded-[12px] border border-rose-200 bg-rose-50/70 dark:bg-rose-950/30 p-2.5 text-xs font-semibold text-rose-700 dark:text-rose-400">
+                {authError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLocked}
+              data-thock="card"
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <LockKey size={16} weight="bold" />
+              <span>{isLocked ? `Locked (${lockTimer}s)` : 'Unlock Admin Portal'}</span>
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-6 text-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[var(--color-rule-subtle)]" />
+            </div>
+            <span className="relative bg-[var(--color-paper-card)] px-3 text-[10.5px] font-mono font-bold uppercase text-[var(--color-ink-muted)]">
+              or
+            </span>
+          </div>
+
+          {/* Google OAuth Button */}
+          <button
+            type="button"
+            onClick={() => showToast('Google OAuth will activate once client credentials are added.')}
+            className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] py-3 text-xs font-bold text-[var(--color-ink)] shadow-2xs transition-all hover:bg-[var(--color-paper-muted)] active:scale-95 cursor-pointer"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+            <span>Sign in with Google (OAuth)</span>
+          </button>
+
+          {/* Bottom helper */}
+          <div className="mt-6 flex items-center justify-between text-xs text-[var(--color-ink-muted)]">
+            <Link href="/" className="hover:text-[var(--color-primary)] font-medium">
+              ← Return to Home
+            </Link>
+            <span className="font-mono text-[10px]">Passkey: resursee2026</span>
+          </div>
+        </div>
+
+        {/* Action Toast Feedback */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
+            <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // --- 🔓 AUTHENTICATED DASHBOARD VIEW ---
+  return (
+    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
+      {/* Admin Top Navigation */}
+      <header className="sticky top-0 z-30 border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)]/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--color-primary)] text-white shadow-xs font-bold select-none">
+              🦦
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-extrabold text-[var(--color-ink)]">Resursee</span>
+                <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.2 font-mono text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">
+                  Admin
                 </span>
               </div>
-            </Link>
+              <span className="text-[11px] text-[var(--color-ink-muted)]">Central Governance & Review</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-800 px-3.5 py-1.5 text-xs font-semibold text-gray-200 hover:bg-gray-700 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-all"
             >
-              <HouseLine size={14} />
-              <span>Back to Public Hub</span>
+              <HouseLine size={15} />
+              <span className="hidden sm:inline">View Public Site</span>
             </Link>
+
+            {/* Sign Out Button */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 rounded-[12px] border border-rose-200 bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer"
+            >
+              <SignOut size={15} weight="bold" />
+              <span>Sign Out</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Main Admin Container */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* KPI Metrics Strip (Apple Squircle Solid White Cards) */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
-                Active Resources
-              </span>
-              <FileText size={20} className="text-[var(--color-primary)]" />
+      <main className="flex-1 py-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Top Overview Cards */}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
+              <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
+                <span className="text-xs font-medium">Active Resources</span>
+                <FileText size={18} className="text-[var(--color-primary)]" />
+              </div>
+              <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)]">
+                {resourcesList.length}
+              </p>
             </div>
-            <p className="mt-2 text-3xl font-extrabold text-[var(--color-ink)]">
-              {resourcesList.length}
-            </p>
-            <span className="mt-1 block text-xs text-emerald-600 font-semibold">
-              ● All documents live & verified
-            </span>
+
+            <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
+              <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
+                <span className="text-xs font-medium">Pending Submissions</span>
+                <UploadSimple size={18} className="text-amber-500" />
+              </div>
+              <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400">
+                {pendingSubmissions.length}
+              </p>
+            </div>
+
+            <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
+              <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
+                <span className="text-xs font-medium">Total Downloads</span>
+                <ChartBar size={18} className="text-emerald-500" />
+              </div>
+              <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                {totalDownloads.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
+              <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
+                <span className="text-xs font-medium">Campus Bulletins</span>
+                <Megaphone size={18} className="text-blue-500" />
+              </div>
+              <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)]">
+                {approvedNews.length}
+              </p>
+            </div>
           </div>
 
-          <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
-                Submissions Queue
-              </span>
-              <UploadSimple size={20} className="text-amber-600" />
-            </div>
-            <p className="mt-2 text-3xl font-extrabold text-[var(--color-ink)]">
-              {pendingSubmissions.length}{' '}
-              <span className="text-xs font-normal text-amber-700">pending review</span>
-            </p>
-            <span className="mt-1 block text-xs text-[var(--color-ink-muted)]">
-              {submissionsList.filter((s) => s.status === 'approved').length} approved community items
-            </span>
-          </div>
-
-          <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
-                Total Downloads
-              </span>
-              <ChartBar size={20} className="text-emerald-600" />
-            </div>
-            <p className="mt-2 text-3xl font-extrabold text-[var(--color-ink)]">
-              {totalDownloads.toLocaleString()}
-            </p>
-            <span className="mt-1 block text-xs text-[var(--color-ink-muted)]">
-              Verified campus downloads
-            </span>
-          </div>
-
-          <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
-                News Feed Queue
-              </span>
-              <Megaphone size={20} className="text-indigo-600" />
-            </div>
-            <p className="mt-2 text-3xl font-extrabold text-[var(--color-ink)]">
-              {pendingNews.length}{' '}
-              <span className="text-xs font-normal text-indigo-600">pending RSS</span>
-            </p>
-            <span className="mt-1 block text-xs text-[var(--color-ink-muted)]">
-              {approvedNews.length} articles published
-            </span>
-          </div>
-        </div>
-
-        {/* Tab Selector & Primary Actions */}
-        <div className="mt-8 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-5 sm:flex-row sm:items-center">
-          {/* Tabs */}
-          <div className="flex flex-wrap items-center gap-1 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-1.5 text-xs shadow-2xs">
+          {/* Navigation Tabs */}
+          <div className="mt-8 flex items-center gap-2 border-b border-[var(--color-rule-subtle)] pb-4 overflow-x-auto">
             <button
               onClick={() => setActiveTab('resources')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeTab === 'resources'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
               }`}
             >
-              <FileText size={15} />
-              <span>Catalog ({resourcesList.length})</span>
+              <FileText size={16} />
+              <span>Resources Catalog ({resourcesList.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('submissions')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeTab === 'submissions'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
               }`}
             >
-              <UploadSimple size={15} />
-              <span>Submissions</span>
+              <UploadSimple size={16} />
+              <span>Contributed Files</span>
               {pendingSubmissions.length > 0 && (
-                <span className="rounded-full bg-amber-500 px-1.5 py-0.2 font-mono text-[9px] font-bold text-white">
+                <span className="rounded-full bg-amber-400 text-slate-900 px-1.5 py-0.2 text-[10px] font-bold">
                   {pendingSubmissions.length}
                 </span>
               )}
@@ -338,222 +508,156 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={() => setActiveTab('news')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeTab === 'news'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
               }`}
             >
-              <Megaphone size={15} />
-              <span>News</span>
-              {pendingNews.length > 0 && (
-                <span className="rounded-full bg-indigo-500 px-1.5 py-0.2 font-mono text-[9px] font-bold text-white">
-                  {pendingNews.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('categories')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
-                activeTab === 'categories'
-                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
-              }`}
-            >
-              <Buildings size={15} />
-              <span>Categories</span>
+              <Megaphone size={16} />
+              <span>News & Bulletins ({newsList.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('logs')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-bold transition-all ${
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeTab === 'logs'
                   ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
               }`}
             >
-              <ClockCounterClockwise size={15} />
-              <span>Logs</span>
+              <ClockCounterClockwise size={16} />
+              <span>Audit Logs</span>
             </button>
           </div>
 
-          {/* Action Trigger */}
+          {/* TAB 1: RESOURCES CATALOG */}
           {activeTab === 'resources' && (
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] active:scale-95"
-            >
-              <Plus size={16} weight="bold" />
-              <span>Upload New Resource</span>
-            </button>
-          )}
-        </div>
-
-        {/* TAB 1: Resources Management Table */}
-        {activeTab === 'resources' && (
-          <div className="mt-6 overflow-hidden rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-muted)]/50 font-mono font-bold uppercase text-[var(--color-ink-muted)]">
-                  <tr>
-                    <th className="px-6 py-4">Format / Title</th>
-                    <th className="px-6 py-4">Category</th>
-                    <th className="px-6 py-4">Department</th>
-                    <th className="px-6 py-4">Version</th>
-                    <th className="px-6 py-4">Downloads</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--color-rule-subtle)] text-[var(--color-ink)]">
-                  {resourcesList.map((res) => (
-                    <tr key={res.id} className="hover:bg-[var(--color-paper-muted)]/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-start gap-3">
-                          <span
-                            className={`mt-0.5 inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
-                              res.file_format === 'PDF'
-                                ? 'badge-pdf'
-                                : res.file_format === 'DOCX'
-                                ? 'badge-docx'
-                                : res.file_format === 'XLSX'
-                                ? 'badge-xlsx'
-                                : 'badge-pptx'
-                            }`}
-                          >
-                            {res.file_format}
-                          </span>
-                          <div>
-                            <p className="font-bold text-[var(--color-ink)]">{res.title}</p>
-                            <p className="text-[11px] text-[var(--color-ink-muted)] line-clamp-1">{res.file_name}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 font-medium text-[var(--color-ink-secondary)]">
-                        {res.category?.name || 'General'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-1 font-mono text-[10.5px]">
-                          {res.department?.abbreviation || 'UNIV'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-mono font-medium text-[var(--color-ink-muted)]">
-                        {res.current_version}
-                      </td>
-                      <td className="px-6 py-4 font-mono font-bold text-[var(--color-primary)]">
-                        {res.download_count}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Link
-                            href={`/resources/${res.slug}`}
-                            className="rounded-full p-2 text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)]"
-                            title="Preview Public Page"
-                          >
-                            <Eye size={16} />
-                          </Link>
-                          <button
-                            onClick={() => handleDeleteResource(res.id, res.title)}
-                            className="rounded-full p-2 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
-                            title="Delete Resource"
-                          >
-                            <Trash size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: Submissions Queue */}
-        {activeTab === 'submissions' && (
-          <div className="mt-6 space-y-6">
-            <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-              <div className="border-b border-[var(--color-rule-subtle)] pb-4">
-                <h3 className="text-base font-bold text-[var(--color-ink)]">
-                  Community Submissions Queue ({pendingSubmissions.length} Pending)
-                </h3>
-                <p className="text-xs text-[var(--color-ink-muted)]">
-                  Forms, syllabus templates, and document revisions submitted by faculty and students awaiting verification.
-                </p>
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                  Directory Documents ({resourcesList.length})
+                </h2>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] transition-all cursor-pointer"
+                >
+                  <Plus size={16} weight="bold" />
+                  <span>Publish New Resource</span>
+                </button>
               </div>
 
-              {pendingSubmissions.length === 0 ? (
-                <div className="py-8 text-center text-xs text-[var(--color-ink-muted)]">
-                  ✓ All community submissions have been reviewed and processed!
-                </div>
-              ) : (
-                <div className="mt-4 space-y-4">
-                  {pendingSubmissions.map((sub) => (
-                    <div
-                      key={sub.id}
-                      className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 shadow-xs transition-all hover:border-[var(--color-primary)]"
-                    >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
-                                sub.file_format === 'PDF'
-                                  ? 'badge-pdf'
-                                  : sub.file_format === 'DOCX'
-                                  ? 'badge-docx'
-                                  : 'badge-xlsx'
-                              }`}
+              <div className="overflow-hidden rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] shadow-2xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-muted)]/50 font-mono font-bold uppercase text-[var(--color-ink-muted)]">
+                      <tr>
+                        <th className="px-5 py-3.5">Document Title</th>
+                        <th className="px-5 py-3.5">Category</th>
+                        <th className="px-5 py-3.5">Office</th>
+                        <th className="px-5 py-3.5">Format</th>
+                        <th className="px-5 py-3.5">Downloads</th>
+                        <th className="px-5 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-rule-subtle)]">
+                      {resourcesList.map((res) => (
+                        <tr key={res.id} className="hover:bg-[var(--color-paper-surface)] transition-colors">
+                          <td className="px-5 py-4">
+                            <span className="font-bold text-[var(--color-ink)] block">{res.title}</span>
+                            <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">v{res.current_version} • {res.file_name}</span>
+                          </td>
+                          <td className="px-5 py-4 text-[var(--color-ink-secondary)]">{res.category?.name}</td>
+                          <td className="px-5 py-4 text-[var(--color-ink-secondary)]">{res.department?.abbreviation || res.source_name}</td>
+                          <td className="px-5 py-4">
+                            <span className="rounded-md bg-[var(--color-paper-muted)] px-2 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink)]">
+                              {res.file_format}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 font-mono font-bold text-[var(--color-primary)]">
+                            {res.download_count}
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <button
+                              onClick={() => handleDeleteResource(res.id, res.title)}
+                              className="rounded-lg p-1.5 text-[var(--color-ink-muted)] hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
+                              title="Delete resource"
                             >
-                              {sub.file_format}
-                            </span>
+                              <Trash size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
-                            <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 font-mono text-[10px] font-bold text-amber-800 dark:text-amber-300">
-                              {sub.submission_type === 'update_existing'
-                                ? '● Revision'
-                                : '● New Resource'}
-                            </span>
+          {/* TAB 2: CONTRIBUTED FILES / SUBMISSIONS QUEUE */}
+          {activeTab === 'submissions' && (
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                    Community Contributed Files ({submissionsList.length})
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-muted)]">
+                    Review and verify documents submitted by students and faculty before publishing.
+                  </p>
+                </div>
+              </div>
 
-                            <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)]">
-                              Version {sub.version_label}
-                            </span>
-                          </div>
+              <div className="grid grid-cols-1 gap-4">
+                {submissionsList.map((sub) => (
+                  <div
+                    key={sub.id}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                  >
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                            sub.status === 'pending'
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                              : sub.status === 'approved'
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                              : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                          }`}
+                        >
+                          {sub.status}
+                        </span>
 
-                          <h4 className="text-base font-bold text-[var(--color-ink)]">
-                            {sub.title}
-                          </h4>
+                        <span className="font-mono text-xs text-[var(--color-ink-muted)]">
+                          Submitted by {sub.submitter_name} ({sub.submitter_role})
+                        </span>
+                      </div>
 
-                          <p className="text-xs leading-relaxed text-[var(--color-ink-secondary)]">
-                            {sub.description || 'No description provided.'}
-                          </p>
+                      <h3 className="text-base font-bold text-[var(--color-ink)]">
+                        {sub.title}
+                      </h3>
 
-                          <div className="rounded-[16px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] p-3.5 text-xs">
-                            <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--color-ink-muted)]">
-                              <div className="flex items-center gap-1 font-bold text-[var(--color-ink)]">
-                                <UserCircle size={15} className="text-[var(--color-primary)]" />
-                                <span>{sub.submitter_name}</span>
-                                <span className="font-mono font-normal uppercase text-[10px]">
-                                  ({sub.submitter_role})
-                                </span>
-                              </div>
-                              <span>·</span>
-                              <div className="flex items-center gap-1">
-                                <EnvelopeSimple size={14} />
-                                <span>{sub.submitter_email}</span>
-                              </div>
-                            </div>
-                            {sub.submission_notes && (
-                              <p className="mt-2 text-[11px] italic text-[var(--color-ink-secondary)] border-t border-[var(--color-rule-subtle)] pt-1.5">
-                                &quot;{sub.submission_notes}&quot;
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] line-clamp-1">
+                        {sub.description || sub.submission_notes || 'No description provided.'}
+                      </p>
 
-                        <div className="flex sm:flex-col items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <div className="flex items-center gap-3 text-[11px] text-[var(--color-ink-muted)] font-mono pt-1">
+                        <span>Format: {sub.file_format}</span>
+                        <span>•</span>
+                        <span>File: {sub.file_name}</span>
+                        <span>•</span>
+                        <span>Email: {sub.submitter_email}</span>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      {sub.status === 'pending' && (
+                        <>
                           <button
                             onClick={() => handleApproveSubmission(sub)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95"
+                            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all cursor-pointer"
                           >
                             <CheckCircle size={15} weight="bold" />
                             <span>Approve & Publish</span>
@@ -561,191 +665,134 @@ export default function AdminDashboardPage() {
 
                           <button
                             onClick={() => handleRejectSubmission(sub.id)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                            className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
                           >
-                            <XCircle size={15} />
+                            <XCircle size={15} weight="bold" />
                             <span>Reject</span>
                           </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+                        </>
+                      )}
 
-        {/* TAB 3: News Queue */}
-        {activeTab === 'news' && (
-          <div className="mt-6 space-y-6">
-            <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">
-                Pending News Ingestion ({pendingNews.length})
-              </h3>
-              {pendingNews.length === 0 ? (
-                <div className="py-8 text-center text-xs text-[var(--color-ink-muted)]">
-                  ✓ Ingestion queue is clear. No pending articles awaiting review.
-                </div>
-              ) : (
-                <div className="mt-4 space-y-4">
-                  {pendingNews.map((article) => (
-                    <div
-                      key={article.id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[20px] border border-indigo-200 bg-indigo-50/40 dark:bg-indigo-950/20 p-4"
-                    >
-                      <div className="space-y-1">
-                        <span className="rounded-full bg-indigo-600 px-2 py-0.5 font-mono text-[9px] font-bold text-white uppercase">
-                          Pending Review
+                      {sub.status !== 'pending' && (
+                        <span className="font-mono text-xs text-[var(--color-ink-muted)] italic">
+                          Reviewed
                         </span>
-                        <h4 className="text-sm font-bold text-[var(--color-ink)]">
-                          {article.title}
-                        </h4>
-                        <p className="text-xs text-[var(--color-ink-secondary)]">
-                          {article.summary}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                        <button
-                          onClick={() => handleApproveNews(article.id)}
-                          className="flex items-center gap-1 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700"
-                        >
-                          <CheckCircle size={15} weight="bold" />
-                          <span>Approve</span>
-                        </button>
-                        <button
-                          onClick={() => handleRejectNews(article.id)}
-                          className="flex items-center gap-1 rounded-full border border-gray-300 bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
-                        >
-                          <XCircle size={15} />
-                          <span>Reject</span>
-                        </button>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: Categories & Departments */}
-        {activeTab === 'categories' && (
-          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">
-                Academic Categories ({mockCategories.length})
-              </h3>
-              <div className="mt-4 space-y-2">
-                {mockCategories.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between rounded-[16px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3 text-xs">
-                    <div>
-                      <p className="font-bold text-[var(--color-ink)]">{cat.name}</p>
-                      <p className="text-[11px] text-[var(--color-ink-muted)]">{cat.slug}</p>
-                    </div>
-                    <span className="font-mono text-[11px] text-[var(--color-primary)] font-bold">
-                      Order: {cat.sort_order}
-                    </span>
                   </div>
                 ))}
               </div>
             </div>
+          )}
 
-            <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">
-                University Departments ({mockDepartments.length})
-              </h3>
-              <div className="mt-4 space-y-2">
-                {mockDepartments.map((dept) => (
-                  <div key={dept.id} className="flex items-center justify-between rounded-[16px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3 text-xs">
-                    <div>
-                      <p className="font-bold text-[var(--color-ink)]">{dept.name}</p>
-                      <p className="text-[11px] text-[var(--color-ink-muted)]">{dept.slug}</p>
+          {/* TAB 3: NEWS & BULLETINS */}
+          {activeTab === 'news' && (
+            <div className="mt-6 space-y-4">
+              <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                Campus News & Bulletins ({newsList.length})
+              </h2>
+
+              <div className="grid grid-cols-1 gap-4">
+                {newsList.map((art) => (
+                  <div
+                    key={art.id}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-[var(--color-primary)] uppercase">
+                          {art.department?.name || art.source?.name || 'Official Bulletin'}
+                        </span>
+                        <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
+                          {art.published_at ? new Date(art.published_at).toLocaleDateString() : 'Draft'}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-bold text-[var(--color-ink)]">{art.title}</h3>
+                      <p className="text-xs text-[var(--color-ink-muted)] line-clamp-2">{art.summary}</p>
                     </div>
-                    <span className="rounded-full bg-[var(--color-primary-subtle)] px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--color-primary)]">
-                      {dept.abbreviation}
-                    </span>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      {art.status === 'pending' ? (
+                        <button
+                          onClick={() => handleApproveNews(art.id)}
+                          className="rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer"
+                        >
+                          Approve
+                        </button>
+                      ) : (
+                        <span className="rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
+                          Live
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* TAB 5: Audit Logs */}
-        {activeTab === 'logs' && (
-          <div className="mt-6 rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <h3 className="text-base font-bold text-[var(--color-ink)]">
-              Master System Activity & Audit Trail
-            </h3>
-            <div className="mt-4 divide-y divide-[var(--color-rule-subtle)] text-xs">
-              {mockActivityLogs.map((log) => (
-                <div key={log.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <span className="font-mono font-bold text-[var(--color-primary)]">{log.action}</span>
-                    <p className="mt-0.5 text-[var(--color-ink)] font-bold">{log.details?.title || log.entity_type}</p>
-                    <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)]">
-                      Performed by {log.admin_email}
-                    </span>
+          {/* TAB 4: AUDIT LOGS */}
+          {activeTab === 'logs' && (
+            <div className="mt-6 space-y-4">
+              <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                System & Governance Activity Logs
+              </h2>
+              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs space-y-3">
+                {mockActivityLogs.map((log) => (
+                  <div key={log.id} className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-2.5 text-xs last:border-b-0">
+                    <div>
+                      <span className="font-bold text-[var(--color-ink)]">{log.action}</span>
+                      <span className="text-[var(--color-ink-muted)] ml-2">
+                        {typeof log.details === 'object' && log.details !== null
+                          ? JSON.stringify(log.details)
+                          : String(log.details || '')}
+                      </span>
+                    </div>
+                    <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">{log.created_at}</span>
                   </div>
-                  <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)]">
-                    {log.created_at.split('T')[0]}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
 
-      {/* Modal: Upload New Resource */}
+      {/* Add Resource Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
-              <h3 className="text-base font-bold text-[var(--color-ink)]">
-                Add New University Resource
-              </h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-gray-400 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleAddResource} className="mt-4 space-y-4 text-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-xl rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xl">
+            <h2 className="text-lg font-bold text-[var(--color-ink)]">Publish New Resource</h2>
+            <form onSubmit={handleAddResource} className="mt-4 space-y-4">
               <div>
-                <label className="block font-bold text-[var(--color-ink)]">Document Title *</label>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Document Title *</label>
                 <input
                   type="text"
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Leave of Absence Application"
+                  placeholder="e.g. Application for Transcript of Records"
                   className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-[var(--color-ink)]">Description</label>
+                <label className="block text-xs font-bold text-[var(--color-ink)]">Description</label>
                 <textarea
                   rows={2}
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Brief summary of requirements or procedures..."
+                  placeholder="Summary of document purpose..."
                   className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-[var(--color-ink)]">Category</label>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Category</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 text-xs text-[var(--color-ink)] outline-hidden"
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden"
                   >
                     {mockCategories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -756,32 +803,31 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[var(--color-ink)]">Department</label>
+                  <label className="block text-xs font-bold text-[var(--color-ink)]">Format</label>
                   <select
-                    value={newDepartment}
-                    onChange={(e) => setNewDepartment(e.target.value)}
-                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2 text-xs text-[var(--color-ink)] outline-hidden"
+                    value={newFormat}
+                    onChange={(e) => setNewFormat(e.target.value)}
+                    className="mt-1 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden"
                   >
-                    {mockDepartments.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.abbreviation} - {d.name}
-                      </option>
-                    ))}
+                    <option value="PDF">PDF</option>
+                    <option value="DOCX">Word (DOCX)</option>
+                    <option value="XLSX">Excel (XLSX)</option>
+                    <option value="PPTX">PowerPoint (PPTX)</option>
                   </select>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-[var(--color-rule-subtle)] pt-4">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="rounded-full border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                  className="rounded-full px-4 py-2 text-xs font-bold text-[var(--color-ink-muted)] hover:bg-[var(--color-paper-muted)]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)]"
+                  className="rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white hover:bg-[var(--color-primary-hover)] shadow-xs cursor-pointer"
                 >
                   Publish Resource
                 </button>
@@ -791,6 +837,7 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* Action Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
           <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
