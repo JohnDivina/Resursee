@@ -1,12 +1,21 @@
 import { NextResponse } from 'next/server';
 import { getApprovedModerators, addPendingRequest } from '@/app/api/admin/staff/route';
 
+function getEffectiveOrigin(request: Request): string {
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') || (request.url.startsWith('https') ? 'https' : 'http');
+  if (host) {
+    return `${proto}://${host}`;
+  }
+  return new URL(request.url).origin;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
 
-  const origin = new URL(request.url).origin;
+  const origin = getEffectiveOrigin(request);
 
   if (error || !code) {
     return NextResponse.redirect(new URL(`/admin?error=${encodeURIComponent(error || 'no_code')}`, origin));

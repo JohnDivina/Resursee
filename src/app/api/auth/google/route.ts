@@ -1,15 +1,23 @@
 import { NextResponse } from 'next/server';
 
+function getEffectiveOrigin(request: Request): string {
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') || (request.url.startsWith('https') ? 'https' : 'http');
+  if (host) {
+    return `${proto}://${host}`;
+  }
+  return new URL(request.url).origin;
+}
+
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
   const clientId = process.env.GOOGLE_CLIENT_ID;
 
   if (!clientId) {
     return NextResponse.redirect(new URL('/admin?error=missing_google_client_id', request.url));
   }
 
-  // Derive redirect URI dynamically
-  const origin = new URL(request.url).origin;
+  // Derive exact redirect URI dynamically with proxy support
+  const origin = getEffectiveOrigin(request);
   const redirectUri = `${origin}/api/auth/callback/google`;
 
   const state = Math.random().toString(36).substring(2, 15);
