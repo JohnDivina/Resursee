@@ -9,6 +9,10 @@ function sanitizeResourcePayload(body: any) {
   if (!clean.id || !isUuid) {
     clean.id = crypto.randomUUID();
   }
+  const isCreatedByUuid = clean.created_by && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean.created_by);
+  if (!isCreatedByUuid) {
+    clean.created_by = null;
+  }
   return clean;
 }
 

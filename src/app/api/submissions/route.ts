@@ -9,6 +9,13 @@ function sanitizeSubmissionPayload(body: any) {
   if (!clean.id || !isUuid) {
     clean.id = crypto.randomUUID();
   }
+  const isReviewedByUuid = clean.reviewed_by && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean.reviewed_by);
+  if (!isReviewedByUuid) {
+    if (typeof clean.reviewed_by === 'string' && clean.reviewed_by && !clean.admin_notes) {
+      clean.admin_notes = `Reviewed by ${clean.reviewed_by}`;
+    }
+    clean.reviewed_by = null;
+  }
   return clean;
 }
 

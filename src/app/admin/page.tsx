@@ -584,7 +584,7 @@ export default function AdminDashboardPage() {
         source_url: submission.source_url,
         is_featured: false,
         download_count: 0,
-        created_by: `user-${submission.submitter_name}`,
+        created_by: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         category: submission.category || categoriesList.find((c) => c.id === submission.category_id),
