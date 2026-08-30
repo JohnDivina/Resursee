@@ -17,6 +17,7 @@ import { Resource } from '@/types/database';
 import { useRealtimeDownloadCount, recordDownload } from '@/lib/downloadStore';
 import { downloadResourceFile } from '@/lib/documentDownloader';
 import { useOutsideClick } from '@/hooks/use-outside-click';
+import { Button as StatefulButton } from '@/components/ui/stateful-button';
 
 interface ExpandableResourceGridProps {
   resources: Resource[];
@@ -168,21 +169,16 @@ export default function ExpandableResourceGrid({
                     </p>
                   </div>
 
-                  <button
-                    type="button"
+                  <StatefulButton
                     onClick={() => handleDownload(active)}
-                    disabled={downloading}
-                    className="flex items-center justify-center gap-2 px-5 py-3 text-xs rounded-full font-bold bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
+                    loadingText="Preparing Download..."
+                    successText="Downloaded!"
+                    minDuration={1400}
+                    className="px-5 py-3 text-xs shrink-0"
                   >
                     <DownloadSimple size={15} weight="bold" />
-                    <span>
-                      {downloading
-                        ? 'Downloading...'
-                        : downloaded
-                        ? 'Downloaded!'
-                        : `Download ${active.file_format}`}
-                    </span>
-                  </button>
+                    <span>Download {active.file_format}</span>
+                  </StatefulButton>
                 </div>
 
                 {/* Description */}

@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
 import { FileUpload } from '@/components/ui/file-upload';
+import { Button as StatefulButton } from '@/components/ui/stateful-button';
 import {
   UploadSimple,
   FileText,
@@ -228,8 +229,10 @@ export default function ContributePage() {
 
       // Save to store & cloud immediately
       addSubmission(newSub);
-
       setSubmissionId(generatedId);
+
+      // Smooth delay so the user experiences the full StatefulButton animation (Loading -> Success checkmark)
+      await new Promise((resolve) => setTimeout(resolve, 1800));
       setIsSubmitted(true);
     } catch (err: any) {
       console.error('Submit error:', err);
@@ -247,34 +250,40 @@ export default function ContributePage() {
 
     setIsSubmitting(true);
 
-    const generatedId = `NEWS-${Math.floor(100000 + Math.random() * 900000)}`;
+    try {
+      const generatedId = `NEWS-${Math.floor(100000 + Math.random() * 900000)}`;
+      const targetDeptId = newsDepartmentId || (departmentsList[0]?.id ?? 'dept-1');
 
-    const targetDeptId = newsDepartmentId || (departmentsList[0]?.id ?? 'dept-1');
+      const newArticle: NewsArticle = {
+        id: generatedId,
+        title: newsTitle,
+        summary: newsSummary,
+        department_id: targetDeptId,
+        department: departmentsList.find((d) => d.id === targetDeptId),
+        content_url: newsUrl || 'https://university.edu/news',
+        image_url: newsImageUrl || null,
+        status: 'pending',
+        is_featured: false,
+        external_id: null,
+        source_id: null,
+        reviewed_by: null,
+        published_at: null,
+        fetched_at: new Date().toISOString(),
+        reviewed_at: null,
+        created_at: new Date().toISOString(),
+      };
 
-    const newArticle: NewsArticle = {
-      id: generatedId,
-      title: newsTitle,
-      summary: newsSummary,
-      department_id: targetDeptId,
-      department: departmentsList.find((d) => d.id === targetDeptId),
-      content_url: newsUrl || 'https://university.edu/news',
-      image_url: newsImageUrl || null,
-      status: 'pending',
-      is_featured: false,
-      external_id: null,
-      source_id: null,
-      reviewed_by: null,
-      published_at: null,
-      fetched_at: new Date().toISOString(),
-      reviewed_at: null,
-      created_at: new Date().toISOString(),
-    };
+      addNewsArticle(newArticle);
+      setSubmissionId(generatedId);
 
-    addNewsArticle(newArticle);
-
-    setSubmissionId(generatedId);
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+      // Smooth delay for StatefulButton animation
+      await new Promise((resolve) => setTimeout(resolve, 1800));
+      setIsSubmitted(true);
+    } catch (err: any) {
+      console.error('News submit error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -636,14 +645,16 @@ export default function ContributePage() {
                 </div>
               </div>
 
-              <button
+              <StatefulButton
                 type="submit"
-                disabled={isSubmitting}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-4 text-sm font-bold text-white shadow-md hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                loadingText="Uploading & Queuing Document..."
+                successText="Submitted Successfully!"
+                minDuration={1800}
+                className="w-full py-4 text-sm font-bold shadow-md"
               >
                 <UploadSimple size={18} weight="bold" />
-                <span>{isSubmitting ? 'Uploading & Queuing Document...' : 'Submit Document for Review'}</span>
-              </button>
+                <span>Submit Document for Review</span>
+              </StatefulButton>
             </form>
           ) : (
             /* --- FORM 2: CAMPUS NEWS & BULLETIN CONTRIBUTION --- */
@@ -773,14 +784,17 @@ export default function ContributePage() {
                 </div>
               </div>
 
-              <button
+              <StatefulButton
                 type="submit"
-                disabled={isSubmitting}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 py-4 text-sm font-bold text-slate-950 shadow-md hover:bg-amber-400 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                variant="primary"
+                loadingText="Submitting Bulletin..."
+                successText="Bulletin Submitted!"
+                minDuration={1800}
+                className="w-full py-4 text-sm font-bold shadow-md bg-amber-500 hover:bg-amber-400 text-slate-950"
               >
                 <Megaphone size={18} weight="bold" />
-                <span>{isSubmitting ? 'Submitting Bulletin...' : 'Submit News Bulletin for Verification'}</span>
-              </button>
+                <span>Submit News Bulletin for Verification</span>
+              </StatefulButton>
             </form>
           )}
         </div>
