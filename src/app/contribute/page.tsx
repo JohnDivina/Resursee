@@ -180,56 +180,61 @@ export default function ContributePage() {
 
     setIsSubmitting(true);
 
-    let fileDataUrl: string | undefined = undefined;
+    try {
+      let fileDataUrl: string | undefined = undefined;
 
-    if (selectedFile) {
-      try {
-        fileDataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => resolve('');
-          reader.readAsDataURL(selectedFile);
-        });
-      } catch {
-        // continue
+      if (selectedFile) {
+        try {
+          fileDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => resolve('');
+            reader.readAsDataURL(selectedFile);
+          });
+        } catch {
+          // ignore
+        }
       }
+
+      const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `SUB-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      const newSub: ResourceSubmission = {
+        id: generatedId,
+        title: title.trim(),
+        description: description.trim() || null,
+        category_id: categoryId || (categoriesList[0]?.id ?? 'cat-1'),
+        department_id: departmentId || (departmentsList[0]?.id ?? 'dept-1'),
+        document_type: docType,
+        file_name: fileName || (selectedFile ? selectedFile.name : `${title.toLowerCase().replace(/\s+/g, '-')}.${fileFormat.toLowerCase()}`),
+        file_format: fileFormat,
+        file_size: selectedFile ? selectedFile.size : 350000,
+        file_path: selectedFile ? `/documents/${selectedFile.name}` : undefined,
+        file_data: fileDataUrl || undefined,
+        version_label: versionLabel,
+        source_name: sourceName.trim() || null,
+        source_url: sourceUrl.trim() || null,
+        submission_type: submissionType,
+        existing_resource_id: existingResourceId || null,
+        submitter_name: submitterName.trim(),
+        submitter_email: submitterEmail.trim(),
+        submitter_role: (submitterRole.trim() as any) || undefined,
+        submission_notes: submissionNotes.trim() || null,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        category: categoriesList.find((c) => c.id === categoryId),
+        department: departmentsList.find((d) => d.id === departmentId),
+      };
+
+      // Save to store & cloud immediately
+      addSubmission(newSub);
+
+      setSubmissionId(generatedId);
+      setIsSubmitted(true);
+    } catch (err: any) {
+      console.error('Submit error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `SUB-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const newSub: ResourceSubmission = {
-      id: generatedId,
-      title: title.trim(),
-      description: description.trim() || null,
-      category_id: categoryId || (categoriesList[0]?.id ?? 'cat-1'),
-      department_id: departmentId || (departmentsList[0]?.id ?? 'dept-1'),
-      document_type: docType,
-      file_name: fileName || (selectedFile ? selectedFile.name : `${title.toLowerCase().replace(/\s+/g, '-')}.${fileFormat.toLowerCase()}`),
-      file_format: fileFormat,
-      file_size: selectedFile ? selectedFile.size : 350000,
-      file_path: selectedFile ? `/documents/${selectedFile.name}` : undefined,
-      file_data: fileDataUrl || undefined,
-      version_label: versionLabel,
-      source_name: sourceName.trim() || null,
-      source_url: sourceUrl.trim() || null,
-      submission_type: submissionType,
-      existing_resource_id: existingResourceId || null,
-      submitter_name: submitterName.trim(),
-      submitter_email: submitterEmail.trim(),
-      submitter_role: (submitterRole.trim() as any) || undefined,
-      submission_notes: submissionNotes.trim() || null,
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      category: categoriesList.find((c) => c.id === categoryId),
-      department: departmentsList.find((d) => d.id === departmentId),
-    };
-
-    // Save to store & cloud immediately
-    addSubmission(newSub);
-
-    setSubmissionId(generatedId);
-    setIsSubmitting(false);
-    setIsSubmitted(true);
   };
 
   const handleNewsSubmit = async (e: React.FormEvent) => {

@@ -30,6 +30,28 @@ export function getLiveSubmissions(): ResourceSubmission[] {
   return inMemorySubmissions;
 }
 
+function safeSetLocalStorage(key: string, data: ResourceSubmission[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    // Strip heavy base64 data to stay far below the 5MB browser localStorage quota
+    const sanitized = data.map((item) => {
+      if (item && item.file_data && item.file_data.length > 5000) {
+        const { file_data, ...lightweight } = item;
+        return lightweight as ResourceSubmission;
+      }
+      return item;
+    });
+    localStorage.setItem(key, JSON.stringify(sanitized));
+  } catch {
+    try {
+      const ultraLight = data.map(({ file_data, ...rest }: any) => rest);
+      localStorage.setItem(key, JSON.stringify(ultraLight));
+    } catch {
+      // Gracefully ignore if storage full
+    }
+  }
+}
+
 export async function fetchSubmissionsFromCloud(): Promise<ResourceSubmission[]> {
   try {
     const res = await fetch('/api/submissions');
@@ -37,8 +59,8 @@ export async function fetchSubmissionsFromCloud(): Promise<ResourceSubmission[]>
       const data = await res.json();
       if (data.submissions && Array.isArray(data.submissions)) {
         inMemorySubmissions = data.submissions;
+        safeSetLocalStorage(CLOUD_SUBMISSIONS_KEY, inMemorySubmissions || []);
         if (typeof window !== 'undefined') {
-          localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
           window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
         }
         return inMemorySubmissions || [];
@@ -58,8 +80,8 @@ export function addSubmission(submission: ResourceSubmission): ResourceSubmissio
   const current = getLiveSubmissions();
   inMemorySubmissions = [submission, ...current.filter((s) => s.id !== submission.id)];
 
+  safeSetLocalStorage(CLOUD_SUBMISSIONS_KEY, inMemorySubmissions);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
     window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   }
 
@@ -86,8 +108,8 @@ export function updateSubmissionStatus(
 
   inMemorySubmissions = current.map((s) => (s.id === id ? { ...s, ...updates } : s));
 
+  safeSetLocalStorage(CLOUD_SUBMISSIONS_KEY, inMemorySubmissions);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
     window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   }
 
@@ -104,8 +126,8 @@ export function deleteSubmissionById(id: string): ResourceSubmission[] {
   const current = getLiveSubmissions();
   inMemorySubmissions = current.filter((s) => s.id !== id);
 
+  safeSetLocalStorage(CLOUD_SUBMISSIONS_KEY, inMemorySubmissions);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
     window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   }
 
@@ -119,8 +141,8 @@ export function clearReviewedSubmissions(): ResourceSubmission[] {
   const toDelete = current.filter((s) => s.status !== 'pending');
   inMemorySubmissions = current.filter((s) => s.status === 'pending');
 
+  safeSetLocalStorage(CLOUD_SUBMISSIONS_KEY, inMemorySubmissions);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
     window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
   }
 

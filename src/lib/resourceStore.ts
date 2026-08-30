@@ -30,6 +30,28 @@ export function getLiveResources(): Resource[] {
   return inMemoryResources;
 }
 
+function safeSetLocalStorage(key: string, data: Resource[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    // Strip heavy base64 data to stay far below the 5MB browser localStorage quota
+    const sanitized = data.map((item) => {
+      if (item && item.file_data && item.file_data.length > 5000) {
+        const { file_data, ...lightweight } = item;
+        return lightweight as Resource;
+      }
+      return item;
+    });
+    localStorage.setItem(key, JSON.stringify(sanitized));
+  } catch {
+    try {
+      const ultraLight = data.map(({ file_data, ...rest }: any) => rest);
+      localStorage.setItem(key, JSON.stringify(ultraLight));
+    } catch {
+      // Gracefully ignore if storage full
+    }
+  }
+}
+
 export async function fetchResourcesFromCloud(): Promise<Resource[]> {
   try {
     const res = await fetch('/api/resources');
@@ -37,8 +59,8 @@ export async function fetchResourcesFromCloud(): Promise<Resource[]> {
       const data = await res.json();
       if (data.resources && Array.isArray(data.resources)) {
         inMemoryResources = data.resources;
+        safeSetLocalStorage(CLOUD_CACHE_KEY, data.resources);
         if (typeof window !== 'undefined') {
-          localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data.resources));
           window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
         }
         return data.resources;
@@ -58,8 +80,8 @@ export function deleteResourceById(id: string): Resource[] {
   const current = getLiveResources();
   inMemoryResources = current.filter((r) => r.id !== id);
 
+  safeSetLocalStorage(CLOUD_CACHE_KEY, inMemoryResources);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
     window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
   }
 
@@ -73,8 +95,8 @@ export function addCustomResource(resource: Resource): Resource[] {
   const current = getLiveResources();
   inMemoryResources = [resource, ...current.filter((r) => r.id !== resource.id)];
 
+  safeSetLocalStorage(CLOUD_CACHE_KEY, inMemoryResources);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
     window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
   }
 
@@ -103,8 +125,8 @@ export function updateExistingResource(
 
   inMemoryResources = current.map((r) => (r.id === resourceId ? updatedTarget : r));
 
+  safeSetLocalStorage(CLOUD_CACHE_KEY, inMemoryResources);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
     window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
   }
 
