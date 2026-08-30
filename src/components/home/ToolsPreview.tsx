@@ -2,80 +2,299 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { motion } from 'motion/react';
 import {
   ArrowsInLineHorizontal,
   CornersOut,
   ArrowsClockwise,
   Crop,
+  FilePdf,
   FileArrowDown,
   FileArrowUp,
   ArrowRight,
+  Sparkle,
+  CheckCircle,
+  FileImage,
 } from '@phosphor-icons/react';
+import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid';
+import { cn } from '@/lib/utils';
 
-interface ToolItem {
-  id: string;
-  name: string;
-  category: 'Image' | 'PDF' | 'Document';
-  description: string;
-  icon: React.ReactNode;
-  iconBg: string;
-  href: string;
-}
+// =========================================================================
+// Custom Interactive Skeletons for Each Tool
+// =========================================================================
+
+/** 1. Skeleton: Compress Image (Interactive compression ratio animation) */
+const SkeletonCompressImage = () => {
+  return (
+    <motion.div
+      initial={{ opacity: 0.9 }}
+      whileHover={{ scale: 1.02 }}
+      className="flex flex-col w-full h-full justify-center space-y-2.5 p-2"
+    >
+      <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[var(--color-ink-muted)]">
+        <span className="flex items-center gap-1 text-blue-600 dark:text-sky-400">
+          <FileImage size={14} weight="bold" /> clearance_photo.png
+        </span>
+        <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full">-88%</span>
+      </div>
+
+      <div className="relative h-4 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
+        <motion.div
+          initial={{ width: '90%' }}
+          whileHover={{ width: '22%' }}
+          transition={{ duration: 0.8, ease: 'easeInOut' }}
+          className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full flex items-center justify-end pr-1.5"
+        >
+          <span className="h-2 w-2 rounded-full bg-white shadow-xs" />
+        </motion.div>
+      </div>
+
+      <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink-muted)]">
+        <span>Original: 4.8 MB</span>
+        <span className="font-bold text-blue-600 dark:text-sky-400">Compressed: 580 KB</span>
+      </div>
+    </motion.div>
+  );
+};
+
+/** 2. Skeleton: Resize Image (ID Photo & Dimensions Guide) */
+const SkeletonResizeImage = () => {
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="hover"
+      className="flex items-center justify-center gap-3 w-full h-full p-2"
+    >
+      <motion.div
+        variants={{
+          initial: { scale: 1 },
+          hover: { scale: 1.08, borderColor: 'rgba(37, 99, 235, 0.6)' },
+        }}
+        className="h-20 w-20 rounded-[14px] border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 flex flex-col items-center justify-center shadow-xs"
+      >
+        <span className="font-mono text-[10px] font-bold text-blue-600 dark:text-sky-400">2 × 2 in</span>
+        <span className="text-[9px] text-[var(--color-ink-muted)]">600×600px</span>
+      </motion.div>
+
+      <motion.div
+        variants={{
+          initial: { scale: 1 },
+          hover: { scale: 0.95 },
+        }}
+        className="h-16 w-16 rounded-[12px] border border-slate-300 dark:border-slate-700 bg-slate-100/60 dark:bg-slate-800/60 flex flex-col items-center justify-center"
+      >
+        <span className="font-mono text-[9px] font-bold text-[var(--color-ink)]">1 × 1 in</span>
+        <span className="text-[8px] text-[var(--color-ink-muted)]">Passport</span>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/** 3. Skeleton: Convert Image (Format Swapping Pills) */
+const SkeletonConvertImage = () => {
+  return (
+    <motion.div
+      initial={{ opacity: 0.9 }}
+      whileHover={{ scale: 1.02 }}
+      className="flex items-center justify-center gap-2 w-full h-full p-2"
+    >
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs font-bold text-rose-500 shadow-xs">
+        PNG
+      </div>
+      <motion.div
+        animate={{ rotate: [0, 180, 360] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+        className="text-emerald-500"
+      >
+        <ArrowsClockwise size={18} weight="bold" />
+      </motion.div>
+      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 shadow-xs">
+        WEBP
+      </div>
+    </motion.div>
+  );
+};
+
+/** 4. Skeleton: Crop Image (Interactive Viewfinder Crop Grid) */
+const SkeletonCropImage = () => {
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="hover"
+      className="relative w-full h-full flex items-center justify-center p-2"
+    >
+      <div className="relative h-24 w-36 rounded-[14px] bg-slate-200/70 dark:bg-slate-800/70 overflow-hidden flex items-center justify-center">
+        {/* Grid lines */}
+        <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-40">
+          <div className="border-r border-b border-white" />
+          <div className="border-r border-b border-white" />
+          <div className="border-b border-white" />
+          <div className="border-r border-b border-white" />
+          <div className="border-r border-b border-white" />
+          <div className="border-b border-white" />
+          <div className="border-r border-white" />
+          <div className="border-r border-white" />
+          <div />
+        </div>
+
+        <motion.div
+          variants={{
+            initial: { scale: 1, rotate: 0 },
+            hover: { scale: 0.85, rotate: -2 },
+          }}
+          transition={{ duration: 0.3 }}
+          className="relative h-18 w-24 rounded-lg border-2 border-amber-500 bg-amber-500/10 shadow-xs flex items-center justify-center"
+        >
+          <Crop size={22} className="text-amber-500" weight="bold" />
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
+/** 5. Skeleton: PDF to Image (Extract Pages to PNG/JPG) */
+const SkeletonPdfToImage = () => {
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="hover"
+      className="flex items-center justify-center gap-2 w-full h-full p-2"
+    >
+      {/* PDF Document Source */}
+      <div className="h-20 w-16 rounded-[12px] border border-rose-500/40 bg-rose-500/10 flex flex-col items-center justify-center shadow-xs">
+        <FilePdf size={24} className="text-rose-500" weight="fill" />
+        <span className="font-mono text-[9px] font-bold text-rose-600 dark:text-rose-400 mt-1">.PDF</span>
+      </div>
+
+      <motion.div
+        variants={{
+          initial: { x: 0 },
+          hover: { x: 4 },
+        }}
+        className="text-rose-500"
+      >
+        <ArrowRight size={16} weight="bold" />
+      </motion.div>
+
+      {/* Extracted Images Stack */}
+      <div className="flex -space-x-4">
+        {[1, 2, 3].map((page) => (
+          <motion.div
+            key={page}
+            variants={{
+              initial: { y: 0, rotate: 0 },
+              hover: { y: -page * 2, rotate: (page - 2) * 4 },
+            }}
+            className="h-20 w-16 rounded-[12px] border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-md flex flex-col items-center justify-center"
+          >
+            <FileImage size={18} className="text-blue-500" weight="bold" />
+            <span className="font-mono text-[8px] text-[var(--color-ink-muted)] mt-1">P.{page}</span>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+/** 6. Skeleton: Image to PDF (Merge Slips to Document) */
+const SkeletonImageToPdf = () => {
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="hover"
+      className="flex items-center justify-center gap-3 w-full h-full p-2"
+    >
+      {/* Scattered Images */}
+      <div className="flex -space-x-3">
+        <motion.div
+          variants={{
+            initial: { rotate: -6 },
+            hover: { rotate: 0, x: 2 },
+          }}
+          className="h-16 w-14 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shadow-xs"
+        >
+          <span className="text-xs">🪪</span>
+        </motion.div>
+        <motion.div
+          variants={{
+            initial: { rotate: 6 },
+            hover: { rotate: 0, x: -2 },
+          }}
+          className="h-16 w-14 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shadow-xs"
+        >
+          <span className="text-xs">📑</span>
+        </motion.div>
+      </div>
+
+      <span className="text-sky-500 font-bold">+</span>
+
+      {/* Compiled Unified PDF File */}
+      <motion.div
+        variants={{
+          initial: { scale: 1 },
+          hover: { scale: 1.08, borderColor: '#0284c7' },
+        }}
+        className="h-20 w-16 rounded-[14px] bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg flex flex-col items-center justify-center p-1.5"
+      >
+        <FilePdf size={22} weight="fill" />
+        <span className="font-mono text-[8px] font-bold uppercase mt-1 tracking-wider">Merged</span>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// =========================================================================
+// Bento Grid Tools Preview
+// =========================================================================
 
 export default function ToolsPreview() {
-  const tools: ToolItem[] = [
+  const bentoItems = [
     {
-      id: 'compress-image',
-      name: 'Compress Image',
-      category: 'Image',
-      description: 'Reduce file size for university portal submissions while preserving crisp visual clarity.',
-      icon: <ArrowsInLineHorizontal size={26} className="text-white" weight="bold" />,
-      iconBg: 'bg-blue-600',
+      title: 'Compress Image',
+      description: 'Reduce file size by up to 90% for university portal submissions with zero visual quality loss.',
+      header: <SkeletonCompressImage />,
+      className: 'md:col-span-2',
+      icon: <ArrowsInLineHorizontal size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/compress-image',
     },
     {
-      id: 'resize-image',
-      name: 'Resize Image',
-      category: 'Image',
-      description: 'Scale photos to standard 2x2, 1x1 ID dimensions or custom pixel specifications.',
-      icon: <CornersOut size={26} className="text-white" weight="bold" />,
-      iconBg: 'bg-indigo-600',
+      title: 'Resize Image',
+      description: 'Scale photos to standard 2×2, 1×1 passport ID dimensions or custom pixel specifications.',
+      header: <SkeletonResizeImage />,
+      className: 'md:col-span-1',
+      icon: <CornersOut size={18} weight="bold" className="text-indigo-600 dark:text-indigo-400" />,
       href: '/tools/resize-image',
     },
     {
-      id: 'convert-image',
-      name: 'Convert Image',
-      category: 'Image',
-      description: 'Convert between PNG, JPG, and modern WebP formats instantly with client-side canvas.',
-      icon: <ArrowsClockwise size={26} className="text-white" weight="bold" />,
-      iconBg: 'bg-emerald-600',
+      title: 'Convert Image',
+      description: 'Convert between PNG, JPG, and modern WebP formats in milliseconds directly in browser.',
+      header: <SkeletonConvertImage />,
+      className: 'md:col-span-1',
+      icon: <ArrowsClockwise size={18} weight="bold" className="text-emerald-600 dark:text-emerald-400" />,
       href: '/tools/convert-image',
     },
     {
-      id: 'crop-image',
-      name: 'Crop Image',
-      category: 'Image',
-      description: 'Interactive canvas crop tool with standard ID photo frames and pan controls.',
-      icon: <Crop size={26} className="text-white" weight="bold" />,
-      iconBg: 'bg-amber-500',
+      title: 'Crop Image',
+      description: 'Interactive canvas crop tool with standard ID photo aspect ratios and pan controls.',
+      header: <SkeletonCropImage />,
+      className: 'md:col-span-1',
+      icon: <Crop size={18} weight="bold" className="text-amber-500" />,
       href: '/tools/crop-image',
     },
     {
-      id: 'pdf-to-image',
-      name: 'PDF to Image',
-      category: 'PDF',
-      description: 'Extract high-resolution PNG or JPG pages directly from PDF documents.',
-      icon: <FileArrowDown size={26} className="text-white" weight="bold" />,
-      iconBg: 'bg-rose-500',
+      title: 'PDF to Image',
+      description: 'Extract crisp high-resolution PNG or JPG pages directly from multi-page PDF documents.',
+      header: <SkeletonPdfToImage />,
+      className: 'md:col-span-1',
+      icon: <FileArrowDown size={18} weight="bold" className="text-rose-500" />,
       href: '/tools/pdf-to-image',
     },
     {
-      id: 'image-to-pdf',
-      name: 'Image to PDF',
-      category: 'PDF',
+      title: 'Image to PDF',
       description: 'Combine scanned clearance slips, IDs, and certificates into a single unified PDF.',
-      icon: <FileArrowUp size={26} className="text-white" weight="bold" />,
-      iconBg: 'bg-sky-500',
+      header: <SkeletonImageToPdf />,
+      className: 'md:col-span-2',
+      icon: <FileArrowUp size={18} weight="bold" className="text-sky-500" />,
       href: '/tools/image-to-pdf',
     },
   ];
@@ -84,8 +303,12 @@ export default function ToolsPreview() {
     <section className="border-t border-[var(--color-rule-subtle)] bg-transparent py-14 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end mb-8">
           <div>
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-600 dark:text-sky-400 mb-2">
+              <Sparkle size={13} weight="fill" />
+              <span>Resursee Productivity Toolbox</span>
+            </div>
             <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Tools for getting things done.
             </h2>
@@ -100,37 +323,20 @@ export default function ToolsPreview() {
           </Link>
         </div>
 
-        {/* 6-Tool Grid (Apple Squircle Solid White Cards with Smooth Hover) */}
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {tools.map((tool) => (
-            <Link
-              key={tool.id}
-              href={tool.href}
-              data-thock="card"
-              className="group relative flex min-h-[220px] sm:min-h-[240px] flex-col justify-between rounded-[26px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-7 md:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-2 hover:border-[var(--color-primary)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.35)]"
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  {/* Squircle App Icon Badge */}
-                  <div className={`flex h-13 w-13 items-center justify-center rounded-[18px] ${tool.iconBg} shadow-xs transition-transform duration-300 ease-out group-hover:scale-110`}>
-                    {tool.icon}
-                  </div>
-                  <span className="rounded-full bg-[var(--color-paper-muted)] px-3.5 py-1.5 font-semibold text-xs text-[var(--color-ink-secondary)]">
-                    {tool.category}
-                  </span>
-                </div>
-
-                <h3 className="mt-5 text-lg sm:text-xl font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors duration-200 tracking-tight">
-                  {tool.name}
-                </h3>
-
-                <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[var(--color-ink-muted)] line-clamp-3">
-                  {tool.description}
-                </p>
-              </div>
-            </Link>
+        {/* Aceternity Bento Box Grid Style */}
+        <BentoGrid className="max-w-7xl mx-auto md:auto-rows-[19rem]">
+          {bentoItems.map((item, i) => (
+            <BentoGridItem
+              key={i}
+              title={item.title}
+              description={item.description}
+              header={item.header}
+              className={cn('[&>p:text-lg]', item.className)}
+              icon={item.icon}
+              href={item.href}
+            />
           ))}
-        </div>
+        </BentoGrid>
       </div>
     </section>
   );
