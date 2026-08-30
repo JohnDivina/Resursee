@@ -23,7 +23,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
   };
 
   return (
-    <section className="border-t border-[var(--color-rule-subtle)] bg-[var(--color-paper)] py-14 sm:py-20">
+    <section className="border-t border-[var(--color-rule-subtle)] bg-transparent py-14 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end">
           <div>

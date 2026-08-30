@@ -10,13 +10,17 @@ import LatestNews from '@/components/home/LatestNews';
 import CommandPalette from '@/components/search/CommandPalette';
 import { mockResources, mockNewsArticles } from '@/lib/mockData';
 import { CheckCircle } from '@phosphor-icons/react';
+import { CloudShader } from '@/components/ui/cloud-shader';
 
 export default function HomePage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
+    <div className="relative flex min-h-screen flex-col bg-transparent">
+      {/* Full-Page Sunny Blue Sky & Fluffy Cloud Shader */}
+      <CloudShader />
+
       {/* 1. Minimal Header */}
       <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
 

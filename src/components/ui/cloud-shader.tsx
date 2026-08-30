@@ -7,7 +7,7 @@ interface CloudShaderProps {
   speed?: number;
 }
 
-export function CloudShader({ className = '', speed = 1.0 }: CloudShaderProps) {
+export function CloudShader({ className = '', speed = 0.8 }: CloudShaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -37,7 +37,7 @@ export function CloudShader({ className = '', speed = 1.0 }: CloudShaderProps) {
     }
 
     if (!gl) {
-      return render2DClouds(canvas, speed);
+      return render2DBlueSkyClouds(canvas, speed);
     }
 
     // Vertex Shader: Fullscreen Quad
@@ -48,7 +48,7 @@ export function CloudShader({ className = '', speed = 1.0 }: CloudShaderProps) {
       }
     `;
 
-    // Fragment Shader: Volumetric 3D Perlin & Simplex Cloud Nebula
+    // Fragment Shader: Bright Sunny Blue Sky & Fluffy White Cumulus Clouds
     const fsSource = `
       precision highp float;
       uniform vec2 u_resolution;
@@ -61,7 +61,7 @@ export function CloudShader({ className = '', speed = 1.0 }: CloudShaderProps) {
         return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
       }
 
-      // Smooth Gradient Noise
+      // Smooth Gradient Value Noise
       float gnoise(vec2 p) {
         vec2 i = floor(p);
         vec2 f = fract(p);
@@ -76,7 +76,7 @@ export function CloudShader({ className = '', speed = 1.0 }: CloudShaderProps) {
         );
       }
 
-      // Fractional Brownian Motion (5 octaves for lush volumetric cloud texture)
+      // 5-Octave Fractional Brownian Motion (Billowing Cumulus Cloud Density)
       float fbm(vec2 p) {
         float f = 0.0;
         f += 0.5000 * gnoise(p); p = p * 2.02 + vec2(1.7, 3.2);
@@ -91,46 +91,56 @@ export function CloudShader({ className = '', speed = 1.0 }: CloudShaderProps) {
         vec2 uv = gl_FragCoord.xy / u_resolution.xy;
         vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
 
-        float time = u_time * 0.12;
+        float time = u_time * 0.08;
 
-        // Interactive mouse swell
-        vec2 mouse = (u_mouse - 0.5) * 2.0;
-        p += mouse * 0.1 / (length(p - mouse) + 0.6);
+        // Interactive subtle mouse wave
+        vec2 mouse = (u_mouse - 0.5) * 1.5;
+        p += mouse * 0.08 / (length(p - mouse) + 0.8);
 
-        // Fluid Multi-Layer Domain Warping
+        // Fluid Multi-Layer Domain Warping for organic billowing cumulus clouds
         vec2 q = vec2(
-          fbm(p + vec2(time * 0.3, time * 0.2)),
-          fbm(p + vec2(5.2 + time * 0.2, 1.3 - time * 0.15))
+          fbm(p + vec2(time * 0.4, time * 0.15)),
+          fbm(p + vec2(5.2 + time * 0.25, 1.3 - time * 0.2))
         );
 
         vec2 r = vec2(
-          fbm(p + 3.5 * q + vec2(1.7 - time * 0.1, 9.2 + time * 0.15)),
-          fbm(p + 3.5 * q + vec2(8.3 + time * 0.12, 2.8 - time * 0.08))
+          fbm(p + 3.0 * q + vec2(1.7 - time * 0.1, 9.2 + time * 0.12)),
+          fbm(p + 3.0 * q + vec2(8.3 + time * 0.15, 2.8 - time * 0.1))
         );
 
-        float f = fbm(p + 4.0 * r);
+        float f = fbm(p + 3.5 * r);
 
-        // Rich Color Spectrum:
-        // Deep Midnight Navy (#0a0f1d), Vivid Royal Blue (#1d4ed8), Electric Cyan (#06b6d4), Glowing White Mist
-        vec3 colDeepNavy = vec3(0.04, 0.06, 0.12);
-        vec3 colRoyalBlue = vec3(0.11, 0.31, 0.85);
-        vec3 colCyanGlow = vec3(0.02, 0.71, 0.93);
-        vec3 colWhiteCrest = vec3(0.92, 0.96, 1.0);
+        // Cheerful Sunny Blue Sky Colors:
+        // Top Deep Sky Blue (#1d70e2), Mid Cerulean (#4ea8fc), Horizon Light Blue (#93c5fd)
+        vec3 skyTop = vec3(0.12, 0.48, 0.92);
+        vec3 skyMid = vec3(0.32, 0.68, 0.98);
+        vec3 skyHorizon = vec3(0.65, 0.85, 0.99);
 
-        // Interpolate colors across cloud density
-        vec3 color = mix(colDeepNavy, colRoyalBlue, clamp((f * f) * 4.0, 0.0, 1.0));
-        color = mix(color, colCyanGlow, clamp(length(q) * 1.2, 0.0, 1.0));
-        color = mix(color, colWhiteCrest, clamp(pow(length(r.x), 2.2) * 1.5, 0.0, 1.0));
+        // Atmospheric Sky Vertical Gradient
+        vec3 skyColor = mix(skyHorizon, skyMid, clamp(uv.y * 1.2, 0.0, 1.0));
+        skyColor = mix(skyColor, skyTop, clamp((uv.y - 0.3) * 1.4, 0.0, 1.0));
 
-        // Add luminous highlights on dense cloud crests
-        float crest = smoothstep(0.4, 0.85, f);
-        color += crest * vec3(0.2, 0.4, 0.7);
+        // Fluffy Pure White Cumulus Clouds
+        vec3 cloudHighlight = vec3(1.0, 1.0, 1.0);
+        vec3 cloudBody = vec3(0.96, 0.98, 1.0);
+        vec3 cloudShadow = vec3(0.82, 0.90, 0.99);
 
-        // Subtle bottom/top vignette for seamless text framing
-        float vignette = smoothstep(0.0, 0.12, uv.y) * smoothstep(1.0, 0.88, uv.y);
-        color = mix(colDeepNavy, color, clamp(vignette * 0.95 + 0.05, 0.0, 1.0));
+        // Cloud Density thresholding
+        float cloudCover = smoothstep(-0.15, 0.65, f);
+        float cloudPuff = smoothstep(0.1, 0.85, f);
 
-        gl_FragColor = vec4(color, 1.0);
+        vec3 cloudColor = mix(cloudShadow, cloudBody, clamp(cloudCover * 1.2, 0.0, 1.0));
+        cloudColor = mix(cloudColor, cloudHighlight, clamp(pow(cloudPuff, 2.0) * 1.4, 0.0, 1.0));
+
+        // Blend Clouds onto Sunny Blue Sky
+        float cloudAlpha = smoothstep(-0.1, 0.55, f);
+        vec3 finalColor = mix(skyColor, cloudColor, clamp(cloudAlpha * 0.92, 0.0, 1.0));
+
+        // Sunlit celestial glow on cloud rims
+        float rim = smoothstep(0.4, 0.8, f) * (1.0 - smoothstep(0.8, 0.95, f));
+        finalColor += rim * 0.15 * vec3(1.0, 0.98, 0.92);
+
+        gl_FragColor = vec4(finalColor, 1.0);
       }
     `;
 
@@ -149,17 +159,17 @@ export function CloudShader({ className = '', speed = 1.0 }: CloudShaderProps) {
 
     const vs = compile(gl.VERTEX_SHADER, vsSource);
     const fs = compile(gl.FRAGMENT_SHADER, fsSource);
-    if (!vs || !fs) return render2DClouds(canvas, speed);
+    if (!vs || !fs) return render2DBlueSkyClouds(canvas, speed);
 
     const prog = gl.createProgram();
-    if (!prog) return render2DClouds(canvas, speed);
+    if (!prog) return render2DBlueSkyClouds(canvas, speed);
     gl.attachShader(prog, vs);
     gl.attachShader(prog, fs);
     gl.linkProgram(prog);
 
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
       console.error('Program link error:', gl.getProgramInfoLog(prog));
-      return render2DClouds(canvas, speed);
+      return render2DBlueSkyClouds(canvas, speed);
     }
     gl.useProgram(prog);
 
@@ -242,20 +252,20 @@ export function CloudShader({ className = '', speed = 1.0 }: CloudShaderProps) {
   }, [isClient, speed]);
 
   return (
-    <div className={`absolute inset-0 h-full w-full overflow-hidden ${className}`}>
+    <div className={`fixed inset-0 h-full w-full overflow-hidden pointer-events-none -z-10 ${className}`}>
       <canvas
         ref={canvasRef}
         className="h-full w-full block"
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100vw', height: '100vh' }}
       />
     </div>
   );
 }
 
 // -------------------------------------------------------------
-// 2D Canvas Procedural Volumetric Cloud Fallback
+// 2D Canvas Procedural Blue Sky & Fluffy Cloud Fallback
 // -------------------------------------------------------------
-function render2DClouds(canvas: HTMLCanvasElement, speed: number) {
+function render2DBlueSkyClouds(canvas: HTMLCanvasElement, speed: number) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return () => {};
 
@@ -273,43 +283,41 @@ function render2DClouds(canvas: HTMLCanvasElement, speed: number) {
   observer.observe(canvas);
   resize();
 
-  const puffs = Array.from({ length: 30 }, () => ({
+  const puffs = Array.from({ length: 35 }, () => ({
     x: Math.random(),
     y: Math.random(),
-    radius: 180 + Math.random() * 240,
-    vx: (Math.random() - 0.5) * 0.0006,
-    vy: (Math.random() - 0.5) * 0.0004,
-    hue: 215 + Math.random() * 35,
+    radius: 160 + Math.random() * 220,
+    vx: 0.0002 + Math.random() * 0.0003,
+    vy: (Math.random() - 0.5) * 0.0001,
   }));
 
   function loop() {
     if (!ctx || !canvas) return;
     time += 0.01 * speed;
 
-    // Background Gradient
-    const bg = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    bg.addColorStop(0, '#040711');
-    bg.addColorStop(0.5, '#0e2554');
-    bg.addColorStop(1, '#070c18');
+    // Cheerful Sunny Blue Sky Gradient
+    const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    bg.addColorStop(0, '#1e7ae6');
+    bg.addColorStop(0.5, '#56aaff');
+    bg.addColorStop(1, '#aadcff');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw flowing puffs
+    // Draw fluffy white clouds
     puffs.forEach((puff) => {
       puff.x += puff.vx * speed;
       puff.y += puff.vy * speed;
-      if (puff.x < -0.3) puff.x = 1.3;
       if (puff.x > 1.3) puff.x = -0.3;
-      if (puff.y < -0.3) puff.y = 1.3;
-      if (puff.y > 1.3) puff.y = -0.3;
+      if (puff.y < -0.2) puff.y = 1.2;
+      if (puff.y > 1.2) puff.y = -0.2;
 
       const px = puff.x * canvas.width;
       const py = puff.y * canvas.height;
-      const r = puff.radius * (canvas.width / 900);
+      const r = puff.radius * (canvas.width / 1000);
 
       const grad = ctx.createRadialGradient(px, py, 0, px, py, r);
-      grad.addColorStop(0, `hsla(${puff.hue}, 90%, 65%, 0.5)`);
-      grad.addColorStop(0.5, `hsla(${puff.hue}, 85%, 50%, 0.25)`);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+      grad.addColorStop(0.6, 'rgba(255, 255, 255, 0.35)');
       grad.addColorStop(1, 'transparent');
 
       ctx.fillStyle = grad;
