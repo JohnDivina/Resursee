@@ -10,7 +10,6 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import StatsStrip from '@/components/home/StatsStrip';
-import { CloudShader } from '@/components/ui/cloud-shader';
 import { mockResources, mockDepartments } from '@/lib/mockData';
 import { useRealtimeTotalDownloads } from '@/lib/downloadStore';
 
@@ -35,13 +34,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative min-h-[38rem] sm:min-h-[44rem] w-full overflow-hidden py-16 sm:py-24 flex items-center justify-center">
-      {/* Aceternity Sunny Blue Sky & Fluffy Cloud WebGL Shader */}
-      <CloudShader className="absolute inset-0" />
-
-      {/* Subtle bottom gradient blending into content below */}
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--color-paper)] to-transparent pointer-events-none z-1" />
-
+    <section className="relative min-h-[38rem] sm:min-h-[44rem] w-full py-16 sm:py-24 flex items-center justify-center">
       <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
         {/* 1. Primary Tagline Headline */}
         <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-md sm:text-5xl sm:leading-[1.12] lg:text-6xl">

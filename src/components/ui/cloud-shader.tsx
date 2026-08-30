@@ -249,11 +249,11 @@ export function CloudShader({ className = '', speed = 0.8 }: CloudShaderProps) {
   }, [mounted, speed]);
 
   return (
-    <div className={`absolute inset-0 h-full w-full overflow-hidden pointer-events-none ${className}`}>
+    <div className={`fixed inset-0 w-screen h-screen overflow-hidden pointer-events-none -z-10 ${className}`}>
       <canvas
         ref={canvasRef}
         className="h-full w-full block"
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100vw', height: '100vh' }}
       />
     </div>
   );
