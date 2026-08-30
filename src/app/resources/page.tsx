@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
 import ResourceCard from '@/components/resources/ResourceCard';
+import ExpandableResourceGrid from '@/components/resources/ExpandableResourceGrid';
 import {
   MagnifyingGlass,
   Funnel,
@@ -403,11 +404,7 @@ export default function ResourcesDirectoryPage() {
                   </button>
                 </div>
               ) : viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredResources.map((resource) => (
-                    <ResourceCard key={resource.id} resource={resource} />
-                  ))}
-                </div>
+                <ExpandableResourceGrid resources={filteredResources} />
               ) : (
                 <div className="space-y-3.5">
                   {filteredResources.map((resource) => (
