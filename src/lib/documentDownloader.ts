@@ -496,6 +496,7 @@ export function generateValidDocumentPdf(doc: {
 
 /**
  * Downloads a resource cleanly and preserves the exact original binary data and extension.
+ * Inspects binary magic bytes so Word/Excel/PDF never throw format-extension mismatch errors.
  */
 export async function downloadResourceFile(resource: {
   title: string;
@@ -508,33 +509,82 @@ export async function downloadResourceFile(resource: {
   current_version?: string;
   description?: string | null;
 }) {
-  const format = (resource.file_format || 'PDF').toUpperCase();
-  let defaultExt = `.${format.toLowerCase()}`;
-  if (format === 'XLSX') defaultExt = '.xlsx';
-  else if (format === 'XLS') defaultExt = '.xls';
-  else if (format === 'DOCX') defaultExt = '.docx';
-  else if (format === 'DOC') defaultExt = '.doc';
-  else if (format === 'PPTX') defaultExt = '.pptx';
-  else if (format === 'PPT') defaultExt = '.ppt';
-  else if (format === 'PDF') defaultExt = '.pdf';
-  else if (format === 'CSV') defaultExt = '.csv';
-  else if (format === 'ZIP') defaultExt = '.zip';
+  const declaredFormat = (resource.file_format || 'PDF').toUpperCase();
+  let fileName = resource.file_name || `${resource.title.replace(/\s+/g, '_')}`;
 
-  let fileName = resource.file_name || `${resource.title.replace(/\s+/g, '_')}${defaultExt}`;
-  if (!fileName.includes('.')) {
-    fileName = `${fileName}${defaultExt}`;
-  }
-
-  // 1. If base64 dataUrl is stored directly on the resource (Exact user uploaded file!)
-  if (resource.file_data && resource.file_data.startsWith('data:')) {
+  // 1. Direct Binary Processing from stored file_data
+  if (resource.file_data && typeof resource.file_data === 'string') {
     try {
-      const res = await fetch(resource.file_data);
-      const blob = await res.blob();
+      const dataStr = resource.file_data;
+      const commaIndex = dataStr.indexOf(',');
+      const header = commaIndex !== -1 ? dataStr.substring(0, commaIndex) : '';
+      const base64Data = commaIndex !== -1 ? dataStr.substring(commaIndex + 1) : dataStr;
+
+      let detectedMime = 'application/octet-stream';
+      const match = header.match(/:(.*?);/);
+      if (match) detectedMime = match[1];
+
+      // Decode base64 to binary byte array
+      const binaryString = atob(base64Data);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // SNIFF MAGIC BYTES TO PREVENT WORD/EXCEL EXTENSION MISMATCHES:
+      // Case A: 0xD0 0xCF 0x11 0xE0 = OLE2 Compound Document (Legacy Word 97-2003 .doc or Excel .xls)
+      if (bytes.length >= 4 && bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0) {
+        if (fileName.toLowerCase().endsWith('.xls') || declaredFormat === 'XLS') {
+          detectedMime = 'application/vnd.ms-excel';
+          if (fileName.toLowerCase().endsWith('.xlsx')) fileName = fileName.replace(/\.xlsx$/i, '.xls');
+          if (!fileName.toLowerCase().endsWith('.xls')) fileName = `${fileName}.xls`;
+        } else {
+          detectedMime = 'application/msword';
+          if (fileName.toLowerCase().endsWith('.docx')) fileName = fileName.replace(/\.docx$/i, '.doc');
+          if (!fileName.toLowerCase().endsWith('.doc')) fileName = `${fileName}.doc`;
+        }
+      }
+      // Case B: 0x50 0x4B 0x03 0x04 = PKZip (Modern OpenXML .docx, .xlsx, .pptx)
+      else if (bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b) {
+        if (fileName.toLowerCase().endsWith('.xlsx') || declaredFormat === 'XLSX') {
+          detectedMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          if (!fileName.toLowerCase().endsWith('.xlsx')) fileName = `${fileName}.xlsx`;
+        } else if (fileName.toLowerCase().endsWith('.pptx') || declaredFormat === 'PPTX') {
+          detectedMime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+          if (!fileName.toLowerCase().endsWith('.pptx')) fileName = `${fileName}.pptx`;
+        } else {
+          detectedMime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          if (!fileName.toLowerCase().endsWith('.docx')) fileName = `${fileName}.docx`;
+        }
+      }
+      // Case C: 0x25 0x50 0x44 0x46 = %PDF
+      else if (bytes.length >= 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
+        detectedMime = 'application/pdf';
+        if (!fileName.toLowerCase().endsWith('.pdf')) fileName = `${fileName}.pdf`;
+      }
+
+      const blob = new Blob([bytes], { type: detectedMime });
       triggerDownload(blob, fileName);
       return;
     } catch {
-      // fallback
+      // fallback to path or generator
     }
+  }
+
+  let defaultExt = `.${declaredFormat.toLowerCase()}`;
+  if (declaredFormat === 'XLSX') defaultExt = '.xlsx';
+  else if (declaredFormat === 'XLS') defaultExt = '.xls';
+  else if (declaredFormat === 'DOCX') defaultExt = '.docx';
+  else if (declaredFormat === 'DOC') defaultExt = '.doc';
+  else if (declaredFormat === 'PPTX') defaultExt = '.pptx';
+  else if (declaredFormat === 'PPT') defaultExt = '.ppt';
+  else if (declaredFormat === 'PDF') defaultExt = '.pdf';
+  else if (declaredFormat === 'CSV') defaultExt = '.csv';
+  else if (declaredFormat === 'ZIP') defaultExt = '.zip';
+
+  if (!fileName.includes('.')) {
+    fileName = `${fileName}${defaultExt}`;
   }
 
   // 2. If valid file_path exists on server, attempt fetch
@@ -556,7 +606,7 @@ export async function downloadResourceFile(resource: {
   }
 
   // 3. Fallback generators according to exact document format!
-  if (format === 'DOCX' || format === 'DOC' || fileName.toLowerCase().endsWith('.docx') || fileName.toLowerCase().endsWith('.doc')) {
+  if (declaredFormat === 'DOCX' || declaredFormat === 'DOC' || fileName.toLowerCase().endsWith('.docx') || fileName.toLowerCase().endsWith('.doc')) {
     const docxBlob = generateValidDocx({
       title: resource.title,
       departmentName: resource.department?.name,
@@ -572,7 +622,7 @@ export async function downloadResourceFile(resource: {
     return;
   }
 
-  if (format === 'XLSX' || format === 'XLS' || fileName.toLowerCase().endsWith('.xlsx') || fileName.toLowerCase().endsWith('.xls')) {
+  if (declaredFormat === 'XLSX' || declaredFormat === 'XLS' || fileName.toLowerCase().endsWith('.xlsx') || fileName.toLowerCase().endsWith('.xls')) {
     const xlsBlob = generateValidExcelWorkbook({
       title: resource.title,
       departmentName: resource.department?.name,
