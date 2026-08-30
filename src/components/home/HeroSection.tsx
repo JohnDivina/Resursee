@@ -37,7 +37,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-[#0b132b] py-16 sm:py-24 text-white">
       {/* Aceternity Volumetric Procedural Cloud Shader Background */}
-      <CloudShader className="absolute inset-0 h-full w-full pointer-events-none z-0 opacity-90" speed={1.0} />
+      <CloudShader className="pointer-events-none z-0" speed={1.0} />
 
       {/* Subtle radial vignette */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(11,19,43,0.4)_100%)] pointer-events-none z-1" />
