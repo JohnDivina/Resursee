@@ -53,11 +53,7 @@ export function recordDownload(resourceId: string, baseCount = 0): number {
 
 // React hook to access real-time download count for a specific resource
 export function useRealtimeDownloadCount(resourceId: string, initialCount = 0): number {
-  const [count, setCount] = useState<number>(() => {
-    if (typeof window === 'undefined') return initialCount;
-    const map = getStoredDownloads();
-    return map[resourceId] !== undefined ? map[resourceId] : initialCount;
-  });
+  const [count, setCount] = useState<number>(initialCount);
 
   useEffect(() => {
     const map = getStoredDownloads();
@@ -99,12 +95,9 @@ export function useRealtimeDownloadCount(resourceId: string, initialCount = 0): 
 
 // React hook to access real-time total platform downloads/usage
 export function useRealtimeTotalDownloads(): number {
-  const [total, setTotal] = useState<number>(() => {
-    if (typeof window === 'undefined') {
-      return mockResources.reduce((acc, r) => acc + r.download_count, 0);
-    }
-    return calculateTotalDownloads();
-  });
+  const [total, setTotal] = useState<number>(() =>
+    mockResources.reduce((acc, r) => acc + (r.download_count || 0), 0)
+  );
 
   useEffect(() => {
     setTotal(calculateTotalDownloads());
