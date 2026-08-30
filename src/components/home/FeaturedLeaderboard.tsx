@@ -186,16 +186,9 @@ export default function FeaturedLeaderboard({
         {/* Section Header */}
         <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 md:flex-row md:items-end">
           <div>
-            <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
-              <Fire size={16} weight="fill" className="text-amber-500" />
-              <span>Real-Time Popularity</span>
-            </div>
-            <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Community Leaderboard
             </h2>
-            <p className="mt-1 text-xs text-[var(--color-ink-muted)] sm:text-sm">
-              Top requested and verified university documents across campus ({totalDownloads.toLocaleString()} verified downloads)
-            </p>
           </div>
 
           {/* Timeframe Filter Tabs */}

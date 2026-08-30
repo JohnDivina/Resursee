@@ -197,10 +197,7 @@ export default function ResourcesDirectoryPage() {
           {/* Page Heading & Search Filter Bar */}
           <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 md:flex-row md:items-end">
             <div>
-              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                Document Repository
-              </span>
-              <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Resources Directory
               </h1>
               <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm">

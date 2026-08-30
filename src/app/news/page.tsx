@@ -89,9 +89,6 @@ export default function NewsPage() {
               <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 University News & Official Advisories
               </h1>
-              <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm">
-                Aggregated, verified campus circulars, scholarship updates, and administrative announcements.
-              </p>
             </div>
 
             {/* Quick search */}

@@ -86,10 +86,7 @@ export default function ToolsPreview() {
         {/* Section Header */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <span className="font-mono text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider">
-              Productivity Suite
-            </span>
-            <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Tools for getting things done.
             </h2>
           </div>

@@ -57,11 +57,6 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
           .
         </h1>
 
-        {/* Subtitle */}
-        <p className="mx-auto mt-4 max-w-2xl text-sm sm:text-base leading-relaxed text-[var(--color-ink-muted)]">
-          Search, find, and download official university forms, academic templates, clearances, and campus tools in one centralized hub.
-        </p>
-
         {/* 2. Dual Action Buttons + Real-time Usage Proof Counter */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
           {/* Primary Button: See all documents */}

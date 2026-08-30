@@ -27,11 +27,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end">
           <div>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider">
-              <Newspaper size={14} />
-              <span>Campus Updates</span>
-            </div>
-            <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Latest University News & Advisories
             </h2>
           </div>

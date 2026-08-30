@@ -105,9 +105,6 @@ export default function ToolsPage() {
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--color-ink)]">
                 Productivity Tools
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-[var(--color-ink-muted)] leading-relaxed">
-                Fast browser utilities to prepare photos, convert documents, and assemble PDF submissions securely with zero server uploads.
-              </p>
             </div>
           </div>
         </section>
