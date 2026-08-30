@@ -20,9 +20,9 @@ import {
 import { mockResources } from '@/lib/mockData';
 import { Resource, Category, Department } from '@/types/database';
 import { useRealtimeDownloadCount } from '@/lib/downloadStore';
-import { getLiveResources } from '@/lib/resourceStore';
-import { getLiveCategories } from '@/lib/categoryStore';
-import { getLiveDepartments } from '@/lib/departmentStore';
+import { getLiveResources, fetchResourcesFromCloud } from '@/lib/resourceStore';
+import { getLiveCategories, fetchCategoriesFromCloud } from '@/lib/categoryStore';
+import { getLiveDepartments, fetchDepartmentsFromCloud } from '@/lib/departmentStore';
 
 function ListRowItem({ resource }: { resource: Resource }) {
   const realtimeDownloads = useRealtimeDownloadCount(resource.id, resource.download_count);
@@ -94,6 +94,10 @@ export default function ResourcesDirectoryPage() {
 
   useEffect(() => {
     refreshLiveStores();
+
+    fetchResourcesFromCloud();
+    fetchCategoriesFromCloud();
+    fetchDepartmentsFromCloud();
 
     const handleCatalogUpdate = () => setLiveResources(getLiveResources());
     const handleCategoryUpdate = () => setCategoriesList(getLiveCategories());

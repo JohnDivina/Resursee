@@ -209,7 +209,7 @@ export default function ContributePage() {
       }
     }
 
-    const generatedId = `SUB-${Math.floor(100000 + Math.random() * 900000)}`;
+    const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `SUB-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newSub: ResourceSubmission = {
       id: generatedId,

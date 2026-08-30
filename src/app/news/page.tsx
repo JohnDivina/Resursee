@@ -16,7 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import { mockDepartments, mockResources } from '@/lib/mockData';
 import { NewsArticle } from '@/types/database';
-import { getLiveNewsArticles } from '@/lib/newsStore';
+import { getLiveNewsArticles, fetchNewsFromCloud } from '@/lib/newsStore';
 
 export default function NewsPage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
@@ -26,6 +26,7 @@ export default function NewsPage() {
 
   useEffect(() => {
     setLiveNews(getLiveNewsArticles());
+    fetchNewsFromCloud();
     const handleUpdate = () => setLiveNews(getLiveNewsArticles());
     window.addEventListener('resursee_news_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);

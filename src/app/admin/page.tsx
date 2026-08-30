@@ -47,29 +47,34 @@ import {
   deleteResourceById,
   addCustomResource,
   updateExistingResource,
+  fetchResourcesFromCloud,
 } from '@/lib/resourceStore';
 import {
   getLiveCategories,
   addCategory,
   deleteCategoryById,
   updateCategory,
+  fetchCategoriesFromCloud,
 } from '@/lib/categoryStore';
 import {
   getLiveDepartments,
   addDepartment,
   deleteDepartmentById,
   updateDepartment,
+  fetchDepartmentsFromCloud,
 } from '@/lib/departmentStore';
 import {
   getLiveSubmissions,
   updateSubmissionStatus,
   deleteSubmissionById,
   clearReviewedSubmissions,
+  fetchSubmissionsFromCloud,
 } from '@/lib/submissionStore';
 import {
   getLiveNewsArticles,
   deleteNewsArticleById,
   updateNewsStatus,
+  fetchNewsFromCloud,
 } from '@/lib/newsStore';
 
 interface AdminUserSession {
@@ -201,6 +206,13 @@ export default function AdminDashboardPage() {
     refreshNews();
     refreshCategories();
     refreshDepartments();
+
+    // Trigger cloud synchronization
+    fetchResourcesFromCloud();
+    fetchCategoriesFromCloud();
+    fetchDepartmentsFromCloud();
+    fetchNewsFromCloud();
+    fetchSubmissionsFromCloud();
 
     // Listen to cross-component and cross-tab updates
     const handleCatalogUpdate = () => refreshResources();
@@ -480,7 +492,7 @@ export default function AdminDashboardPage() {
     const selectedDeptObj = departmentsList.find((d) => d.id === newDepartment);
 
     const newResourceItem: Resource = {
-      id: `res-${Date.now()}`,
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `res-${Date.now()}`,
       title: newTitle,
       slug,
       description: newDescription || null,
@@ -554,7 +566,7 @@ export default function AdminDashboardPage() {
         .replace(/(^-|-$)+/g, '');
 
       const newRes: Resource = {
-        id: `res-${Date.now()}`,
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `res-${Date.now()}`,
         title: submission.title,
         slug,
         description: submission.description,
@@ -655,7 +667,7 @@ export default function AdminDashboardPage() {
 
     const slug = catSlug.trim() || catName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const newCat: Category = {
-      id: `cat-${Date.now()}`,
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `cat-${Date.now()}`,
       name: catName.trim(),
       slug,
       description: catDescription.trim() || null,
@@ -688,7 +700,7 @@ export default function AdminDashboardPage() {
 
     const slug = officeSlug.trim() || officeAbbreviation.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const newDept: Department = {
-      id: `dept-${Date.now()}`,
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `dept-${Date.now()}`,
       name: officeName.trim(),
       slug,
       abbreviation: officeAbbreviation.trim().toUpperCase(),

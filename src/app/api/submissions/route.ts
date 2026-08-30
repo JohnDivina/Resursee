@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { mockSubmissions } from '@/lib/mockData';
+import crypto from 'crypto';
+
+function sanitizeSubmissionPayload(body: any) {
+  const { category, department, ...clean } = body;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean.id);
+  if (!clean.id || !isUuid) {
+    clean.id = crypto.randomUUID();
+  }
+  return clean;
+}
 
 export async function GET() {
   try {
@@ -10,10 +20,11 @@ export async function GET() {
       .select('*, category:categories(*), department:departments(*)')
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) {
+    if (error) {
+      console.error('Supabase get submissions error:', error.message);
       return NextResponse.json({ submissions: mockSubmissions });
     }
-    return NextResponse.json({ submissions: data });
+    return NextResponse.json({ submissions: data || [] });
   } catch (err: any) {
     return NextResponse.json({ submissions: mockSubmissions });
   }
@@ -23,14 +34,16 @@ export async function POST(request: Request) {
   try {
     const supabase = createAdminClient();
     const body = await request.json();
+    const cleanPayload = sanitizeSubmissionPayload(body);
 
     const { data, error } = await supabase
       .from('resource_submissions')
-      .insert([body])
+      .insert([cleanPayload])
       .select('*, category:categories(*), department:departments(*)')
       .single();
 
     if (error) {
+      console.error('Supabase insert submission error:', error.message);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json({ submission: data }, { status: 201 });
@@ -49,14 +62,17 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 });
     }
 
+    const cleanUpdates = sanitizeSubmissionPayload(updates);
+
     const { data, error } = await supabase
       .from('resource_submissions')
-      .update(updates)
+      .update(cleanUpdates)
       .eq('id', id)
       .select('*, category:categories(*), department:departments(*)')
       .single();
 
     if (error) {
+      console.error('Supabase update submission error:', error.message);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json({ submission: data });
@@ -77,6 +93,7 @@ export async function DELETE(request: Request) {
     const supabase = createAdminClient();
     const { error } = await supabase.from('resource_submissions').delete().eq('id', id);
     if (error) {
+      console.error('Supabase delete submission error:', error.message);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json({ success: true });
