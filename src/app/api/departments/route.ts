@@ -1,21 +1,21 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { mockSubmissions } from '@/lib/mockData';
+import { mockDepartments } from '@/lib/mockData';
 
 export async function GET() {
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
-      .from('resource_submissions')
-      .select('*, category:categories(*), department:departments(*)')
-      .order('created_at', { ascending: false });
+      .from('departments')
+      .select('*')
+      .order('name', { ascending: true });
 
     if (error || !data || data.length === 0) {
-      return NextResponse.json({ submissions: mockSubmissions });
+      return NextResponse.json({ departments: mockDepartments });
     }
-    return NextResponse.json({ submissions: data });
+    return NextResponse.json({ departments: data });
   } catch (err: any) {
-    return NextResponse.json({ submissions: mockSubmissions });
+    return NextResponse.json({ departments: mockDepartments });
   }
 }
 
@@ -24,16 +24,11 @@ export async function POST(request: Request) {
     const supabase = createAdminClient();
     const body = await request.json();
 
-    const { data, error } = await supabase
-      .from('resource_submissions')
-      .insert([body])
-      .select('*, category:categories(*), department:departments(*)')
-      .single();
-
+    const { data, error } = await supabase.from('departments').insert([body]).select().single();
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    return NextResponse.json({ submission: data }, { status: 201 });
+    return NextResponse.json({ department: data }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });
   }
@@ -46,20 +41,14 @@ export async function PUT(request: Request) {
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Department ID is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
-      .from('resource_submissions')
-      .update(updates)
-      .eq('id', id)
-      .select('*, category:categories(*), department:departments(*)')
-      .single();
-
+    const { data, error } = await supabase.from('departments').update(updates).eq('id', id).select().single();
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    return NextResponse.json({ submission: data });
+    return NextResponse.json({ department: data });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });
   }
@@ -70,12 +59,12 @@ export async function DELETE(request: Request) {
   const id = searchParams.get('id');
 
   if (!id) {
-    return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Department ID is required' }, { status: 400 });
   }
 
   try {
     const supabase = createAdminClient();
-    const { error } = await supabase.from('resource_submissions').delete().eq('id', id);
+    const { error } = await supabase.from('departments').delete().eq('id', id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

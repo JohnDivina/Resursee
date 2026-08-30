@@ -3,82 +3,112 @@
 import { NewsArticle } from '@/types/database';
 import { mockNewsArticles } from '@/lib/mockData';
 
-const NEWS_STORAGE_KEY = 'resursee_news_articles';
-const DELETED_NEWS_KEY = 'resursee_deleted_news_ids';
-
-export function getDeletedNewsIds(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(DELETED_NEWS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
+const CLOUD_NEWS_KEY = 'resursee_cloud_news_cache';
+let inMemoryNews: NewsArticle[] = [];
+let hasFetchedNews = false;
 
 export function getLiveNewsArticles(): NewsArticle[] {
   if (typeof window === 'undefined') return mockNewsArticles;
-  try {
-    const deletedIds = getDeletedNewsIds();
-    const raw = localStorage.getItem(NEWS_STORAGE_KEY);
-    let list: NewsArticle[] = [];
 
-    if (!raw) {
-      list = mockNewsArticles;
-      localStorage.setItem(NEWS_STORAGE_KEY, JSON.stringify(mockNewsArticles));
-    } else {
-      list = JSON.parse(raw);
-    }
-
-    return list.filter((n) => !deletedIds.includes(n.id));
-  } catch {
-    return mockNewsArticles;
+  if (inMemoryNews.length > 0) {
+    return inMemoryNews;
   }
+
+  try {
+    const cached = localStorage.getItem(CLOUD_NEWS_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryNews = parsed;
+        return inMemoryNews;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return mockNewsArticles;
+}
+
+export async function fetchNewsFromCloud(): Promise<NewsArticle[]> {
+  try {
+    const res = await fetch('/api/news');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.news && Array.isArray(data.news)) {
+        inMemoryNews = data.news;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CLOUD_NEWS_KEY, JSON.stringify(inMemoryNews));
+          window.dispatchEvent(new CustomEvent('resursee_news_updated'));
+        }
+        hasFetchedNews = true;
+        return inMemoryNews;
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return getLiveNewsArticles();
+}
+
+if (typeof window !== 'undefined' && !hasFetchedNews) {
+  fetchNewsFromCloud();
 }
 
 export function addNewsArticle(article: NewsArticle): NewsArticle[] {
-  if (typeof window === 'undefined') return [];
-  const current = getLiveNewsArticles();
-  const updated = [article, ...current.filter((n) => n.id !== article.id)];
-  localStorage.setItem(NEWS_STORAGE_KEY, JSON.stringify(updated));
+  inMemoryNews = [article, ...inMemoryNews.filter((n) => n.id !== article.id)];
 
-  const deletedIds = getDeletedNewsIds().filter((id) => id !== article.id);
-  localStorage.setItem(DELETED_NEWS_KEY, JSON.stringify(deletedIds));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_NEWS_KEY, JSON.stringify(inMemoryNews));
+    window.dispatchEvent(new CustomEvent('resursee_news_updated'));
+  }
 
-  window.dispatchEvent(new CustomEvent('resursee_news_updated'));
-  return updated;
+  fetch('/api/news', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(article),
+  }).catch(() => {});
+
+  return inMemoryNews;
 }
 
 export function deleteNewsArticleById(id: string): NewsArticle[] {
-  if (typeof window === 'undefined') return [];
-  const deletedIds = getDeletedNewsIds();
-  if (!deletedIds.includes(id)) {
-    const updatedDeleted = [...deletedIds, id];
-    localStorage.setItem(DELETED_NEWS_KEY, JSON.stringify(updatedDeleted));
+  inMemoryNews = inMemoryNews.filter((n) => n.id !== id);
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_NEWS_KEY, JSON.stringify(inMemoryNews));
+    window.dispatchEvent(new CustomEvent('resursee_news_updated'));
   }
 
-  const current = getLiveNewsArticles().filter((n) => n.id !== id);
-  localStorage.setItem(NEWS_STORAGE_KEY, JSON.stringify(current));
+  fetch(`/api/news?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
 
-  window.dispatchEvent(new CustomEvent('resursee_news_updated'));
-  return current;
+  return inMemoryNews;
 }
 
-export function updateNewsStatus(id: string, status: 'approved' | 'rejected', reviewerName = 'Administrator'): NewsArticle[] {
-  if (typeof window === 'undefined') return [];
-  const current = getLiveNewsArticles();
-  const updated = current.map((n) =>
-    n.id === id
-      ? {
-          ...n,
-          status,
-          reviewed_by: reviewerName,
-          reviewed_at: new Date().toISOString(),
-          published_at: status === 'approved' ? new Date().toISOString() : n.published_at,
-        }
-      : n
-  );
-  localStorage.setItem(NEWS_STORAGE_KEY, JSON.stringify(updated));
-  window.dispatchEvent(new CustomEvent('resursee_news_updated'));
-  return updated;
+export function updateNewsStatus(
+  id: string,
+  status: 'approved' | 'rejected',
+  reviewerName = 'Administrator'
+): NewsArticle[] {
+  const updates = {
+    status,
+    reviewed_by: reviewerName,
+    reviewed_at: new Date().toISOString(),
+    published_at: status === 'approved' ? new Date().toISOString() : null,
+  };
+
+  inMemoryNews = inMemoryNews.map((n) => (n.id === id ? { ...n, ...updates } : n));
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_NEWS_KEY, JSON.stringify(inMemoryNews));
+    window.dispatchEvent(new CustomEvent('resursee_news_updated'));
+  }
+
+  fetch('/api/news', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...updates }),
+  }).catch(() => {});
+
+  return inMemoryNews;
 }

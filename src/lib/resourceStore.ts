@@ -3,89 +3,96 @@
 import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
 
+const CLOUD_CACHE_KEY = 'resursee_cloud_resources_cache';
 const DELETED_STORAGE_KEY = 'resursee_deleted_resource_ids';
-const CUSTOM_STORAGE_KEY = 'resursee_custom_resources';
 
-export function getDeletedResourceIds(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(DELETED_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function getCustomResources(): Resource[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(CUSTOM_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
+let inMemoryResources: Resource[] = [];
+let hasFetchedFromCloud = false;
 
 export function getLiveResources(): Resource[] {
-  const deletedIds = getDeletedResourceIds();
-  const customList = getCustomResources();
+  if (typeof window === 'undefined') return mockResources;
 
-  const map = new Map<string, Resource>();
+  if (inMemoryResources.length > 0) {
+    return inMemoryResources;
+  }
 
-  // 1. Put base mock resources first
-  mockResources.forEach((r) => {
-    if (!deletedIds.includes(r.id)) {
-      map.set(r.id, r);
+  try {
+    const cached = localStorage.getItem(CLOUD_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryResources = parsed;
+        return inMemoryResources;
+      }
     }
-  });
+  } catch {
+    // ignore
+  }
 
-  // 2. Custom resources & revisions override base resources with identical IDs
-  customList.forEach((r) => {
-    if (!deletedIds.includes(r.id)) {
-      map.set(r.id, r);
+  return mockResources;
+}
+
+export async function fetchResourcesFromCloud(): Promise<Resource[]> {
+  try {
+    const res = await fetch('/api/resources');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.resources && Array.isArray(data.resources)) {
+        inMemoryResources = data.resources;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data.resources));
+          window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
+        }
+        hasFetchedFromCloud = true;
+        return data.resources;
+      }
     }
-  });
+  } catch {
+    // fallback to cache
+  }
+  return getLiveResources();
+}
 
-  return Array.from(map.values());
+// Auto-trigger cloud fetch in browser
+if (typeof window !== 'undefined' && !hasFetchedFromCloud) {
+  fetchResourcesFromCloud();
 }
 
 export function deleteResourceById(id: string): Resource[] {
-  if (typeof window === 'undefined') return [];
-  const currentDeleted = getDeletedResourceIds();
-  if (!currentDeleted.includes(id)) {
-    const updated = [...currentDeleted, id];
-    localStorage.setItem(DELETED_STORAGE_KEY, JSON.stringify(updated));
+  // 1. Optimistic local update
+  inMemoryResources = inMemoryResources.filter((r) => r.id !== id);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
+    window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
   }
 
-  // Also remove from custom resources if present
-  const customList = getCustomResources().filter((r) => r.id !== id);
-  localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(customList));
+  // 2. Cloud delete
+  fetch(`/api/resources?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
 
-  // Dispatch real-time update event
-  window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
-  return getLiveResources();
+  return inMemoryResources;
 }
 
 export function addCustomResource(resource: Resource): Resource[] {
-  if (typeof window === 'undefined') return [];
-  const customList = getCustomResources();
-  // Deduplicate by ID to prevent duplicate items when updating revisions
-  const updated = [resource, ...customList.filter((r) => r.id !== resource.id)];
-  localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(updated));
+  inMemoryResources = [resource, ...inMemoryResources.filter((r) => r.id !== resource.id)];
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
+    window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
+  }
 
-  // Ensure it's not marked as deleted
-  const currentDeleted = getDeletedResourceIds().filter((id) => id !== resource.id);
-  localStorage.setItem(DELETED_STORAGE_KEY, JSON.stringify(currentDeleted));
+  // Cloud create
+  fetch('/api/resources', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(resource),
+  }).catch(() => {});
 
-  window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
-  return getLiveResources();
+  return inMemoryResources;
 }
 
 export function updateExistingResource(
   resourceId: string,
   updates: Partial<Resource>
 ): Resource[] {
-  if (typeof window === 'undefined') return [];
   const current = getLiveResources();
   const target = current.find((r) => r.id === resourceId);
   if (!target) return current;
@@ -96,5 +103,18 @@ export function updateExistingResource(
     updated_at: new Date().toISOString(),
   };
 
-  return addCustomResource(updatedTarget);
+  inMemoryResources = inMemoryResources.map((r) => (r.id === resourceId ? updatedTarget : r));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
+    window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
+  }
+
+  // Cloud update
+  fetch('/api/resources', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: resourceId, ...updates }),
+  }).catch(() => {});
+
+  return inMemoryResources;
 }

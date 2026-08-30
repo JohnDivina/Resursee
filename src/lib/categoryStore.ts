@@ -3,80 +3,91 @@
 import { Category } from '@/types/database';
 import { mockCategories } from '@/lib/mockData';
 
-const CUSTOM_CATEGORIES_KEY = 'resursee_custom_categories';
-const DELETED_CATEGORIES_KEY = 'resursee_deleted_categories';
-
-export function getDeletedCategoryIds(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(DELETED_CATEGORIES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function getCustomCategories(): Category[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
+const CLOUD_CATEGORIES_KEY = 'resursee_cloud_categories_cache';
+let inMemoryCategories: Category[] = [];
+let hasFetchedCategories = false;
 
 export function getLiveCategories(): Category[] {
-  const deletedIds = getDeletedCategoryIds();
-  const customList = getCustomCategories();
+  if (typeof window === 'undefined') return mockCategories;
 
-  const map = new Map<string, Category>();
+  if (inMemoryCategories.length > 0) {
+    return inMemoryCategories;
+  }
 
-  mockCategories.forEach((c) => {
-    if (!deletedIds.includes(c.id)) {
-      map.set(c.id, c);
+  try {
+    const cached = localStorage.getItem(CLOUD_CATEGORIES_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryCategories = parsed;
+        return inMemoryCategories;
+      }
     }
-  });
+  } catch {
+    // ignore
+  }
 
-  customList.forEach((c) => {
-    if (!deletedIds.includes(c.id)) {
-      map.set(c.id, c);
+  return mockCategories;
+}
+
+export async function fetchCategoriesFromCloud(): Promise<Category[]> {
+  try {
+    const res = await fetch('/api/categories');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.categories && Array.isArray(data.categories)) {
+        inMemoryCategories = data.categories.sort((a: Category, b: Category) => a.sort_order - b.sort_order);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CLOUD_CATEGORIES_KEY, JSON.stringify(inMemoryCategories));
+          window.dispatchEvent(new CustomEvent('resursee_categories_updated'));
+        }
+        hasFetchedCategories = true;
+        return inMemoryCategories;
+      }
     }
-  });
+  } catch {
+    // fallback
+  }
+  return getLiveCategories();
+}
 
-  return Array.from(map.values()).sort((a, b) => a.sort_order - b.sort_order);
+if (typeof window !== 'undefined' && !hasFetchedCategories) {
+  fetchCategoriesFromCloud();
 }
 
 export function addCategory(category: Category): Category[] {
-  if (typeof window === 'undefined') return [];
-  const customList = getCustomCategories();
-  const updated = [...customList.filter((c) => c.id !== category.id), category];
-  localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(updated));
+  inMemoryCategories = [...inMemoryCategories.filter((c) => c.id !== category.id), category].sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
 
-  const deletedIds = getDeletedCategoryIds().filter((id) => id !== category.id);
-  localStorage.setItem(DELETED_CATEGORIES_KEY, JSON.stringify(deletedIds));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_CATEGORIES_KEY, JSON.stringify(inMemoryCategories));
+    window.dispatchEvent(new CustomEvent('resursee_categories_updated'));
+  }
 
-  window.dispatchEvent(new CustomEvent('resursee_categories_updated'));
-  return getLiveCategories();
+  fetch('/api/categories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(category),
+  }).catch(() => {});
+
+  return inMemoryCategories;
 }
 
 export function deleteCategoryById(id: string): Category[] {
-  if (typeof window === 'undefined') return [];
-  const deletedIds = getDeletedCategoryIds();
-  if (!deletedIds.includes(id)) {
-    const updated = [...deletedIds, id];
-    localStorage.setItem(DELETED_CATEGORIES_KEY, JSON.stringify(updated));
+  inMemoryCategories = inMemoryCategories.filter((c) => c.id !== id);
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_CATEGORIES_KEY, JSON.stringify(inMemoryCategories));
+    window.dispatchEvent(new CustomEvent('resursee_categories_updated'));
   }
 
-  const customList = getCustomCategories().filter((c) => c.id !== id);
-  localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customList));
+  fetch(`/api/categories?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
 
-  window.dispatchEvent(new CustomEvent('resursee_categories_updated'));
-  return getLiveCategories();
+  return inMemoryCategories;
 }
 
 export function updateCategory(id: string, updates: Partial<Category>): Category[] {
-  if (typeof window === 'undefined') return [];
   const current = getLiveCategories();
   const target = current.find((c) => c.id === id);
   if (!target) return current;
@@ -86,5 +97,20 @@ export function updateCategory(id: string, updates: Partial<Category>): Category
     ...updates,
   };
 
-  return addCategory(updatedTarget);
+  inMemoryCategories = inMemoryCategories.map((c) => (c.id === id ? updatedTarget : c)).sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_CATEGORIES_KEY, JSON.stringify(inMemoryCategories));
+    window.dispatchEvent(new CustomEvent('resursee_categories_updated'));
+  }
+
+  fetch('/api/categories', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...updates }),
+  }).catch(() => {});
+
+  return inMemoryCategories;
 }

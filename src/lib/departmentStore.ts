@@ -3,80 +3,93 @@
 import { Department } from '@/types/database';
 import { mockDepartments } from '@/lib/mockData';
 
-const CUSTOM_DEPARTMENTS_KEY = 'resursee_custom_departments';
-const DELETED_DEPARTMENTS_KEY = 'resursee_deleted_departments';
-
-export function getDeletedDepartmentIds(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(DELETED_DEPARTMENTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function getCustomDepartments(): Department[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(CUSTOM_DEPARTMENTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
+const CLOUD_DEPARTMENTS_KEY = 'resursee_cloud_departments_cache';
+let inMemoryDepartments: Department[] = [];
+let hasFetchedDepartments = false;
 
 export function getLiveDepartments(): Department[] {
-  const deletedIds = getDeletedDepartmentIds();
-  const customList = getCustomDepartments();
+  if (typeof window === 'undefined') return mockDepartments;
 
-  const map = new Map<string, Department>();
+  if (inMemoryDepartments.length > 0) {
+    return inMemoryDepartments;
+  }
 
-  mockDepartments.forEach((d) => {
-    if (!deletedIds.includes(d.id)) {
-      map.set(d.id, d);
+  try {
+    const cached = localStorage.getItem(CLOUD_DEPARTMENTS_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryDepartments = parsed;
+        return inMemoryDepartments;
+      }
     }
-  });
+  } catch {
+    // ignore
+  }
 
-  customList.forEach((d) => {
-    if (!deletedIds.includes(d.id)) {
-      map.set(d.id, d);
+  return mockDepartments;
+}
+
+export async function fetchDepartmentsFromCloud(): Promise<Department[]> {
+  try {
+    const res = await fetch('/api/departments');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.departments && Array.isArray(data.departments)) {
+        inMemoryDepartments = data.departments.sort((a: Department, b: Department) =>
+          a.name.localeCompare(b.name)
+        );
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CLOUD_DEPARTMENTS_KEY, JSON.stringify(inMemoryDepartments));
+          window.dispatchEvent(new CustomEvent('resursee_departments_updated'));
+        }
+        hasFetchedDepartments = true;
+        return inMemoryDepartments;
+      }
     }
-  });
+  } catch {
+    // fallback
+  }
+  return getLiveDepartments();
+}
 
-  return Array.from(map.values());
+if (typeof window !== 'undefined' && !hasFetchedDepartments) {
+  fetchDepartmentsFromCloud();
 }
 
 export function addDepartment(department: Department): Department[] {
-  if (typeof window === 'undefined') return [];
-  const customList = getCustomDepartments();
-  const updated = [...customList.filter((d) => d.id !== department.id), department];
-  localStorage.setItem(CUSTOM_DEPARTMENTS_KEY, JSON.stringify(updated));
+  inMemoryDepartments = [...inMemoryDepartments.filter((d) => d.id !== department.id), department].sort(
+    (a, b) => a.name.localeCompare(b.name)
+  );
 
-  const deletedIds = getDeletedDepartmentIds().filter((id) => id !== department.id);
-  localStorage.setItem(DELETED_DEPARTMENTS_KEY, JSON.stringify(deletedIds));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_DEPARTMENTS_KEY, JSON.stringify(inMemoryDepartments));
+    window.dispatchEvent(new CustomEvent('resursee_departments_updated'));
+  }
 
-  window.dispatchEvent(new CustomEvent('resursee_departments_updated'));
-  return getLiveDepartments();
+  fetch('/api/departments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(department),
+  }).catch(() => {});
+
+  return inMemoryDepartments;
 }
 
 export function deleteDepartmentById(id: string): Department[] {
-  if (typeof window === 'undefined') return [];
-  const deletedIds = getDeletedDepartmentIds();
-  if (!deletedIds.includes(id)) {
-    const updated = [...deletedIds, id];
-    localStorage.setItem(DELETED_DEPARTMENTS_KEY, JSON.stringify(updated));
+  inMemoryDepartments = inMemoryDepartments.filter((d) => d.id !== id);
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_DEPARTMENTS_KEY, JSON.stringify(inMemoryDepartments));
+    window.dispatchEvent(new CustomEvent('resursee_departments_updated'));
   }
 
-  const customList = getCustomDepartments().filter((d) => d.id !== id);
-  localStorage.setItem(CUSTOM_DEPARTMENTS_KEY, JSON.stringify(customList));
+  fetch(`/api/departments?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
 
-  window.dispatchEvent(new CustomEvent('resursee_departments_updated'));
-  return getLiveDepartments();
+  return inMemoryDepartments;
 }
 
 export function updateDepartment(id: string, updates: Partial<Department>): Department[] {
-  if (typeof window === 'undefined') return [];
   const current = getLiveDepartments();
   const target = current.find((d) => d.id === id);
   if (!target) return current;
@@ -86,5 +99,20 @@ export function updateDepartment(id: string, updates: Partial<Department>): Depa
     ...updates,
   };
 
-  return addDepartment(updatedTarget);
+  inMemoryDepartments = inMemoryDepartments
+    .map((d) => (d.id === id ? updatedTarget : d))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CLOUD_DEPARTMENTS_KEY, JSON.stringify(inMemoryDepartments));
+    window.dispatchEvent(new CustomEvent('resursee_departments_updated'));
+  }
+
+  fetch('/api/departments', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...updates }),
+  }).catch(() => {});
+
+  return inMemoryDepartments;
 }
