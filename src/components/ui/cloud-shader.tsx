@@ -5,13 +5,13 @@ import React, { useEffect, useRef } from 'react';
 interface CloudShaderProps {
   className?: string;
   speed?: number;
-  opacity?: number;
+  intensity?: number;
 }
 
 export function CloudShader({
   className = '',
-  speed = 0.5,
-  opacity = 0.85,
+  speed = 1.0,
+  intensity = 1.0,
 }: CloudShaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -19,123 +19,162 @@ export function CloudShader({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
+    // Request WebGL with anti-aliasing and no premultiplied alpha for vivid saturation
+    const gl =
+      canvas.getContext('webgl', {
+        alpha: true,
+        antialias: true,
+        premultipliedAlpha: false,
+      }) ||
+      (canvas.getContext('experimental-webgl') as WebGLRenderingContext | null);
+
     if (!gl) return;
 
-    // Vertex Shader
     const vsSource = `
-      attribute vec2 a_position;
+      attribute vec2 position;
       void main() {
-        gl_Position = vec4(a_position, 0.0, 1.0);
+        gl_Position = vec4(position, 0.0, 1.0);
       }
     `;
 
-    // Fragment Shader: Volumetric Procedural Cloud Noise Field
+    // High-definition Volumetric Cloud & Aurora Shader
     const fsSource = `
-      precision mediump float;
+      precision highp float;
       uniform vec2 u_resolution;
       uniform float u_time;
       uniform vec2 u_mouse;
 
-      // 2D Hash function
-      vec2 hash(vec2 p) {
-        p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-        return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+      // 2D Rotation matrix
+      mat2 rot(float a) {
+        float c = cos(a);
+        float s = sin(a);
+        return mat2(c, -s, s, c);
       }
 
-      // 2D Simplex-like Perlin Noise
-      float noise(vec2 p) {
-        const float K1 = 0.366025404; // (sqrt(3)-1)/2;
-        const float K2 = 0.211324865; // (3-sqrt(3))/6;
-        vec2 i = floor(p + (p.x + p.y) * K1);
-        vec2 a = p - i + (i.x + i.y) * K2;
-        vec2 o = (a.x > a.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-        vec2 b = a - o + K2;
-        vec2 c = a - 1.0 + 2.0 * K2;
-        vec3 h = max(0.5 - vec3(dot(a, a), dot(b, b), dot(c, c)), 0.0);
-        vec3 n = h * h * h * h * vec3(dot(a, hash(i)), dot(b, hash(i + o)), dot(c, hash(i + 1.0)));
-        return dot(n, vec3(70.0));
+      // Procedural 2D Simplex Noise
+      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+      float snoise(vec2 v) {
+        const vec4 C = vec4(0.211324865405187,
+                            0.366025403784439,
+                           -0.577350269189626,
+                            0.024390243902439);
+        vec2 i  = floor(v + dot(v, C.yy) );
+        vec2 x0 = v -   i + dot(i, C.xx);
+        vec2 i1;
+        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod289(i);
+        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+          + i.x + vec3(0.0, i1.x, 1.0 ));
+        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+        m = m*m ;
+        m = m*m ;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+        vec3 g;
+        g.x  = a0.x  * x0.x  + h.x  * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
       }
 
-      // Fractional Brownian Motion (fbm)
+      // Fractional Brownian Motion (6 Octaves for ultra-crisp cloud definition)
       float fbm(vec2 p) {
-        float f = 0.0;
-        mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
-        f += 0.5000 * noise(p); p = m * p;
-        f += 0.2500 * noise(p); p = m * p;
-        f += 0.1250 * noise(p); p = m * p;
-        f += 0.0625 * noise(p);
-        return f;
+        float v = 0.0;
+        float a = 0.5;
+        vec2 shift = vec2(100.0);
+        mat2 rotMatrix = rot(0.5);
+        for (int i = 0; i < 6; ++i) {
+          v += a * snoise(p);
+          p = rotMatrix * p * 2.0 + shift;
+          a *= 0.5;
+        }
+        return v;
       }
 
       void main() {
-        vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+        vec2 st = gl_FragCoord.xy / u_resolution.xy;
         vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
 
-        float t = u_time * 0.12;
+        float t = u_time * 0.15;
 
-        // Fluid cloud domain warping
-        vec2 q = vec2(
-          fbm(p + vec2(0.0, t * 0.4)),
-          fbm(p + vec2(5.2, 1.3 - t * 0.3))
-        );
+        // Interactive mouse distortion ripple
+        vec2 mouseEffect = (u_mouse - 0.5) * 1.5;
+        p += mouseEffect * 0.15 / (length(p - mouseEffect) + 0.6);
 
-        vec2 r = vec2(
-          fbm(p + 4.0 * q + vec2(1.7 - t * 0.2, 9.2)),
-          fbm(p + 4.0 * q + vec2(8.3, 2.8 + t * 0.2))
-        );
+        // Fluid Multi-Layer Domain Warping
+        vec2 q = vec2(0.0);
+        q.x = fbm(p + vec2(0.0, t * 0.5));
+        q.y = fbm(p + vec2(1.0, t * 0.3));
 
-        float f = fbm(p + 4.0 * r);
+        vec2 r = vec2(0.0);
+        r.x = fbm(p + 3.0 * q + vec2(1.7, 9.2) + 0.2 * t);
+        r.y = fbm(p + 3.0 * q + vec2(8.3, 2.8) + 0.15 * t);
 
-        // Soft cloud density & shading
-        float cloud = clamp((f * f * 4.0 + 0.6 * f), 0.0, 1.0);
+        float f = fbm(p + 4.0 * r + vec2(0.0, t * 0.1));
 
-        // Gradient Colors: Resursee Royal Blue (#2563eb), Soft Indigo (#4f46e5), and Cyan Glow (#38bdf8)
-        vec3 col1 = vec3(0.05, 0.12, 0.28); // Deep navy ambient
-        vec3 col2 = vec3(0.14, 0.38, 0.92); // Vivid Resursee primary blue
-        vec3 col3 = vec3(0.38, 0.68, 0.98); // Light celestial mist
+        // Resursee High-Contrast Palette:
+        // Deep Indigo/Navy (#0f172a, #1e3a8a), Royal Blue (#2563eb), Vivid Cyan Glow (#06b6d4), Luminous White Mist
+        vec3 colorDarkBg = vec3(0.05, 0.09, 0.20);
+        vec3 colorDeepBlue = vec3(0.12, 0.32, 0.85);
+        vec3 colorCyanMist = vec3(0.15, 0.72, 0.95);
+        vec3 colorWhitePeak = vec3(0.92, 0.96, 1.0);
 
-        vec3 color = mix(col1, col2, clamp(length(q), 0.0, 1.0));
-        color = mix(color, col3, clamp(length(r.x), 0.0, 1.0));
-        color = mix(color, vec3(0.9, 0.96, 1.0), clamp(pow(cloud, 2.5), 0.0, 1.0));
+        // Mix dynamic gradient
+        vec3 color = mix(colorDarkBg, colorDeepBlue, clamp((f*f)*4.0, 0.0, 1.0));
+        color = mix(color, colorCyanMist, clamp(length(q), 0.0, 1.0));
+        color = mix(color, colorWhitePeak, clamp(pow(length(r.x), 3.0), 0.0, 1.0));
 
-        // Subtle vignette at edges
-        float vignette = 1.0 - smoothstep(0.5, 1.5, length(p * 0.8));
-        color *= vignette;
+        // Highlight cloud crests
+        float crest = smoothstep(0.4, 0.9, f);
+        color += crest * 0.35 * vec3(0.4, 0.7, 1.0);
 
-        // Smooth opacity output
-        gl_FragColor = vec4(color, cloud * 0.75 * ${opacity.toFixed(2)});
+        // Vignette at bottom edge for seamless blending
+        float alpha = smoothstep(0.0, 0.2, st.y) * smoothstep(1.0, 0.8, st.y);
+        alpha = clamp(alpha * 0.95 + 0.05, 0.0, 1.0);
+
+        gl_FragColor = vec4(color, alpha);
       }
     `;
 
-    function createShader(glCtx: WebGLRenderingContext, type: number, source: string) {
+    function compileShader(glCtx: WebGLRenderingContext, type: number, src: string) {
       const shader = glCtx.createShader(type);
       if (!shader) return null;
-      glCtx.shaderSource(shader, source);
+      glCtx.shaderSource(shader, src);
       glCtx.compileShader(shader);
       if (!glCtx.getShaderParameter(shader, glCtx.COMPILE_STATUS)) {
+        console.error(glCtx.getShaderInfoLog(shader));
         glCtx.deleteShader(shader);
         return null;
       }
       return shader;
     }
 
-    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
-    if (!vertexShader || !fragmentShader) return;
+    const vs = compileShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fs = compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    if (!vs || !fs) return;
 
-    const program = gl.createProgram();
-    if (!program) return;
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
+    const prog = gl.createProgram();
+    if (!prog) return;
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
 
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
-    gl.useProgram(program);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      console.error(gl.getProgramInfoLog(prog));
+      return;
+    }
+    gl.useProgram(prog);
 
     // Quad Buffer
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array([
@@ -149,74 +188,76 @@ export function CloudShader({
       gl.STATIC_DRAW
     );
 
-    const positionLocation = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+    const posLoc = gl.getAttribLocation(prog, 'position');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
-    const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
-    const timeLocation = gl.getUniformLocation(program, 'u_time');
-    const mouseLocation = gl.getUniformLocation(program, 'u_mouse');
+    const uRes = gl.getUniformLocation(prog, 'u_resolution');
+    const uTime = gl.getUniformLocation(prog, 'u_time');
+    const uMouse = gl.getUniformLocation(prog, 'u_mouse');
 
-    let animationFrameId: number;
-    let startTime = performance.now();
+    let animId: number;
+    const startTime = performance.now();
 
-    function resize() {
-      if (!canvas) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      const displayWidth = Math.floor(canvas.clientWidth * dpr);
-      const displayHeight = Math.floor(canvas.clientHeight * dpr);
+    function setCanvasDimensions() {
+      if (!canvas || !gl) return;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.max(Math.floor(rect.width * dpr), 300);
+      const height = Math.max(Math.floor(rect.height * dpr), 300);
 
-      if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-        canvas.width = displayWidth;
-        canvas.height = displayHeight;
-        gl?.viewport(0, 0, displayWidth, displayHeight);
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+        gl.viewport(0, 0, width, height);
       }
     }
 
-    const resizeObserver = new ResizeObserver(() => {
-      resize();
+    const observer = new ResizeObserver(() => {
+      setCanvasDimensions();
     });
-    resizeObserver.observe(canvas);
-    resize();
+    observer.observe(canvas);
+    setCanvasDimensions();
 
     let mouseX = 0.5;
     let mouseY = 0.5;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const onMouseMove = (e: MouseEvent) => {
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       mouseX = (e.clientX - rect.left) / rect.width;
       mouseY = 1.0 - (e.clientY - rect.top) / rect.height;
     };
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
 
-    function render() {
+    function loop() {
       if (!gl || !canvas) return;
-      const currentTime = (performance.now() - startTime) * 0.001 * speed;
+      const now = (performance.now() - startTime) * 0.001 * speed;
 
-      gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-      gl.uniform1f(timeLocation, currentTime);
-      gl.uniform2f(mouseLocation, mouseX, mouseY);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, now);
+      gl.uniform2f(uMouse, mouseX, mouseY);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-      animationFrameId = requestAnimationFrame(render);
+      animId = requestAnimationFrame(loop);
     }
 
-    render();
+    loop();
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      resizeObserver.disconnect();
-      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animId);
+      observer.disconnect();
+      window.removeEventListener('mousemove', onMouseMove);
     };
-  }, [speed, opacity]);
+  }, [speed, intensity]);
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+        className="absolute inset-0 h-full w-full object-cover block"
+        style={{ width: '100%', height: '100%' }}
       />
     </div>
   );

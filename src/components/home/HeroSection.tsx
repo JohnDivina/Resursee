@@ -37,7 +37,8 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper)] py-16 sm:py-24">
       {/* Aceternity Volumetric Procedural Cloud Shader Background */}
-      <CloudShader className="absolute inset-0 h-full w-full pointer-events-none opacity-80 dark:opacity-60" />
+      <CloudShader className="absolute inset-0 h-full w-full pointer-events-none" speed={1.2} />
+      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-paper)]/40 via-transparent to-[var(--color-paper)] pointer-events-none" />
 
       <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
         {/* 1. Primary Tagline Headline (Apple SF Pro bold typography) */}
