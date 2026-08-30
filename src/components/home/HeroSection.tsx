@@ -10,7 +10,7 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import StatsStrip from '@/components/home/StatsStrip';
-import InteractiveParticles from '@/components/motion/InteractiveParticles';
+import { CloudShader } from '@/components/ui/cloud-shader';
 import { mockResources, mockDepartments } from '@/lib/mockData';
 import { useRealtimeTotalDownloads } from '@/lib/downloadStore';
 
@@ -36,16 +36,8 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
 
   return (
     <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper)] py-16 sm:py-24">
-      {/* Interactive Constellation Particles & Magnetic Cursor Lines */}
-      <InteractiveParticles
-        particleCount={48}
-        connectionDistance={110}
-        mouseRadius={100}
-        accentMode="mixed"
-      />
-
-      {/* Subtle ambient lighting */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-80 w-[42rem] rounded-full bg-[radial-gradient(ellipse_at_center,var(--color-primary-glow)_0%,transparent_70%)] blur-2xl opacity-50" />
+      {/* Aceternity Volumetric Procedural Cloud Shader Background */}
+      <CloudShader className="absolute inset-0 h-full w-full pointer-events-none opacity-80 dark:opacity-60" />
 
       <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
         {/* 1. Primary Tagline Headline (Apple SF Pro bold typography) */}
