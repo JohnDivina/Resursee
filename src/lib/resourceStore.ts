@@ -4,23 +4,20 @@ import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
 
 const CLOUD_CACHE_KEY = 'resursee_cloud_resources_cache';
-const DELETED_STORAGE_KEY = 'resursee_deleted_resource_ids';
-
-let inMemoryResources: Resource[] = [];
-let hasFetchedFromCloud = false;
+let inMemoryResources: Resource[] | null = null;
 
 export function getLiveResources(): Resource[] {
   if (typeof window === 'undefined') return mockResources;
 
-  if (inMemoryResources.length > 0) {
+  if (inMemoryResources !== null) {
     return inMemoryResources;
   }
 
   try {
     const cached = localStorage.getItem(CLOUD_CACHE_KEY);
-    if (cached) {
+    if (cached !== null) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         inMemoryResources = parsed;
         return inMemoryResources;
       }
@@ -29,7 +26,8 @@ export function getLiveResources(): Resource[] {
     // ignore
   }
 
-  return mockResources;
+  inMemoryResources = mockResources;
+  return inMemoryResources;
 }
 
 export async function fetchResourcesFromCloud(): Promise<Resource[]> {
@@ -43,43 +41,43 @@ export async function fetchResourcesFromCloud(): Promise<Resource[]> {
           localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data.resources));
           window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
         }
-        hasFetchedFromCloud = true;
         return data.resources;
       }
     }
   } catch {
-    // fallback to cache
+    // fallback
   }
   return getLiveResources();
 }
 
-// Auto-trigger cloud fetch in browser
-if (typeof window !== 'undefined' && !hasFetchedFromCloud) {
+if (typeof window !== 'undefined') {
   fetchResourcesFromCloud();
 }
 
 export function deleteResourceById(id: string): Resource[] {
-  // 1. Optimistic local update
-  inMemoryResources = inMemoryResources.filter((r) => r.id !== id);
+  const current = getLiveResources();
+  inMemoryResources = current.filter((r) => r.id !== id);
+
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
     window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
   }
 
-  // 2. Cloud delete
+  // Cloud delete
   fetch(`/api/resources?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
 
   return inMemoryResources;
 }
 
 export function addCustomResource(resource: Resource): Resource[] {
-  inMemoryResources = [resource, ...inMemoryResources.filter((r) => r.id !== resource.id)];
+  const current = getLiveResources();
+  inMemoryResources = [resource, ...current.filter((r) => r.id !== resource.id)];
+
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
     window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
   }
 
-  // Cloud create
   fetch('/api/resources', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -103,13 +101,13 @@ export function updateExistingResource(
     updated_at: new Date().toISOString(),
   };
 
-  inMemoryResources = inMemoryResources.map((r) => (r.id === resourceId ? updatedTarget : r));
+  inMemoryResources = current.map((r) => (r.id === resourceId ? updatedTarget : r));
+
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(inMemoryResources));
     window.dispatchEvent(new CustomEvent('resursee_catalog_updated'));
   }
 
-  // Cloud update
   fetch('/api/resources', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

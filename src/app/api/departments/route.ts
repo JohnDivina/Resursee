@@ -77,7 +77,14 @@ export async function DELETE(request: Request) {
 
   try {
     const supabase = createAdminClient();
-    const { error } = await supabase.from('departments').delete().eq('id', id);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let deleteQuery;
+    if (isUuid) {
+      deleteQuery = supabase.from('departments').delete().eq('id', id);
+    } else {
+      deleteQuery = supabase.from('departments').delete().eq('slug', id);
+    }
+    const { error } = await deleteQuery;
     if (error) {
       console.error('Supabase delete department error:', error.message);
       return NextResponse.json({ error: error.message }, { status: 400 });

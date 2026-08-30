@@ -4,21 +4,20 @@ import { Department } from '@/types/database';
 import { mockDepartments } from '@/lib/mockData';
 
 const CLOUD_DEPARTMENTS_KEY = 'resursee_cloud_departments_cache';
-let inMemoryDepartments: Department[] = [];
-let hasFetchedDepartments = false;
+let inMemoryDepartments: Department[] | null = null;
 
 export function getLiveDepartments(): Department[] {
   if (typeof window === 'undefined') return mockDepartments;
 
-  if (inMemoryDepartments.length > 0) {
+  if (inMemoryDepartments !== null) {
     return inMemoryDepartments;
   }
 
   try {
     const cached = localStorage.getItem(CLOUD_DEPARTMENTS_KEY);
-    if (cached) {
+    if (cached !== null) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         inMemoryDepartments = parsed;
         return inMemoryDepartments;
       }
@@ -27,7 +26,8 @@ export function getLiveDepartments(): Department[] {
     // ignore
   }
 
-  return mockDepartments;
+  inMemoryDepartments = mockDepartments;
+  return inMemoryDepartments;
 }
 
 export async function fetchDepartmentsFromCloud(): Promise<Department[]> {
@@ -43,8 +43,7 @@ export async function fetchDepartmentsFromCloud(): Promise<Department[]> {
           localStorage.setItem(CLOUD_DEPARTMENTS_KEY, JSON.stringify(inMemoryDepartments));
           window.dispatchEvent(new CustomEvent('resursee_departments_updated'));
         }
-        hasFetchedDepartments = true;
-        return inMemoryDepartments;
+        return inMemoryDepartments || [];
       }
     }
   } catch {
@@ -53,12 +52,13 @@ export async function fetchDepartmentsFromCloud(): Promise<Department[]> {
   return getLiveDepartments();
 }
 
-if (typeof window !== 'undefined' && !hasFetchedDepartments) {
+if (typeof window !== 'undefined') {
   fetchDepartmentsFromCloud();
 }
 
 export function addDepartment(department: Department): Department[] {
-  inMemoryDepartments = [...inMemoryDepartments.filter((d) => d.id !== department.id), department].sort(
+  const current = getLiveDepartments();
+  inMemoryDepartments = [...current.filter((d) => d.id !== department.id), department].sort(
     (a, b) => a.name.localeCompare(b.name)
   );
 
@@ -77,7 +77,8 @@ export function addDepartment(department: Department): Department[] {
 }
 
 export function deleteDepartmentById(id: string): Department[] {
-  inMemoryDepartments = inMemoryDepartments.filter((d) => d.id !== id);
+  const current = getLiveDepartments();
+  inMemoryDepartments = current.filter((d) => d.id !== id);
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_DEPARTMENTS_KEY, JSON.stringify(inMemoryDepartments));
@@ -99,7 +100,7 @@ export function updateDepartment(id: string, updates: Partial<Department>): Depa
     ...updates,
   };
 
-  inMemoryDepartments = inMemoryDepartments
+  inMemoryDepartments = current
     .map((d) => (d.id === id ? updatedTarget : d))
     .sort((a, b) => a.name.localeCompare(b.name));
 

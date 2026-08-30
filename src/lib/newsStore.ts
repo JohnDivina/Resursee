@@ -4,21 +4,20 @@ import { NewsArticle } from '@/types/database';
 import { mockNewsArticles } from '@/lib/mockData';
 
 const CLOUD_NEWS_KEY = 'resursee_cloud_news_cache';
-let inMemoryNews: NewsArticle[] = [];
-let hasFetchedNews = false;
+let inMemoryNews: NewsArticle[] | null = null;
 
 export function getLiveNewsArticles(): NewsArticle[] {
   if (typeof window === 'undefined') return mockNewsArticles;
 
-  if (inMemoryNews.length > 0) {
+  if (inMemoryNews !== null) {
     return inMemoryNews;
   }
 
   try {
     const cached = localStorage.getItem(CLOUD_NEWS_KEY);
-    if (cached) {
+    if (cached !== null) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         inMemoryNews = parsed;
         return inMemoryNews;
       }
@@ -27,7 +26,8 @@ export function getLiveNewsArticles(): NewsArticle[] {
     // ignore
   }
 
-  return mockNewsArticles;
+  inMemoryNews = mockNewsArticles;
+  return inMemoryNews;
 }
 
 export async function fetchNewsFromCloud(): Promise<NewsArticle[]> {
@@ -41,8 +41,7 @@ export async function fetchNewsFromCloud(): Promise<NewsArticle[]> {
           localStorage.setItem(CLOUD_NEWS_KEY, JSON.stringify(inMemoryNews));
           window.dispatchEvent(new CustomEvent('resursee_news_updated'));
         }
-        hasFetchedNews = true;
-        return inMemoryNews;
+        return inMemoryNews || [];
       }
     }
   } catch {
@@ -51,12 +50,13 @@ export async function fetchNewsFromCloud(): Promise<NewsArticle[]> {
   return getLiveNewsArticles();
 }
 
-if (typeof window !== 'undefined' && !hasFetchedNews) {
+if (typeof window !== 'undefined') {
   fetchNewsFromCloud();
 }
 
 export function addNewsArticle(article: NewsArticle): NewsArticle[] {
-  inMemoryNews = [article, ...inMemoryNews.filter((n) => n.id !== article.id)];
+  const current = getLiveNewsArticles();
+  inMemoryNews = [article, ...current.filter((n) => n.id !== article.id)];
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_NEWS_KEY, JSON.stringify(inMemoryNews));
@@ -73,7 +73,8 @@ export function addNewsArticle(article: NewsArticle): NewsArticle[] {
 }
 
 export function deleteNewsArticleById(id: string): NewsArticle[] {
-  inMemoryNews = inMemoryNews.filter((n) => n.id !== id);
+  const current = getLiveNewsArticles();
+  inMemoryNews = current.filter((n) => n.id !== id);
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_NEWS_KEY, JSON.stringify(inMemoryNews));
@@ -90,6 +91,7 @@ export function updateNewsStatus(
   status: 'approved' | 'rejected',
   reviewerName = 'Administrator'
 ): NewsArticle[] {
+  const current = getLiveNewsArticles();
   const updates = {
     status,
     reviewed_by: reviewerName,
@@ -97,7 +99,7 @@ export function updateNewsStatus(
     published_at: status === 'approved' ? new Date().toISOString() : null,
   };
 
-  inMemoryNews = inMemoryNews.map((n) => (n.id === id ? { ...n, ...updates } : n));
+  inMemoryNews = current.map((n) => (n.id === id ? { ...n, ...updates } : n));
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_NEWS_KEY, JSON.stringify(inMemoryNews));

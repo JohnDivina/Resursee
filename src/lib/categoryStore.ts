@@ -4,21 +4,20 @@ import { Category } from '@/types/database';
 import { mockCategories } from '@/lib/mockData';
 
 const CLOUD_CATEGORIES_KEY = 'resursee_cloud_categories_cache';
-let inMemoryCategories: Category[] = [];
-let hasFetchedCategories = false;
+let inMemoryCategories: Category[] | null = null;
 
 export function getLiveCategories(): Category[] {
   if (typeof window === 'undefined') return mockCategories;
 
-  if (inMemoryCategories.length > 0) {
+  if (inMemoryCategories !== null) {
     return inMemoryCategories;
   }
 
   try {
     const cached = localStorage.getItem(CLOUD_CATEGORIES_KEY);
-    if (cached) {
+    if (cached !== null) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         inMemoryCategories = parsed;
         return inMemoryCategories;
       }
@@ -27,7 +26,8 @@ export function getLiveCategories(): Category[] {
     // ignore
   }
 
-  return mockCategories;
+  inMemoryCategories = mockCategories;
+  return inMemoryCategories;
 }
 
 export async function fetchCategoriesFromCloud(): Promise<Category[]> {
@@ -41,8 +41,7 @@ export async function fetchCategoriesFromCloud(): Promise<Category[]> {
           localStorage.setItem(CLOUD_CATEGORIES_KEY, JSON.stringify(inMemoryCategories));
           window.dispatchEvent(new CustomEvent('resursee_categories_updated'));
         }
-        hasFetchedCategories = true;
-        return inMemoryCategories;
+        return inMemoryCategories || [];
       }
     }
   } catch {
@@ -51,12 +50,13 @@ export async function fetchCategoriesFromCloud(): Promise<Category[]> {
   return getLiveCategories();
 }
 
-if (typeof window !== 'undefined' && !hasFetchedCategories) {
+if (typeof window !== 'undefined') {
   fetchCategoriesFromCloud();
 }
 
 export function addCategory(category: Category): Category[] {
-  inMemoryCategories = [...inMemoryCategories.filter((c) => c.id !== category.id), category].sort(
+  const current = getLiveCategories();
+  inMemoryCategories = [...current.filter((c) => c.id !== category.id), category].sort(
     (a, b) => a.sort_order - b.sort_order
   );
 
@@ -75,7 +75,8 @@ export function addCategory(category: Category): Category[] {
 }
 
 export function deleteCategoryById(id: string): Category[] {
-  inMemoryCategories = inMemoryCategories.filter((c) => c.id !== id);
+  const current = getLiveCategories();
+  inMemoryCategories = current.filter((c) => c.id !== id);
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_CATEGORIES_KEY, JSON.stringify(inMemoryCategories));
@@ -97,9 +98,9 @@ export function updateCategory(id: string, updates: Partial<Category>): Category
     ...updates,
   };
 
-  inMemoryCategories = inMemoryCategories.map((c) => (c.id === id ? updatedTarget : c)).sort(
-    (a, b) => a.sort_order - b.sort_order
-  );
+  inMemoryCategories = current
+    .map((c) => (c.id === id ? updatedTarget : c))
+    .sort((a, b) => a.sort_order - b.sort_order);
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_CATEGORIES_KEY, JSON.stringify(inMemoryCategories));

@@ -4,21 +4,20 @@ import { ResourceSubmission } from '@/types/database';
 import { mockSubmissions } from '@/lib/mockData';
 
 const CLOUD_SUBMISSIONS_KEY = 'resursee_cloud_submissions_cache';
-let inMemorySubmissions: ResourceSubmission[] = [];
-let hasFetchedSubmissions = false;
+let inMemorySubmissions: ResourceSubmission[] | null = null;
 
 export function getLiveSubmissions(): ResourceSubmission[] {
   if (typeof window === 'undefined') return mockSubmissions;
 
-  if (inMemorySubmissions.length > 0) {
+  if (inMemorySubmissions !== null) {
     return inMemorySubmissions;
   }
 
   try {
     const cached = localStorage.getItem(CLOUD_SUBMISSIONS_KEY);
-    if (cached) {
+    if (cached !== null) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         inMemorySubmissions = parsed;
         return inMemorySubmissions;
       }
@@ -27,7 +26,8 @@ export function getLiveSubmissions(): ResourceSubmission[] {
     // ignore
   }
 
-  return mockSubmissions;
+  inMemorySubmissions = mockSubmissions;
+  return inMemorySubmissions;
 }
 
 export async function fetchSubmissionsFromCloud(): Promise<ResourceSubmission[]> {
@@ -41,8 +41,7 @@ export async function fetchSubmissionsFromCloud(): Promise<ResourceSubmission[]>
           localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
           window.dispatchEvent(new CustomEvent('resursee_submissions_updated'));
         }
-        hasFetchedSubmissions = true;
-        return inMemorySubmissions;
+        return inMemorySubmissions || [];
       }
     }
   } catch {
@@ -51,12 +50,13 @@ export async function fetchSubmissionsFromCloud(): Promise<ResourceSubmission[]>
   return getLiveSubmissions();
 }
 
-if (typeof window !== 'undefined' && !hasFetchedSubmissions) {
+if (typeof window !== 'undefined') {
   fetchSubmissionsFromCloud();
 }
 
 export function addSubmission(submission: ResourceSubmission): ResourceSubmission[] {
-  inMemorySubmissions = [submission, ...inMemorySubmissions.filter((s) => s.id !== submission.id)];
+  const current = getLiveSubmissions();
+  inMemorySubmissions = [submission, ...current.filter((s) => s.id !== submission.id)];
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
@@ -77,13 +77,14 @@ export function updateSubmissionStatus(
   status: 'approved' | 'rejected',
   reviewedBy: string
 ): ResourceSubmission[] {
+  const current = getLiveSubmissions();
   const updates = {
     status,
     reviewed_by: reviewedBy,
     reviewed_at: new Date().toISOString(),
   };
 
-  inMemorySubmissions = inMemorySubmissions.map((s) => (s.id === id ? { ...s, ...updates } : s));
+  inMemorySubmissions = current.map((s) => (s.id === id ? { ...s, ...updates } : s));
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
@@ -100,7 +101,8 @@ export function updateSubmissionStatus(
 }
 
 export function deleteSubmissionById(id: string): ResourceSubmission[] {
-  inMemorySubmissions = inMemorySubmissions.filter((s) => s.id !== id);
+  const current = getLiveSubmissions();
+  inMemorySubmissions = current.filter((s) => s.id !== id);
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
@@ -113,8 +115,9 @@ export function deleteSubmissionById(id: string): ResourceSubmission[] {
 }
 
 export function clearReviewedSubmissions(): ResourceSubmission[] {
-  const toDelete = inMemorySubmissions.filter((s) => s.status !== 'pending');
-  inMemorySubmissions = inMemorySubmissions.filter((s) => s.status === 'pending');
+  const current = getLiveSubmissions();
+  const toDelete = current.filter((s) => s.status !== 'pending');
+  inMemorySubmissions = current.filter((s) => s.status === 'pending');
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(CLOUD_SUBMISSIONS_KEY, JSON.stringify(inMemorySubmissions));
