@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
+import { FileUpload } from '@/components/ui/file-upload';
 import {
   UploadSimple,
   FileText,
@@ -457,52 +458,19 @@ export default function ContributePage() {
                 )}
               </div>
 
-              {/* Drag & Drop Dropzone with Automated File Format Detection */}
-              <div
-                onDragOver={handleDragOver}
-                onDragEnter={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={`group relative flex flex-col items-center justify-center rounded-[28px] border-2 border-dashed p-8 sm:p-12 text-center transition-all ${
-                  isDragging
-                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/50 scale-[1.01]'
-                    : selectedFile
-                    ? 'border-emerald-500/50 bg-emerald-50/20 dark:bg-emerald-950/10'
-                    : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] hover:border-[var(--color-primary)] hover:bg-[var(--color-paper-muted)]/50'
-                }`}
-              >
-                <input
-                  type="file"
-                  id="file-upload"
-                  onChange={handleFileChange}
-                  accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.csv,.zip,.txt"
-                  className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
-                />
-
-                <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] transition-transform group-hover:scale-110 ${
-                  selectedFile
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
-                }`}>
-                  {selectedFile ? <FileArrowUp size={36} weight="bold" /> : <CloudArrowUp size={36} weight="bold" />}
-                </div>
-
-                <h3 className="mt-4 text-base font-bold text-[var(--color-ink)]">
-                  {selectedFile ? `Attached: ${selectedFile.name}` : 'Drag and Drop your document file here'}
-                </h3>
-                <p className="mt-1 text-xs text-[var(--color-ink-muted)] max-w-sm">
-                  {selectedFile
-                    ? `${(selectedFile.size / 1024).toFixed(1)} KB • Detected Format: .${fileFormat.toLowerCase()} • Click or drop again to replace`
-                    : 'Supports PDF, Word (.docx, .doc), Excel (.xlsx, .xls), PowerPoint (.pptx, .ppt), CSV, and Archives up to 25MB'}
-                </p>
-
-                {selectedFile && (
-                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                    <CheckCircle size={14} weight="fill" />
-                    <span>Automatically detected format: <strong>{fileFormat} (.{fileFormat.toLowerCase()})</strong></span>
-                  </div>
-                )}
-              </div>
+              {/* Aceternity Animated Drag & Drop FileUpload Component */}
+              <FileUpload
+                onChange={(files) => {
+                  if (files && files.length > 0) {
+                    processSelectedFile(files[0]);
+                  } else {
+                    setSelectedFile(null);
+                    setFileName('');
+                  }
+                }}
+                accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.csv,.zip,.txt"
+                maxSizeMB={25}
+              />
 
               {/* Document Details Grid */}
               <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xs space-y-5">
