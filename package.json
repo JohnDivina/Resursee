@@ -24,12 +24,14 @@
   },
   "devDependencies": {
     "@netlify/functions": "^6.0.0",
+    "@netlify/plugin-nextjs": "^5.15.13",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "netlify-cli": "^27.4.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

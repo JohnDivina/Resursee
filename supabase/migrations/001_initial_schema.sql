@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS public.categories (
   sort_order INT NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   icon TEXT,
+  icon_name TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -72,6 +73,7 @@ CREATE TABLE IF NOT EXISTS public.departments (
   slug TEXT NOT NULL UNIQUE,
   abbreviation TEXT NOT NULL,
   description TEXT,
+  website_url TEXT,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -97,6 +99,7 @@ CREATE TABLE IF NOT EXISTS public.resources (
   file_name TEXT NOT NULL,
   file_format TEXT NOT NULL,
   file_size BIGINT NOT NULL DEFAULT 0,
+  file_data TEXT,
   current_version TEXT NOT NULL DEFAULT '2026.1',
   status resource_status NOT NULL DEFAULT 'active',
   source_name TEXT,
@@ -212,6 +215,7 @@ CREATE TABLE IF NOT EXISTS public.resource_submissions (
   file_name TEXT NOT NULL,
   file_format TEXT NOT NULL,
   file_size BIGINT NOT NULL DEFAULT 0,
+  file_data TEXT,
   version_label TEXT NOT NULL DEFAULT '2026.1',
   source_name TEXT,
   source_url TEXT,
