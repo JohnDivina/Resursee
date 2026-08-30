@@ -532,20 +532,24 @@ export async function downloadResourceFile(resource: {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      // SNIFF MAGIC BYTES TO PREVENT WORD/EXCEL EXTENSION MISMATCHES:
-      // Case A: 0xD0 0xCF 0x11 0xE0 = OLE2 Compound Document (Legacy Word 97-2003 .doc or Excel .xls)
+      // SNIFF MAGIC BYTES TO PREVENT WORD/EXCEL/POWERPOINT/IMAGE EXTENSION MISMATCHES:
+      // Case A: 0xD0 0xCF 0x11 0xE0 = OLE2 Compound Document (Legacy Office 97-2003)
       if (bytes.length >= 4 && bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0) {
         if (fileName.toLowerCase().endsWith('.xls') || declaredFormat === 'XLS') {
           detectedMime = 'application/vnd.ms-excel';
           if (fileName.toLowerCase().endsWith('.xlsx')) fileName = fileName.replace(/\.xlsx$/i, '.xls');
           if (!fileName.toLowerCase().endsWith('.xls')) fileName = `${fileName}.xls`;
+        } else if (fileName.toLowerCase().endsWith('.ppt') || declaredFormat === 'PPT') {
+          detectedMime = 'application/vnd.ms-powerpoint';
+          if (fileName.toLowerCase().endsWith('.pptx')) fileName = fileName.replace(/\.pptx$/i, '.ppt');
+          if (!fileName.toLowerCase().endsWith('.ppt')) fileName = `${fileName}.ppt`;
         } else {
           detectedMime = 'application/msword';
           if (fileName.toLowerCase().endsWith('.docx')) fileName = fileName.replace(/\.docx$/i, '.doc');
           if (!fileName.toLowerCase().endsWith('.doc')) fileName = `${fileName}.doc`;
         }
       }
-      // Case B: 0x50 0x4B 0x03 0x04 = PKZip (Modern OpenXML .docx, .xlsx, .pptx)
+      // Case B: 0x50 0x4B 0x03 0x04 = PKZip (Modern OpenXML .docx, .xlsx, .pptx, or .zip)
       else if (bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b) {
         if (fileName.toLowerCase().endsWith('.xlsx') || declaredFormat === 'XLSX') {
           detectedMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -553,6 +557,9 @@ export async function downloadResourceFile(resource: {
         } else if (fileName.toLowerCase().endsWith('.pptx') || declaredFormat === 'PPTX') {
           detectedMime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
           if (!fileName.toLowerCase().endsWith('.pptx')) fileName = `${fileName}.pptx`;
+        } else if (fileName.toLowerCase().endsWith('.zip') || declaredFormat === 'ZIP') {
+          detectedMime = 'application/zip';
+          if (!fileName.toLowerCase().endsWith('.zip')) fileName = `${fileName}.zip`;
         } else {
           detectedMime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
           if (!fileName.toLowerCase().endsWith('.docx')) fileName = `${fileName}.docx`;
@@ -562,6 +569,18 @@ export async function downloadResourceFile(resource: {
       else if (bytes.length >= 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
         detectedMime = 'application/pdf';
         if (!fileName.toLowerCase().endsWith('.pdf')) fileName = `${fileName}.pdf`;
+      }
+      // Case D: PNG Image (0x89 0x50 0x4E 0x47)
+      else if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+        detectedMime = 'image/png';
+        if (!fileName.toLowerCase().endsWith('.png')) fileName = `${fileName}.png`;
+      }
+      // Case E: JPEG Image (0xFF 0xD8 0xFF)
+      else if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+        detectedMime = 'image/jpeg';
+        if (!fileName.toLowerCase().endsWith('.jpg') && !fileName.toLowerCase().endsWith('.jpeg')) {
+          fileName = `${fileName}.jpg`;
+        }
       }
 
       const blob = new Blob([bytes], { type: detectedMime });

@@ -181,7 +181,6 @@ export default function ContributePage() {
     setIsSubmitting(true);
 
     let fileDataUrl: string | undefined = undefined;
-    let serverFilePath: string | undefined = undefined;
 
     if (selectedFile) {
       try {
@@ -191,19 +190,6 @@ export default function ContributePage() {
           reader.onerror = () => resolve('');
           reader.readAsDataURL(selectedFile);
         });
-
-        const uploadForm = new FormData();
-        uploadForm.append('file', selectedFile);
-        const uploadRes = await fetch('/api/documents/upload', {
-          method: 'POST',
-          body: uploadForm,
-        });
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          if (uploadData.filePath) {
-            serverFilePath = uploadData.filePath;
-          }
-        }
       } catch {
         // continue
       }
@@ -213,44 +199,33 @@ export default function ContributePage() {
 
     const newSub: ResourceSubmission = {
       id: generatedId,
-      title,
-      description: description || null,
+      title: title.trim(),
+      description: description.trim() || null,
       category_id: categoryId || (categoriesList[0]?.id ?? 'cat-1'),
       department_id: departmentId || (departmentsList[0]?.id ?? 'dept-1'),
       document_type: docType,
       file_name: fileName || (selectedFile ? selectedFile.name : `${title.toLowerCase().replace(/\s+/g, '-')}.${fileFormat.toLowerCase()}`),
       file_format: fileFormat,
       file_size: selectedFile ? selectedFile.size : 350000,
-      file_path: serverFilePath || (selectedFile ? `/documents/${selectedFile.name}` : undefined),
+      file_path: selectedFile ? `/documents/${selectedFile.name}` : undefined,
       file_data: fileDataUrl || undefined,
       version_label: versionLabel,
-      source_name: sourceName || null,
-      source_url: sourceUrl || null,
+      source_name: sourceName.trim() || null,
+      source_url: sourceUrl.trim() || null,
       submission_type: submissionType,
       existing_resource_id: existingResourceId || null,
-      submitter_name: submitterName,
-      submitter_email: submitterEmail,
-      submitter_role: submitterRole,
-      submission_notes: submissionNotes || null,
+      submitter_name: submitterName.trim(),
+      submitter_email: submitterEmail.trim(),
+      submitter_role: (submitterRole.trim() as any) || undefined,
+      submission_notes: submissionNotes.trim() || null,
       status: 'pending',
       created_at: new Date().toISOString(),
       category: categoriesList.find((c) => c.id === categoryId),
       department: departmentsList.find((d) => d.id === departmentId),
     };
 
-    // 1. Save to Client Submission Store for immediate Admin dashboard display
+    // Save to store & cloud immediately
     addSubmission(newSub);
-
-    // 2. Post to API route for persistence
-    try {
-      await fetch('/api/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create', ...newSub }),
-      });
-    } catch {
-      // ignore
-    }
 
     setSubmissionId(generatedId);
     setIsSubmitting(false);
