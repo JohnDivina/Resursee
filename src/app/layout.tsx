@@ -3,7 +3,6 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SoundProvider } from '@/components/sound/SoundProvider';
-import { CloudShader } from '@/components/ui/cloud-shader';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -51,11 +50,9 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 font-sans relative">
+      <body className="min-h-full flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 font-sans">
         <ThemeProvider>
           <SoundProvider>
-            {/* Global Fixed Sunny Sky & Fluffy Cloud Background (Nav to Footer) */}
-            <CloudShader />
             {children}
           </SoundProvider>
         </ThemeProvider>

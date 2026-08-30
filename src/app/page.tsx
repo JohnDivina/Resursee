@@ -10,13 +10,22 @@ import LatestNews from '@/components/home/LatestNews';
 import CommandPalette from '@/components/search/CommandPalette';
 import { mockResources, mockNewsArticles } from '@/lib/mockData';
 import { CheckCircle } from '@phosphor-icons/react';
+import InteractiveParticles from '@/components/motion/InteractiveParticles';
 
 export default function HomePage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-transparent">
+    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
+      {/* Interactive Constellation Particles & Magnetic Cursor Lines */}
+      <InteractiveParticles
+        particleCount={48}
+        connectionDistance={110}
+        mouseRadius={100}
+        accentMode="mixed"
+      />
+
       {/* 1. Minimal Header */}
       <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
 
@@ -34,7 +43,7 @@ export default function HomePage() {
         {/* 3. Community Leaderboard: Ranked Most Downloaded Forms with Time Filters */}
         <FeaturedLeaderboard resources={mockResources} />
 
-        {/* 4. Resursee Productivity Toolbox Preview */}
+        {/* 4. Resursee Productivity Toolbox Preview (Aceternity Bento Grid) */}
         <ToolsPreview />
 
         {/* 5. Verified Campus News & Advisories (Positioned at bottom) */}
