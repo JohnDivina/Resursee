@@ -14,6 +14,7 @@ import {
 import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
 import { useRealtimeDownloadCount } from '@/lib/downloadStore';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 
 interface ResourceShowcaseProps {
   resources?: Resource[];
@@ -31,17 +32,16 @@ function ShowcaseCardItem({ item }: { item: Resource }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
-              item.file_format === 'PDF'
-                ? 'badge-pdf'
-                : item.file_format === 'DOCX'
-                ? 'badge-docx'
-                : item.file_format === 'XLSX'
-                ? 'badge-xlsx'
-                : 'badge-pptx'
-            }`}
-          >
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-[var(--color-rule)] p-0.5 shadow-2xs">
+            <OrgLogo
+              sourceName={item.source_name}
+              departmentName={item.department?.name}
+              title={item.title}
+              size={18}
+              className="h-4.5 w-4.5 object-contain"
+            />
+          </div>
+          <span className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-sky-400 border border-blue-500/20">
             {item.file_format}
           </span>
           <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">

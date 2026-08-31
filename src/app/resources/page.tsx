@@ -24,6 +24,7 @@ import { useRealtimeDownloadCount } from '@/lib/downloadStore';
 import { getLiveResources, fetchResourcesFromCloud } from '@/lib/resourceStore';
 import { getLiveCategories, fetchCategoriesFromCloud } from '@/lib/categoryStore';
 import { getLiveDepartments, fetchDepartmentsFromCloud } from '@/lib/departmentStore';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 
 function ListRowItem({ resource }: { resource: Resource }) {
   const realtimeDownloads = useRealtimeDownloadCount(resource.id, resource.download_count);
@@ -36,14 +37,14 @@ function ListRowItem({ resource }: { resource: Resource }) {
       className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
     >
       <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-primary)] text-white font-bold text-base shadow-xs group-hover:scale-105 transition-transform">
-          {resource.file_format === 'PDF'
-            ? 'P'
-            : resource.file_format === 'DOCX'
-            ? 'W'
-            : resource.file_format === 'XLSX'
-            ? 'X'
-            : resource.title.charAt(0)}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-white dark:bg-slate-900 border border-[var(--color-rule)] p-2 shadow-2xs group-hover:scale-105 transition-transform select-none">
+          <OrgLogo
+            sourceName={resource.source_name}
+            departmentName={resource.department?.name}
+            title={resource.title}
+            size={32}
+            className="h-7 w-7 object-contain"
+          />
         </div>
 
         <div>
