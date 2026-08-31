@@ -7,6 +7,7 @@ import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
 import { getStoredDownloads } from '@/lib/downloadStore';
 import { getLiveResources } from '@/lib/resourceStore';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 
 type TimeFilter = 'today' | 'week' | 'month' | 'all';
 
@@ -45,37 +46,25 @@ function LeaderboardItemCard({
         {/* Rank Number Badge */}
         <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold ${
           rank === 1
-            ? 'bg-amber-400 text-slate-950 shadow-xs'
+            ? 'bg-blue-600 text-white shadow-xs'
             : rank === 2
-            ? 'bg-slate-300 text-slate-900'
+            ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
             : rank === 3
-            ? 'bg-amber-700/20 text-amber-800 dark:text-amber-300'
-            : 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]'
+            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+            : 'bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)]'
         }`}>
           {rank}
         </div>
 
-        {/* Squircle Format / App Icon */}
-        <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] font-bold text-base text-white shadow-2xs transition-transform duration-200 group-hover:scale-105 select-none ${
-            resource.file_format === 'PDF'
-              ? 'bg-rose-600'
-              : resource.file_format === 'DOCX'
-              ? 'bg-blue-600'
-              : resource.file_format === 'XLSX'
-              ? 'bg-emerald-600'
-              : 'bg-indigo-600'
-          }`}
-        >
-          {resource.file_format === 'PDF' ? (
-            <span className="font-extrabold text-sm">P</span>
-          ) : resource.file_format === 'DOCX' ? (
-            <span className="font-extrabold text-sm">W</span>
-          ) : resource.file_format === 'XLSX' ? (
-            <span className="font-extrabold text-sm">X</span>
-          ) : (
-            <span>{firstLetter}</span>
-          )}
+        {/* Official Institutional Seal / Squircle Icon */}
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-rule)] p-1.5 shadow-2xs transition-transform duration-200 group-hover:scale-105 select-none">
+          <OrgLogo
+            sourceName={resource.source_name}
+            departmentName={resource.department?.name}
+            title={resource.title}
+            size={30}
+            className="h-7 w-7 object-contain"
+          />
         </div>
 
         {/* Text details */}

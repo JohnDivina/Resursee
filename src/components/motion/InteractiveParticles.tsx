@@ -51,13 +51,13 @@ export default function InteractiveParticles({
       isActive: false,
     };
 
-    // Rich vibrant palette for strong visibility in both light & dark modes
+    // Blue-Only Accent Color Palette (harmonious shades of Royal Blue, Sky, Cobalt, and Indigo)
     const colorPalette = [
-      { fill: 'rgba(37, 99, 235,', glow: 'rgba(37, 99, 235, 0.7)' },   // Electric Royal Blue
-      { fill: 'rgba(2, 132, 199,', glow: 'rgba(2, 132, 199, 0.7)' },   // Cerulean Sky
-      { fill: 'rgba(13, 148, 136,', glow: 'rgba(13, 148, 136, 0.65)' }, // Aquamarine Cyan
-      { fill: 'rgba(217, 119, 6,', glow: 'rgba(217, 119, 6, 0.75)' },   // Amber Gold
-      { fill: 'rgba(124, 58, 237,', glow: 'rgba(124, 58, 237, 0.7)' },  // Electric Indigo
+      { fill: 'rgba(37, 99, 235,', glow: 'rgba(37, 99, 235, 0.75)' },  // Electric Royal Blue (#2563eb)
+      { fill: 'rgba(2, 132, 199,', glow: 'rgba(2, 132, 199, 0.75)' },   // Sky Blue (#0284c7)
+      { fill: 'rgba(29, 78, 216,', glow: 'rgba(29, 78, 216, 0.75)' },   // Deep Cobalt Blue (#1d4ed8)
+      { fill: 'rgba(56, 189, 248,', glow: 'rgba(56, 189, 248, 0.70)' }, // Sapphire Cyan (#38bdf8)
+      { fill: 'rgba(79, 70, 229,', glow: 'rgba(79, 70, 229, 0.70)' },   // Indigo Blue (#4f46e5)
     ];
 
     const actualCount = width < 768 ? Math.floor(particleCount * 0.5) : particleCount;

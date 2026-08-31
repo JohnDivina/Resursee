@@ -18,6 +18,7 @@ import { useRealtimeDownloadCount, recordDownload } from '@/lib/downloadStore';
 import { downloadResourceFile } from '@/lib/documentDownloader';
 import { useOutsideClick } from '@/hooks/use-outside-click';
 import { Button as StatefulButton } from '@/components/ui/stateful-button';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 
 interface ExpandableResourceGridProps {
   resources: Resource[];
@@ -125,9 +126,20 @@ export default function ExpandableResourceGrid({
                 <div className="absolute -right-6 -bottom-6 w-40 h-40 rounded-full bg-white/10 blur-xl pointer-events-none" />
 
                 <div className="flex items-center justify-between z-10">
-                  <span className="rounded-full bg-white/20 backdrop-blur-md px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-white">
-                    {active.file_format} • v{active.current_version || '2026.1'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-md bg-white/20 backdrop-blur-md px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-white">
+                      {active.file_format} • {active.document_type || 'Official Form'}
+                    </span>
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/25 backdrop-blur-md p-1 shadow-2xs">
+                      <OrgLogo
+                        sourceName={active.source_name}
+                        departmentName={active.department?.name}
+                        title={active.title}
+                        size={20}
+                        className="h-5 w-5 object-contain"
+                      />
+                    </div>
+                  </div>
 
                   <button
                     type="button"
@@ -267,9 +279,20 @@ function ExpandableCardItem({
           className="h-36 sm:h-40 w-full rounded-[18px] bg-gradient-to-br from-[var(--color-primary)] to-blue-700 p-4 flex flex-col justify-between text-white relative overflow-hidden"
         >
           <div className="flex items-center justify-between z-10">
-            <span className="rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white">
-              {format}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white">
+                {format}
+              </span>
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/25 backdrop-blur-md p-0.5 shadow-2xs">
+                <OrgLogo
+                  sourceName={resource.source_name}
+                  departmentName={resource.department?.name}
+                  title={resource.title}
+                  size={18}
+                  className="h-4.5 w-4.5 object-contain"
+                />
+              </div>
+            </div>
 
             <div className="flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white">
               <CaretUp size={12} weight="fill" className="text-white" />

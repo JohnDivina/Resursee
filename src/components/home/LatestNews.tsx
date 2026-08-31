@@ -59,7 +59,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
                   />
                   <div className="absolute top-3.5 left-3.5">
                     <span className="inline-flex items-center gap-1 rounded-full bg-black/70 px-3 py-1 font-mono text-[10px] font-semibold text-white backdrop-blur-xs">
-                      <ShieldCheck size={12} className="text-emerald-400" />
+                      <ShieldCheck size={12} className="text-blue-400" />
                       <span>Verified Notice</span>
                     </span>
                   </div>

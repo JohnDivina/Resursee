@@ -80,52 +80,22 @@ html, body {
   outline-offset: 2px;
 }
 
-/* Soft Apple-style Document Badge System */
-.badge-pdf {
-  background-color: rgba(239, 68, 68, 0.08);
-  color: #dc2626;
-  border: 1px solid rgba(239, 68, 68, 0.16);
-}
-
-.badge-docx {
+/* Clean Blue & Neutral Document Badge System */
+.badge-pdf,
+.badge-docx,
+.badge-xlsx,
+.badge-pptx {
   background-color: rgba(37, 99, 235, 0.08);
   color: #2563eb;
   border: 1px solid rgba(37, 99, 235, 0.16);
 }
 
-.badge-xlsx {
-  background-color: rgba(16, 185, 129, 0.08);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.16);
-}
-
-.badge-pptx {
-  background-color: rgba(245, 158, 11, 0.08);
-  color: #d97706;
-  border: 1px solid rgba(245, 158, 11, 0.16);
-}
-
 /* Dark mode badge overrides */
-[data-theme='dark'] .badge-pdf {
-  background-color: rgba(239, 68, 68, 0.16);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-}
-
-[data-theme='dark'] .badge-docx {
+[data-theme='dark'] .badge-pdf,
+[data-theme='dark'] .badge-docx,
+[data-theme='dark'] .badge-xlsx,
+[data-theme='dark'] .badge-pptx {
   background-color: rgba(59, 130, 246, 0.16);
   color: #60a5fa;
   border: 1px solid rgba(59, 130, 246, 0.25);
-}
-
-[data-theme='dark'] .badge-xlsx {
-  background-color: rgba(16, 185, 129, 0.16);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-}
-
-[data-theme='dark'] .badge-pptx {
-  background-color: rgba(245, 158, 11, 0.16);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.25);
 }

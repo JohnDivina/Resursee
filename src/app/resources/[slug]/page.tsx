@@ -27,6 +27,7 @@ import { Resource } from '@/types/database';
 import { getLiveResources } from '@/lib/resourceStore';
 import { useRealtimeDownloadCount, recordDownload } from '@/lib/downloadStore';
 import { downloadResourceFile } from '@/lib/documentDownloader';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 
 export default function ResourceDetailPage() {
   const params = useParams();
@@ -145,12 +146,21 @@ export default function ResourceDetailPage() {
             <div className="space-y-8 lg:col-span-2">
               {/* Document Summary Card */}
               <div className="rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.04)] space-y-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-md bg-rose-600 px-2 py-0.5 font-mono text-[10.5px] font-bold text-white uppercase">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-[var(--color-rule)] p-1 shadow-2xs">
+                    <OrgLogo
+                      sourceName={activeResource.source_name}
+                      departmentName={activeResource.department?.name}
+                      title={activeResource.title}
+                      size={22}
+                      className="h-5 w-5 object-contain"
+                    />
+                  </div>
+                  <span className="rounded-md bg-blue-600 px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-white uppercase">
                     {activeResource.file_format}
                   </span>
-                  <span className="flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[10.5px] font-bold text-emerald-800 dark:text-emerald-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[10.5px] font-bold text-blue-600 dark:text-sky-400">
+                    <ShieldCheck size={12} weight="bold" />
                     <span>Official Document</span>
                   </span>
                   <span className="rounded-md bg-[var(--color-paper-muted)] px-2 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink-muted)]">

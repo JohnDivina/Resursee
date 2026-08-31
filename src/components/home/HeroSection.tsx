@@ -11,7 +11,6 @@ import {
 } from '@phosphor-icons/react';
 import StatsStrip from '@/components/home/StatsStrip';
 import { mockResources, mockDepartments } from '@/lib/mockData';
-import { useRealtimeTotalDownloads } from '@/lib/downloadStore';
 
 interface HeroSectionProps {
   onSearch?: (query: string) => void;
@@ -20,7 +19,6 @@ interface HeroSectionProps {
 export default function HeroSection({ onSearch }: HeroSectionProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
-  const totalDownloads = useRealtimeTotalDownloads();
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +46,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
           .
         </h1>
 
-        {/* 2. Dual Action Buttons + Real-time Usage Proof Counter */}
+        {/* 2. Dual Action Buttons */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
           {/* Primary Button: See all documents */}
           <Link
@@ -70,27 +68,6 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
             <UploadSimple size={17} weight="bold" className="text-[var(--color-primary)]" />
             <span>Contribute resources</span>
           </Link>
-
-          {/* Real-time Foot Traffic Proof Badge */}
-          <div className="flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] py-1.5 pr-3.5 pl-2 shadow-2xs">
-            <div className="flex -space-x-2 overflow-hidden">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 font-bold text-[10px] text-white ring-2 ring-white select-none">
-                JD
-              </span>
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 font-bold text-[10px] text-white ring-2 ring-white select-none">
-                MC
-              </span>
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 font-bold text-[10px] text-white ring-2 ring-white select-none">
-                KL
-              </span>
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 font-bold text-[10px] text-white ring-2 ring-white select-none">
-                AP
-              </span>
-            </div>
-            <span className="font-mono text-xs font-bold text-[var(--color-primary)]">
-              +{totalDownloads.toLocaleString()} downloads
-            </span>
-          </div>
         </div>
 
         {/* 3. Prominent Central Search Bar */}

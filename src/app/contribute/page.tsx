@@ -790,7 +790,7 @@ export default function ContributePage() {
                 loadingText="Submitting Bulletin..."
                 successText="Bulletin Submitted!"
                 minDuration={1800}
-                className="w-full py-4 text-sm font-bold shadow-md bg-amber-500 hover:bg-amber-400 text-slate-950"
+                className="w-full py-4 text-sm font-bold shadow-md bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white"
               >
                 <Megaphone size={18} weight="bold" />
                 <span>Submit News Bulletin for Verification</span>

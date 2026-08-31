@@ -13,14 +13,13 @@ import {
   FileArrowUp,
   ArrowRight,
   Sparkle,
-  CheckCircle,
   FileImage,
 } from '@phosphor-icons/react';
 import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid';
 import { cn } from '@/lib/utils';
 
 // =========================================================================
-// Custom Interactive Skeletons for Each Tool
+// Custom Interactive Skeletons for Each Tool (Blue-Only Accent Palette)
 // =========================================================================
 
 /** 1. Skeleton: Compress Image (Interactive compression ratio animation) */
@@ -35,7 +34,7 @@ const SkeletonCompressImage = () => {
         <span className="flex items-center gap-1 text-blue-600 dark:text-sky-400">
           <FileImage size={14} weight="bold" /> clearance_photo.png
         </span>
-        <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full">-88%</span>
+        <span className="text-blue-600 dark:text-sky-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded-full">-88%</span>
       </div>
 
       <div className="relative h-4 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
@@ -43,7 +42,7 @@ const SkeletonCompressImage = () => {
           initial={{ width: '90%' }}
           whileHover={{ width: '22%' }}
           transition={{ duration: 0.8, ease: 'easeInOut' }}
-          className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full flex items-center justify-end pr-1.5"
+          className="h-full bg-gradient-to-r from-blue-700 to-blue-500 rounded-full flex items-center justify-end pr-1.5"
         >
           <span className="h-2 w-2 rounded-full bg-white shadow-xs" />
         </motion.div>
@@ -68,7 +67,7 @@ const SkeletonResizeImage = () => {
       <motion.div
         variants={{
           initial: { scale: 1 },
-          hover: { scale: 1.08, borderColor: 'rgba(37, 99, 235, 0.6)' },
+          hover: { scale: 1.08, borderColor: 'rgba(37, 99, 235, 0.7)' },
         }}
         className="h-20 w-20 rounded-[14px] border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 flex flex-col items-center justify-center shadow-xs"
       >
@@ -83,7 +82,7 @@ const SkeletonResizeImage = () => {
         }}
         className="h-16 w-16 rounded-[12px] border border-slate-300 dark:border-slate-700 bg-slate-100/60 dark:bg-slate-800/60 flex flex-col items-center justify-center"
       >
-        <span className="font-mono text-[9px] font-bold text-[var(--color-ink)]">1 × 1 in</span>
+        <span className="font-mono text-[9px] font-bold text-blue-600 dark:text-sky-400">1 × 1 in</span>
         <span className="text-[8px] text-[var(--color-ink-muted)]">Passport</span>
       </motion.div>
     </motion.div>
@@ -98,17 +97,17 @@ const SkeletonConvertImage = () => {
       whileHover={{ scale: 1.02 }}
       className="flex items-center justify-center gap-2 w-full h-full p-2"
     >
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs font-bold text-rose-500 shadow-xs">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs font-bold text-[var(--color-ink)] shadow-xs">
         PNG
       </div>
       <motion.div
         animate={{ rotate: [0, 180, 360] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-        className="text-emerald-500"
+        className="text-blue-600 dark:text-sky-400"
       >
         <ArrowsClockwise size={18} weight="bold" />
       </motion.div>
-      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 shadow-xs">
+      <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 font-mono text-xs font-bold text-blue-600 dark:text-sky-400 shadow-xs">
         WEBP
       </div>
     </motion.div>
@@ -143,9 +142,9 @@ const SkeletonCropImage = () => {
             hover: { scale: 0.85, rotate: -2 },
           }}
           transition={{ duration: 0.3 }}
-          className="relative h-18 w-24 rounded-lg border-2 border-amber-500 bg-amber-500/10 shadow-xs flex items-center justify-center"
+          className="relative h-18 w-24 rounded-lg border-2 border-blue-600 bg-blue-500/10 shadow-xs flex items-center justify-center"
         >
-          <Crop size={22} className="text-amber-500" weight="bold" />
+          <Crop size={22} className="text-blue-600 dark:text-sky-400" weight="bold" />
         </motion.div>
       </div>
     </motion.div>
@@ -161,9 +160,9 @@ const SkeletonPdfToImage = () => {
       className="flex items-center justify-center gap-2 w-full h-full p-2"
     >
       {/* PDF Document Source */}
-      <div className="h-20 w-16 rounded-[12px] border border-rose-500/40 bg-rose-500/10 flex flex-col items-center justify-center shadow-xs">
-        <FilePdf size={24} className="text-rose-500" weight="fill" />
-        <span className="font-mono text-[9px] font-bold text-rose-600 dark:text-rose-400 mt-1">.PDF</span>
+      <div className="h-20 w-16 rounded-[12px] border border-blue-500/40 bg-blue-500/10 flex flex-col items-center justify-center shadow-xs">
+        <FilePdf size={24} className="text-blue-600 dark:text-sky-400" weight="fill" />
+        <span className="font-mono text-[9px] font-bold text-blue-600 dark:text-sky-400 mt-1">.PDF</span>
       </div>
 
       <motion.div
@@ -171,7 +170,7 @@ const SkeletonPdfToImage = () => {
           initial: { x: 0 },
           hover: { x: 4 },
         }}
-        className="text-rose-500"
+        className="text-blue-600 dark:text-sky-400"
       >
         <ArrowRight size={16} weight="bold" />
       </motion.div>
@@ -187,7 +186,7 @@ const SkeletonPdfToImage = () => {
             }}
             className="h-20 w-16 rounded-[12px] border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-md flex flex-col items-center justify-center"
           >
-            <FileImage size={18} className="text-blue-500" weight="bold" />
+            <FileImage size={18} className="text-blue-600 dark:text-sky-400" weight="bold" />
             <span className="font-mono text-[8px] text-[var(--color-ink-muted)] mt-1">P.{page}</span>
           </motion.div>
         ))}
@@ -211,30 +210,30 @@ const SkeletonImageToPdf = () => {
             initial: { rotate: -6 },
             hover: { rotate: 0, x: 2 },
           }}
-          className="h-16 w-14 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shadow-xs"
+          className="h-16 w-14 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shadow-xs text-blue-600 dark:text-sky-400 font-mono text-[10px] font-bold"
         >
-          <span className="text-xs">🪪</span>
+          IMG 1
         </motion.div>
         <motion.div
           variants={{
             initial: { rotate: 6 },
             hover: { rotate: 0, x: -2 },
           }}
-          className="h-16 w-14 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shadow-xs"
+          className="h-16 w-14 rounded-lg bg-blue-600/15 border border-blue-600/30 flex items-center justify-center shadow-xs text-blue-600 dark:text-sky-400 font-mono text-[10px] font-bold"
         >
-          <span className="text-xs">📑</span>
+          IMG 2
         </motion.div>
       </div>
 
-      <span className="text-sky-500 font-bold">+</span>
+      <span className="text-blue-600 dark:text-sky-400 font-bold">+</span>
 
       {/* Compiled Unified PDF File */}
       <motion.div
         variants={{
           initial: { scale: 1 },
-          hover: { scale: 1.08, borderColor: '#0284c7' },
+          hover: { scale: 1.08, borderColor: '#2563eb' },
         }}
-        className="h-20 w-16 rounded-[14px] bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg flex flex-col items-center justify-center p-1.5"
+        className="h-20 w-16 rounded-[14px] bg-blue-600 text-white shadow-lg flex flex-col items-center justify-center p-1.5"
       >
         <FilePdf size={22} weight="fill" />
         <span className="font-mono text-[8px] font-bold uppercase mt-1 tracking-wider">Merged</span>
@@ -244,7 +243,7 @@ const SkeletonImageToPdf = () => {
 };
 
 // =========================================================================
-// Bento Grid Tools Preview
+// Bento Grid Tools Preview (Blue-Only Accent)
 // =========================================================================
 
 export default function ToolsPreview() {
@@ -262,7 +261,7 @@ export default function ToolsPreview() {
       description: 'Scale photos to standard 2×2, 1×1 passport ID dimensions or custom pixel specifications.',
       header: <SkeletonResizeImage />,
       className: 'md:col-span-1',
-      icon: <CornersOut size={18} weight="bold" className="text-indigo-600 dark:text-indigo-400" />,
+      icon: <CornersOut size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/resize-image',
     },
     {
@@ -270,7 +269,7 @@ export default function ToolsPreview() {
       description: 'Convert between PNG, JPG, and modern WebP formats in milliseconds directly in browser.',
       header: <SkeletonConvertImage />,
       className: 'md:col-span-1',
-      icon: <ArrowsClockwise size={18} weight="bold" className="text-emerald-600 dark:text-emerald-400" />,
+      icon: <ArrowsClockwise size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/convert-image',
     },
     {
@@ -278,7 +277,7 @@ export default function ToolsPreview() {
       description: 'Interactive canvas crop tool with standard ID photo aspect ratios and pan controls.',
       header: <SkeletonCropImage />,
       className: 'md:col-span-1',
-      icon: <Crop size={18} weight="bold" className="text-amber-500" />,
+      icon: <Crop size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/crop-image',
     },
     {
@@ -286,7 +285,7 @@ export default function ToolsPreview() {
       description: 'Extract crisp high-resolution PNG or JPG pages directly from multi-page PDF documents.',
       header: <SkeletonPdfToImage />,
       className: 'md:col-span-1',
-      icon: <FileArrowDown size={18} weight="bold" className="text-rose-500" />,
+      icon: <FileArrowDown size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/pdf-to-image',
     },
     {
@@ -294,7 +293,7 @@ export default function ToolsPreview() {
       description: 'Combine scanned clearance slips, IDs, and certificates into a single unified PDF.',
       header: <SkeletonImageToPdf />,
       className: 'md:col-span-2',
-      icon: <FileArrowUp size={18} weight="bold" className="text-sky-500" />,
+      icon: <FileArrowUp size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/image-to-pdf',
     },
   ];
