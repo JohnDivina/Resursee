@@ -67,7 +67,7 @@ export function ContainerTextFlip({
             ease: [0.25, 1, 0.5, 1],
           }}
           className={cn(
-            'inline-block font-extrabold text-[var(--color-primary)] tracking-tight select-none',
+            'inline-block text-center w-full font-extrabold text-[var(--color-primary)] tracking-tight select-none',
             textClassName
           )}
         >
