@@ -11,6 +11,7 @@ import {
   Cpu,
   Plant,
 } from '@phosphor-icons/react';
+import { ContainerTextFlip } from '@/components/ui/container-text-flip';
 
 interface HeroSectionProps {
   onSearch?: (query: string) => void;
@@ -31,6 +32,8 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
     }
   };
 
+  const flipWords = ['build', 'convert', 'discover'];
+
   return (
     <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-transparent py-16 sm:py-24">
       <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
@@ -40,16 +43,19 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
           <span>Central Platform & Developer Hub</span>
         </div>
 
-        {/* 1. Primary Tagline Headline */}
-        <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.12] lg:text-6xl">
-          Build, convert & discover with{' '}
-          <span className="bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 bg-clip-text text-transparent">
-            Resursee
+        {/* 1. Primary Tagline Headline with Aceternity ContainerTextFlip */}
+        <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.18] lg:text-6xl">
+          <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+            <span>Seamlessly</span>
+            <ContainerTextFlip words={flipWords} />
+            <span>with</span>
+            <span className="bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 bg-clip-text text-transparent">
+              Resursee
+            </span>
           </span>
-          .
         </h1>
 
-        <p className="mx-auto mt-4 max-w-2xl text-sm sm:text-lg text-[var(--color-ink-muted)] leading-relaxed">
+        <p className="mx-auto mt-5 max-w-2xl text-sm sm:text-lg text-[var(--color-ink-muted)] leading-relaxed">
           The unified digital ecosystem by John Rey Divina—featuring private client-side utilities, intelligent AI vision applications, and connected IoT cloud dashboards.
         </p>
 
