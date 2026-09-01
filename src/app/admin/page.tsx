@@ -889,6 +889,16 @@ export default function AdminDashboardPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-paper)] p-4 sm:p-6">
         <div className="shadow-input mx-auto w-full max-w-md rounded-2xl border border-[var(--color-rule-strong)] bg-white p-6 md:p-8 dark:bg-black">
+          {/* Top Left Return to Home Navigation */}
+          <div className="mb-5">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-ink-muted)] hover:text-blue-600 transition-colors"
+            >
+              <span>← Return to Home</span>
+            </Link>
+          </div>
+
           {/* Header */}
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-blue-600 text-white shadow-xs select-none">
@@ -898,17 +908,10 @@ export default function AdminDashboardPage() {
               <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
                 Admin Authentication
               </h2>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400">
-                Security Gate • Resursee
-              </span>
             </div>
           </div>
 
-          <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed">
-            Restricted portal for Master Administrators and approved Document Moderators.
-          </p>
-
-          <form className="my-6 space-y-4" onSubmit={handleLogin}>
+          <form className="mt-6 space-y-4" onSubmit={handleLogin}>
             <LabelInputContainer>
               <Label htmlFor="admin-passkey">Administrator Passkey / Secret Key</Label>
               <Input
@@ -969,16 +972,6 @@ export default function AdminDashboardPage() {
                 <span>Sign in with Google Workspace (OAuth)</span>
                 <BottomGradient />
               </button>
-            </div>
-
-            {/* Bottom links */}
-            <div className="mt-6 flex items-center justify-between text-xs text-[var(--color-ink-muted)]">
-              <Link href="/" className="hover:text-blue-600 font-medium">
-                ← Return to Home
-              </Link>
-              <span className="font-mono text-[10px] text-[var(--color-ink-muted)] opacity-70">
-                Role-Based Access
-              </span>
             </div>
           </form>
         </div>
