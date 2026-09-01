@@ -1,293 +1,299 @@
 'use client';
 
+import React, { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
-import React, { useRef, useState, useEffect } from 'react';
 
-interface BeamOption {
-  initialX?: number;
-  translateX?: number;
-  initialY?: number;
-  translateY?: number;
-  rotate?: number;
-  className?: string;
-  duration?: number;
-  delay?: number;
-  repeatDelay?: number;
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  alpha: number;
+  size: number;
+  color: string;
+  gravity: number;
+  life: number;
+  maxLife: number;
 }
 
-export const BackgroundBeamsWithCollision = ({
+interface Flash {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  alpha: number;
+}
+
+interface Beam {
+  x: number;
+  y: number;
+  length: number;
+  speed: number;
+  width: number;
+  targetY: number;
+  alpha: number;
+  trailColor: string;
+  headColor: string;
+  glowColor: string;
+  spawnDelay: number;
+}
+
+export function BackgroundBeamsWithCollision({
   children,
   className,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const parentRef = useRef<HTMLDivElement>(null);
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const beams: BeamOption[] = [
-    {
-      initialX: 20,
-      translateX: 20,
-      duration: 6,
-      repeatDelay: 3,
-      delay: 1,
-      className: 'h-16',
-    },
-    {
-      initialX: 180,
-      translateX: 180,
-      duration: 7,
-      repeatDelay: 4,
-      delay: 3,
-      className: 'h-24',
-    },
-    {
-      initialX: 340,
-      translateX: 340,
-      duration: 5,
-      repeatDelay: 5,
-      className: 'h-14',
-    },
-    {
-      initialX: 520,
-      translateX: 520,
-      duration: 8,
-      repeatDelay: 3,
-      delay: 2,
-      className: 'h-28',
-    },
-    {
-      initialX: 720,
-      translateX: 720,
-      duration: 6,
-      repeatDelay: 4,
-      delay: 4,
-      className: 'h-20',
-    },
-    {
-      initialX: 920,
-      translateX: 920,
-      duration: 7,
-      repeatDelay: 2,
-      delay: 1,
-      className: 'h-32',
-    },
-    {
-      initialX: 1120,
-      translateX: 1120,
-      duration: 5,
-      repeatDelay: 4,
-      delay: 3,
-      className: 'h-16',
-    },
-    {
-      initialX: 1320,
-      translateX: 1320,
-      duration: 9,
-      repeatDelay: 3,
-      delay: 2,
-      className: 'h-24',
-    },
-    {
-      initialX: 1520,
-      translateX: 1520,
-      duration: 6,
-      repeatDelay: 5,
-      delay: 4,
-      className: 'h-20',
-    },
-  ];
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    const handleResize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.scale(dpr, dpr);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize, { passive: true });
+
+    // Curated Blue-Only Accent Color Palette
+    const bluePalettes = [
+      {
+        trail: 'rgba(37, 99, 235,', // Electric Royal Blue
+        head: '#60a5fa',
+        glow: 'rgba(37, 99, 235, 0.9)',
+      },
+      {
+        trail: 'rgba(2, 132, 199,', // Sky Blue
+        head: '#38bdf8',
+        glow: 'rgba(2, 132, 199, 0.9)',
+      },
+      {
+        trail: 'rgba(29, 78, 216,', // Deep Cobalt
+        head: '#93c5fd',
+        glow: 'rgba(29, 78, 216, 0.85)',
+      },
+      {
+        trail: 'rgba(79, 70, 229,', // Indigo Blue
+        head: '#a5b4fc',
+        glow: 'rgba(79, 70, 229, 0.85)',
+      },
+    ];
+
+    const beamCount = width < 768 ? 7 : 14;
+    const beams: Beam[] = [];
+    const sparks: Spark[] = [];
+    const flashes: Flash[] = [];
+
+    // Initialize laser beams evenly spaced across the screen
+    for (let i = 0; i < beamCount; i++) {
+      const p = bluePalettes[i % bluePalettes.length];
+      const sectionWidth = width / beamCount;
+      const x = sectionWidth * i + Math.random() * (sectionWidth * 0.7);
+      const length = Math.random() * 70 + 60; // 60px - 130px beam length
+      const speed = Math.random() * 4.5 + 4.0; // 4.0px - 8.5px/frame
+      const targetY = height - (Math.random() * 60 + 20); // Collide near screen floor
+
+      beams.push({
+        x,
+        y: -length - Math.random() * height * 0.8,
+        length,
+        speed,
+        width: Math.random() * 1.2 + 1.2,
+        targetY,
+        alpha: Math.random() * 0.35 + 0.65,
+        trailColor: p.trail,
+        headColor: p.head,
+        glowColor: p.glow,
+        spawnDelay: Math.random() * 40,
+      });
+    }
+
+    // Trigger explosive collision particle sparks
+    const createExplosion = (x: number, y: number, color: string) => {
+      // 1. Horizontal impact light flash
+      flashes.push({
+        x,
+        y,
+        radius: 4,
+        maxRadius: Math.random() * 24 + 18,
+        alpha: 1.0,
+      });
+
+      // 2. High-energy explosive sparks
+      const sparkCount = Math.floor(Math.random() * 10 + 20); // 20 - 30 sparks
+      for (let i = 0; i < sparkCount; i++) {
+        const angle = (Math.random() * Math.PI * 0.9) + (Math.PI * 1.05); // Upward arc
+        const velocity = Math.random() * 5.5 + 2.0;
+        const maxLife = Math.floor(Math.random() * 28 + 24);
+
+        sparks.push({
+          x,
+          y,
+          vx: Math.cos(angle) * velocity + (Math.random() * 2 - 1),
+          vy: Math.sin(angle) * velocity,
+          alpha: 1.0,
+          size: Math.random() * 2.2 + 1.2,
+          color: Math.random() > 0.4 ? '#38bdf8' : '#60a5fa',
+          gravity: 0.18,
+          life: 0,
+          maxLife,
+        });
+      }
+    };
+
+    // Main animation render loop (60 FPS)
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // 1. Update and draw beams
+      for (let i = 0; i < beams.length; i++) {
+        const b = beams[i];
+
+        if (b.spawnDelay > 0) {
+          b.spawnDelay--;
+          continue;
+        }
+
+        b.y += b.speed;
+
+        // Check if beam hit the floor target
+        if (b.y >= b.targetY) {
+          createExplosion(b.x, b.targetY, b.headColor);
+
+          // Reset beam above top with new randomized trajectory & floor target
+          b.y = -b.length - (Math.random() * 250);
+          b.x = Math.random() * (width - 40) + 20;
+          b.speed = Math.random() * 4.5 + 4.0;
+          b.length = Math.random() * 70 + 60;
+          b.targetY = height - (Math.random() * 60 + 20);
+          b.spawnDelay = Math.random() * 25;
+          continue;
+        }
+
+        // Draw laser beam streak
+        const beamEndY = b.y;
+        const beamStartY = Math.max(-50, b.y - b.length);
+
+        if (beamEndY > 0) {
+          const gradient = ctx.createLinearGradient(b.x, beamStartY, b.x, beamEndY);
+          gradient.addColorStop(0, `${b.trailColor} 0)`);
+          gradient.addColorStop(0.7, `${b.trailColor} ${b.alpha * 0.7})`);
+          gradient.addColorStop(1, `${b.trailColor} ${b.alpha})`);
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = b.width;
+          ctx.lineCap = 'round';
+          ctx.shadowColor = b.glowColor;
+          ctx.shadowBlur = 10;
+          ctx.moveTo(b.x, beamStartY);
+          ctx.lineTo(b.x, beamEndY);
+          ctx.stroke();
+
+          // Intense glowing laser head dot
+          ctx.beginPath();
+          ctx.arc(b.x, beamEndY, b.width * 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = b.headColor;
+          ctx.shadowColor = '#ffffff';
+          ctx.shadowBlur = 12;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // 2. Update and draw impact light flashes
+      for (let i = flashes.length - 1; i >= 0; i--) {
+        const f = flashes[i];
+        f.radius += (f.maxRadius - f.radius) * 0.2;
+        f.alpha -= 0.055;
+
+        if (f.alpha <= 0) {
+          flashes.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(f.x, f.y, f.radius, f.radius * 0.45, 0, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(56, 189, 248, ${f.alpha * 0.75})`;
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 16;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 3. Update and draw exploding sparks
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += s.gravity;
+        s.life++;
+        s.alpha = 1.0 - s.life / s.maxLife;
+
+        if (s.life >= s.maxLife || s.alpha <= 0) {
+          sparks.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size * s.alpha, 0, Math.PI * 2);
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = s.alpha;
+        ctx.shadowColor = s.color;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   return (
     <div
-      ref={parentRef}
       className={cn(
         'relative min-h-screen w-full overflow-hidden bg-transparent flex flex-col',
         className
       )}
     >
-      {/* Laser Beams Background Layer (Fixed & Non-blocking) */}
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        {beams.map((beam, idx) => (
-          <CollisionMechanism
-            key={`${beam.initialX}-${idx}`}
-            beamOptions={beam}
-            containerRef={containerRef}
-            parentRef={parentRef}
-          />
-        ))}
-      </div>
+      {/* Full-Page Fixed Canvas for continuous laser beams & floor explosions */}
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none fixed inset-0 z-0 h-full w-full select-none"
+        aria-hidden="true"
+      />
 
-      {/* Main Page Content Layer */}
+      {/* Main Page Interactive Content Layer */}
       <div className="relative z-10 flex min-h-screen flex-col flex-1">
         {children}
       </div>
-
-      {/* Collision Floor Anchor */}
-      <div
-        ref={containerRef}
-        className="pointer-events-none absolute bottom-0 inset-x-0 h-1 bg-transparent"
-      />
     </div>
   );
-};
-
-const CollisionMechanism = React.forwardRef<
-  HTMLDivElement,
-  {
-    containerRef: React.RefObject<HTMLDivElement | null>;
-    parentRef: React.RefObject<HTMLDivElement | null>;
-    beamOptions?: BeamOption;
-  }
->(({ parentRef, containerRef, beamOptions = {} }, ref) => {
-  const beamRef = useRef<HTMLDivElement>(null);
-  const [collision, setCollision] = useState<{
-    detected: boolean;
-    coordinates: { x: number; y: number } | null;
-  }>({
-    detected: false,
-    coordinates: null,
-  });
-  const [beamKey, setBeamKey] = useState(0);
-  const [cycleCollisionDetected, setCycleCollisionDetected] = useState(false);
-
-  useEffect(() => {
-    const checkCollision = () => {
-      if (
-        beamRef.current &&
-        containerRef.current &&
-        parentRef.current &&
-        !cycleCollisionDetected
-      ) {
-        const beamRect = beamRef.current.getBoundingClientRect();
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const parentRect = parentRef.current.getBoundingClientRect();
-
-        if (beamRect.bottom >= containerRect.top) {
-          const relativeX =
-            beamRect.left - parentRect.left + beamRect.width / 2;
-          const relativeY = beamRect.bottom - parentRect.top;
-
-          setCollision({
-            detected: true,
-            coordinates: {
-              x: relativeX,
-              y: relativeY,
-            },
-          });
-          setCycleCollisionDetected(true);
-        }
-      }
-    };
-
-    const animationInterval = setInterval(checkCollision, 40);
-    return () => clearInterval(animationInterval);
-  }, [cycleCollisionDetected, containerRef, parentRef]);
-
-  useEffect(() => {
-    if (collision.detected && collision.coordinates) {
-      const timeout1 = setTimeout(() => {
-        setCollision({ detected: false, coordinates: null });
-        setCycleCollisionDetected(false);
-      }, 1600);
-
-      const timeout2 = setTimeout(() => {
-        setBeamKey((prevKey) => prevKey + 1);
-      }, 1600);
-
-      return () => {
-        clearTimeout(timeout1);
-        clearTimeout(timeout2);
-      };
-    }
-  }, [collision]);
-
-  return (
-    <>
-      <motion.div
-        key={beamKey}
-        ref={beamRef}
-        animate="animate"
-        initial={{
-          translateY: beamOptions.initialY || '-200px',
-          translateX: beamOptions.initialX || '0px',
-          rotate: beamOptions.rotate || 0,
-        }}
-        variants={{
-          animate: {
-            translateY: beamOptions.translateY || '2400px',
-            translateX: beamOptions.translateX || '0px',
-            rotate: beamOptions.rotate || 0,
-          },
-        }}
-        transition={{
-          duration: beamOptions.duration || 7,
-          repeat: Infinity,
-          repeatType: 'loop',
-          ease: 'linear',
-          delay: beamOptions.delay || 0,
-          repeatDelay: beamOptions.repeatDelay || 0,
-        }}
-        className={cn(
-          'absolute left-0 top-0 m-auto h-20 w-px rounded-full bg-gradient-to-t from-blue-600 via-sky-400 to-transparent shadow-[0_0_8px_rgba(37,99,235,0.8)] opacity-75 dark:opacity-90',
-          beamOptions.className
-        )}
-      />
-      <AnimatePresence>
-        {collision.detected && collision.coordinates && (
-          <Explosion
-            key={`${collision.coordinates.x}-${collision.coordinates.y}-${beamKey}`}
-            className=""
-            style={{
-              left: `${collision.coordinates.x}px`,
-              top: `${collision.coordinates.y}px`,
-              transform: 'translate(-50%, -50%)',
-            }}
-          />
-        )}
-      </AnimatePresence>
-    </>
-  );
-});
-
-CollisionMechanism.displayName = 'CollisionMechanism';
-
-const Explosion = ({ ...props }: React.HTMLProps<HTMLDivElement>) => {
-  const spans = Array.from({ length: 22 }, (_, index) => ({
-    id: index,
-    initialX: 0,
-    initialY: 0,
-    directionX: Math.floor(Math.random() * 100 - 50),
-    directionY: Math.floor(Math.random() * -60 - 15),
-  }));
-
-  return (
-    <div {...props} className={cn('pointer-events-none absolute z-40 h-2 w-2', props.className)}>
-      {/* Light Flash Glow */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1.5 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 1.2, ease: 'easeOut' }}
-        className="absolute -inset-x-12 top-0 m-auto h-3 w-16 rounded-full bg-gradient-to-r from-transparent via-blue-500 to-transparent blur-xs"
-      />
-      {/* Exploding Particle Sparks */}
-      {spans.map((span) => (
-        <motion.span
-          key={span.id}
-          initial={{ x: span.initialX, y: span.initialY, opacity: 1, scale: 1.2 }}
-          animate={{
-            x: span.directionX,
-            y: span.directionY,
-            opacity: 0,
-            scale: 0.3,
-          }}
-          transition={{ duration: Math.random() * 1.2 + 0.4, ease: 'easeOut' }}
-          className="absolute h-1.5 w-1.5 rounded-full bg-gradient-to-b from-blue-500 to-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.9)]"
-        />
-      ))}
-    </div>
-  );
-};
+}
