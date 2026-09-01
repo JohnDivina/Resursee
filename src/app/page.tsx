@@ -1,45 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import HeroSection from '@/components/home/HeroSection';
-import FeaturedLeaderboard from '@/components/home/FeaturedLeaderboard';
+import AppsSection from '@/components/home/AppsSection';
 import ToolsPreview from '@/components/home/ToolsPreview';
-import LatestNews from '@/components/home/LatestNews';
 import CommandPalette from '@/components/search/CommandPalette';
-import { mockNewsArticles } from '@/lib/mockData';
-import { getLiveResources, fetchResourcesFromCloud } from '@/lib/resourceStore';
-import { Resource } from '@/types/database';
 import { CheckCircle } from '@phosphor-icons/react';
 import { WavyBackground } from '@/components/ui/wavy-background';
 
 export default function HomePage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [liveResources, setLiveResources] = useState<Resource[]>([]);
-
-  useEffect(() => {
-    // Initial sync
-    setLiveResources(getLiveResources());
-    fetchResourcesFromCloud().then((cloudResources) => {
-      if (cloudResources && cloudResources.length > 0) {
-        setLiveResources(cloudResources);
-      }
-    });
-
-    const handleUpdate = () => {
-      setLiveResources(getLiveResources());
-    };
-
-    window.addEventListener('resursee_catalog_updated', handleUpdate);
-    window.addEventListener('storage', handleUpdate);
-
-    return () => {
-      window.removeEventListener('resursee_catalog_updated', handleUpdate);
-      window.removeEventListener('storage', handleUpdate);
-    };
-  }, []);
 
   return (
     <WavyBackground
@@ -57,24 +30,20 @@ export default function HomePage() {
       <CommandPalette
         isOpen={searchPaletteOpen}
         onClose={() => setSearchPaletteOpen(false)}
-        resources={liveResources.length > 0 ? liveResources : undefined}
       />
 
       <main className="flex-1">
-        {/* 2. Hero Section: Tagline → Search → Dynamic Stats */}
+        {/* 2. Hero Section: Personal Platform Tagline & Quick Search */}
         <HeroSection />
 
-        {/* 3. Community Leaderboard: Ranked Most Downloaded Forms with Time Filters */}
-        <FeaturedLeaderboard resources={liveResources.length > 0 ? liveResources : undefined} />
+        {/* 3. Integrated Full-Stack & AI Applications Suite */}
+        <AppsSection />
 
-        {/* 4. Resursee Productivity Toolbox Preview (Aceternity Bento Grid) */}
+        {/* 4. Resursee Client-Side Productivity Toolbox (Aceternity Bento Grid) */}
         <ToolsPreview />
-
-        {/* 5. Verified Campus News & Advisories (Positioned at bottom) */}
-        <LatestNews articles={mockNewsArticles} />
       </main>
 
-      {/* 6. Global Footer */}
+      {/* 5. Global Footer */}
       <Footer />
 
       {/* Action Toast Feedback */}

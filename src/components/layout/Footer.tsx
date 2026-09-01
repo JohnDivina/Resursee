@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ArrowSquareOut } from '@phosphor-icons/react';
+import { ShieldCheck, ArrowSquareOut, GithubLogo, EnvelopeSimple, Sparkle } from '@phosphor-icons/react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -9,7 +11,7 @@ export default function Footer() {
     <footer className="mt-auto border-t border-[var(--color-rule)] bg-[var(--color-paper-muted)]/60 pt-14 pb-12 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-5">
-          {/* Column 1: Brand & Status */}
+          {/* Column 1: Brand & Identity */}
           <div className="md:col-span-2 space-y-3.5">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white shadow-xs">
@@ -19,117 +21,120 @@ export default function Footer() {
                 Resursee
               </span>
             </div>
+            <p className="max-w-sm text-xs leading-relaxed text-[var(--color-ink-muted)]">
+              A unified digital ecosystem engineered by John Rey Divina—featuring private client-side utilities, intelligent AI vision applications, and connected IoT cloud dashboards.
+            </p>
             <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-[var(--color-ink-muted)]">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>System operational · Index updated live</span>
+              <span>All systems live & operational</span>
             </div>
           </div>
 
-          {/* Column 2: Core Resources */}
+          {/* Column 2: Applications Suite */}
           <div>
             <h4 className="font-mono text-[11px] font-semibold text-[var(--color-ink)] uppercase tracking-wider">
-              Document Index
+              Applications
             </h4>
             <ul className="mt-4 space-y-2 text-xs text-[var(--color-ink-muted)]">
               <li>
-                <Link href="/resources?type=form" className="transition-colors hover:text-[var(--color-primary)]">
-                  Official Application Forms
+                <Link href="/tools" className="transition-colors hover:text-[var(--color-primary)]">
+                  Productivity Toolbox
                 </Link>
               </li>
               <li>
-                <Link href="/resources?type=template" className="transition-colors hover:text-[var(--color-primary)]">
-                  Standard Presentation & Word Templates
-                </Link>
+                <span className="text-[var(--color-ink-muted)] opacity-60">
+                  Plant Doctor AI (App #1)
+                </span>
               </li>
               <li>
-                <Link href="/resources?type=policy" className="transition-colors hover:text-[var(--color-primary)]">
-                  Student & Faculty Handbooks
-                </Link>
+                <span className="text-[var(--color-ink-muted)] opacity-60">
+                  Resursee IoT Cloud (App #2)
+                </span>
               </li>
               <li>
-                <Link href="/resources?type=memorandum" className="transition-colors hover:text-[var(--color-primary)]">
-                  Presidential Memorandums
-                </Link>
-              </li>
-              <li>
-                <Link href="/resources?type=academic" className="transition-colors hover:text-[var(--color-primary)]">
-                  Academic Syllabi & Curriculum OBE
+                <Link href="/about" className="transition-colors hover:text-[var(--color-primary)]">
+                  Developer Portfolio
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 3: Major Offices & Directory */}
+          {/* Column 3: Browser Utilities */}
           <div>
             <h4 className="font-mono text-[11px] font-semibold text-[var(--color-ink)] uppercase tracking-wider">
-              Key Offices
+              Productivity Tools
             </h4>
             <ul className="mt-4 space-y-2 text-xs text-[var(--color-ink-muted)]">
               <li>
-                <Link href="/resources?dept=registrar" className="transition-colors hover:text-[var(--color-primary)]">
-                  University Registrar (OUR)
+                <Link href="/tools/image-to-pdf" className="transition-colors hover:text-[var(--color-primary)]">
+                  Image to PDF
                 </Link>
               </li>
               <li>
-                <Link href="/resources?dept=human-resources" className="transition-colors hover:text-[var(--color-primary)]">
-                  Human Resources (HRMO)
+                <Link href="/tools/pdf-to-image" className="transition-colors hover:text-[var(--color-primary)]">
+                  PDF to Image
                 </Link>
               </li>
               <li>
-                <Link href="/resources?dept=student-affairs" className="transition-colors hover:text-[var(--color-primary)]">
-                  Student Affairs & Services (OSAS)
+                <Link href="/tools/resize-image" className="transition-colors hover:text-[var(--color-primary)]">
+                  Resize Image
                 </Link>
               </li>
               <li>
-                <Link href="/resources?dept=research-center" className="transition-colors hover:text-[var(--color-primary)]">
-                  Research & Ethics (URDC)
+                <Link href="/tools/compress-image" className="transition-colors hover:text-[var(--color-primary)]">
+                  Compress Image
                 </Link>
               </li>
               <li>
-                <Link href="/resources?dept=ict-office" className="transition-colors hover:text-[var(--color-primary)]">
-                  ICTO Technical Helpdesk
+                <Link href="/tools/crop-image" className="transition-colors hover:text-[var(--color-primary)]">
+                  Crop Image
+                </Link>
+              </li>
+              <li>
+                <Link href="/tools/convert-image" className="transition-colors hover:text-[var(--color-primary)]">
+                  Convert Formats
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Institutional Gateways & Admin */}
+          {/* Column 4: Connect & Admin */}
           <div>
             <h4 className="font-mono text-[11px] font-semibold text-[var(--color-ink)] uppercase tracking-wider">
-              Access & Portals
+              Connect & Admin
             </h4>
             <ul className="mt-4 space-y-2 text-xs text-[var(--color-ink-muted)]">
               <li>
-                <Link href="/admin" className="inline-flex items-center gap-1 font-medium text-[var(--color-primary)] hover:underline">
-                  <ShieldCheck size={14} />
-                  <span>Master Admin Portal</span>
+                <Link href="/about" className="inline-flex items-center gap-1.5 font-medium text-[var(--color-primary)] hover:underline">
+                  <Sparkle size={13} />
+                  <span>About John Rey</span>
                 </Link>
               </li>
               <li>
-                <a href="https://portal.university.edu" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]">
-                  <span>Student Portal (SIS)</span>
+                <a
+                  href="https://github.com/JohnDivina"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]"
+                >
+                  <GithubLogo size={13} />
+                  <span>GitHub Profile</span>
                   <ArrowSquareOut size={11} />
                 </a>
               </li>
               <li>
-                <a href="https://lms.university.edu" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]">
-                  <span>University LMS</span>
-                  <ArrowSquareOut size={11} />
-                </a>
-              </li>
-              <li>
-                <a href="https://library.university.edu" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]">
-                  <span>Library OPAC</span>
-                  <ArrowSquareOut size={11} />
-                </a>
+                <Link href="/admin" className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]">
+                  <ShieldCheck size={13} />
+                  <span>Platform Portal</span>
+                </Link>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar: Clean Copyright */}
+        {/* Bottom Bar: Copyright */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[var(--color-rule)] pt-6 text-xs text-[var(--color-ink-muted)] sm:flex-row">
-          <p>© {currentYear} Resursee. All rights reserved.</p>
+          <p>© {currentYear} Resursee · Developed by John Rey Divina. All rights reserved.</p>
         </div>
       </div>
     </footer>

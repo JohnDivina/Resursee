@@ -10,6 +10,7 @@ import {
   Command,
   UploadSimple,
   Wrench,
+  Sparkle,
   Megaphone,
   HouseLine,
 } from '@phosphor-icons/react';
@@ -36,9 +37,8 @@ export default function Header({ onOpenSearch }: HeaderProps) {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'Browse', link: '/resources', icon: FileText },
     { name: 'Tools', link: '/tools', icon: Wrench },
-    { name: 'News', link: '/news', icon: Megaphone },
+    { name: 'About', link: '/about', icon: Sparkle },
     { name: 'Contribute', link: '/contribute', icon: UploadSimple },
   ];
 
