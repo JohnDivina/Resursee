@@ -68,36 +68,37 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         </div>
 
         {/* 3. Prominent Central Search Bar */}
-        <div className="mx-auto mt-8 max-w-2xl">
+        <div className="mx-auto mt-8 w-full max-w-2xl">
           <form
             onSubmit={handleSearchSubmit}
-            className="group relative flex items-center rounded-[22px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_4px_var(--color-primary-glow)]"
+            className="group relative flex items-center rounded-[20px] sm:rounded-[22px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-1.5 sm:p-2 shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all focus-within:border-[var(--color-primary)] focus-within:shadow-[0_0_0_4px_var(--color-primary-glow)]"
           >
-            <div className="flex pl-3.5 text-[var(--color-primary)]">
-              <MagnifyingGlass size={22} weight="bold" />
+            <div className="flex pl-2.5 sm:pl-3.5 text-[var(--color-primary)] shrink-0">
+              <MagnifyingGlass size={20} weight="bold" className="sm:w-[22px] sm:h-[22px]" />
             </div>
 
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search forms, templates, policies, documents..."
-              className="flex-1 bg-transparent px-3.5 py-2.5 text-sm font-medium text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-hidden sm:text-base"
+              placeholder="Search forms, policies, docs..."
+              className="min-w-0 flex-1 bg-transparent px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-base font-medium text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-hidden truncate"
               aria-label="Search university resources"
             />
 
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-[16px] bg-[var(--color-primary)] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 sm:px-5 sm:text-sm shrink-0 cursor-pointer"
+              className="flex items-center justify-center gap-1 sm:gap-1.5 rounded-[14px] sm:rounded-[16px] bg-[var(--color-primary)] px-3.5 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95 shrink-0 cursor-pointer"
             >
-              <span>Search Hub</span>
-              <ArrowRight size={16} weight="bold" />
+              <span className="hidden sm:inline">Search Hub</span>
+              <span className="sm:hidden">Search</span>
+              <ArrowRight size={15} weight="bold" />
             </button>
           </form>
         </div>
 
         {/* 4. Dynamic Statistics Strip */}
-        <StatsStrip resources={mockResources} departments={mockDepartments} />
+        <StatsStrip departments={mockDepartments} />
       </div>
     </section>
   );

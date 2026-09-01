@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ArrowSquareOut, Heart, Buildings } from '@phosphor-icons/react';
+import { ShieldCheck, ArrowSquareOut } from '@phosphor-icons/react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -9,7 +9,7 @@ export default function Footer() {
     <footer className="mt-auto border-t border-[var(--color-rule)] bg-[var(--color-paper-muted)]/60 pt-14 pb-12 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-5">
-          {/* Column 1: Brand & Mascot Purpose */}
+          {/* Column 1: Brand & Status */}
           <div className="md:col-span-2 space-y-3.5">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white shadow-xs">
@@ -19,10 +19,6 @@ export default function Footer() {
                 Resursee
               </span>
             </div>
-            <p className="max-w-sm text-xs leading-relaxed text-[var(--color-ink-muted)]">
-              The official centralized discovery platform and open document index for university forms,
-              departmental templates, academic policies, executive circulars, and verified updates.
-            </p>
             <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-[var(--color-ink-muted)]">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>System operational · Index updated live</span>
@@ -131,16 +127,9 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar: Copyright & Standards */}
+        {/* Bottom Bar: Clean Copyright */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[var(--color-rule)] pt-6 text-xs text-[var(--color-ink-muted)] sm:flex-row">
-          <p>© {currentYear} Resursee Central University Resource Hub. All rights reserved.</p>
-          <div className="flex items-center gap-4 font-mono text-[11px]">
-            <span>Netlify Edge CDN</span>
-            <span>·</span>
-            <span>Supabase PostgreSQL RLS</span>
-            <span>·</span>
-            <span>v1.0.0</span>
-          </div>
+          <p>© {currentYear} Resursee. All rights reserved.</p>
         </div>
       </div>
     </footer>

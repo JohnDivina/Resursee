@@ -76,12 +76,6 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           {/* Dark Mode Toggle */}
           <ThemeToggle />
 
-          {/* Admin Button */}
-          <NavbarButton href="/admin" variant="secondary" className="hidden sm:inline-flex">
-            <ShieldCheck size={14} weight="bold" />
-            <span>Admin</span>
-          </NavbarButton>
-
           {/* Mobile Navigation Toggle */}
           <MobileNav>
             <MobileNavToggle

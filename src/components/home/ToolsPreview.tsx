@@ -304,10 +304,6 @@ export default function ToolsPreview() {
         {/* Section Header */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end mb-8">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-600 dark:text-sky-400 mb-2">
-              <Sparkle size={13} weight="fill" />
-              <span>Resursee Productivity Toolbox</span>
-            </div>
             <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Tools for getting things done.
             </h2>

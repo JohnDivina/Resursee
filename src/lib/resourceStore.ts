@@ -3,13 +3,13 @@
 import { Resource } from '@/types/database';
 import { mockResources } from '@/lib/mockData';
 
-const CLOUD_CACHE_KEY = 'resursee_cloud_resources_cache';
+const CLOUD_CACHE_KEY = 'resursee_cloud_resources_cache_v2';
 let inMemoryResources: Resource[] | null = null;
 
 export function getLiveResources(): Resource[] {
   if (typeof window === 'undefined') return mockResources;
 
-  if (inMemoryResources !== null) {
+  if (inMemoryResources !== null && inMemoryResources.length > 0) {
     return inMemoryResources;
   }
 
@@ -17,7 +17,7 @@ export function getLiveResources(): Resource[] {
     const cached = localStorage.getItem(CLOUD_CACHE_KEY);
     if (cached !== null) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         inMemoryResources = parsed;
         return inMemoryResources;
       }
@@ -54,10 +54,17 @@ function safeSetLocalStorage(key: string, data: Resource[]) {
 
 export async function fetchResourcesFromCloud(): Promise<Resource[]> {
   try {
-    const res = await fetch('/api/resources');
+    const res = await fetch(`/api/resources?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+      },
+    });
+
     if (res.ok) {
       const data = await res.json();
-      if (data.resources && Array.isArray(data.resources)) {
+      if (data.resources && Array.isArray(data.resources) && data.resources.length > 0) {
         inMemoryResources = data.resources;
         safeSetLocalStorage(CLOUD_CACHE_KEY, data.resources);
         if (typeof window !== 'undefined') {
@@ -66,14 +73,26 @@ export async function fetchResourcesFromCloud(): Promise<Resource[]> {
         return data.resources;
       }
     }
-  } catch {
-    // fallback
+  } catch (err) {
+    console.error('Failed to fetch live resources from cloud:', err);
   }
   return getLiveResources();
 }
 
 if (typeof window !== 'undefined') {
+  // Fetch cloud resources immediately on bundle load
   fetchResourcesFromCloud();
+
+  // Re-fetch on tab visibility or window focus (especially critical on mobile browsers)
+  window.addEventListener('focus', () => {
+    fetchResourcesFromCloud();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      fetchResourcesFromCloud();
+    }
+  });
 }
 
 export function deleteResourceById(id: string): Resource[] {
@@ -86,7 +105,10 @@ export function deleteResourceById(id: string): Resource[] {
   }
 
   // Cloud delete
-  fetch(`/api/resources?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+  fetch(`/api/resources?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    cache: 'no-store',
+  }).catch(() => {});
 
   return inMemoryResources;
 }
@@ -104,6 +126,7 @@ export function addCustomResource(resource: Resource): Resource[] {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(resource),
+    cache: 'no-store',
   }).catch(() => {});
 
   return inMemoryResources;
@@ -134,6 +157,7 @@ export function updateExistingResource(
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id: resourceId, ...updates }),
+    cache: 'no-store',
   }).catch(() => {});
 
   return inMemoryResources;

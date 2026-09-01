@@ -16,6 +16,9 @@ function sanitizeResourcePayload(body: any) {
   return clean;
 }
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.toLowerCase();
@@ -45,10 +48,17 @@ export async function GET(request: Request) {
     if (error) {
       console.error('Supabase query error:', error.message);
       // Fallback only on database connection error
-      return NextResponse.json({
-        count: mockResources.length,
-        resources: mockResources,
-      });
+      return NextResponse.json(
+        {
+          count: mockResources.length,
+          resources: mockResources,
+        },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+        }
+      );
     }
 
     let results = data || [];
@@ -63,12 +73,26 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({
-      count: results.length,
-      resources: results,
-    });
+    return NextResponse.json(
+      {
+        count: results.length,
+        resources: results,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        },
+      }
+    );
   } catch (err: any) {
-    return NextResponse.json({ count: mockResources.length, resources: mockResources });
+    return NextResponse.json(
+      { count: mockResources.length, resources: mockResources },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        },
+      }
+    );
   }
 }
 

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Resource, Department } from '@/types/database';
-import { mockResources, mockDepartments } from '@/lib/mockData';
-import { getLiveResources } from '@/lib/resourceStore';
+import { mockDepartments } from '@/lib/mockData';
+import { getLiveResources, fetchResourcesFromCloud } from '@/lib/resourceStore';
 
 interface StatsStripProps {
   resources?: Resource[];
@@ -14,10 +14,16 @@ export default function StatsStrip({
   resources: initialResources,
   departments = mockDepartments,
 }: StatsStripProps) {
-  const [liveResources, setLiveResources] = useState<Resource[]>(initialResources || mockResources);
+  const [liveResources, setLiveResources] = useState<Resource[]>(initialResources || getLiveResources());
 
   useEffect(() => {
     setLiveResources(getLiveResources());
+    fetchResourcesFromCloud().then((cloudResources) => {
+      if (cloudResources && cloudResources.length > 0) {
+        setLiveResources(cloudResources);
+      }
+    });
+
     const handleUpdate = () => setLiveResources(getLiveResources());
     window.addEventListener('resursee_catalog_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);

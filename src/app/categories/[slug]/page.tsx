@@ -19,17 +19,23 @@ import {
 } from '@phosphor-icons/react';
 import { mockCategories, mockResources } from '@/lib/mockData';
 import { Resource } from '@/types/database';
-import { getLiveResources } from '@/lib/resourceStore';
+import { getLiveResources, fetchResourcesFromCloud } from '@/lib/resourceStore';
 
 export default function CategoryDetailPage() {
   const params = useParams();
   const slug = params?.slug as string;
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [liveResources, setLiveResources] = useState<Resource[]>(mockResources);
+  const [liveResources, setLiveResources] = useState<Resource[]>([]);
 
   useEffect(() => {
     setLiveResources(getLiveResources());
+    fetchResourcesFromCloud().then((cloudData) => {
+      if (cloudData && cloudData.length > 0) {
+        setLiveResources(cloudData);
+      }
+    });
+
     const handleUpdate = () => setLiveResources(getLiveResources());
     window.addEventListener('resursee_catalog_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
