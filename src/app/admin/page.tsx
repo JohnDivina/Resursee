@@ -1000,7 +1000,7 @@ export default function AdminDashboardPage() {
         setActiveTab('resources');
         setSidebarOpen(false);
       },
-      icon: <FileText size={18} weight={activeTab === 'resources' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      icon: <FileText size={18} weight={activeTab === 'resources' ? 'bold' : 'regular'} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
       isActive: activeTab === 'resources',
       badge: resourcesList.length,
     },
@@ -1010,7 +1010,7 @@ export default function AdminDashboardPage() {
         setActiveTab('submissions');
         setSidebarOpen(false);
       },
-      icon: <UploadSimple size={18} weight={activeTab === 'submissions' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      icon: <UploadSimple size={18} weight={activeTab === 'submissions' ? 'bold' : 'regular'} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
       isActive: activeTab === 'submissions',
       badge: pendingSubmissions.length > 0 ? pendingSubmissions.length : undefined,
     },
@@ -1020,7 +1020,7 @@ export default function AdminDashboardPage() {
         setActiveTab('categories');
         setSidebarOpen(false);
       },
-      icon: <Folder size={18} weight={activeTab === 'categories' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      icon: <Folder size={18} weight={activeTab === 'categories' ? 'bold' : 'regular'} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
       isActive: activeTab === 'categories',
       badge: categoriesList.length,
     },
@@ -1030,7 +1030,7 @@ export default function AdminDashboardPage() {
         setActiveTab('offices');
         setSidebarOpen(false);
       },
-      icon: <Buildings size={18} weight={activeTab === 'offices' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      icon: <Buildings size={18} weight={activeTab === 'offices' ? 'bold' : 'regular'} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
       isActive: activeTab === 'offices',
       badge: departmentsList.length,
     },
@@ -1040,7 +1040,7 @@ export default function AdminDashboardPage() {
         setActiveTab('news');
         setSidebarOpen(false);
       },
-      icon: <Megaphone size={18} weight={activeTab === 'news' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      icon: <Megaphone size={18} weight={activeTab === 'news' ? 'bold' : 'regular'} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
       isActive: activeTab === 'news',
       badge: newsList.length,
     },
@@ -1052,7 +1052,7 @@ export default function AdminDashboardPage() {
               setActiveTab('staff');
               setSidebarOpen(false);
             },
-            icon: <Users size={18} weight={activeTab === 'staff' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+            icon: <Users size={18} weight={activeTab === 'staff' ? 'bold' : 'regular'} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
             isActive: activeTab === 'staff',
             badge: pendingStaffRequests.length > 0 ? `${pendingStaffRequests.length} Req` : undefined,
           },
@@ -1064,7 +1064,7 @@ export default function AdminDashboardPage() {
         setActiveTab('logs');
         setSidebarOpen(false);
       },
-      icon: <ClockCounterClockwise size={18} weight={activeTab === 'logs' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      icon: <ClockCounterClockwise size={18} weight={activeTab === 'logs' ? 'bold' : 'regular'} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
       isActive: activeTab === 'logs',
     },
     ...(isMasterAdmin
@@ -1075,7 +1075,7 @@ export default function AdminDashboardPage() {
               setActiveTab('settings');
               setSidebarOpen(false);
             },
-            icon: <Gear size={18} weight={activeTab === 'settings' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+            icon: <Gear size={18} weight={activeTab === 'settings' ? 'bold' : 'regular'} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
             isActive: activeTab === 'settings',
           },
         ]
@@ -1083,12 +1083,12 @@ export default function AdminDashboardPage() {
     {
       label: 'Return to Website',
       href: '/',
-      icon: <HouseLine size={18} className="text-[var(--color-ink-muted)] shrink-0" />,
+      icon: <HouseLine size={18} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
     },
     {
       label: 'Sign Out',
       onClick: handleLogout,
-      icon: <SignOut size={18} className="text-rose-600 dark:text-rose-400 shrink-0" />,
+      icon: <SignOut size={18} className="text-neutral-500 dark:text-neutral-400 shrink-0" />,
     },
   ];
 
@@ -1100,7 +1100,7 @@ export default function AdminDashboardPage() {
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             {/* Header / Brand Logo */}
             <div className="flex items-center gap-3 py-1">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-blue-600 text-white shadow-xs font-bold select-none text-base">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-neutral-800 dark:bg-neutral-700 text-white shadow-xs font-bold select-none text-base">
                 🦦
               </div>
               <motion.div
@@ -1111,8 +1111,8 @@ export default function AdminDashboardPage() {
                 className="flex flex-col truncate"
               >
                 <span className="font-extrabold text-sm text-[var(--color-ink)]">Resursee Admin</span>
-                <span className="font-mono text-[9.5px] font-bold text-blue-600 dark:text-sky-400">
-                  {isMasterAdmin ? '👑 Master Admin' : '🛡️ Staff Moderator'}
+                <span className="text-[10px] text-[var(--color-ink-muted)]">
+                  Central Management Portal
                 </span>
               </motion.div>
             </div>
@@ -1134,10 +1134,10 @@ export default function AdminDashboardPage() {
                   <img
                     src={adminUser.picture}
                     alt={adminUser.name || ''}
-                    className="h-7 w-7 shrink-0 rounded-full object-cover shadow-xs ring-1 ring-blue-500/30"
+                    className="h-7 w-7 shrink-0 rounded-full object-cover shadow-xs ring-1 ring-neutral-300 dark:ring-neutral-700"
                   />
                 ) : (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-xs">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-800 dark:bg-neutral-700 text-white font-bold text-xs">
                     {(adminUser?.name || 'A').charAt(0).toUpperCase()}
                   </div>
                 ),
@@ -1171,31 +1171,20 @@ export default function AdminDashboardPage() {
 
         {/* Dashboard Top Header Navigation */}
         <header className="sticky top-0 z-20 border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)]/90 backdrop-blur-md">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-extrabold text-[var(--color-ink)] capitalize">
-                  {activeTab === 'resources' && 'Document Catalog Management'}
-                  {activeTab === 'submissions' && 'Student & Faculty Submissions'}
-                  {activeTab === 'categories' && 'Category Taxonomy'}
-                  {activeTab === 'offices' && 'Academic & Administrative Offices'}
-                  {activeTab === 'news' && 'Campus Bulletins & Advisories'}
-                  {activeTab === 'staff' && 'Staff Governance & Access Control'}
-                  {activeTab === 'logs' && 'Security & Audit Logs'}
-                  {activeTab === 'settings' && 'System Keys & Configuration'}
-                </span>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
-                    isMasterAdmin
-                      ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 ring-1 ring-amber-500/30'
-                      : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                  }`}
-                >
-                  {isMasterAdmin ? '👑 Master Admin' : '🛡️ Staff Moderator'}
-                </span>
-              </div>
+              <h1 className="text-base font-extrabold text-[var(--color-ink)] capitalize">
+                {activeTab === 'resources' && 'Document Catalog Management'}
+                {activeTab === 'submissions' && 'Student & Faculty Submissions'}
+                {activeTab === 'categories' && 'Category Taxonomy'}
+                {activeTab === 'offices' && 'Academic & Administrative Offices'}
+                {activeTab === 'news' && 'Campus Bulletins & Advisories'}
+                {activeTab === 'staff' && 'Staff Governance & Access Control'}
+                {activeTab === 'logs' && 'Security & Audit Logs'}
+                {activeTab === 'settings' && 'System Keys & Configuration'}
+              </h1>
               <span className="text-[11px] text-[var(--color-ink-muted)]">
-                {isMasterAdmin ? 'Full Governance & Cloud Storage Controls' : 'Document Review & Verification Only'}
+                Centralized Discovery & Document Governance
               </span>
             </div>
 
@@ -1206,9 +1195,9 @@ export default function AdminDashboardPage() {
                   {adminUser.picture ? (
                     <img src={adminUser.picture} alt={adminUser.name || ''} className="h-6 w-6 rounded-full" />
                   ) : (
-                    <UserCircle size={20} className="text-blue-600 dark:text-sky-400" />
+                    <UserCircle size={20} className="text-neutral-500 dark:text-neutral-400" />
                   )}
-                  <span className="font-semibold text-[var(--color-ink)] truncate max-w-[120px]">
+                  <span className="font-semibold text-[var(--color-ink)] truncate max-w-[140px]">
                     {adminUser.name || adminUser.email}
                   </span>
                 </div>
@@ -1218,7 +1207,7 @@ export default function AdminDashboardPage() {
                 href="/"
                 className="flex items-center gap-1.5 rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-all"
               >
-                <HouseLine size={15} />
+                <HouseLine size={15} className="text-neutral-500 dark:text-neutral-400" />
                 <span className="hidden sm:inline">Public Site</span>
               </Link>
 
@@ -1226,9 +1215,9 @@ export default function AdminDashboardPage() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 rounded-[12px] border border-rose-200 bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 rounded-[12px] border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 transition-all cursor-pointer"
               >
-                <SignOut size={15} weight="bold" />
+                <SignOut size={15} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
                 <span className="hidden sm:inline">Sign Out</span>
               </button>
             </div>
@@ -1242,7 +1231,7 @@ export default function AdminDashboardPage() {
             <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
               <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
                 <span className="text-xs font-medium">Directory Files</span>
-                <FileText size={18} className="text-[var(--color-primary)]" />
+                <FileText size={18} className="text-neutral-500 dark:text-neutral-400" />
               </div>
               <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)]">
                 {resourcesList.length}
@@ -1252,7 +1241,7 @@ export default function AdminDashboardPage() {
             <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
               <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
                 <span className="text-xs font-medium">Pending Contributions</span>
-                <UploadSimple size={18} className="text-amber-500" />
+                <UploadSimple size={18} className="text-neutral-500 dark:text-neutral-400" />
               </div>
               <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400">
                 {pendingSubmissions.length}
@@ -1262,7 +1251,7 @@ export default function AdminDashboardPage() {
             <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
               <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
                 <span className="text-xs font-medium">Total Downloads</span>
-                <ChartBar size={18} className="text-emerald-500" />
+                <ChartBar size={18} className="text-neutral-500 dark:text-neutral-400" />
               </div>
               <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
                 {totalDownloads.toLocaleString()}
@@ -1272,127 +1261,12 @@ export default function AdminDashboardPage() {
             <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs">
               <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
                 <span className="text-xs font-medium">Staff Moderators</span>
-                <Users size={18} className="text-blue-500" />
+                <Users size={18} className="text-neutral-500 dark:text-neutral-400" />
               </div>
               <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)]">
                 {approvedModerators.length + 1}
               </p>
             </div>
-          </div>
-
-          {/* Navigation Tabs (Responsive scrollable) */}
-          <div className="mt-6 sm:mt-8 flex items-center gap-2 border-b border-[var(--color-rule-subtle)] pb-4 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('resources')}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'resources'
-                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-              }`}
-            >
-              <FileText size={16} />
-              <span>Catalog ({resourcesList.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('submissions')}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'submissions'
-                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-              }`}
-            >
-              <UploadSimple size={16} />
-              <span>Contributed Files</span>
-              {pendingSubmissions.length > 0 && (
-                <span className="rounded-full bg-amber-400 text-slate-900 px-1.5 py-0.2 text-[10px] font-bold">
-                  {pendingSubmissions.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('categories')}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'categories'
-                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-              }`}
-            >
-              <Folder size={16} />
-              <span>Categories ({categoriesList.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('offices')}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'offices'
-                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-              }`}
-            >
-              <Buildings size={16} />
-              <span>Offices ({departmentsList.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('news')}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'news'
-                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-              }`}
-            >
-              <Megaphone size={16} />
-              <span>Campus News</span>
-            </button>
-
-            {/* MASTER ADMIN ONLY: STAFF & PERMISSIONS TAB */}
-            {isMasterAdmin && (
-              <button
-                onClick={() => setActiveTab('staff')}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 relative ${
-                  activeTab === 'staff'
-                    ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-                }`}
-              >
-                <Users size={16} />
-                <span>Staff & Permissions</span>
-                {pendingStaffRequests.length > 0 && (
-                  <span className="rounded-full bg-rose-500 text-white px-2 py-0.5 text-[10px] font-bold animate-pulse">
-                    {pendingStaffRequests.length} Pending
-                  </span>
-                )}
-              </button>
-            )}
-
-            <button
-              onClick={() => setActiveTab('logs')}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'logs'
-                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-              }`}
-            >
-              <ClockCounterClockwise size={16} />
-              <span>Audit Logs</span>
-            </button>
-
-            {/* MASTER ADMIN ONLY: SETTINGS & PASSKEYS */}
-            {isMasterAdmin && (
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                  activeTab === 'settings'
-                    ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-                }`}
-              >
-                <Gear size={16} />
-                <span>Settings</span>
-              </button>
-            )}
           </div>
 
           {/* TAB 1: RESOURCES CATALOG */}

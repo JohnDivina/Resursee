@@ -118,7 +118,7 @@ export const MobileSidebar = ({
       {...props}
     >
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white font-bold text-sm">
           🦦
         </div>
         <span className="font-extrabold text-sm text-[var(--color-ink)]">Resursee Admin</span>
@@ -129,7 +129,7 @@ export const MobileSidebar = ({
           type="button"
           aria-label="Open sidebar menu"
           onClick={() => setOpen(!open)}
-          className="p-1.5 rounded-lg text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
+          className="p-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-[var(--color-paper-muted)]"
         >
           <List size={22} weight="bold" />
         </button>
@@ -151,7 +151,7 @@ export const MobileSidebar = ({
             )}
           >
             <div
-              className="absolute right-6 top-6 z-50 p-2 text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] rounded-full cursor-pointer"
+              className="absolute right-6 top-6 z-50 p-2 text-neutral-600 dark:text-neutral-400 hover:bg-[var(--color-paper-muted)] rounded-full cursor-pointer"
               onClick={() => setOpen(false)}
             >
               <X size={22} weight="bold" />
@@ -176,7 +176,12 @@ export const SidebarLink = ({
 
   const content = (
     <>
-      <div className="shrink-0 flex items-center justify-center">
+      <div className={cn(
+        'shrink-0 flex items-center justify-center transition-colors',
+        link.isActive
+          ? 'text-neutral-900 dark:text-neutral-100'
+          : 'text-neutral-500 dark:text-neutral-400 group-hover/sidebar:text-neutral-800 dark:group-hover/sidebar:text-neutral-200'
+      )}>
         {link.icon}
       </div>
 
@@ -186,10 +191,10 @@ export const SidebarLink = ({
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
         className={cn(
-          'text-xs font-bold transition-transform duration-150 whitespace-pre inline-block !p-0 !m-0 truncate flex-1 text-left',
+          'text-xs font-semibold transition-transform duration-150 whitespace-pre inline-block !p-0 !m-0 truncate flex-1 text-left',
           link.isActive
-            ? 'text-blue-600 dark:text-sky-400 font-extrabold'
-            : 'text-[var(--color-ink-secondary)] group-hover/sidebar:text-[var(--color-ink)]'
+            ? 'text-neutral-900 dark:text-neutral-100 font-bold'
+            : 'text-neutral-600 dark:text-neutral-400 group-hover/sidebar:text-neutral-900 dark:group-hover/sidebar:text-neutral-100'
         )}
       >
         {link.label}
@@ -201,7 +206,12 @@ export const SidebarLink = ({
             display: animate ? (open ? 'inline-flex' : 'none') : 'inline-flex',
             opacity: animate ? (open ? 1 : 0) : 1,
           }}
-          className="ml-auto rounded-full bg-blue-600 text-white font-mono text-[9px] font-bold px-1.5 py-0.2 shrink-0"
+          className={cn(
+            'ml-auto rounded-full font-mono text-[9px] font-bold px-1.5 py-0.2 shrink-0 transition-colors',
+            link.isActive
+              ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900'
+              : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
+          )}
         >
           {link.badge}
         </motion.span>
@@ -210,10 +220,10 @@ export const SidebarLink = ({
   );
 
   const containerClasses = cn(
-    'flex items-center justify-start gap-3 group/sidebar py-2.5 px-2.5 rounded-xl transition-all duration-150 cursor-pointer w-full text-left',
+    'flex items-center justify-start gap-3 group/sidebar py-2 px-2.5 rounded-xl transition-all duration-150 cursor-pointer w-full text-left',
     link.isActive
-      ? 'bg-blue-500/10 text-blue-600 dark:text-sky-400 font-bold border border-blue-500/20 shadow-2xs'
-      : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]/70 hover:text-[var(--color-ink)]',
+      ? 'bg-neutral-200/80 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-bold shadow-2xs'
+      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-900 dark:hover:text-neutral-100',
     className
   );
 
