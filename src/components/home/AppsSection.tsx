@@ -69,16 +69,9 @@ export default function AppsSection() {
         {/* Section Header */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end mb-12">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-600 dark:text-sky-400 mb-2">
-              <Sparkle size={13} weight="fill" />
-              <span>Full-Stack Application Suite</span>
-            </div>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[var(--color-ink)]">
               Integrated Applications & Systems
             </h2>
-            <p className="mt-2 text-sm sm:text-base text-[var(--color-ink-muted)] max-w-2xl">
-              Engineered by John Rey Divina—exploring multimodal artificial intelligence, real-time IoT hardware telemetry, and browser productivity tools.
-            </p>
           </div>
 
           <Link

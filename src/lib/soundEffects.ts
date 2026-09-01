@@ -30,7 +30,7 @@ export function getAudioContext(): AudioContext | null {
       if (AudioContextClass) {
         audioCtx = new AudioContextClass();
         masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+        masterGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
         masterGain.connect(audioCtx.destination);
       }
     }
@@ -95,7 +95,7 @@ export function unlockAudioEngine() {
  * @param pitchMultiplier - fine-tune base frequency (0.88 = deeper, 1.35 = higher)
  * @param volume - master volume (0.22 - 0.32 is loud & punchy)
  */
-export function playThock(pitchMultiplier = 1.0, volume = 0.24) {
+export function playThock(pitchMultiplier = 1.0, volume = 0.08) {
   if (!isSoundEnabled) return;
 
   try {
@@ -220,13 +220,13 @@ function executeOriginalThock(ctx: AudioContext, pitchMultiplier: number, volume
 /**
  * Higher-pitch tactile tick for smaller interactive elements (pills, badges, pagination dots)
  */
-export function playSoftClick(volume = 0.16) {
+export function playSoftClick(volume = 0.05) {
   playThock(1.35, volume);
 }
 
 /**
  * Deep bass thock for major interactive elements (cards, major action buttons, search bar)
  */
-export function playDeepThock(volume = 0.28) {
+export function playDeepThock(volume = 0.10) {
   playThock(0.88, volume);
 }

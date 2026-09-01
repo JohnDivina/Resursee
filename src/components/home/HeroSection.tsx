@@ -37,12 +37,6 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-transparent py-16 sm:py-24">
       <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        {/* Badge Indicator */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3.5 py-1 text-xs font-bold text-blue-600 dark:text-sky-400 mb-6">
-          <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-          <span>Central Platform & Developer Hub</span>
-        </div>
-
         {/* 1. Primary Tagline Headline with Aceternity ContainerTextFlip */}
         <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.18] lg:text-6xl">
           <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
@@ -54,10 +48,6 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
             </span>
           </span>
         </h1>
-
-        <p className="mx-auto mt-5 max-w-2xl text-sm sm:text-lg text-[var(--color-ink-muted)] leading-relaxed">
-          The unified digital ecosystem by John Rey Divina—featuring private client-side utilities, intelligent AI vision applications, and connected IoT cloud dashboards.
-        </p>
 
         {/* 2. Dual Action Buttons */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">

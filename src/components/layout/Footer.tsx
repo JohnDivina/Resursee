@@ -21,9 +21,6 @@ export default function Footer() {
                 Resursee
               </span>
             </div>
-            <p className="max-w-sm text-xs leading-relaxed text-[var(--color-ink-muted)]">
-              A unified digital ecosystem engineered by John Rey Divina—featuring private client-side utilities, intelligent AI vision applications, and connected IoT cloud dashboards.
-            </p>
             <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-[var(--color-ink-muted)]">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>All systems live & operational</span>
