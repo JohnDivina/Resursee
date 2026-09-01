@@ -32,7 +32,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
     }
   };
 
-  const flipWords = ['build', 'convert', 'discover'];
+  const flipWords = ['Build', 'Convert', 'Discover'];
 
   return (
     <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-transparent py-16 sm:py-24">
@@ -40,7 +40,6 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         {/* 1. Primary Tagline Headline with Aceternity ContainerTextFlip */}
         <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.18] lg:text-6xl">
           <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-            <span>Seamlessly</span>
             <ContainerTextFlip words={flipWords} />
             <span>with</span>
             <span className="bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 bg-clip-text text-transparent">
