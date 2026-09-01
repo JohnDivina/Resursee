@@ -44,9 +44,9 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <span className="text-[var(--color-ink-muted)] opacity-60">
+                <Link href="/apps/iot-cloud" className="transition-colors hover:text-blue-500 font-medium text-[var(--color-ink)]">
                   Resursee IoT Cloud (App #2)
-                </span>
+                </Link>
               </li>
               <li>
                 <Link href="/about" className="transition-colors hover:text-[var(--color-primary)]">

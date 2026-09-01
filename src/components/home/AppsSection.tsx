@@ -38,7 +38,7 @@ export default function AppsSection() {
       description:
         'Connect ESP32 microcontrollers in seconds. Every user gets an isolated, real-time dashboard with auto-generated Arduino C++ firmware, live sensor graphs, and remote switch controls.',
       badge: 'App #2 · Core IoT',
-      status: 'Coming Soon',
+      status: 'Live & Ready',
       statusColor: 'bg-blue-500/10 text-blue-600 dark:text-sky-400 border-blue-500/20',
       icon: Cpu,
       iconBg: 'bg-blue-600 text-white',
@@ -147,7 +147,15 @@ export default function AppsSection() {
                       <span>Launch Plant Doctor AI</span>
                       <ArrowRight size={14} weight="bold" />
                     </Link>
-                  ) : app.href === '/tools' ? (
+                  ) : app.href === '/apps/iot-cloud' ? (
+                    <Link
+                      href={app.href}
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 py-3 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 active:scale-95"
+                    >
+                      <span>Launch IoT Cloud Hub</span>
+                      <ArrowRight size={14} weight="bold" />
+                    </Link>
+                  ) : (
                     <Link
                       href={app.href}
                       className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95"
@@ -155,14 +163,6 @@ export default function AppsSection() {
                       <span>Open Productivity Toolbox</span>
                       <ArrowRight size={14} weight="bold" />
                     </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-muted)] py-3 text-xs font-bold text-[var(--color-ink-muted)] cursor-not-allowed opacity-75"
-                    >
-                      <span>Building in Progress (App #2)</span>
-                    </button>
                   )}
                 </div>
               </div>
