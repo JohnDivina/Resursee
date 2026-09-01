@@ -10,14 +10,13 @@ import LatestNews from '@/components/home/LatestNews';
 import CommandPalette from '@/components/search/CommandPalette';
 import { mockResources, mockNewsArticles } from '@/lib/mockData';
 import { CheckCircle } from '@phosphor-icons/react';
-import { BackgroundBeamsWithCollision } from '@/components/ui/background-beams-with-collision';
 
 export default function HomePage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   return (
-    <BackgroundBeamsWithCollision className="bg-[var(--color-paper)]">
+    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
       {/* 1. Minimal Header */}
       <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
 
@@ -52,6 +51,6 @@ export default function HomePage() {
           <span>{toastMessage}</span>
         </div>
       )}
-    </BackgroundBeamsWithCollision>
+    </div>
   );
 }
