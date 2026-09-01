@@ -70,11 +70,11 @@ export default function QuickCategories({ categories = mockCategories }: QuickCa
               <Link
                 key={cat.id}
                 href={`/categories/${cat.slug}`}
-                className="group relative flex flex-col justify-between rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-xs transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-paper-surface)] hover:shadow-md hover:-translate-y-0.5"
+                className="group relative flex flex-col justify-between rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-xs transition-all hover:border-[var(--color-rule-strong)] hover:bg-[var(--color-paper-surface)] hover:shadow-md hover:-translate-y-0.5"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-surface)] shadow-2xs group-hover:border-[var(--color-primary-subtle)] group-hover:bg-[var(--color-paper-card)]">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-surface)] shadow-2xs group-hover:border-[var(--color-rule-strong)] group-hover:bg-[var(--color-paper-card)]">
                       {getCategoryIcon(cat.slug)}
                     </div>
                     <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[11px] font-medium text-[var(--color-ink-muted)] group-hover:bg-[var(--color-primary-subtle)] group-hover:text-[var(--color-primary)]">

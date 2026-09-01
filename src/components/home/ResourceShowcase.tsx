@@ -28,7 +28,7 @@ function ShowcaseCardItem({ item }: { item: Resource }) {
     <Link
       href={`/resources/${item.slug}`}
       data-thock="card"
-      className="group flex flex-col gap-3.5 rounded-[18px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper)] p-4 sm:p-5 transition-all hover:border-[var(--color-primary)] block"
+      className="group flex flex-col gap-3.5 rounded-[18px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper)] p-4 sm:p-5 transition-all hover:border-[var(--color-rule-strong)] block"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">

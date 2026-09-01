@@ -199,7 +199,7 @@ export default function ImageToPdfPage() {
                     handleFilesAdded(e.dataTransfer.files);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-sky-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
+                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-rule-strong)] hover:bg-neutral-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-sky-500 text-white shadow-md transition-transform group-hover:scale-110">
                   <UploadSimple size={32} weight="bold" />
@@ -268,7 +268,7 @@ export default function ImageToPdfPage() {
                     {images.map((item, index) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between gap-4 rounded-[18px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3.5 transition-all hover:border-[var(--color-primary)]"
+                        className="flex items-center justify-between gap-4 rounded-[18px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3.5 transition-all hover:border-[var(--color-rule-strong)]"
                       >
                         <div className="flex items-center gap-3.5">
                           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-paper-muted)] font-mono text-xs font-bold text-[var(--color-ink)]">

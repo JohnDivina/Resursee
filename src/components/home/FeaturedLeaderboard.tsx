@@ -39,7 +39,7 @@ function LeaderboardItemCard({
     <Link
       href={`/resources/${resource.slug}`}
       data-thock="card"
-      className="group relative flex items-center justify-between gap-3 rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3.5 sm:p-4 transition-all duration-200 ease-out hover:bg-[var(--color-primary-subtle)]/30 hover:border-[var(--color-primary)]/40 hover:shadow-xs cursor-pointer block text-left"
+      className="group relative flex items-center justify-between gap-3 rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3.5 sm:p-4 transition-all duration-200 ease-out hover:bg-[var(--color-paper-card)] hover:border-[var(--color-rule-strong)] hover:shadow-xs cursor-pointer block text-left"
     >
       {/* Left side: Rank + Squircle Icon + Text info */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -110,7 +110,7 @@ function LeaderboardItemCard({
         </div>
 
         {/* Real-Time Total Downloads Box */}
-        <div className="flex flex-col items-center justify-center rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-3 py-1 min-w-[54px] shadow-2xs group-hover:border-[var(--color-primary)]/40 transition-colors">
+        <div className="flex flex-col items-center justify-center rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-3 py-1 min-w-[54px] shadow-2xs group-hover:border-[var(--color-rule-strong)] transition-colors">
           <CaretUp size={12} weight="fill" className="text-emerald-600" />
           <span className="font-mono text-xs font-bold text-[var(--color-ink)]">
             {liveDownloads.toLocaleString()}
@@ -223,7 +223,7 @@ export default function FeaturedLeaderboard({
         <div className="mt-8 text-center">
           <Link
             href="/resources"
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-6 py-2.5 text-xs font-bold text-[var(--color-ink)] shadow-2xs transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-6 py-2.5 text-xs font-bold text-[var(--color-ink)] shadow-2xs transition-all hover:border-[var(--color-rule-strong)] hover:text-[var(--color-primary)]"
           >
             <span>Explore Complete Document Catalog ({liveList.length} Files)</span>
             <ArrowRight size={14} weight="bold" />

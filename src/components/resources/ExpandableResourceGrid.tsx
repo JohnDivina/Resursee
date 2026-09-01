@@ -269,7 +269,7 @@ function ExpandableCardItem({
       transition={springTransition}
       onClick={onClick}
       data-thock="card"
-      className="group flex flex-col justify-between rounded-[26px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.35)] hover:-translate-y-1.5 hover:border-[var(--color-primary)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer text-left h-full"
+      className="group flex flex-col justify-between rounded-[26px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.35)] hover:-translate-y-1.5 hover:border-[var(--color-rule-strong)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer text-left h-full"
     >
       <div className="flex flex-col gap-4 w-full">
         {/* Card Banner with layoutId */}

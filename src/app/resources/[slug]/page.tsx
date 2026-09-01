@@ -335,7 +335,7 @@ export default function ResourceDetailPage() {
                       <Link
                         key={rel.id}
                         href={`/resources/${rel.slug}`}
-                        className="group flex items-start gap-3 rounded-[18px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3 hover:border-[var(--color-primary)] hover:shadow-xs transition-all block"
+                        className="group flex items-start gap-3 rounded-[18px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3 hover:border-[var(--color-rule-strong)] hover:shadow-xs transition-all block"
                       >
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-primary)] text-white font-bold text-xs">
                           {rel.file_format}

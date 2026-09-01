@@ -205,7 +205,7 @@ export default function PlatformShowcaseModal() {
                     href={item.href}
                     onClick={handleClose}
                     data-thock="card"
-                    className="group flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1 hover:border-[var(--color-primary)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.06)] cursor-pointer"
+                    className="group flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1 hover:border-[var(--color-rule-strong)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.06)] cursor-pointer"
                   >
                     <div>
                       <div className="flex items-center justify-between">

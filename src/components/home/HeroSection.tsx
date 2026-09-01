@@ -60,7 +60,7 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
           <Link
             href="/contribute"
             data-thock="card"
-            className="group flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-muted)] px-6 py-3 text-sm font-bold text-[var(--color-ink)] shadow-2xs transition-all duration-200 hover:bg-[var(--color-paper-surface)] hover:border-[var(--color-primary)] active:scale-95 cursor-pointer"
+            className="group flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-muted)] px-6 py-3 text-sm font-bold text-[var(--color-ink)] shadow-2xs transition-all duration-200 hover:bg-[var(--color-paper-surface)] hover:border-[var(--color-rule-strong)] active:scale-95 cursor-pointer"
           >
             <UploadSimple size={17} weight="bold" className="text-[var(--color-primary)]" />
             <span>Contribute resources</span>

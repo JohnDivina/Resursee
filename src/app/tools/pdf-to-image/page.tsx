@@ -169,7 +169,7 @@ export default function PdfToImagePage() {
                     handlePdfUpload(e.dataTransfer.files[0]);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-rose-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
+                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-rule-strong)] hover:bg-neutral-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-rose-500 text-white shadow-md transition-transform group-hover:scale-110">
                   <FilePdf size={32} weight="bold" />
@@ -236,7 +236,7 @@ export default function PdfToImagePage() {
                     {renderedPages.map((page) => (
                       <div
                         key={page.pageNumber}
-                        className="group relative flex flex-col justify-between rounded-[18px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3 transition-all hover:border-[var(--color-primary)] hover:shadow-md"
+                        className="group relative flex flex-col justify-between rounded-[18px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-3 transition-all hover:border-[var(--color-rule-strong)] hover:shadow-md"
                       >
                         <div className="relative aspect-[3/4] overflow-hidden rounded-[12px] border border-[var(--color-rule)] bg-white shadow-2xs">
                           <img

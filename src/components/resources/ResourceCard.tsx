@@ -20,7 +20,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     <Link
       href={`/resources/${resource.slug}`}
       data-thock="card"
-      className="group relative flex min-h-[220px] sm:min-h-[240px] flex-col justify-between rounded-[26px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-7 md:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-2 hover:border-[var(--color-primary)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.35)] cursor-pointer block text-left"
+      className="group relative flex min-h-[220px] sm:min-h-[240px] flex-col justify-between rounded-[26px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-7 md:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-2 hover:border-[var(--color-rule-strong)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.35)] cursor-pointer block text-left"
     >
       <div>
         {/* Top Header: Official Institutional Seal & Real-time Upvote/Download Counter */}

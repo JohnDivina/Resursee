@@ -98,7 +98,7 @@ export function FileUpload({
       className={`group relative flex min-h-64 sm:min-h-72 w-full flex-col items-center justify-center rounded-[28px] border-2 border-dashed transition-all duration-300 cursor-pointer overflow-hidden p-6 sm:p-8 ${
         isDragOver
           ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/40 scale-[1.01] shadow-lg'
-          : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] hover:border-[var(--color-primary)] hover:bg-[var(--color-paper-surface)] shadow-2xs'
+          : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] hover:border-[var(--color-rule-strong)] hover:bg-[var(--color-paper-surface)] shadow-2xs'
       } ${className}`}
     >
       <input

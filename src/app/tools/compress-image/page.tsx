@@ -179,7 +179,7 @@ export default function CompressImagePage() {
                     handleFileSelect(e.dataTransfer.files[0]);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-blue-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
+                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-rule-strong)] hover:bg-neutral-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-blue-600 text-white shadow-md transition-transform group-hover:scale-110">
                   <UploadSimple size={32} weight="bold" />

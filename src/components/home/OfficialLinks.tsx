@@ -48,9 +48,9 @@ export default function OfficialLinks({ links = mockOfficialLinks }: OfficialLin
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-start gap-3.5 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 shadow-xs transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-paper-surface)] hover:shadow-md hover:-translate-y-0.5"
+              className="group flex items-start gap-3.5 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 shadow-xs transition-all hover:border-[var(--color-rule-strong)] hover:bg-[var(--color-paper-surface)] hover:shadow-md hover:-translate-y-0.5"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-surface)] group-hover:border-[var(--color-primary-subtle)] group-hover:bg-[var(--color-paper-card)]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper-surface)] group-hover:border-[var(--color-rule-strong)] group-hover:bg-[var(--color-paper-card)]">
                 {getLinkIcon(link.category)}
               </div>
 

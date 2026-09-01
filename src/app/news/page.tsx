@@ -113,7 +113,7 @@ export default function NewsPage() {
               className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
                 selectedDept === 'all'
                   ? 'bg-[var(--color-primary)] font-bold text-white shadow-2xs'
-                  : 'border border-[var(--color-rule)] bg-[var(--color-paper-card)] text-[var(--color-ink-secondary)] hover:border-[var(--color-primary)]'
+                  : 'border border-[var(--color-rule)] bg-[var(--color-paper-card)] text-[var(--color-ink-secondary)] hover:border-[var(--color-rule-strong)]'
               }`}
             >
               All Campus Offices
@@ -125,7 +125,7 @@ export default function NewsPage() {
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
                   selectedDept === dyName(dept)
                     ? 'bg-[var(--color-primary)] font-bold text-white shadow-2xs'
-                    : 'border border-[var(--color-rule)] bg-[var(--color-paper-card)] text-[var(--color-ink-secondary)] hover:border-[var(--color-primary)]'
+                    : 'border border-[var(--color-rule)] bg-[var(--color-paper-card)] text-[var(--color-ink-secondary)] hover:border-[var(--color-rule-strong)]'
                 }`}
               >
                 {dept.abbreviation}
@@ -145,7 +145,7 @@ export default function NewsPage() {
               publishedNews.map((article) => (
                 <article
                   key={article.id}
-                  className="group flex flex-col justify-between rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] overflow-hidden shadow-xs transition-all hover:border-[var(--color-primary)] hover:shadow-md hover:-translate-y-0.5"
+                  className="group flex flex-col justify-between rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] overflow-hidden shadow-xs transition-all hover:border-[var(--color-rule-strong)] hover:shadow-md hover:-translate-y-0.5"
                 >
                   {article.image_url && (
                     <div className="relative h-44 w-full overflow-hidden bg-[var(--color-paper-muted)]">

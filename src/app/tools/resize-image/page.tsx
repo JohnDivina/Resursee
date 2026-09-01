@@ -191,7 +191,7 @@ export default function ResizeImagePage() {
                     handleFileSelect(e.dataTransfer.files[0]);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-primary)] hover:bg-indigo-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
+                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-rule-strong)] hover:bg-neutral-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-indigo-600 text-white shadow-md transition-transform group-hover:scale-110">
                   <UploadSimple size={32} weight="bold" />
@@ -329,7 +329,7 @@ export default function ResizeImagePage() {
                           key={preset.name}
                           type="button"
                           onClick={() => applyPreset(preset)}
-                          className="rounded-[14px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-2.5 text-left hover:border-[var(--color-primary)] hover:bg-[var(--color-paper-muted)] transition-colors"
+                          className="rounded-[14px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-2.5 text-left hover:border-[var(--color-rule-strong)] hover:bg-[var(--color-paper-muted)] transition-colors"
                         >
                           <span className="block text-xs font-bold text-[var(--color-ink)]">
                             {preset.label}

@@ -1420,7 +1420,7 @@ export default function AdminDashboardPage() {
                   .map((sub) => (
                     <div
                       key={sub.id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-rule-strong)] transition-all"
                     >
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
@@ -1542,7 +1542,7 @@ export default function AdminDashboardPage() {
                   return (
                     <div
                       key={cat.id}
-                      className="flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                      className="flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-rule-strong)] transition-all"
                     >
                       <div>
                         <div className="flex items-center justify-between">
@@ -1621,7 +1621,7 @@ export default function AdminDashboardPage() {
                   return (
                     <div
                       key={dept.id}
-                      className="flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                      className="flex flex-col justify-between rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-rule-strong)] transition-all"
                     >
                       <div>
                         <div className="flex items-center justify-between">
@@ -1752,7 +1752,7 @@ export default function AdminDashboardPage() {
                   .map((art) => (
                     <div
                       key={art.id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-primary)] transition-all"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-rule-strong)] transition-all"
                     >
                       <div className="space-y-1.5 flex-1">
                         <div className="flex items-center gap-2">
