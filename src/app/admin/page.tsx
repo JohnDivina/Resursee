@@ -78,6 +78,8 @@ import {
 } from '@/lib/newsStore';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Sidebar, SidebarBody, SidebarLink, Links } from '@/components/ui/sidebar';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 const BottomGradient = () => {
@@ -120,6 +122,9 @@ interface StaffMember {
 }
 
 export default function AdminDashboardPage() {
+  // Navigation & Aceternity Sidebar State
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   // Authentication & RBAC State
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -988,38 +993,197 @@ export default function AdminDashboardPage() {
   }
 
   // --- 🔓 AUTHENTICATED DASHBOARD VIEW ---
-  return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
-      {/* 🚨 Master Admin Floating Notification Banner for Pending Staff Requests */}
-      {isMasterAdmin && pendingStaffRequests.length > 0 && (
-        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold shadow-md">
-          <div className="mx-auto flex max-w-7xl items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BellRinging size={18} weight="fill" className="animate-bounce" />
-              <span>
-                <strong>Action Required:</strong> {pendingStaffRequests.length} user(s) requested Staff Moderator permissions.
-              </span>
-            </div>
-            <button
-              onClick={() => setActiveTab('staff')}
-              className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-slate-800 transition-all cursor-pointer"
-            >
-              Review Requests →
-            </button>
-          </div>
-        </div>
-      )}
+  const sidebarLinks: Links[] = [
+    {
+      label: 'Document Catalog',
+      onClick: () => {
+        setActiveTab('resources');
+        setSidebarOpen(false);
+      },
+      icon: <FileText size={18} weight={activeTab === 'resources' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      isActive: activeTab === 'resources',
+      badge: resourcesList.length,
+    },
+    {
+      label: 'User Submissions',
+      onClick: () => {
+        setActiveTab('submissions');
+        setSidebarOpen(false);
+      },
+      icon: <UploadSimple size={18} weight={activeTab === 'submissions' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      isActive: activeTab === 'submissions',
+      badge: pendingSubmissions.length > 0 ? pendingSubmissions.length : undefined,
+    },
+    {
+      label: 'Categories',
+      onClick: () => {
+        setActiveTab('categories');
+        setSidebarOpen(false);
+      },
+      icon: <Folder size={18} weight={activeTab === 'categories' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      isActive: activeTab === 'categories',
+      badge: categoriesList.length,
+    },
+    {
+      label: 'Offices & Depts',
+      onClick: () => {
+        setActiveTab('offices');
+        setSidebarOpen(false);
+      },
+      icon: <Buildings size={18} weight={activeTab === 'offices' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      isActive: activeTab === 'offices',
+      badge: departmentsList.length,
+    },
+    {
+      label: 'Campus Bulletins',
+      onClick: () => {
+        setActiveTab('news');
+        setSidebarOpen(false);
+      },
+      icon: <Megaphone size={18} weight={activeTab === 'news' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      isActive: activeTab === 'news',
+      badge: newsList.length,
+    },
+    ...(isMasterAdmin
+      ? [
+          {
+            label: 'Staff Permissions',
+            onClick: () => {
+              setActiveTab('staff');
+              setSidebarOpen(false);
+            },
+            icon: <Users size={18} weight={activeTab === 'staff' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+            isActive: activeTab === 'staff',
+            badge: pendingStaffRequests.length > 0 ? `${pendingStaffRequests.length} Req` : undefined,
+          },
+        ]
+      : []),
+    {
+      label: 'Audit & Activity',
+      onClick: () => {
+        setActiveTab('logs');
+        setSidebarOpen(false);
+      },
+      icon: <ClockCounterClockwise size={18} weight={activeTab === 'logs' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+      isActive: activeTab === 'logs',
+    },
+    ...(isMasterAdmin
+      ? [
+          {
+            label: 'Settings & Keys',
+            onClick: () => {
+              setActiveTab('settings');
+              setSidebarOpen(false);
+            },
+            icon: <Gear size={18} weight={activeTab === 'settings' ? 'bold' : 'regular'} className="text-blue-600 dark:text-sky-400 shrink-0" />,
+            isActive: activeTab === 'settings',
+          },
+        ]
+      : []),
+    {
+      label: 'Return to Website',
+      href: '/',
+      icon: <HouseLine size={18} className="text-[var(--color-ink-muted)] shrink-0" />,
+    },
+    {
+      label: 'Sign Out',
+      onClick: handleLogout,
+      icon: <SignOut size={18} className="text-rose-600 dark:text-rose-400 shrink-0" />,
+    },
+  ];
 
-      {/* Admin Top Navigation */}
-      <header className="sticky top-0 z-30 border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--color-primary)] text-white shadow-xs font-bold select-none">
-              🦦
+  return (
+    <div className="flex min-h-screen w-full flex-col md:flex-row bg-[var(--color-paper)]">
+      {/* 🧭 Aceternity Collapsible Sidebar Navigation */}
+      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
+        <SidebarBody className="justify-between gap-6">
+          <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+            {/* Header / Brand Logo */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-blue-600 text-white shadow-xs font-bold select-none text-base">
+                🦦
+              </div>
+              <motion.div
+                animate={{
+                  display: sidebarOpen ? 'flex' : 'none',
+                  opacity: sidebarOpen ? 1 : 0,
+                }}
+                className="flex flex-col truncate"
+              >
+                <span className="font-extrabold text-sm text-[var(--color-ink)]">Resursee Admin</span>
+                <span className="font-mono text-[9.5px] font-bold text-blue-600 dark:text-sky-400">
+                  {isMasterAdmin ? '👑 Master Admin' : '🛡️ Staff Moderator'}
+                </span>
+              </motion.div>
             </div>
+
+            {/* Sidebar Navigation Links */}
+            <div className="mt-6 flex flex-col gap-1">
+              {sidebarLinks.map((link, idx) => (
+                <SidebarLink key={idx} link={link} />
+              ))}
+            </div>
+          </div>
+
+          {/* User Profile Footer */}
+          <div className="border-t border-[var(--color-rule-subtle)] pt-3 mt-auto">
+            <SidebarLink
+              link={{
+                label: adminUser?.name || adminUser?.email || 'Administrator',
+                icon: adminUser?.picture ? (
+                  <img
+                    src={adminUser.picture}
+                    alt={adminUser.name || ''}
+                    className="h-7 w-7 shrink-0 rounded-full object-cover shadow-xs ring-1 ring-blue-500/30"
+                  />
+                ) : (
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-xs">
+                    {(adminUser?.name || 'A').charAt(0).toUpperCase()}
+                  </div>
+                ),
+              }}
+            />
+          </div>
+        </SidebarBody>
+      </Sidebar>
+
+      {/* Main Dashboard Content Viewport */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        {/* 🚨 Master Admin Floating Notification Banner for Pending Staff Requests */}
+        {isMasterAdmin && pendingStaffRequests.length > 0 && (
+          <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold shadow-md">
+            <div className="mx-auto flex max-w-7xl items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BellRinging size={18} weight="fill" className="animate-bounce" />
+                <span>
+                  <strong>Action Required:</strong> {pendingStaffRequests.length} user(s) requested Staff Moderator permissions.
+                </span>
+              </div>
+              <button
+                onClick={() => setActiveTab('staff')}
+                className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                Review Requests →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Dashboard Top Header Navigation */}
+        <header className="sticky top-0 z-20 border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)]/90 backdrop-blur-md">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-extrabold text-[var(--color-ink)]">Resursee</span>
+                <span className="text-sm font-extrabold text-[var(--color-ink)] capitalize">
+                  {activeTab === 'resources' && 'Document Catalog Management'}
+                  {activeTab === 'submissions' && 'Student & Faculty Submissions'}
+                  {activeTab === 'categories' && 'Category Taxonomy'}
+                  {activeTab === 'offices' && 'Academic & Administrative Offices'}
+                  {activeTab === 'news' && 'Campus Bulletins & Advisories'}
+                  {activeTab === 'staff' && 'Staff Governance & Access Control'}
+                  {activeTab === 'logs' && 'Security & Audit Logs'}
+                  {activeTab === 'settings' && 'System Keys & Configuration'}
+                </span>
                 <span
                   className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
                     isMasterAdmin
@@ -1031,48 +1195,47 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
               <span className="text-[11px] text-[var(--color-ink-muted)]">
-                {isMasterAdmin ? 'Full Governance & Deletion Controls' : 'Document Review & Verification Only'}
+                {isMasterAdmin ? 'Full Governance & Cloud Storage Controls' : 'Document Review & Verification Only'}
               </span>
             </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Authenticated Admin Profile Badge */}
+              {adminUser && (
+                <div className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-surface)] py-1 pl-1 pr-3 text-xs">
+                  {adminUser.picture ? (
+                    <img src={adminUser.picture} alt={adminUser.name || ''} className="h-6 w-6 rounded-full" />
+                  ) : (
+                    <UserCircle size={20} className="text-blue-600 dark:text-sky-400" />
+                  )}
+                  <span className="font-semibold text-[var(--color-ink)] truncate max-w-[120px]">
+                    {adminUser.name || adminUser.email}
+                  </span>
+                </div>
+              )}
+
+              <Link
+                href="/"
+                className="flex items-center gap-1.5 rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-all"
+              >
+                <HouseLine size={15} />
+                <span className="hidden sm:inline">Public Site</span>
+              </Link>
+
+              {/* Sign Out Button */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 rounded-[12px] border border-rose-200 bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer"
+              >
+                <SignOut size={15} weight="bold" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
           </div>
+        </header>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Authenticated Admin Profile Badge */}
-            {adminUser && (
-              <div className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-surface)] py-1 pl-1 pr-3 text-xs">
-                {adminUser.picture ? (
-                  <img src={adminUser.picture} alt={adminUser.name || ''} className="h-6 w-6 rounded-full" />
-                ) : (
-                  <UserCircle size={20} className="text-[var(--color-primary)]" />
-                )}
-                <span className="font-semibold text-[var(--color-ink)] truncate max-w-[120px]">
-                  {adminUser.name || adminUser.email}
-                </span>
-              </div>
-            )}
-
-            <Link
-              href="/"
-              className="flex items-center gap-1.5 rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-all"
-            >
-              <HouseLine size={15} />
-              <span className="hidden sm:inline">Public Site</span>
-            </Link>
-
-            {/* Sign Out Button */}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 rounded-[12px] border border-rose-200 bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer"
-            >
-              <SignOut size={15} weight="bold" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 py-6 sm:py-8">
+        <main className="flex-1 py-6 sm:py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Top Overview Cards */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
@@ -2576,6 +2739,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Action Toast Feedback */}
       {toastMessage && (
