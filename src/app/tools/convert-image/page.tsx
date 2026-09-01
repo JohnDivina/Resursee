@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
 import { mockResources } from '@/lib/mockData';
+import { FileUpload } from '@/components/ui/file-upload';
 import {
   ArrowsClockwise,
   UploadSimple,
@@ -183,43 +184,18 @@ export default function ConvertImagePage() {
           {/* Interaction Area */}
           {!originalFile ? (
             <div className="mt-8">
-              <label
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    handleFileSelect(e.dataTransfer.files[0]);
+              <FileUpload
+                accept="image/*"
+                maxSizeMB={50}
+                title="Choose an image to convert"
+                description="Convert scanned forms, screenshots, and thesis charts to PNG, JPG, or WebP."
+                acceptedTypesLabel={['PNG (.png)', 'JPEG (.jpg, .jpeg)', 'WebP (.webp)', 'GIF (.gif)', 'BMP (.bmp)']}
+                onChange={(files) => {
+                  if (files && files[0]) {
+                    handleFileSelect(files[0]);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-rule-strong)] hover:bg-neutral-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-emerald-600 text-white shadow-md transition-transform group-hover:scale-110">
-                  <UploadSimple size={32} weight="bold" />
-                </div>
-                <h3 className="mt-4 text-lg font-bold text-[var(--color-ink)]">
-                  Choose an image to convert
-                </h3>
-                <p className="mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
-                  Convert scanned forms, screenshots, and thesis charts to PNG, JPG, or WebP.
-                </p>
-                <button
-                  type="button"
-                  className="mt-6 rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] pointer-events-none"
-                >
-                  Select Image
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      handleFileSelect(e.target.files[0]);
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
+              />
             </div>
           ) : (
             <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">

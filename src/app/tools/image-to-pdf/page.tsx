@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
 import { mockResources } from '@/lib/mockData';
 import { jsPDF } from 'jspdf';
+import { FileUpload } from '@/components/ui/file-upload';
 import {
   FileArrowUp,
   UploadSimple,
@@ -191,44 +192,21 @@ export default function ImageToPdfPage() {
           {/* Main Interaction Area */}
           {images.length === 0 ? (
             <div className="mt-8">
-              <label
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    handleFilesAdded(e.dataTransfer.files);
+              <FileUpload
+                accept="image/*"
+                multiple={true}
+                maxSizeMB={50}
+                title="Choose images to convert into a PDF"
+                description="Select one or multiple photos, scanned receipts, or signed clearance slips."
+                acceptedTypesLabel={['PNG (.png)', 'JPEG (.jpg, .jpeg)', 'WebP (.webp)', 'GIF (.gif)', 'BMP (.bmp)']}
+                onChange={(files) => {
+                  if (files && files.length > 0) {
+                    const dataTransfer = new DataTransfer();
+                    files.forEach((f) => dataTransfer.items.add(f));
+                    handleFilesAdded(dataTransfer.files);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-rule-strong)] hover:bg-neutral-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-sky-500 text-white shadow-md transition-transform group-hover:scale-110">
-                  <UploadSimple size={32} weight="bold" />
-                </div>
-                <h3 className="mt-4 text-lg font-bold text-[var(--color-ink)]">
-                  Choose images to convert into a PDF
-                </h3>
-                <p className="mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
-                  Select one or multiple photos, scanned receipts, or signed clearance slips.
-                </p>
-                <button
-                  type="button"
-                  className="mt-6 rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] pointer-events-none"
-                >
-                  Select Multiple Images
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      handleFilesAdded(e.target.files);
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
+              />
             </div>
           ) : (
             <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">

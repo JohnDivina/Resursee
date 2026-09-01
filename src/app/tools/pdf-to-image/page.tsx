@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
 import { mockResources } from '@/lib/mockData';
+import { FileUpload } from '@/components/ui/file-upload';
 import {
   FileArrowDown,
   UploadSimple,
@@ -161,43 +162,18 @@ export default function PdfToImagePage() {
           {/* Main Interaction Area */}
           {!pdfFile ? (
             <div className="mt-8">
-              <label
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    handlePdfUpload(e.dataTransfer.files[0]);
+              <FileUpload
+                accept="application/pdf,.pdf"
+                maxSizeMB={50}
+                title="Choose a PDF document to extract images"
+                description="Extract single pages or entire multi-page documents as high-resolution PNG or JPG images."
+                acceptedTypesLabel={['PDF (.pdf)']}
+                onChange={(files) => {
+                  if (files && files[0]) {
+                    handlePdfUpload(files[0]);
                   }
                 }}
-                className="group flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center cursor-pointer transition-all hover:border-[var(--color-rule-strong)] hover:bg-neutral-500/[0.02] shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-rose-500 text-white shadow-md transition-transform group-hover:scale-110">
-                  <FilePdf size={32} weight="bold" />
-                </div>
-                <h3 className="mt-4 text-lg font-bold text-[var(--color-ink)]">
-                  Choose a PDF document to extract images
-                </h3>
-                <p className="mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
-                  Extract single pages or entire multi-page documents as high-resolution PNG or JPG images.
-                </p>
-                <button
-                  type="button"
-                  className="mt-6 rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] pointer-events-none"
-                >
-                  Select PDF File
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      handlePdfUpload(e.target.files[0]);
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
+              />
             </div>
           ) : isRendering ? (
             <div className="mt-12 flex flex-col items-center justify-center p-12 text-center">

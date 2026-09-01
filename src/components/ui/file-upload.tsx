@@ -4,28 +4,36 @@ import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   UploadSimple,
-  FileArrowUp,
   X,
   FileText,
   FilePdf,
   FileDoc,
   FileXls,
+  FileImage,
   CheckCircle,
-  HardDrive,
 } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 
-interface FileUploadProps {
+export interface FileUploadProps {
   onChange?: (files: File[]) => void;
   accept?: string;
   maxSizeMB?: number;
+  multiple?: boolean;
+  title?: string;
+  description?: string;
+  acceptedTypesLabel?: string[];
   className?: string;
 }
 
 export function FileUpload({
   onChange,
   accept,
-  maxSizeMB = 25,
-  className = '',
+  maxSizeMB = 50,
+  multiple = false,
+  title = 'Upload file',
+  description = 'Drag and drop your file here, or browse from device',
+  acceptedTypesLabel,
+  className,
 }: FileUploadProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -34,9 +42,10 @@ export function FileUpload({
   const handleFileChange = (newFiles: FileList | null) => {
     if (!newFiles || newFiles.length === 0) return;
     const validFiles = Array.from(newFiles);
-    setFiles(validFiles);
+    const updated = multiple ? [...files, ...validFiles] : validFiles;
+    setFiles(updated);
     if (onChange) {
-      onChange(validFiles);
+      onChange(updated);
     }
   };
 
@@ -83,8 +92,11 @@ export function FileUpload({
 
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'avif'].includes(ext || '')) {
+      return <FileImage size={24} weight="bold" className="text-blue-500" />;
+    }
     if (ext === 'pdf') return <FilePdf size={24} weight="bold" className="text-rose-500" />;
-    if (ext === 'docx' || ext === 'doc') return <FileDoc size={24} weight="bold" className="text-blue-500" />;
+    if (ext === 'docx' || ext === 'doc') return <FileDoc size={24} weight="bold" className="text-sky-500" />;
     if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return <FileXls size={24} weight="bold" className="text-emerald-500" />;
     return <FileText size={24} weight="bold" className="text-[var(--color-primary)]" />;
   };
@@ -95,16 +107,19 @@ export function FileUpload({
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      className={`group relative flex min-h-64 sm:min-h-72 w-full flex-col items-center justify-center rounded-[28px] border-2 border-dashed transition-all duration-300 cursor-pointer overflow-hidden p-6 sm:p-8 ${
+      className={cn(
+        'group relative flex min-h-64 sm:min-h-72 w-full flex-col items-center justify-center rounded-[28px] border-2 border-dashed transition-all duration-300 cursor-pointer overflow-hidden p-6 sm:p-8 select-none',
         isDragOver
           ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/40 scale-[1.01] shadow-lg'
-          : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] hover:border-[var(--color-rule-strong)] hover:bg-[var(--color-paper-surface)] shadow-2xs'
-      } ${className}`}
+          : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] hover:border-[var(--color-rule-strong)] hover:bg-[var(--color-paper-surface)] shadow-2xs',
+        className
+      )}
     >
       <input
         ref={fileInputRef}
         type="file"
         accept={accept}
+        multiple={multiple}
         onChange={(e) => handleFileChange(e.target.files)}
         className="hidden"
       />
@@ -131,25 +146,31 @@ export function FileUpload({
             </motion.div>
 
             <h3 className="mt-4 text-base font-extrabold text-[var(--color-ink)]">
-              Upload university document or form
+              {title}
             </h3>
             <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] max-w-sm leading-relaxed">
-              Drag and drop your file here, or{' '}
-              <span className="font-bold text-[var(--color-primary)] underline">browse files</span> from your computer
+              {description.includes('browse') ? (
+                <>
+                  Drag and drop your file here, or{' '}
+                  <span className="font-bold text-[var(--color-primary)] underline">browse files</span> from your computer
+                </>
+              ) : (
+                description
+              )}
             </p>
 
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              {['PDF (.pdf)', 'Word (.docx, .doc)', 'Excel (.xlsx, .xls)', 'PowerPoint (.pptx)', 'CSV', 'ZIP'].map(
-                (fmt) => (
+            {acceptedTypesLabel && acceptedTypesLabel.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 max-w-md">
+                {acceptedTypesLabel.map((fmt) => (
                   <span
                     key={fmt}
-                    className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-1 font-mono text-[10px] font-bold text-[var(--color-ink-secondary)]"
+                    className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] font-bold text-[var(--color-ink-secondary)]"
                   >
                     {fmt}
                   </span>
-                )
-              )}
-            </div>
+                ))}
+              </div>
+            )}
 
             <span className="mt-3 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
               Maximum file size: {maxSizeMB}MB
@@ -177,15 +198,15 @@ export function FileUpload({
                     </div>
 
                     <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-[var(--color-ink)] truncate max-w-[220px] sm:max-w-[260px]">
+                      <h4 className="text-xs font-bold text-[var(--color-ink)] truncate max-w-[200px] sm:max-w-[240px]">
                         {file.name}
                       </h4>
                       <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
                         <span>{formatFileSize(file.size)}</span>
                         <span>•</span>
-                        <span className="text-emerald-600 font-bold flex items-center gap-1">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                           <CheckCircle size={12} weight="fill" />
-                          Ready to upload
+                          Ready
                         </span>
                       </p>
                     </div>
@@ -204,7 +225,7 @@ export function FileUpload({
             </div>
 
             <p className="mt-3.5 text-xs text-[var(--color-primary)] font-bold hover:underline">
-              Click or drag another file to replace
+              {multiple ? 'Click or drag more files to add' : 'Click or drag another file to replace'}
             </p>
           </motion.div>
         )}
