@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import StatsStrip from '@/components/home/StatsStrip';
 import { mockResources, mockDepartments } from '@/lib/mockData';
+import { BackgroundLines } from '@/components/ui/background-lines';
 
 interface HeroSectionProps {
   onSearch?: (query: string) => void;
@@ -32,11 +33,8 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-transparent py-16 sm:py-24">
-      {/* Subtle ambient lighting */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-80 w-[42rem] rounded-full bg-[radial-gradient(ellipse_at_center,var(--color-primary-glow)_0%,transparent_70%)] blur-2xl opacity-40" />
-
-      <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+    <BackgroundLines className="border-b border-[var(--color-rule-subtle)] py-16 sm:py-24">
+      <div className="relative z-20 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
         {/* 1. Primary Tagline Headline */}
         <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.12] lg:text-6xl">
           Find the university resources you need{' '}
@@ -102,6 +100,6 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         {/* 4. Dynamic Statistics Strip */}
         <StatsStrip resources={mockResources} departments={mockDepartments} />
       </div>
-    </section>
+    </BackgroundLines>
   );
 }
