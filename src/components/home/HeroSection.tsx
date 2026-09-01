@@ -11,7 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import StatsStrip from '@/components/home/StatsStrip';
 import { mockResources, mockDepartments } from '@/lib/mockData';
-import { BackgroundLines } from '@/components/ui/background-lines';
+import { WavyBackground } from '@/components/ui/wavy-background';
 
 interface HeroSectionProps {
   onSearch?: (query: string) => void;
@@ -33,7 +33,14 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   };
 
   return (
-    <BackgroundLines className="border-b border-[var(--color-rule-subtle)] py-16 sm:py-24">
+    <WavyBackground
+      containerClassName="border-b border-[var(--color-rule-subtle)]"
+      className="py-16 sm:py-24"
+      colors={['#2563eb', '#38bdf8', '#1d4ed8', '#0284c7', '#60a5fa']}
+      waveOpacity={0.4}
+      blur={8}
+      speed="fast"
+    >
       <div className="relative z-20 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
         {/* 1. Primary Tagline Headline */}
         <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.12] lg:text-6xl">
@@ -100,6 +107,6 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         {/* 4. Dynamic Statistics Strip */}
         <StatsStrip resources={mockResources} departments={mockDepartments} />
       </div>
-    </BackgroundLines>
+    </WavyBackground>
   );
 }
