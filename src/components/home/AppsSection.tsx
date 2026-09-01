@@ -23,10 +23,10 @@ export default function AppsSection() {
       description:
         'Upload or capture photos of crops and house plants. Multimodal AI identifies visual pathology, leaf blights, and pest damage, generating organic and actionable recovery plans.',
       badge: 'App #1 · Core AI',
-      status: 'Coming Soon',
+      status: 'Live & Ready',
       statusColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
       icon: Plant,
-      iconBg: 'bg-emerald-500 text-white',
+      iconBg: 'bg-emerald-600 text-white',
       accentColor: 'group-hover:border-emerald-500/40',
       href: '/apps/plant-doctor',
       features: ['Multimodal AI Vision', 'Disease & Pest Detection', 'Actionable Cures', 'Offline Scan History'],
@@ -139,7 +139,15 @@ export default function AppsSection() {
 
                 {/* Bottom Launch Action */}
                 <div className="mt-8 pt-4 border-t border-[var(--color-rule-subtle)]">
-                  {app.href === '/tools' ? (
+                  {app.href === '/apps/plant-doctor' ? (
+                    <Link
+                      href={app.href}
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-95"
+                    >
+                      <span>Launch Plant Doctor AI</span>
+                      <ArrowRight size={14} weight="bold" />
+                    </Link>
+                  ) : app.href === '/tools' ? (
                     <Link
                       href={app.href}
                       className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--color-primary-hover)] active:scale-95"
@@ -153,7 +161,7 @@ export default function AppsSection() {
                       disabled
                       className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-muted)] py-3 text-xs font-bold text-[var(--color-ink-muted)] cursor-not-allowed opacity-75"
                     >
-                      <span>Building in Progress (Phase 2)</span>
+                      <span>Building in Progress (App #2)</span>
                     </button>
                   )}
                 </div>

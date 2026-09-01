@@ -39,9 +39,9 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <span className="text-[var(--color-ink-muted)] opacity-60">
+                <Link href="/apps/plant-doctor" className="transition-colors hover:text-emerald-500 font-medium text-[var(--color-ink)]">
                   Plant Doctor AI (App #1)
-                </span>
+                </Link>
               </li>
               <li>
                 <span className="text-[var(--color-ink-muted)] opacity-60">
