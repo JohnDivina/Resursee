@@ -11,7 +11,6 @@ import {
 } from '@phosphor-icons/react';
 import StatsStrip from '@/components/home/StatsStrip';
 import { mockResources, mockDepartments } from '@/lib/mockData';
-import { WavyBackground } from '@/components/ui/wavy-background';
 
 interface HeroSectionProps {
   onSearch?: (query: string) => void;
@@ -33,15 +32,8 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
   };
 
   return (
-    <WavyBackground
-      containerClassName="border-b border-[var(--color-rule-subtle)]"
-      className="py-16 sm:py-24"
-      colors={['#2563eb', '#38bdf8', '#1d4ed8', '#0284c7', '#60a5fa']}
-      waveOpacity={0.4}
-      blur={8}
-      speed="fast"
-    >
-      <div className="relative z-20 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden border-b border-[var(--color-rule-subtle)] bg-transparent py-16 sm:py-24">
+      <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
         {/* 1. Primary Tagline Headline */}
         <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-5xl sm:leading-[1.12] lg:text-6xl">
           Find the university resources you need{' '}
@@ -107,6 +99,6 @@ export default function HeroSection({ onSearch }: HeroSectionProps) {
         {/* 4. Dynamic Statistics Strip */}
         <StatsStrip resources={mockResources} departments={mockDepartments} />
       </div>
-    </WavyBackground>
+    </section>
   );
 }

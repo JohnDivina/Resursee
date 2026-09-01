@@ -14,6 +14,7 @@ export const WavyBackground = ({
   blur = 8,
   speed = 'fast',
   waveOpacity = 0.45,
+  isFixed = false,
   ...props
 }: {
   children?: React.ReactNode;
@@ -25,6 +26,7 @@ export const WavyBackground = ({
   blur?: number;
   speed?: 'slow' | 'fast';
   waveOpacity?: number;
+  isFixed?: boolean;
   [key: string]: any;
 }) => {
   const noise = createNoise3D();
@@ -41,11 +43,11 @@ export const WavyBackground = ({
   const getSpeed = () => {
     switch (speed) {
       case 'slow':
-        return 0.001;
+        return 0.0008;
       case 'fast':
-        return 0.002;
+        return 0.0018;
       default:
-        return 0.0015;
+        return 0.0012;
     }
   };
 
@@ -64,7 +66,7 @@ export const WavyBackground = ({
     ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const parent = containerRef.current || canvas.parentElement;
+    const parent = isFixed ? null : (containerRef.current || canvas.parentElement);
     w = ctx.canvas.width = parent ? parent.offsetWidth : window.innerWidth;
     h = ctx.canvas.height = parent ? parent.offsetHeight : window.innerHeight;
     ctx.filter = `blur(${blur}px)`;
@@ -72,7 +74,7 @@ export const WavyBackground = ({
 
     const handleResize = () => {
       if (!ctx || !canvas) return;
-      const p = containerRef.current || canvas.parentElement;
+      const p = isFixed ? null : (containerRef.current || canvas.parentElement);
       w = ctx.canvas.width = p ? p.offsetWidth : window.innerWidth;
       h = ctx.canvas.height = p ? p.offsetHeight : window.innerHeight;
       ctx.filter = `blur(${blur}px)`;
@@ -93,9 +95,9 @@ export const WavyBackground = ({
       ctx.beginPath();
       ctx.lineWidth = waveWidth || 45;
       ctx.strokeStyle = waveColors[i % waveColors.length];
-      for (x = 0; x < w; x += 5) {
-        const y = noise(x / 800, 0.3 * i, nt) * 85;
-        ctx.lineTo(x, y + h * 0.45);
+      for (x = 0; x < w; x += 6) {
+        const y = noise(x / 800, 0.3 * i, nt) * 90;
+        ctx.lineTo(x, y + h * 0.5);
       }
       ctx.stroke();
       ctx.closePath();
@@ -137,21 +139,28 @@ export const WavyBackground = ({
     <div
       ref={containerRef}
       className={cn(
-        'relative w-full flex flex-col items-center justify-center overflow-hidden',
+        'relative w-full flex flex-col',
         containerClassName
       )}
     >
       <canvas
-        className="pointer-events-none absolute inset-0 z-0 h-full w-full"
+        className={cn(
+          'pointer-events-none z-0',
+          isFixed
+            ? 'fixed inset-0 h-screen w-screen'
+            : 'absolute inset-0 h-full w-full'
+        )}
         ref={canvasRef}
         id="canvas"
         style={{
           ...(isSafari ? { filter: `blur(${blur}px)` } : {}),
         }}
       />
-      <div className={cn('relative z-10 w-full', className)} {...props}>
-        {children}
-      </div>
+      {children && (
+        <div className={cn('relative z-10 w-full flex-1 flex flex-col', className)} {...props}>
+          {children}
+        </div>
+      )}
     </div>
   );
 };

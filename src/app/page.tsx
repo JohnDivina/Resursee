@@ -10,13 +10,21 @@ import LatestNews from '@/components/home/LatestNews';
 import CommandPalette from '@/components/search/CommandPalette';
 import { mockResources, mockNewsArticles } from '@/lib/mockData';
 import { CheckCircle } from '@phosphor-icons/react';
+import { WavyBackground } from '@/components/ui/wavy-background';
 
 export default function HomePage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
+    <WavyBackground
+      isFixed={true}
+      colors={['#2563eb', '#38bdf8', '#1d4ed8', '#0284c7', '#60a5fa']}
+      waveOpacity={0.32}
+      blur={10}
+      speed="fast"
+      containerClassName="min-h-screen bg-[var(--color-paper)]"
+    >
       {/* 1. Minimal Header */}
       <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
 
@@ -51,6 +59,6 @@ export default function HomePage() {
           <span>{toastMessage}</span>
         </div>
       )}
-    </div>
+    </WavyBackground>
   );
 }
