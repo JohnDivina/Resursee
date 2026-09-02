@@ -55,6 +55,18 @@ html, body {
   letter-spacing: -0.012em;
 }
 
+/* Dot grid pattern utility for Bento Grid */
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+[data-theme='dark'] .bg-dot-pattern,
+.dark .bg-dot-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
