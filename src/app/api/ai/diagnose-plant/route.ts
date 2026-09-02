@@ -62,12 +62,21 @@ export async function POST(request: NextRequest) {
 
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
 
-    // 3. If Gemini API Key is available, perform Multimodal Vision analysis
-    if (geminiApiKey && imageBase64) {
-      try {
-        const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+    // 3. For Custom Image Uploads or Camera Captures: MUST go through Gemini Vision API
+    if (imageBase64) {
+      if (!geminiApiKey) {
+        return NextResponse.json(
+          {
+            error:
+              'Gemini API Key is missing. Please add GEMINI_API_KEY to your .env.local file (and Vercel Environment Variables) to enable AI vision scanning.',
+          },
+          { status: 400 }
+        );
+      }
 
-        const systemPrompt = `You are Dr. Flora, an expert world-class agricultural plant pathologist and botanist.
+      const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+
+      const systemPrompt = `You are Dr. Flora, an expert world-class agricultural plant pathologist and botanist.
 Analyze this plant or leaf image carefully and provide a structured clinical pathology diagnosis.
 You must return your analysis strictly as a valid JSON object matching this schema:
 {
@@ -103,62 +112,81 @@ You must return your analysis strictly as a valid JSON object matching this sche
 }
 Do not include markdown ticks, preamble, or commentary outside the JSON. Return only the raw JSON.`;
 
-        const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: systemPrompt },
-                    {
-                      inlineData: {
-                        mimeType: mimeType || 'image/jpeg',
-                        data: cleanBase64,
-                      },
+      // Use official Gemini 1.5 Flash Vision model
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: systemPrompt },
+                  {
+                    inlineData: {
+                      mimeType: mimeType || 'image/jpeg',
+                      data: cleanBase64,
                     },
-                  ],
-                },
-              ],
-              generationConfig: {
-                temperature: 0.2,
-                responseMimeType: 'application/json',
+                  },
+                ],
               },
-            }),
-          }
-        );
-
-        if (geminiResponse.ok) {
-          const data = await geminiResponse.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            const parsed = JSON.parse(rawText.trim());
-            const result: PlantDiagnosisResult = {
-              id: `diag-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-              timestamp: new Date().toISOString(),
-              ...parsed,
-            };
-            return NextResponse.json({ success: true, result });
-          }
+            ],
+            generationConfig: {
+              temperature: 0.2,
+              responseMimeType: 'application/json',
+            },
+          }),
         }
-      } catch (geminiErr) {
-        console.warn('Gemini API call encountered an issue, transitioning to neural expert engine:', geminiErr);
+      );
+
+      if (!geminiResponse.ok) {
+        const errorData = await geminiResponse.json().catch(() => ({}));
+        const apiErrMsg = errorData?.error?.message || `Google Gemini API returned status ${geminiResponse.status}`;
+        console.error('Gemini Vision API Error:', apiErrMsg);
+        return NextResponse.json(
+          {
+            error: `AI Vision Error: ${apiErrMsg}. Please check your GEMINI_API_KEY.`,
+          },
+          { status: 502 }
+        );
       }
+
+      const data = await geminiResponse.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!rawText) {
+        return NextResponse.json(
+          { error: 'AI Vision could not generate a diagnosis from this image. Please try a clearer leaf photo.' },
+          { status: 500 }
+        );
+      }
+
+      const parsed = JSON.parse(rawText.trim());
+      const result: PlantDiagnosisResult = {
+        id: `diag-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        timestamp: new Date().toISOString(),
+        ...parsed,
+      };
+
+      return NextResponse.json({ success: true, result });
     }
 
-    // 4. Intelligent Botanical Diagnostics Engine (Deterministic & Sample Matching)
-    const diagnosis = generateExpertBotanicalDiagnosis(sampleId, customNotes);
+    // 4. Sample Test Cases (Only when explicitly clicking 1-click test samples)
+    if (sampleId) {
+      const diagnosis = generateExpertBotanicalDiagnosis(sampleId, customNotes);
+      return NextResponse.json({
+        success: true,
+        result: diagnosis,
+      });
+    }
 
-    return NextResponse.json({
-      success: true,
-      result: diagnosis,
-    });
-  } catch (error) {
+    return NextResponse.json({ error: 'No valid image or sample provided.' }, { status: 400 });
+  } catch (error: unknown) {
     console.error('Plant Doctor API error:', error);
+    const msg = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'An error occurred while diagnosing the plant image. Please try again.' },
+      { error: `Diagnosis error: ${msg}` },
       { status: 500 }
     );
   }
