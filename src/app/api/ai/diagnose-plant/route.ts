@@ -112,48 +112,72 @@ You must return your analysis strictly as a valid JSON object matching this sche
 }
 Do not include markdown ticks, preamble, or commentary outside the JSON. Return only the raw JSON.`;
 
-      // Use official Gemini 1.5 Flash Vision model
-      const geminiResponse = await fetch(
+      // Candidate model URLs to ensure 100% compatibility across Google AI Studio API versions
+      const candidateEndpoints = [
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`,
+      ];
+
+      let lastErrorMessage = '';
+      let successfulData: Record<string, unknown> | null = null;
+
+      const requestPayload = {
+        contents: [
+          {
+            parts: [
+              { text: systemPrompt },
               {
-                parts: [
-                  { text: systemPrompt },
-                  {
-                    inlineData: {
-                      mimeType: mimeType || 'image/jpeg',
-                      data: cleanBase64,
-                    },
-                  },
-                ],
+                inlineData: {
+                  mimeType: mimeType || 'image/jpeg',
+                  data: cleanBase64,
+                },
               },
             ],
-            generationConfig: {
-              temperature: 0.2,
-              responseMimeType: 'application/json',
-            },
-          }),
-        }
-      );
+          },
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+        },
+      };
 
-      if (!geminiResponse.ok) {
-        const errorData = await geminiResponse.json().catch(() => ({}));
-        const apiErrMsg = errorData?.error?.message || `Google Gemini API returned status ${geminiResponse.status}`;
-        console.error('Gemini Vision API Error:', apiErrMsg);
+      for (const endpoint of candidateEndpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestPayload),
+          });
+
+          if (response.ok) {
+            successfulData = await response.json();
+            break;
+          } else {
+            const errJson = await response.json().catch(() => ({}));
+            lastErrorMessage =
+              errJson?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+          }
+        } catch (fetchErr: unknown) {
+          lastErrorMessage = fetchErr instanceof Error ? fetchErr.message : 'Network error';
+        }
+      }
+
+      if (!successfulData) {
+        console.error('All Gemini model endpoints failed. Last error:', lastErrorMessage);
         return NextResponse.json(
           {
-            error: `AI Vision Error: ${apiErrMsg}. Please check your GEMINI_API_KEY.`,
+            error: `AI Vision Error from Google: ${lastErrorMessage}. Please verify your GEMINI_API_KEY on Google AI Studio.`,
           },
           { status: 502 }
         );
       }
 
-      const data = await geminiResponse.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText =
+        (successfulData as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> })
+          ?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!rawText) {
         return NextResponse.json(
