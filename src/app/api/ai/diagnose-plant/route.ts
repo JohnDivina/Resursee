@@ -114,18 +114,53 @@ You must return your analysis strictly as a valid JSON object matching this sche
 Do not include markdown ticks, preamble, or commentary outside the JSON. Return only the raw JSON.`;
 
       const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
-      const candidateModels = [
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-latest',
-        'gemini-1.5-flash-8b',
-        'gemini-2.0-flash-exp',
-        'gemini-1.5-pro',
-      ];
+
+      // 1. Dynamically query Google's ModelService.ListModels for this project's enabled models
+      let availableModelNames: string[] = [];
+      let listModelsError = '';
+
+      try {
+        const listRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey.trim()}`
+        );
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          if (Array.isArray(listData.models)) {
+            availableModelNames = listData.models
+              .filter((m: { supportedGenerationMethods?: string[] }) =>
+                m.supportedGenerationMethods?.includes('generateContent')
+              )
+              .map((m: { name: string }) => m.name.replace(/^models\//, ''));
+          }
+        } else {
+          const errData = await listRes.json().catch(() => ({}));
+          listModelsError =
+            errData?.error?.message || `HTTP ${listRes.status}: ${listRes.statusText}`;
+        }
+      } catch (e: unknown) {
+        listModelsError = e instanceof Error ? e.message : 'Failed to query ModelService';
+      }
+
+      // If ListModels found active models, prioritize them; otherwise use standard candidates
+      const modelsToTry =
+        availableModelNames.length > 0
+          ? [
+              ...availableModelNames.filter((n) => n.includes('flash')),
+              ...availableModelNames.filter((n) => !n.includes('flash')),
+            ]
+          : [
+              'gemini-2.0-flash',
+              'gemini-1.5-flash',
+              'gemini-1.5-flash-latest',
+              'gemini-1.5-flash-8b',
+              'gemini-2.0-flash-exp',
+              'gemini-1.5-pro',
+            ];
 
       let rawText = '';
-      let lastErrorMessage = '';
+      let lastErrorMessage = listModelsError;
 
-      for (const modelName of candidateModels) {
+      for (const modelName of modelsToTry) {
         try {
           const model = genAI.getGenerativeModel({
             model: modelName,
@@ -158,7 +193,9 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
         console.error('All Gemini vision models failed. Last error:', lastErrorMessage);
         return NextResponse.json(
           {
-            error: `Google Gemini API Error: ${lastErrorMessage}. Please verify that the "Generative Language API" is enabled for your project on Google AI Studio.`,
+            error: `Google Gemini API Error: ${lastErrorMessage}. Available models detected: [${
+              availableModelNames.join(', ') || 'none'
+            }]. If none are listed, please create a standard Gemini API key at https://aistudio.google.com/app/apikey.`,
           },
           { status: 502 }
         );
