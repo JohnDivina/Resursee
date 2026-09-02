@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PlantDiagnosisResult } from '@/types/plantDoctor';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Rate Limiting Map for In-Memory Throttling (AGENTS.md Directive)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -62,13 +63,13 @@ export async function POST(request: NextRequest) {
 
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
 
-    // 3. For Custom Image Uploads or Camera Captures: MUST go through Gemini Vision API
+    // 3. For Custom Image Uploads or Camera Captures: Execute via official Google Gemini SDK
     if (imageBase64) {
       if (!geminiApiKey) {
         return NextResponse.json(
           {
             error:
-              'Gemini API Key is missing. Please add GEMINI_API_KEY to your .env.local file (and Vercel Environment Variables) to enable AI vision scanning.',
+              'Gemini API Key is missing. Please set GEMINI_API_KEY in your environment variables to enable AI vision diagnosis.',
           },
           { status: 400 }
         );
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 
       const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
 
-      const systemPrompt = `You are Dr. Flora, an expert world-class agricultural plant pathologist and botanist.
+      const systemPrompt = `You are Dr. Flora, an expert agricultural plant pathologist and botanist.
 Analyze this plant or leaf image carefully and provide a structured clinical pathology diagnosis.
 You must return your analysis strictly as a valid JSON object matching this schema:
 {
@@ -112,88 +113,73 @@ You must return your analysis strictly as a valid JSON object matching this sche
 }
 Do not include markdown ticks, preamble, or commentary outside the JSON. Return only the raw JSON.`;
 
-      // Candidate model URLs to ensure 100% compatibility across Google AI Studio API versions
-      const candidateEndpoints = [
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`,
+      const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
+      const candidateModels = [
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash-8b',
+        'gemini-2.0-flash-exp',
+        'gemini-1.5-pro',
       ];
 
+      let rawText = '';
       let lastErrorMessage = '';
-      let successfulData: Record<string, unknown> | null = null;
 
-      const requestPayload = {
-        contents: [
-          {
-            parts: [
-              { text: systemPrompt },
-              {
-                inlineData: {
-                  mimeType: mimeType || 'image/jpeg',
-                  data: cleanBase64,
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: 'application/json',
-        },
-      };
-
-      for (const endpoint of candidateEndpoints) {
+      for (const modelName of candidateModels) {
         try {
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestPayload),
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.2,
+            },
           });
 
-          if (response.ok) {
-            successfulData = await response.json();
-            break;
-          } else {
-            const errJson = await response.json().catch(() => ({}));
-            lastErrorMessage =
-              errJson?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-          }
-        } catch (fetchErr: unknown) {
-          lastErrorMessage = fetchErr instanceof Error ? fetchErr.message : 'Network error';
+          const result = await model.generateContent([
+            systemPrompt,
+            {
+              inlineData: {
+                data: cleanBase64,
+                mimeType: mimeType || 'image/jpeg',
+              },
+            },
+          ]);
+
+          const response = await result.response;
+          rawText = response.text();
+          if (rawText) break;
+        } catch (modelErr: unknown) {
+          lastErrorMessage = modelErr instanceof Error ? modelErr.message : String(modelErr);
+          console.warn(`Gemini model ${modelName} failed:`, lastErrorMessage);
         }
       }
 
-      if (!successfulData) {
-        console.error('All Gemini model endpoints failed. Last error:', lastErrorMessage);
+      if (!rawText) {
+        console.error('All Gemini vision models failed. Last error:', lastErrorMessage);
         return NextResponse.json(
           {
-            error: `AI Vision Error from Google: ${lastErrorMessage}. Please verify your GEMINI_API_KEY on Google AI Studio.`,
+            error: `Google Gemini API Error: ${lastErrorMessage}. Please verify that the "Generative Language API" is enabled for your project on Google AI Studio.`,
           },
           { status: 502 }
         );
       }
 
-      const rawText =
-        (successfulData as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> })
-          ?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!rawText) {
-        return NextResponse.json(
-          { error: 'AI Vision could not generate a diagnosis from this image. Please try a clearer leaf photo.' },
-          { status: 500 }
-        );
+      // Parse JSON from model output
+      let cleanJson = rawText.trim();
+      if (cleanJson.startsWith('```json')) {
+        cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanJson.startsWith('```')) {
+        cleanJson = cleanJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
 
-      const parsed = JSON.parse(rawText.trim());
-      const result: PlantDiagnosisResult = {
+      const parsed = JSON.parse(cleanJson);
+      const diagnosisResult: PlantDiagnosisResult = {
         id: `diag-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         timestamp: new Date().toISOString(),
         ...parsed,
       };
 
-      return NextResponse.json({ success: true, result });
+      return NextResponse.json({ success: true, result: diagnosisResult });
     }
 
     // 4. Sample Test Cases (Only when explicitly clicking 1-click test samples)
