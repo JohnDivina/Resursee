@@ -115,22 +115,32 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
 
       const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
 
-      // 1. Dynamically query Google's ModelService.ListModels for this project's enabled models
-      let availableModelNames: string[] = [];
+      // 1. Fast Query to Google's ModelService.ListModels (max 3s timeout)
+      let detectedModel: string | null = null;
       let listModelsError = '';
 
       try {
         const listRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey.trim()}`
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey.trim()}`,
+          { signal: AbortSignal.timeout(3000) }
         );
         if (listRes.ok) {
           const listData = await listRes.json();
           if (Array.isArray(listData.models)) {
-            availableModelNames = listData.models
+            const supported = listData.models
               .filter((m: { supportedGenerationMethods?: string[] }) =>
                 m.supportedGenerationMethods?.includes('generateContent')
               )
               .map((m: { name: string }) => m.name.replace(/^models\//, ''));
+
+            // Pick the best flash vision model from active list
+            detectedModel =
+              supported.find((n: string) => n === 'gemini-1.5-flash') ||
+              supported.find((n: string) => n === 'gemini-1.5-flash-latest') ||
+              supported.find((n: string) => n === 'gemini-2.0-flash') ||
+              supported.find((n: string) => n.includes('flash')) ||
+              supported[0] ||
+              null;
           }
         } else {
           const errData = await listRes.json().catch(() => ({}));
@@ -138,29 +148,18 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
             errData?.error?.message || `HTTP ${listRes.status}: ${listRes.statusText}`;
         }
       } catch (e: unknown) {
-        listModelsError = e instanceof Error ? e.message : 'Failed to query ModelService';
+        listModelsError = e instanceof Error ? e.message : 'Network timeout querying ModelService';
       }
 
-      // If ListModels found active models, prioritize them; otherwise use standard candidates
-      const modelsToTry =
-        availableModelNames.length > 0
-          ? [
-              ...availableModelNames.filter((n) => n.includes('flash')),
-              ...availableModelNames.filter((n) => !n.includes('flash')),
-            ]
-          : [
-              'gemini-2.0-flash',
-              'gemini-1.5-flash',
-              'gemini-1.5-flash-latest',
-              'gemini-1.5-flash-8b',
-              'gemini-2.0-flash-exp',
-              'gemini-1.5-pro',
-            ];
+      // 2. Select targeted models (limit to top 2 to guarantee sub-5s response)
+      const targetModels = detectedModel
+        ? [detectedModel]
+        : ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
 
       let rawText = '';
-      let lastErrorMessage = listModelsError;
+      let lastErrorMessage = listModelsError || '';
 
-      for (const modelName of modelsToTry) {
+      for (const modelName of targetModels.slice(0, 2)) {
         try {
           const model = genAI.getGenerativeModel({
             model: modelName,
@@ -185,17 +184,17 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
           if (rawText) break;
         } catch (modelErr: unknown) {
           lastErrorMessage = modelErr instanceof Error ? modelErr.message : String(modelErr);
-          console.warn(`Gemini model ${modelName} failed:`, lastErrorMessage);
+          console.warn(`Model ${modelName} failed:`, lastErrorMessage);
         }
       }
 
       if (!rawText) {
-        console.error('All Gemini vision models failed. Last error:', lastErrorMessage);
         return NextResponse.json(
           {
-            error: `Google Gemini API Error: ${lastErrorMessage}. Available models detected: [${
-              availableModelNames.join(', ') || 'none'
-            }]. If none are listed, please create a standard Gemini API key at https://aistudio.google.com/app/apikey.`,
+            error: `Google Gemini API Error: ${lastErrorMessage}. Please verify that the "Generative Language API" is enabled in your Google Cloud / AI Studio project for key ${geminiApiKey.substring(
+              0,
+              8
+            )}...`,
           },
           { status: 502 }
         );
