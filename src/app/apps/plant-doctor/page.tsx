@@ -189,7 +189,7 @@ export default function PlantDoctorPage() {
                 Apps
               </Link>
               <span>/</span>
-              <span className="font-semibold text-[var(--color-ink)]">Plant Doctor AI</span>
+              <span className="font-semibold text-[var(--color-ink)]">Plant Vision</span>
             </nav>
 
             {/* Quota Indicator */}
@@ -218,24 +218,9 @@ export default function PlantDoctorPage() {
           {/* 2. Platform Heading Header */}
           <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 sm:flex-row sm:items-end">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-emerald-600 text-white shadow-xs">
-                  <Plant size={20} weight="bold" />
-                </span>
-                <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  Multimodal AI Vision · App #1
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[9.5px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  <ShieldCheck size={12} weight="bold" />
-                  <span>Google Gemini 3.6 Flash</span>
-                </span>
-              </div>
-              <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
-                Plant Doctor AI Vision Studio
+              <h1 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+                Plant Vision
               </h1>
-              <p className="mt-1 text-xs text-[var(--color-ink-muted)] sm:text-sm max-w-2xl">
-                Instant botanical pathology. Upload a leaf photo to identify diseases, fungal blights, and insect infestations with curated organic & chemical treatments.
-              </p>
             </div>
 
             <Link
