@@ -302,20 +302,10 @@ export default function ToolsPreview() {
     <section className="border-t border-[var(--color-rule-subtle)] bg-transparent py-14 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end mb-8">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-              Tools for getting things done.
-            </h2>
-          </div>
-
-          <Link
-            href="/tools"
-            className="group flex items-center gap-1 text-xs font-bold text-[var(--color-primary)] hover:underline shrink-0"
-          >
-            <span>View all productivity tools</span>
-            <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-1" />
-          </Link>
+        <div className="mb-8">
+          <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+            Tools for getting things done.
+          </h2>
         </div>
 
         {/* Aceternity Bento Box Grid Style */}
