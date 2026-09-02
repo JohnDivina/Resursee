@@ -12,6 +12,7 @@ import FollowUpChat from '@/components/plant-doctor/FollowUpChat';
 import ScanHistory from '@/components/plant-doctor/ScanHistory';
 import { samplePlants } from '@/lib/plantDoctorSamples';
 import { PlantDiagnosisResult, SamplePlant } from '@/types/plantDoctor';
+import { QuotaStatus } from '@/lib/quotaManager';
 import {
   Plant,
   Camera,
@@ -21,6 +22,8 @@ import {
   Scan,
   Lightning,
   CheckCircle,
+  GoogleLogo,
+  LockSimple,
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -33,9 +36,26 @@ export default function PlantDoctorPage() {
   const [diagnosisResult, setDiagnosisResult] = useState<PlantDiagnosisResult | null>(null);
   const [scanHistory, setScanHistory] = useState<PlantDiagnosisResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [quota, setQuota] = useState<QuotaStatus | null>(null);
+  const [isGuestExceeded, setIsGuestExceeded] = useState(false);
 
-  // Load Scan History from localStorage
+  // Load Session & Scan History
   useEffect(() => {
+    async function loadSessionAndQuota() {
+      try {
+        const res = await fetch('/api/auth/session');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.quota) {
+            setQuota(data.quota);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load auth session:', err);
+      }
+    }
+    loadSessionAndQuota();
+
     try {
       const saved = localStorage.getItem('resursee-plant-doctor-history');
       if (saved) {
@@ -61,7 +81,6 @@ export default function PlantDoctorPage() {
     localStorage.removeItem('resursee-plant-doctor-history');
   };
 
-  // Convert File to Base64
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -71,13 +90,12 @@ export default function PlantDoctorPage() {
     });
   };
 
-  // Execute Diagnosis Request
   const runDiagnosis = async (options: { file?: File; sample?: SamplePlant }) => {
     setIsScanning(true);
     setErrorMessage(null);
     setDiagnosisResult(null);
+    setIsGuestExceeded(false);
 
-    // Progressive scanning status messages for rich UX feedback
     const stepMessages = [
       'Scanning foliage morphology & cellular structure...',
       'Analyzing leaf chlorosis, pustules & necrotic margins...',
@@ -118,7 +136,14 @@ export default function PlantDoctorPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.isGuestQuotaExceeded) {
+          setIsGuestExceeded(true);
+        }
         throw new Error(data.error || 'Failed to complete leaf diagnosis.');
+      }
+
+      if (data.quota) {
+        setQuota(data.quota);
       }
 
       const result: PlantDiagnosisResult = {
@@ -130,7 +155,9 @@ export default function PlantDoctorPage() {
       saveToHistory(result);
     } catch (err: unknown) {
       console.error('Diagnosis failed:', err);
-      setErrorMessage(err instanceof Error ? err.message : 'An error occurred during scanning. Please try again.');
+      setErrorMessage(
+        err instanceof Error ? err.message : 'An error occurred during scanning. Please try again.'
+      );
     } finally {
       clearInterval(interval);
       setIsScanning(false);
@@ -141,6 +168,7 @@ export default function PlantDoctorPage() {
     setDiagnosisResult(null);
     setCurrentImagePreview(null);
     setErrorMessage(null);
+    setIsGuestExceeded(false);
   };
 
   return (
@@ -149,21 +177,45 @@ export default function PlantDoctorPage() {
       <CommandPalette isOpen={searchPaletteOpen} onClose={() => setSearchPaletteOpen(false)} />
 
       <main className="flex-1 py-8 sm:py-12">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 space-y-8">
-          {/* 1. Breadcrumb Navigation */}
-          <nav className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
-            <Link href="/" className="hover:text-[var(--color-primary)]">
-              Home
-            </Link>
-            <span>/</span>
-            <Link href="/" className="hover:text-[var(--color-primary)]">
-              Apps
-            </Link>
-            <span>/</span>
-            <span className="font-semibold text-[var(--color-ink)]">Plant Doctor AI</span>
-          </nav>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-8">
+          {/* 1. Breadcrumb & Quota Status Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <nav className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
+              <Link href="/" className="hover:text-[var(--color-primary)]">
+                Home
+              </Link>
+              <span>/</span>
+              <Link href="/" className="hover:text-[var(--color-primary)]">
+                Apps
+              </Link>
+              <span>/</span>
+              <span className="font-semibold text-[var(--color-ink)]">Plant Doctor AI</span>
+            </nav>
 
-          {/* 2. Tool Heading Header */}
+            {/* Quota Indicator */}
+            {quota && (
+              <div className="flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3.5 py-1 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>
+                  {quota.maxQuota > 100
+                    ? 'Admin Access: Unlimited Scans'
+                    : quota.isGuest
+                    ? `Guest Preview: ${quota.remaining} / ${quota.maxQuota} scan left`
+                    : `Daily AI Scans: ${quota.remaining} / ${quota.maxQuota} remaining`}
+                </span>
+                {quota.isGuest && (
+                  <a
+                    href="/api/auth/google?returnTo=/apps/plant-doctor"
+                    className="ml-1 text-[11px] text-[var(--color-primary)] hover:underline"
+                  >
+                    (Sign in for 10)
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 2. Platform Heading Header */}
           <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 sm:flex-row sm:items-end">
             <div>
               <div className="flex items-center gap-2">
@@ -175,14 +227,14 @@ export default function PlantDoctorPage() {
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[9.5px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                   <ShieldCheck size={12} weight="bold" />
-                  <span>Gemini 2.5 Flash Vision</span>
+                  <span>Google Gemini 3.6 Flash</span>
                 </span>
               </div>
               <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
-                Plant Doctor AI Vision
+                Plant Doctor AI Vision Studio
               </h1>
               <p className="mt-1 text-xs text-[var(--color-ink-muted)] sm:text-sm max-w-2xl">
-                Instantly diagnose leaf diseases, fungal blights, and pest damage by uploading a leaf photo or taking a live garden snapshot.
+                Instant botanical pathology. Upload a leaf photo to identify diseases, fungal blights, and insect infestations with curated organic & chemical treatments.
               </p>
             </div>
 
@@ -195,21 +247,47 @@ export default function PlantDoctorPage() {
             </Link>
           </div>
 
-          {/* 3. Error Alert */}
-          {errorMessage && (
+          {/* 3. Guest Quota Prompt Card */}
+          {isGuestExceeded && (
+            <div className="rounded-[28px] border border-emerald-500/30 bg-emerald-500/[0.04] p-6 sm:p-8 text-center space-y-4 shadow-md animate-in zoom-in-95 duration-200">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                <LockSimple size={28} weight="bold" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-[var(--color-ink)]">
+                  Guest Preview Limit Reached
+                </h3>
+                <p className="mt-1 max-w-md mx-auto text-xs text-[var(--color-ink-muted)]">
+                  You&apos;ve used your free guest scan. Sign in with your Google account to get **10 free AI vision scans every single day**!
+                </p>
+              </div>
+              <div>
+                <a
+                  href="/api/auth/google?returnTo=/apps/plant-doctor"
+                  className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all"
+                >
+                  <GoogleLogo size={16} weight="bold" />
+                  <span>Sign in with Google (10 Daily Scans)</span>
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* 4. Error Alert */}
+          {errorMessage && !isGuestExceeded && (
             <div className="rounded-[20px] border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-medium text-rose-700 dark:text-rose-300 flex items-center justify-between">
               <span>{errorMessage}</span>
               <button
                 type="button"
                 onClick={() => setErrorMessage(null)}
-                className="underline font-bold"
+                className="underline font-bold cursor-pointer"
               >
                 Dismiss
               </button>
             </div>
           )}
 
-          {/* 4. Scanning Animated State */}
+          {/* 5. Scanning Animated State */}
           <AnimatePresence>
             {isScanning && (
               <motion.div
@@ -245,7 +323,7 @@ export default function PlantDoctorPage() {
             )}
           </AnimatePresence>
 
-          {/* 5. Upload Studio & Sample Library (When no active diagnosis) */}
+          {/* 6. Upload Studio & Sample Library */}
           {!diagnosisResult && !isScanning && (
             <div className="space-y-8">
               {/* Dual Action Bar: Camera Button */}
@@ -285,10 +363,10 @@ export default function PlantDoctorPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
-                      1-Click Instant Test Samples
+                      1-Click Instant Test Samples (0 Tokens Used)
                     </h3>
                     <p className="text-xs text-[var(--color-ink-muted)]">
-                      Don&apos;t have a photo ready? Test our AI model with pre-loaded botanical cases:
+                      Test our AI diagnostic studio immediately with pre-loaded botanical cases:
                     </p>
                   </div>
                 </div>
@@ -322,7 +400,7 @@ export default function PlantDoctorPage() {
                       </div>
 
                       <div className="mt-3 flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-2 text-[10.5px] font-bold text-[var(--color-primary)]">
-                        <span>Test Scan</span>
+                        <span>Instant Test</span>
                         <Sparkle size={12} weight="fill" />
                       </div>
                     </button>
@@ -339,7 +417,7 @@ export default function PlantDoctorPage() {
             </div>
           )}
 
-          {/* 6. Diagnosis Results & Follow-Up Assistant */}
+          {/* 7. Redesigned Split Studio Diagnosis & Follow-Up AI */}
           {diagnosisResult && !isScanning && (
             <div className="space-y-8">
               <DiagnosisReport

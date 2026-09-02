@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { PlantDiagnosisResult } from '@/types/plantDoctor';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { verifySignedSession } from '@/lib/sessionCrypto';
+import { checkUserQuota, incrementUserQuota } from '@/lib/quotaManager';
 
 // Rate Limiting Map for In-Memory Throttling (AGENTS.md Directive)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 5 * 60 * 1000; // 5 minutes
-const MAX_REQUESTS_PER_WINDOW = 20; // 20 diagnoses per 5 mins per IP
+const MAX_REQUESTS_PER_WINDOW = 30; // 30 diagnoses per 5 mins per IP
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds?: number } {
   const now = Date.now();
@@ -27,17 +30,17 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds?: num
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Enforce Rate Limiting
     const clientIp =
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       request.headers.get('x-real-ip') ||
       '127.0.0.1';
 
+    // 1. Enforce Sliding Window Anti-Spam Rate Limit
     const rateLimit = checkRateLimit(clientIp);
     if (!rateLimit.allowed) {
       return NextResponse.json(
         {
-          error: 'Rate limit exceeded. Please wait before analyzing another leaf image.',
+          error: 'Rate limit exceeded. Please wait a moment before analyzing another leaf image.',
           retryAfter: rateLimit.retryAfterSeconds,
         },
         {
@@ -50,9 +53,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Parse & Validate Payload
+    // 2. Read Authenticated Session & Verify Daily Quota
+    const cookieStore = await cookies();
+    const token = cookieStore.get('resursee_admin_token')?.value;
+    const session = token ? verifySignedSession(token) : null;
+
+    const quota = checkUserQuota(session, clientIp);
+
+    // 3. Parse & Validate Payload
     const body = await request.json();
     const { imageBase64, mimeType = 'image/jpeg', sampleId, customNotes } = body;
+
+    // For real uploads, check daily scan quota
+    if (imageBase64 && !quota.allowed) {
+      if (quota.isGuest) {
+        return NextResponse.json(
+          {
+            error:
+              'You have used your 1 free guest preview scan. Please sign in with your Google account to get 10 free daily AI scans!',
+            isGuestQuotaExceeded: true,
+            quota,
+          },
+          { status: 403 }
+        );
+      } else {
+        return NextResponse.json(
+          {
+            error: `You have reached your daily limit of ${quota.maxQuota} AI vision scans. Your quota resets at midnight UTC.`,
+            quota,
+          },
+          { status: 429 }
+        );
+      }
+    }
 
     if (!imageBase64 && !sampleId) {
       return NextResponse.json(
@@ -217,7 +250,14 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
         ...parsed,
       };
 
-      return NextResponse.json({ success: true, result: diagnosisResult });
+      // Increment quota count on successful scan
+      const updatedQuota = incrementUserQuota(session, clientIp);
+
+      return NextResponse.json({
+        success: true,
+        result: diagnosisResult,
+        quota: updatedQuota,
+      });
     }
 
     // 4. Sample Test Cases (Only when explicitly clicking 1-click test samples)

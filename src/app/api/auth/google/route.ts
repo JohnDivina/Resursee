@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 function getEffectiveOrigin(request: Request): string {
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
@@ -9,18 +10,29 @@ function getEffectiveOrigin(request: Request): string {
   return new URL(request.url).origin;
 }
 
+function sanitizeReturnTo(urlStr: string | null): string {
+  if (!urlStr) return '/';
+  // Prevent Open Redirect: must start with / and not //
+  if (urlStr.startsWith('/') && !urlStr.startsWith('//') && !urlStr.includes('://')) {
+    return urlStr;
+  }
+  return '/';
+}
+
 export async function GET(request: Request) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
+  const origin = getEffectiveOrigin(request);
+  const { searchParams } = new URL(request.url);
+
+  const rawReturnTo = searchParams.get('returnTo') || searchParams.get('redirect');
+  const safeReturnTo = sanitizeReturnTo(rawReturnTo);
 
   if (!clientId) {
-    return NextResponse.redirect(new URL('/admin?error=missing_google_client_id', request.url));
+    return NextResponse.redirect(new URL(`${safeReturnTo}?error=missing_google_client_id`, origin));
   }
 
-  // Derive exact redirect URI dynamically with proxy support
-  const origin = getEffectiveOrigin(request);
   const redirectUri = `${origin}/api/auth/callback/google`;
-
-  const state = Math.random().toString(36).substring(2, 15);
+  const state = crypto.randomBytes(24).toString('hex');
 
   const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   googleAuthUrl.searchParams.set('client_id', clientId);
@@ -31,5 +43,17 @@ export async function GET(request: Request) {
   googleAuthUrl.searchParams.set('access_type', 'online');
   googleAuthUrl.searchParams.set('prompt', 'select_account');
 
-  return NextResponse.redirect(googleAuthUrl.toString());
+  const response = NextResponse.redirect(googleAuthUrl.toString());
+
+  // Store state and returnTo in a secure short-lived cookie for verification
+  const oauthStateData = JSON.stringify({ state, returnTo: safeReturnTo });
+  response.cookies.set('resursee_oauth_state', Buffer.from(oauthStateData).toString('base64'), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 10, // 10 minutes
+  });
+
+  return response;
 }

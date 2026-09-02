@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getApprovedModerators, addPendingRequest } from '@/app/api/admin/staff/route';
+import { cookies } from 'next/headers';
+import { getApprovedModerators } from '@/app/api/admin/staff/route';
+import { createSignedSession, UserSession } from '@/lib/sessionCrypto';
 
 function getEffectiveOrigin(request: Request): string {
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
@@ -13,12 +15,35 @@ function getEffectiveOrigin(request: Request): string {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
+  const state = searchParams.get('state');
   const error = searchParams.get('error');
 
   const origin = getEffectiveOrigin(request);
+  const cookieStore = await cookies();
+
+  // 1. Read & Validate OAuth State Cookie
+  const stateCookie = cookieStore.get('resursee_oauth_state')?.value;
+  let returnTo = '/';
+  let expectedState = '';
+
+  if (stateCookie) {
+    try {
+      const parsed = JSON.parse(Buffer.from(stateCookie, 'base64').toString('utf-8'));
+      expectedState = parsed.state || '';
+      returnTo = parsed.returnTo || '/';
+    } catch {
+      // ignore
+    }
+  }
 
   if (error || !code) {
-    return NextResponse.redirect(new URL(`/admin?error=${encodeURIComponent(error || 'no_code')}`, origin));
+    return NextResponse.redirect(new URL(`${returnTo}?error=${encodeURIComponent(error || 'no_code')}`, origin));
+  }
+
+  // Verify state if expectedState is set (CSRF Protection)
+  if (expectedState && state !== expectedState) {
+    console.warn('OAuth state mismatch detected (possible CSRF attack).');
+    return NextResponse.redirect(new URL(`${returnTo}?error=oauth_state_mismatch`, origin));
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -26,13 +51,13 @@ export async function GET(request: Request) {
   const adminEmailsRaw = process.env.ADMIN_EMAILS || process.env.MASTER_ADMIN_EMAILS || '';
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL('/admin?error=missing_credentials', origin));
+    return NextResponse.redirect(new URL(`${returnTo}?error=missing_credentials`, origin));
   }
 
   try {
     const redirectUri = `${origin}/api/auth/callback/google`;
 
-    // 1. Exchange authorization code for tokens
+    // 2. Exchange authorization code for tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -48,10 +73,10 @@ export async function GET(request: Request) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok || !tokenData.access_token) {
-      return NextResponse.redirect(new URL('/admin?error=token_exchange_failed', origin));
+      return NextResponse.redirect(new URL(`${returnTo}?error=token_exchange_failed`, origin));
     }
 
-    // 2. Fetch Google User Profile
+    // 3. Fetch Google User Profile
     const userinfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
@@ -59,13 +84,13 @@ export async function GET(request: Request) {
     const profile = await userinfoResponse.json();
     const userEmail = (profile.email || '').toLowerCase().trim();
 
-    // 3. Determine Role
+    // 4. Determine Universal User / Admin Role
     const masterAdminEmails = adminEmailsRaw
       .split(',')
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
-    let role: 'master_admin' | 'moderator' | 'pending' = 'pending';
+    let role: 'master_admin' | 'moderator' | 'user' = 'user';
 
     const isMasterAdmin = masterAdminEmails.length > 0 && masterAdminEmails.includes(userEmail);
     const approvedList = getApprovedModerators();
@@ -76,43 +101,43 @@ export async function GET(request: Request) {
     } else if (isApprovedModerator) {
       role = 'moderator';
     } else {
-      role = 'pending';
-      // Record access request in pending queue
-      addPendingRequest({
-        email: userEmail,
-        name: profile.name || userEmail,
-        picture: profile.picture || null,
-      });
+      role = 'user'; // Standard verified Google user account
     }
 
-    // 4. Create Session Object
-    const sessionData = {
+    // 5. Build Cryptographically Signed Session
+    const sessionData: UserSession = {
       email: userEmail,
-      name: profile.name || 'Administrator',
+      name: profile.name || userEmail.split('@')[0],
       picture: profile.picture || null,
       role,
-      authenticated: role !== 'pending',
+      authenticated: true,
       timestamp: Date.now(),
+      userId: `usr_${userEmail.replace(/[^a-z0-9]/g, '_')}`,
     };
 
-    const redirectTarget =
-      role === 'pending'
-        ? `/admin?auth=pending_approval&email=${encodeURIComponent(userEmail)}&name=${encodeURIComponent(profile.name || '')}`
-        : '/admin?auth=google_success';
+    const signedToken = createSignedSession(sessionData);
 
-    const response = NextResponse.redirect(new URL(redirectTarget, origin));
+    // Build Redirect URL
+    const targetUrl = new URL(returnTo, origin);
+    targetUrl.searchParams.set('auth', 'success');
 
-    // Set secure HTTP-only session cookie
-    response.cookies.set('resursee_admin_token', Buffer.from(JSON.stringify(sessionData)).toString('base64'), {
+    const response = NextResponse.redirect(targetUrl);
+
+    // Set secure HTTP-only signed session cookie
+    response.cookies.set('resursee_admin_token', signedToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 14, // 14 days
     });
+
+    // Clear one-time oauth state cookie
+    response.cookies.delete('resursee_oauth_state');
 
     return response;
   } catch (err) {
-    return NextResponse.redirect(new URL('/admin?error=internal_auth_error', origin));
+    console.error('Google OAuth callback error:', err);
+    return NextResponse.redirect(new URL(`${returnTo}?error=internal_auth_error`, origin));
   }
 }

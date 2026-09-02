@@ -1,49 +1,42 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getApprovedModerators } from '@/app/api/admin/staff/route';
+import { verifySignedSession } from '@/lib/sessionCrypto';
+import { checkUserQuota } from '@/lib/quotaManager';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get('resursee_admin_token')?.value;
 
+  const clientIp =
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    request.headers.get('x-real-ip') ||
+    '127.0.0.1';
+
   if (!token) {
-    return NextResponse.json({ authenticated: false, user: null });
-  }
-
-  try {
-    const session = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
-    const userEmail = (session.email || '').toLowerCase().trim();
-
-    const masterAdminEmails = (process.env.ADMIN_EMAILS || process.env.MASTER_ADMIN_EMAILS || '')
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-
-    const approvedList = getApprovedModerators();
-    const isApproved = approvedList.some((m) => m.email.toLowerCase() === userEmail);
-    const isMasterAdmin = masterAdminEmails.length > 0 && masterAdminEmails.includes(userEmail);
-
-    if (isMasterAdmin) {
-      session.role = 'master_admin';
-      session.authenticated = true;
-    } else if (isApproved) {
-      session.role = 'moderator';
-      session.authenticated = true;
-    }
-
-    const response = NextResponse.json({ authenticated: session.authenticated, user: session });
-
-    // Update cookie with upgraded permissions
-    response.cookies.set('resursee_admin_token', Buffer.from(JSON.stringify(session)).toString('base64'), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
+    const guestQuota = checkUserQuota(null, clientIp);
+    return NextResponse.json({
+      authenticated: false,
+      user: null,
+      quota: guestQuota,
     });
-
-    return response;
-  } catch {
-    return NextResponse.json({ authenticated: false, user: null });
   }
+
+  const session = verifySignedSession(token);
+
+  if (!session) {
+    const guestQuota = checkUserQuota(null, clientIp);
+    return NextResponse.json({
+      authenticated: false,
+      user: null,
+      quota: guestQuota,
+    });
+  }
+
+  const userQuota = checkUserQuota(session, clientIp);
+
+  return NextResponse.json({
+    authenticated: true,
+    user: session,
+    quota: userQuota,
+  });
 }
