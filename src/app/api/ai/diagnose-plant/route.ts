@@ -133,10 +133,12 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
               )
               .map((m: { name: string }) => m.name.replace(/^models\//, ''));
 
-            // Pick the best flash vision model from active list
+            // Pick the best active vision model from active list
             detectedModel =
+              supported.find((n: string) => n === 'gemini-3.6-flash') ||
+              supported.find((n: string) => n === 'gemini-3.7-flash') ||
+              supported.find((n: string) => n === 'gemini-2.5-flash-tts') ||
               supported.find((n: string) => n === 'gemini-1.5-flash') ||
-              supported.find((n: string) => n === 'gemini-1.5-flash-latest') ||
               supported.find((n: string) => n === 'gemini-2.0-flash') ||
               supported.find((n: string) => n.includes('flash')) ||
               supported[0] ||
@@ -151,10 +153,10 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
         listModelsError = e instanceof Error ? e.message : 'Network timeout querying ModelService';
       }
 
-      // 2. Select targeted models (limit to top 2 to guarantee sub-5s response)
+      // 2. Select targeted models (prioritize Google's gemini-3.6-flash and gemini-3.7-flash)
       const targetModels = detectedModel
-        ? [detectedModel]
-        : ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+        ? [detectedModel, 'gemini-3.6-flash', 'gemini-3.7-flash']
+        : ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
 
       let rawText = '';
       let lastErrorMessage = listModelsError || '';
