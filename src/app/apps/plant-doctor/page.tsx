@@ -65,6 +65,9 @@ export default function PlantDoctorPage() {
     } catch {
       // ignore
     }
+
+    // Silent pre-warm of AI vision serverless container to prevent cold starts
+    fetch('/api/ai/diagnose-plant').catch(() => {});
   }, []);
 
   const saveToHistory = (result: PlantDiagnosisResult) => {
@@ -111,7 +114,6 @@ export default function PlantDoctorPage() {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            // Fallback to raw base64
             resolve({ base64: reader.result as string, mimeType: file.type || 'image/jpeg' });
             return;
           }
@@ -166,20 +168,46 @@ export default function PlantDoctorPage() {
         };
       }
 
-      const response = await fetch('/api/ai/diagnose-plant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(45000), // 45 seconds timeout
-      });
+      // Execute with automatic retry on cold-start / timeout
+      let response: Response | null = null;
+      let data: any = null;
+      let attempt = 1;
+      const maxAttempts = 2;
 
-      const data = await response.json();
+      while (attempt <= maxAttempts) {
+        try {
+          if (attempt > 1) {
+            setScanStepText('AI container warming up... Retrying analysis automatically...');
+          }
 
-      if (!response.ok) {
-        if (data.isGuestQuotaExceeded) {
+          response = await fetch('/api/ai/diagnose-plant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(attempt === 1 ? 25000 : 45000),
+          });
+
+          if (!response.ok && response.status >= 500 && attempt < maxAttempts) {
+            attempt++;
+            continue;
+          }
+
+          data = await response.json();
+          break;
+        } catch (fetchErr: unknown) {
+          if (attempt < maxAttempts) {
+            attempt++;
+            continue;
+          }
+          throw fetchErr;
+        }
+      }
+
+      if (!response || !response.ok) {
+        if (data?.isGuestQuotaExceeded) {
           setIsGuestExceeded(true);
         }
-        throw new Error(data.error || 'Failed to complete leaf diagnosis.');
+        throw new Error(data?.error || 'Failed to complete leaf diagnosis.');
       }
 
       if (data.quota) {

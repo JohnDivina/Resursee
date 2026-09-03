@@ -28,6 +28,13 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds?: num
   return { allowed: true };
 }
 
+export const maxDuration = 60; // Extend Vercel execution timeout to 60s
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  return NextResponse.json({ status: 'ready', service: 'plant-vision' });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const clientIp =
