@@ -11,8 +11,9 @@ import DiagnosisReport from '@/components/plant-doctor/DiagnosisReport';
 import FollowUpChat from '@/components/plant-doctor/FollowUpChat';
 import ScanHistory from '@/components/plant-doctor/ScanHistory';
 import { samplePlants } from '@/lib/plantDoctorSamples';
-import { PlantDiagnosisResult, SamplePlant } from '@/types/plantDoctor';
+import { SamplePlant, PlantDiagnosisResult } from '@/types/plantDoctor';
 import { QuotaStatus } from '@/lib/quotaManager';
+import { LoaderFive } from '@/components/ui/loader';
 import {
   Plant,
   Camera,
@@ -320,38 +321,32 @@ export default function PlantDoctorPage() {
             </div>
           )}
 
-          {/* 5. Scanning Animated State */}
+          {/* 5. Scanning Animated State with Aceternity LoaderFive */}
           <AnimatePresence>
             {isScanning && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
+                initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                className="relative overflow-hidden rounded-[32px] border border-emerald-500/30 bg-neutral-950 p-10 text-white shadow-2xl flex flex-col items-center justify-center text-center min-h-80"
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="relative overflow-hidden rounded-[32px] border border-neutral-300 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-10 sm:p-14 text-center shadow-md flex flex-col items-center justify-center min-h-80 space-y-4"
               >
-                {/* Laser Scanning Line Animation */}
-                <motion.div
-                  animate={{ y: [-120, 120, -120] }}
-                  transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
-                  className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_20px_#10b981]"
-                />
+                {currentImagePreview && (
+                  <div className="relative h-28 w-28 overflow-hidden rounded-2xl border border-neutral-300 dark:border-neutral-700 shadow-sm mb-2">
+                    <img
+                      src={currentImagePreview}
+                      alt="Uploaded leaf specimen"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                )}
 
-                <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-                  <Scan size={36} weight="bold" className="animate-pulse" />
+                <div className="text-base sm:text-xl text-neutral-900 dark:text-neutral-100">
+                  <LoaderFive text="Analyzing image - generating report" />
                 </div>
 
-                <h3 className="mt-6 text-xl font-extrabold text-white tracking-tight">
-                  Analyzing Botanical Pathology...
-                </h3>
-
-                <p className="mt-2 font-mono text-xs text-emerald-300 animate-pulse max-w-md">
+                <p className="font-mono text-xs text-neutral-500 dark:text-neutral-400 max-w-md">
                   {scanStepText}
                 </p>
-
-                <div className="mt-6 flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1 text-[11px] font-mono text-white/80">
-                  <Lightning size={13} className="text-amber-400" />
-                  <span>Multimodal Neural Vision Engine Active</span>
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
