@@ -20,7 +20,7 @@ export interface QuotaStatus {
 const userQuotaMap = new Map<string, { count: number; dateStr: string }>();
 const guestQuotaMap = new Map<string, { count: number; dateStr: string }>();
 
-export const GUEST_DAILY_LIMIT = 5; // 5 free scans for guests before Google Sign-In
+export const GUEST_DAILY_LIMIT = 2; // 2 free preview scans for guests before Google Sign-In
 export const USER_DAILY_LIMIT = 10; // 10 free scans daily for verified Google accounts
 export const ADMIN_DAILY_LIMIT = 9999;
 

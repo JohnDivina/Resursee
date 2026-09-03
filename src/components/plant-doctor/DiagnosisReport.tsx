@@ -100,13 +100,20 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
         <div className="flex flex-col justify-between rounded-[32px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs lg:col-span-5 space-y-6">
           <div className="space-y-4">
             {/* Specimen Header with Solid Black Font */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="font-mono text-xs font-black uppercase tracking-wider text-black dark:text-white">
                 BOTANICAL SPECIMEN
               </span>
-              <span className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 font-mono text-[11px] font-bold text-neutral-900 dark:text-neutral-100">
-                {diagnosis.confidenceScore}% AI Confidence
-              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {diagnosis.modelUsed && (
+                  <span className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 font-mono text-[10px] font-bold text-neutral-800 dark:text-neutral-200">
+                    {diagnosis.modelUsed}
+                  </span>
+                )}
+                <span className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 font-mono text-[11px] font-bold text-neutral-900 dark:text-neutral-100">
+                  {diagnosis.confidenceScore}% AI Confidence
+                </span>
+              </div>
             </div>
 
             {/* Image Preview with Interactive Zoom Lens */}
@@ -202,6 +209,11 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
               <h3 className="mt-1 text-lg sm:text-xl font-extrabold text-[var(--color-ink)]">
                 Curative & Preventive Protocol
               </h3>
+              {diagnosis.modelUsed && (
+                <p className="mt-0.5 font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
+                  Model: {diagnosis.modelUsed}
+                </p>
+              )}
             </div>
 
             {/* Circular Health Meter */}

@@ -27,6 +27,7 @@ export interface PlantDiagnosisResult {
   }[];
   preventionTips: string[];
   imageUrl?: string;
+  modelUsed?: string;
 }
 
 export interface PlantChatMessage {

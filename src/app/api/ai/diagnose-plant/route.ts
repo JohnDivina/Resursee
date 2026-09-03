@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              'You have reached the guest preview limit. Please sign in with your Google account to get 10 free daily AI scans!',
+              'You have reached your 2 free guest preview scans. Please sign in with your Google account to get 10 free daily AI scans!',
             isGuestQuotaExceeded: true,
             quota,
           },
@@ -189,6 +189,7 @@ Keep each treatment and symptom entry concise (maximum 2 items per list). Return
 
       let rawText = '';
       let lastErrorMessage = '';
+      let successfulModel = '';
 
       // Production-verified models:
       // 1. gemini-3.5-flash-lite: 1.8s-6s latency, 100% benchmark success rate, unexhausted quota
@@ -206,7 +207,10 @@ Keep each treatment and symptom entry concise (maximum 2 items per list). Return
         while (attemptsLeft > 0) {
           try {
             rawText = await callWithTimeout(step.model, step.timeout);
-            if (rawText) break;
+            if (rawText) {
+              successfulModel = step.model;
+              break;
+            }
           } catch (modelErr: unknown) {
             lastErrorMessage = modelErr instanceof Error ? modelErr.message : String(modelErr);
             console.warn(`Model ${step.model} attempt failed:`, lastErrorMessage);
@@ -250,10 +254,18 @@ Keep each treatment and symptom entry concise (maximum 2 items per list). Return
         cleanJson = cleanJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
 
+      const modelDisplayNameMap: Record<string, string> = {
+        'gemini-3.5-flash-lite': 'Google Gemini 3.5 Flash Lite',
+        'gemini-3.8-flash': 'Google Gemini 3.8 Flash',
+        'gemini-3.5-flash': 'Google Gemini 3.5 Flash',
+      };
+      const modelUsed = modelDisplayNameMap[successfulModel] || successfulModel || 'Google Gemini 3.5 Flash Lite';
+
       const parsed = JSON.parse(cleanJson);
       const diagnosisResult: PlantDiagnosisResult = {
         id: `diag-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         timestamp: new Date().toISOString(),
+        modelUsed,
         ...parsed,
       };
 
@@ -286,7 +298,10 @@ Keep each treatment and symptom entry concise (maximum 2 items per list). Return
 
     // 4. Sample Test Cases (Only when explicitly clicking 1-click test samples)
     if (sampleId) {
-      const diagnosis = generateExpertBotanicalDiagnosis(sampleId, customNotes);
+      const diagnosis = {
+        ...generateExpertBotanicalDiagnosis(sampleId, customNotes),
+        modelUsed: 'Resursee Botanical Reference Engine',
+      };
       return NextResponse.json({
         success: true,
         result: diagnosis,

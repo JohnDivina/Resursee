@@ -130,14 +130,25 @@ export async function generateFormalPlantReport(
   y += 5;
 
   doc.setFont('helvetica', 'bold');
-  doc.text('EVALUATOR:', margin, y);
+  doc.text('AI MODEL:', margin, y);
   doc.setFont('helvetica', 'normal');
-  doc.text('Autonomous Multimodal Vision Pathology System', margin + 28, y);
+  doc.text(diagnosis.modelUsed || 'Google Gemini 3.5 Flash Lite', margin + 28, y);
 
   doc.setFont('helvetica', 'bold');
   doc.text('CONFIDENCE:', margin + 100, y);
   doc.setFont('helvetica', 'normal');
   doc.text(`${diagnosis.confidenceScore}% Validated`, margin + 128, y);
+  y += 5;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('EVALUATOR:', margin, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Autonomous Multimodal Vision Pathology Engine', margin + 28, y);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('PROCESSING:', margin + 100, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Real-Time Neural Inference', margin + 128, y);
   y += 7;
 
   doc.setDrawColor(229, 231, 235);
@@ -448,9 +459,9 @@ export async function generateFormalPlantReport(
 
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
-  doc.setTextColor(107, 114, 128);
+  const modelName = diagnosis.modelUsed || 'Google Gemini 3.5 Flash Lite';
   doc.text(
-    'Notice: This clinical phytosanitary evaluation was generated via multimodal computer vision analysis. Agricultural practitioners should perform confirmatory testing where large-scale crop quarantine or commercial pesticide application is required.',
+    `Notice: This clinical phytosanitary evaluation was generated via multimodal computer vision analysis using ${modelName}. Agricultural practitioners should perform confirmatory testing where large-scale crop quarantine or commercial pesticide application is required.`,
     margin,
     y,
     { maxWidth: pageWidth - margin * 2 }

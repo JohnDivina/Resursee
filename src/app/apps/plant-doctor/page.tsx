@@ -335,7 +335,7 @@ export default function PlantDoctorPage() {
                   Guest Preview Limit Reached
                 </h3>
                 <p className="mt-1 max-w-md mx-auto text-xs text-[var(--color-ink-muted)]">
-                  You&apos;ve used your free guest scan. Sign in with your Google account to get **10 free AI vision scans every single day**!
+                  You&apos;ve used your 2 free guest preview scans. Sign in with your Google account to get **10 free AI vision scans every single day**!
                 </p>
               </div>
               <div>
