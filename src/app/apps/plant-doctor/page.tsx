@@ -81,10 +81,49 @@ export default function PlantDoctorPage() {
     localStorage.removeItem('resursee-plant-doctor-history');
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
+  /**
+   * Resizes large images (e.g. 12MP-48MP mobile photos) down to max 1600px
+   * and exports a lightweight base64 JPEG to avoid network timeouts.
+   */
+  const optimizeImageForScan = async (file: File): Promise<{ base64: string; mimeType: string }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1600;
+          let width = img.naturalWidth || img.width;
+          let height = img.naturalHeight || img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            // Fallback to raw base64
+            resolve({ base64: reader.result as string, mimeType: file.type || 'image/jpeg' });
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          resolve({ base64: optimizedDataUrl, mimeType: 'image/jpeg' });
+        };
+        img.onerror = () => {
+          resolve({ base64: reader.result as string, mimeType: file.type || 'image/jpeg' });
+        };
+        img.src = reader.result as string;
+      };
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
@@ -113,11 +152,11 @@ export default function PlantDoctorPage() {
       let payload: { imageBase64?: string; mimeType?: string; sampleId?: string } = {};
 
       if (options.file) {
-        const base64 = await fileToBase64(options.file);
+        const { base64, mimeType } = await optimizeImageForScan(options.file);
         setCurrentImagePreview(base64);
         payload = {
           imageBase64: base64,
-          mimeType: options.file.type || 'image/jpeg',
+          mimeType,
         };
       } else if (options.sample) {
         setCurrentImagePreview(options.sample.imageUrl);
@@ -130,7 +169,7 @@ export default function PlantDoctorPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(45000), // 45 seconds timeout
       });
 
       const data = await response.json();
@@ -155,9 +194,18 @@ export default function PlantDoctorPage() {
       saveToHistory(result);
     } catch (err: unknown) {
       console.error('Diagnosis failed:', err);
-      setErrorMessage(
-        err instanceof Error ? err.message : 'An error occurred during scanning. Please try again.'
-      );
+      if (
+        err instanceof Error &&
+        (err.name === 'AbortError' || err.message.toLowerCase().includes('abort'))
+      ) {
+        setErrorMessage(
+          'Diagnosis request timed out. The server or image analysis took too long. Please try again.'
+        );
+      } else {
+        setErrorMessage(
+          err instanceof Error ? err.message : 'An error occurred during scanning. Please try again.'
+        );
+      }
     } finally {
       clearInterval(interval);
       setIsScanning(false);

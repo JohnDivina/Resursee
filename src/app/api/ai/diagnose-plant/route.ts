@@ -148,51 +148,11 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
 
       const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
 
-      // 1. Fast Query to Google's ModelService.ListModels (max 3s timeout)
-      let detectedModel: string | null = null;
-      let listModelsError = '';
-
-      try {
-        const listRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey.trim()}`,
-          { signal: AbortSignal.timeout(3000) }
-        );
-        if (listRes.ok) {
-          const listData = await listRes.json();
-          if (Array.isArray(listData.models)) {
-            const supported = listData.models
-              .filter((m: { supportedGenerationMethods?: string[] }) =>
-                m.supportedGenerationMethods?.includes('generateContent')
-              )
-              .map((m: { name: string }) => m.name.replace(/^models\//, ''));
-
-            // Pick the best active vision model from active list
-            detectedModel =
-              supported.find((n: string) => n === 'gemini-3.6-flash') ||
-              supported.find((n: string) => n === 'gemini-3.7-flash') ||
-              supported.find((n: string) => n === 'gemini-2.5-flash-tts') ||
-              supported.find((n: string) => n === 'gemini-1.5-flash') ||
-              supported.find((n: string) => n === 'gemini-2.0-flash') ||
-              supported.find((n: string) => n.includes('flash')) ||
-              supported[0] ||
-              null;
-          }
-        } else {
-          const errData = await listRes.json().catch(() => ({}));
-          listModelsError =
-            errData?.error?.message || `HTTP ${listRes.status}: ${listRes.statusText}`;
-        }
-      } catch (e: unknown) {
-        listModelsError = e instanceof Error ? e.message : 'Network timeout querying ModelService';
-      }
-
-      // 2. Select targeted models (prioritize Google's gemini-3.6-flash and gemini-3.7-flash)
-      const targetModels = detectedModel
-        ? [detectedModel, 'gemini-3.6-flash', 'gemini-3.7-flash']
-        : ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+      // Target primary models directly without 3s listModels roundtrip latency
+      const targetModels = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
 
       let rawText = '';
-      let lastErrorMessage = listModelsError || '';
+      let lastErrorMessage = '';
 
       for (const modelName of targetModels.slice(0, 2)) {
         try {
