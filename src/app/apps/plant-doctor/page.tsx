@@ -280,7 +280,7 @@ export default function PlantDoctorPage() {
                   {quota.maxQuota > 100
                     ? 'Admin Access: Unlimited Scans'
                     : quota.isGuest
-                    ? `Guest Preview: ${quota.remaining} / ${quota.maxQuota} scan left`
+                    ? `Guest Preview: ${quota.remaining} / ${quota.maxQuota} scans left`
                     : `Daily AI Scans: ${quota.remaining} / ${quota.maxQuota} remaining`}
                 </span>
                 {quota.isGuest && (
