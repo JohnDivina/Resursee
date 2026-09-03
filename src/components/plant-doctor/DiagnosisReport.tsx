@@ -81,10 +81,10 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
 
   const healthScore = diagnosis.isHealthy ? 98 : Math.max(20, 100 - (diagnosis.severity === 'severe' ? 65 : diagnosis.severity === 'moderate' ? 45 : 25));
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     setIsGenerating(true);
     try {
-      generateFormalPlantReport(diagnosis, imageUrl);
+      await generateFormalPlantReport(diagnosis, imageUrl);
     } catch (err) {
       console.error('Failed to generate report:', err);
     } finally {
