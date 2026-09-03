@@ -106,23 +106,6 @@ export default function Header({ onOpenSearch }: HeaderProps) {
 
         {/* Right Action Toolbar */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Quick Search Button */}
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            className="group flex h-9 items-center gap-2 rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] px-2.5 sm:px-3 text-xs font-semibold text-[var(--color-ink-muted)] shadow-2xs transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-ink)] active:scale-98 cursor-pointer"
-            aria-label="Search resources"
-          >
-            <MagnifyingGlass
-              size={15}
-              className="text-[var(--color-primary)] transition-transform group-hover:scale-110"
-            />
-            <span className="hidden sm:inline">Search</span>
-            <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded-full border border-black/[0.1] dark:border-white/[0.15] bg-black/[0.03] dark:bg-white/[0.06] px-2 py-0.5 font-mono text-[9.5px] text-[var(--color-ink-secondary)]">
-              <Command size={10} />K
-            </kbd>
-          </button>
-
           {/* User Profile / 1-Click Google Sign-In */}
           {session ? (
             <div className="relative" ref={dropdownRef}>
@@ -240,23 +223,6 @@ export default function Header({ onOpenSearch }: HeaderProps) {
 
       {/* Mobile Navigation Drawer */}
       <MobileNavMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
-        <button
-          type="button"
-          onClick={() => {
-            setMobileMenuOpen(false);
-            onOpenSearch?.();
-          }}
-          className="flex w-full items-center justify-between rounded-[20px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3.5 text-xs font-semibold text-[var(--color-ink-muted)] shadow-xs transition-all active:scale-98"
-        >
-          <div className="flex items-center gap-2.5">
-            <MagnifyingGlass size={16} className="text-[var(--color-primary)]" />
-            <span className="text-[var(--color-ink)] font-bold">Search tools & apps...</span>
-          </div>
-          <kbd className="rounded-full bg-[var(--color-paper-muted)] px-2 py-0.5 font-mono text-[10px]">
-            ⌘K
-          </kbd>
-        </button>
-
         <div className="space-y-1 pt-2">
           <Link
             href="/"
