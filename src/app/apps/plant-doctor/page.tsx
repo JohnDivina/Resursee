@@ -184,7 +184,7 @@ export default function PlantDoctorPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(attempt === 1 ? 25000 : 45000),
+            signal: AbortSignal.timeout(60000), // 60 seconds timeout
           });
 
           if (!response.ok && response.status >= 500 && attempt < maxAttempts) {

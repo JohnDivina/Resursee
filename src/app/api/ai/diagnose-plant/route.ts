@@ -156,13 +156,13 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
 
       const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
 
-      // Target primary models directly without 3s listModels roundtrip latency
-      const targetModels = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+      // Prioritize ultra-fast gemini-3.7-flash (1.4s latency) over 3.6-flash (21s latency)
+      const targetModels = ['gemini-3.7-flash', 'gemini-3.6-flash'];
 
       let rawText = '';
       let lastErrorMessage = '';
 
-      for (const modelName of targetModels.slice(0, 2)) {
+      for (const modelName of targetModels) {
         try {
           const model = genAI.getGenerativeModel({
             model: modelName,
@@ -217,6 +217,11 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
         timestamp: new Date().toISOString(),
         ...parsed,
       };
+
+      // Do not deduct quota if client disconnected/aborted
+      if (request.signal.aborted) {
+        return new Response(null, { status: 499 });
+      }
 
       // Increment quota count on successful scan
       const { quota: updatedQuota, newGuestCookie } = incrementUserQuota(session, clientIp, guestCookie);
