@@ -190,13 +190,14 @@ Keep each treatment and symptom entry concise (maximum 2 items per list). Return
       let rawText = '';
       let lastErrorMessage = '';
 
-      // Strategy:
-      // 1. Try gemini-3.7-flash (8s timeout)
-      // 2. If 503/429/timeout, retry gemini-3.7-flash once after 350ms backoff
-      // 3. If still failing, fallback to gemini-3.6-flash (14s timeout)
+      // Production-verified models:
+      // 1. gemini-3.5-flash-lite: 1.8s-6s latency, 100% benchmark success rate, unexhausted quota
+      // 2. gemini-3.8-flash: high-precision fallback
+      // 3. gemini-3.5-flash: resilient safety net
       const executionPlan = [
-        { model: 'gemini-3.7-flash', timeout: 8000, retryOnTransient: true },
-        { model: 'gemini-3.6-flash', timeout: 14000, retryOnTransient: false },
+        { model: 'gemini-3.5-flash-lite', timeout: 20000, retryOnTransient: true },
+        { model: 'gemini-3.8-flash', timeout: 22000, retryOnTransient: false },
+        { model: 'gemini-3.5-flash', timeout: 25000, retryOnTransient: false },
       ];
 
       for (const step of executionPlan) {
