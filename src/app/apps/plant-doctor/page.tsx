@@ -234,8 +234,8 @@ export default function PlantDoctorPage() {
 
           {/* 3. Guest Quota Prompt Card */}
           {isGuestExceeded && (
-            <div className="rounded-[28px] border border-emerald-500/30 bg-emerald-500/[0.04] p-6 sm:p-8 text-center space-y-4 shadow-md animate-in zoom-in-95 duration-200">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+            <div className="rounded-[28px] border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-6 sm:p-8 text-center space-y-4 shadow-md animate-in zoom-in-95 duration-200">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-neutral-700">
                 <LockSimple size={28} weight="bold" />
               </div>
               <div>
