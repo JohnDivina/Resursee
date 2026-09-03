@@ -63,9 +63,10 @@ export async function POST(request: NextRequest) {
     // 2. Read Authenticated Session & Verify Daily Quota
     const cookieStore = await cookies();
     const token = cookieStore.get('resursee_admin_token')?.value;
+    const guestCookie = cookieStore.get('resursee_guest_quota')?.value;
     const session = token ? verifySignedSession(token) : null;
 
-    const quota = checkUserQuota(session, clientIp);
+    const quota = checkUserQuota(session, clientIp, guestCookie);
 
     // 3. Parse & Validate Payload
     const body = await request.json();
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              'You have used your 1 free guest preview scan. Please sign in with your Google account to get 10 free daily AI scans!',
+              'You have reached the guest preview limit. Please sign in with your Google account to get 10 free daily AI scans!',
             isGuestQuotaExceeded: true,
             quota,
           },
@@ -218,13 +219,25 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
       };
 
       // Increment quota count on successful scan
-      const updatedQuota = incrementUserQuota(session, clientIp);
+      const { quota: updatedQuota, newGuestCookie } = incrementUserQuota(session, clientIp, guestCookie);
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         result: diagnosisResult,
         quota: updatedQuota,
       });
+
+      if (newGuestCookie) {
+        response.cookies.set('resursee_guest_quota', newGuestCookie, {
+          httpOnly: true,
+          path: '/',
+          maxAge: 86400 * 30, // 30 days
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+        });
+      }
+
+      return response;
     }
 
     // 4. Sample Test Cases (Only when explicitly clicking 1-click test samples)

@@ -204,13 +204,16 @@ export default function PlantDoctorPage() {
       }
 
       if (!response || !response.ok) {
+        if (data?.quota) {
+          setQuota(data.quota);
+        }
         if (data?.isGuestQuotaExceeded) {
           setIsGuestExceeded(true);
         }
         throw new Error(data?.error || 'Failed to complete leaf diagnosis.');
       }
 
-      if (data.quota) {
+      if (data?.quota) {
         setQuota(data.quota);
       }
 

@@ -1,4 +1,10 @@
+import crypto from 'crypto';
 import { UserSession } from '@/lib/sessionCrypto';
+
+const SESSION_SECRET =
+  process.env.SESSION_SECRET ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  'resursee-default-secure-hmac-secret-key-2026';
 
 export interface QuotaStatus {
   allowed: boolean;
@@ -14,12 +20,12 @@ export interface QuotaStatus {
 const userQuotaMap = new Map<string, { count: number; dateStr: string }>();
 const guestQuotaMap = new Map<string, { count: number; dateStr: string }>();
 
-const GUEST_DAILY_LIMIT = 1;
-const USER_DAILY_LIMIT = 10;
-const ADMIN_DAILY_LIMIT = 9999;
+export const GUEST_DAILY_LIMIT = 2; // 2 free scans for guests before Google Sign-In
+export const USER_DAILY_LIMIT = 10; // 10 free scans daily for verified Google accounts
+export const ADMIN_DAILY_LIMIT = 9999;
 
 function getUtcDateString(): string {
-  return new Date().toISOString().split('T')[0]; // e.g. "2026-09-02"
+  return new Date().toISOString().split('T')[0]; // e.g. "2026-09-03"
 }
 
 function getNextMidnightUtc(): string {
@@ -29,13 +35,45 @@ function getNextMidnightUtc(): string {
 }
 
 /**
- * Checks the quota for a user session or guest IP
+ * Creates a signed guest quota cookie string
  */
-export function checkUserQuota(session: UserSession | null, clientIp: string): QuotaStatus {
+export function createGuestQuotaCookie(count: number, dateStr: string): string {
+  const data = `${count}:${dateStr}`;
+  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(data).digest('hex').substring(0, 16);
+  return `${data}:${sig}`;
+}
+
+/**
+ * Parses and verifies a signed guest quota cookie
+ */
+export function parseGuestQuotaCookie(cookieValue?: string | null): { count: number; dateStr: string } | null {
+  if (!cookieValue || typeof cookieValue !== 'string') return null;
+  try {
+    const parts = cookieValue.split(':');
+    if (parts.length !== 3) return null;
+    const [countStr, dateStr, sig] = parts;
+    const expected = crypto.createHmac('sha256', SESSION_SECRET).update(`${countStr}:${dateStr}`).digest('hex').substring(0, 16);
+    if (sig === expected) {
+      return { count: parseInt(countStr, 10) || 0, dateStr };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Checks the quota for a user session, client IP, and guest cookie
+ */
+export function checkUserQuota(
+  session: UserSession | null,
+  clientIp: string,
+  guestCookieValue?: string | null
+): QuotaStatus {
   const today = getUtcDateString();
   const resetTimeUtc = getNextMidnightUtc();
 
-  // 1. Master Admin & Moderators: Unlimited
+  // 1. Master Admin & Staff: Unlimited
   if (session && (session.role === 'master_admin' || session.role === 'moderator')) {
     return {
       allowed: true,
@@ -48,7 +86,7 @@ export function checkUserQuota(session: UserSession | null, clientIp: string): Q
     };
   }
 
-  // 2. Logged-In Standard User (Google Account)
+  // 2. Logged-In Google Account User
   if (session && session.email) {
     const key = session.email.toLowerCase().trim();
     const record = userQuotaMap.get(key);
@@ -70,13 +108,17 @@ export function checkUserQuota(session: UserSession | null, clientIp: string): Q
     };
   }
 
-  // 3. Guest User (Tracked by IP Address)
+  // 3. Guest User: Combine Signed Cookie + In-Memory IP Tracking
   const guestKey = clientIp.trim();
-  const guestRecord = guestQuotaMap.get(guestKey);
+  const ipRecord = guestQuotaMap.get(guestKey);
+  const cookieRecord = parseGuestQuotaCookie(guestCookieValue);
 
   let guestUsed = 0;
-  if (guestRecord && guestRecord.dateStr === today) {
-    guestUsed = guestRecord.count;
+  if (ipRecord && ipRecord.dateStr === today) {
+    guestUsed = Math.max(guestUsed, ipRecord.count);
+  }
+  if (cookieRecord && cookieRecord.dateStr === today) {
+    guestUsed = Math.max(guestUsed, cookieRecord.count);
   }
 
   const guestRemaining = Math.max(0, GUEST_DAILY_LIMIT - guestUsed);
@@ -94,22 +136,30 @@ export function checkUserQuota(session: UserSession | null, clientIp: string): Q
 /**
  * Atomically increments the quota counter upon successful scan
  */
-export function incrementUserQuota(session: UserSession | null, clientIp: string): QuotaStatus {
+export function incrementUserQuota(
+  session: UserSession | null,
+  clientIp: string,
+  guestCookieValue?: string | null
+): { quota: QuotaStatus; newGuestCookie?: string } {
   const today = getUtcDateString();
   const resetTimeUtc = getNextMidnightUtc();
 
+  // Admin
   if (session && (session.role === 'master_admin' || session.role === 'moderator')) {
     return {
-      allowed: true,
-      usedToday: 0,
-      maxQuota: ADMIN_DAILY_LIMIT,
-      remaining: ADMIN_DAILY_LIMIT,
-      resetTimeUtc,
-      isGuest: false,
-      tierName: 'Admin / Staff',
+      quota: {
+        allowed: true,
+        usedToday: 0,
+        maxQuota: ADMIN_DAILY_LIMIT,
+        remaining: ADMIN_DAILY_LIMIT,
+        resetTimeUtc,
+        isGuest: false,
+        tierName: 'Admin / Staff',
+      },
     };
   }
 
+  // Logged-in Google User
   if (session && session.email) {
     const key = session.email.toLowerCase().trim();
     const record = userQuotaMap.get(key);
@@ -121,32 +171,47 @@ export function incrementUserQuota(session: UserSession | null, clientIp: string
 
     userQuotaMap.set(key, { count: nextCount, dateStr: today });
     return {
-      allowed: nextCount <= USER_DAILY_LIMIT,
-      usedToday: nextCount,
-      maxQuota: USER_DAILY_LIMIT,
-      remaining: Math.max(0, USER_DAILY_LIMIT - nextCount),
-      resetTimeUtc,
-      isGuest: false,
-      tierName: 'Verified Google Account',
+      quota: {
+        allowed: nextCount < USER_DAILY_LIMIT,
+        usedToday: nextCount,
+        maxQuota: USER_DAILY_LIMIT,
+        remaining: Math.max(0, USER_DAILY_LIMIT - nextCount),
+        resetTimeUtc,
+        isGuest: false,
+        tierName: 'Verified Google Account',
+      },
     };
   }
 
+  // Guest: Increment both IP map and create new signed cookie
   const guestKey = clientIp.trim();
-  const guestRecord = guestQuotaMap.get(guestKey);
+  const ipRecord = guestQuotaMap.get(guestKey);
+  const cookieRecord = parseGuestQuotaCookie(guestCookieValue);
 
-  let nextGuestCount = 1;
-  if (guestRecord && guestRecord.dateStr === today) {
-    nextGuestCount = guestRecord.count + 1;
+  let currentUsed = 0;
+  if (ipRecord && ipRecord.dateStr === today) {
+    currentUsed = Math.max(currentUsed, ipRecord.count);
+  }
+  if (cookieRecord && cookieRecord.dateStr === today) {
+    currentUsed = Math.max(currentUsed, cookieRecord.count);
   }
 
+  const nextGuestCount = currentUsed + 1;
   guestQuotaMap.set(guestKey, { count: nextGuestCount, dateStr: today });
+
+  const newGuestCookie = createGuestQuotaCookie(nextGuestCount, today);
+  const remaining = Math.max(0, GUEST_DAILY_LIMIT - nextGuestCount);
+
   return {
-    allowed: nextGuestCount <= GUEST_DAILY_LIMIT,
-    usedToday: nextGuestCount,
-    maxQuota: GUEST_DAILY_LIMIT,
-    remaining: Math.max(0, GUEST_DAILY_LIMIT - nextGuestCount),
-    resetTimeUtc,
-    isGuest: true,
-    tierName: 'Guest Preview',
+    quota: {
+      allowed: nextGuestCount < GUEST_DAILY_LIMIT,
+      usedToday: nextGuestCount,
+      maxQuota: GUEST_DAILY_LIMIT,
+      remaining,
+      resetTimeUtc,
+      isGuest: true,
+      tierName: 'Guest Preview',
+    },
+    newGuestCookie,
   };
 }
