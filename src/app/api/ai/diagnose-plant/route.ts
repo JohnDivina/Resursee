@@ -118,9 +118,11 @@ export async function POST(request: NextRequest) {
 
       const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
 
+
+      // Concise, high-precision prompt to minimize token generation latency
       const systemPrompt = `You are Dr. Flora, an expert agricultural plant pathologist and botanist.
 Analyze this plant or leaf image carefully and provide a structured clinical pathology diagnosis.
-You must return your analysis strictly as a valid JSON object matching this schema:
+Return your analysis strictly as a valid JSON object matching this schema:
 {
   "plantName": "Common plant name (e.g. Tomato)",
   "scientificName": "Scientific botanical name (e.g. Solanum lycopersicum)",
@@ -130,15 +132,15 @@ You must return your analysis strictly as a valid JSON object matching this sche
   "pathogenType": "fungal" | "bacterial" | "viral" | "pest" | "nutrient" | "environmental" | "healthy",
   "confidenceScore": number (integer between 70 and 99),
   "severity": "healthy" | "mild" | "moderate" | "severe",
-  "summary": "Clear 2-3 sentence overview of what is observed on the leaf",
-  "visualSymptoms": ["symptom 1", "symptom 2", "symptom 3"],
-  "affectedParts": ["Leaves", "Petiole", "Stem", etc.],
-  "causes": ["Primary environmental or biological cause 1", "Cause 2"],
+  "summary": "Clear 2-sentence overview of what is observed on the leaf",
+  "visualSymptoms": ["symptom 1", "symptom 2"],
+  "affectedParts": ["Leaves", "Petiole", etc.],
+  "causes": ["Primary environmental or biological cause"],
   "organicTreatments": [
     {
       "title": "Treatment name",
       "instructions": "Specific preparation and application steps",
-      "materials": ["Material 1", "Material 2"],
+      "materials": ["Material 1"],
       "timeline": "e.g. Apply every 5-7 days until symptoms subside"
     }
   ],
@@ -150,29 +152,24 @@ You must return your analysis strictly as a valid JSON object matching this sche
       "safetyPrecautions": "Protective equipment and harvest intervals"
     }
   ],
-  "preventionTips": ["Tip 1", "Tip 2", "Tip 3"]
+  "preventionTips": ["Tip 1", "Tip 2"]
 }
-Do not include markdown ticks, preamble, or commentary outside the JSON. Return only the raw JSON.`;
+Keep each treatment and symptom entry concise (maximum 2 items per list). Return only raw JSON without preamble.`;
 
       const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
 
-      // Prioritize ultra-fast gemini-3.7-flash (1.4s latency) over 3.6-flash (21s latency)
-      const targetModels = ['gemini-3.7-flash', 'gemini-3.6-flash'];
+      // Helper function with Promise.race per-model timeout
+      const callWithTimeout = (modelName: string, timeoutMs: number): Promise<string> => {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+          },
+        });
 
-      let rawText = '';
-      let lastErrorMessage = '';
-
-      for (const modelName of targetModels) {
-        try {
-          const model = genAI.getGenerativeModel({
-            model: modelName,
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.2,
-            },
-          });
-
-          const result = await model.generateContent([
+        const generatePromise = model
+          .generateContent([
             systemPrompt,
             {
               inlineData: {
@@ -180,15 +177,56 @@ Do not include markdown ticks, preamble, or commentary outside the JSON. Return 
                 mimeType: mimeType || 'image/jpeg',
               },
             },
-          ]);
+          ])
+          .then((res) => res.response.text());
 
-          const response = await result.response;
-          rawText = response.text();
-          if (rawText) break;
-        } catch (modelErr: unknown) {
-          lastErrorMessage = modelErr instanceof Error ? modelErr.message : String(modelErr);
-          console.warn(`Model ${modelName} failed:`, lastErrorMessage);
+        const timeoutPromise = new Promise<string>((_, reject) =>
+          setTimeout(() => reject(new Error(`Model ${modelName} exceeded timeout of ${timeoutMs}ms`)), timeoutMs)
+        );
+
+        return Promise.race([generatePromise, timeoutPromise]);
+      };
+
+      let rawText = '';
+      let lastErrorMessage = '';
+
+      // Strategy:
+      // 1. Try gemini-3.7-flash (8s timeout)
+      // 2. If 503/429/timeout, retry gemini-3.7-flash once after 350ms backoff
+      // 3. If still failing, fallback to gemini-3.6-flash (14s timeout)
+      const executionPlan = [
+        { model: 'gemini-3.7-flash', timeout: 8000, retryOnTransient: true },
+        { model: 'gemini-3.6-flash', timeout: 14000, retryOnTransient: false },
+      ];
+
+      for (const step of executionPlan) {
+        let attemptsLeft = step.retryOnTransient ? 2 : 1;
+
+        while (attemptsLeft > 0) {
+          try {
+            rawText = await callWithTimeout(step.model, step.timeout);
+            if (rawText) break;
+          } catch (modelErr: unknown) {
+            lastErrorMessage = modelErr instanceof Error ? modelErr.message : String(modelErr);
+            console.warn(`Model ${step.model} attempt failed:`, lastErrorMessage);
+
+            attemptsLeft--;
+            const isTransient =
+              lastErrorMessage.includes('503') ||
+              lastErrorMessage.includes('429') ||
+              lastErrorMessage.includes('timeout') ||
+              lastErrorMessage.includes('overloaded');
+
+            if (attemptsLeft > 0 && isTransient) {
+              const backoffMs = 350 + Math.floor(Math.random() * 250);
+              await new Promise((resolve) => setTimeout(resolve, backoffMs));
+            } else {
+              break;
+            }
+          }
         }
+
+        if (rawText) break;
       }
 
       if (!rawText) {

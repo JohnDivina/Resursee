@@ -39,6 +39,7 @@ export default function PlantDoctorPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [isGuestExceeded, setIsGuestExceeded] = useState(false);
+  const [cachedPayload, setCachedPayload] = useState<{ imageBase64?: string; mimeType?: string; sampleId?: string } | null>(null);
 
   // Load Session & Scan History
   useEffect(() => {
@@ -132,7 +133,11 @@ export default function PlantDoctorPage() {
     });
   };
 
-  const runDiagnosis = async (options: { file?: File; sample?: SamplePlant }) => {
+  const runDiagnosis = async (options: {
+    file?: File;
+    sample?: SamplePlant;
+    retryPayload?: { imageBase64?: string; mimeType?: string; sampleId?: string };
+  }) => {
     setIsScanning(true);
     setErrorMessage(null);
     setDiagnosisResult(null);
@@ -154,18 +159,22 @@ export default function PlantDoctorPage() {
     try {
       let payload: { imageBase64?: string; mimeType?: string; sampleId?: string } = {};
 
-      if (options.file) {
+      if (options.retryPayload) {
+        payload = options.retryPayload;
+      } else if (options.file) {
         const { base64, mimeType } = await optimizeImageForScan(options.file);
         setCurrentImagePreview(base64);
         payload = {
           imageBase64: base64,
           mimeType,
         };
+        setCachedPayload(payload);
       } else if (options.sample) {
         setCurrentImagePreview(options.sample.imageUrl);
         payload = {
           sampleId: options.sample.id,
         };
+        setCachedPayload(payload);
       }
 
       // Execute with automatic retry on cold-start / timeout
@@ -177,7 +186,8 @@ export default function PlantDoctorPage() {
       while (attempt <= maxAttempts) {
         try {
           if (attempt > 1) {
-            setScanStepText('AI container warming up... Retrying analysis automatically...');
+            setScanStepText('Vision engine warming up... Retrying analysis automatically...');
+            await new Promise((r) => setTimeout(r, 400));
           }
 
           response = await fetch('/api/ai/diagnose-plant', {
@@ -187,7 +197,7 @@ export default function PlantDoctorPage() {
             signal: AbortSignal.timeout(60000), // 60 seconds timeout
           });
 
-          if (!response.ok && response.status >= 500 && attempt < maxAttempts) {
+          if (!response.ok && (response.status >= 500 || response.status === 429) && attempt < maxAttempts) {
             attempt++;
             continue;
           }
@@ -224,6 +234,7 @@ export default function PlantDoctorPage() {
 
       setDiagnosisResult(result);
       saveToHistory(result);
+      setCachedPayload(null); // Success, clear retry payload
     } catch (err: unknown) {
       console.error('Diagnosis failed:', err);
       if (
@@ -249,6 +260,7 @@ export default function PlantDoctorPage() {
     setCurrentImagePreview(null);
     setErrorMessage(null);
     setIsGuestExceeded(false);
+    setCachedPayload(null);
   };
 
   return (
@@ -338,17 +350,28 @@ export default function PlantDoctorPage() {
             </div>
           )}
 
-          {/* 4. Error Alert */}
+          {/* 4. Error Alert with 1-Click Retry */}
           {errorMessage && !isGuestExceeded && (
-            <div className="rounded-[20px] border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-medium text-rose-700 dark:text-rose-300 flex items-center justify-between">
+            <div className="rounded-[20px] border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-medium text-rose-700 dark:text-rose-300 flex flex-wrap items-center justify-between gap-3">
               <span>{errorMessage}</span>
-              <button
-                type="button"
-                onClick={() => setErrorMessage(null)}
-                className="underline font-bold cursor-pointer"
-              >
-                Dismiss
-              </button>
+              <div className="flex items-center gap-3 shrink-0">
+                {cachedPayload && (
+                  <button
+                    type="button"
+                    onClick={() => runDiagnosis({ retryPayload: cachedPayload })}
+                    className="font-bold underline cursor-pointer hover:text-rose-900 dark:hover:text-rose-100"
+                  >
+                    Retry Diagnosis
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setErrorMessage(null)}
+                  className="underline font-bold cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           )}
 
