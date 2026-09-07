@@ -28,11 +28,6 @@ import {
   Check,
   GoogleLogo,
   SignOut,
-  ClockCountdown,
-  LockKey,
-  Broadcast,
-  Sliders,
-  Sparkle,
   ArrowRight,
 } from '@phosphor-icons/react';
 
@@ -361,18 +356,6 @@ export default function IoTCloudPage() {
               <div className="h-2 w-full bg-linear-to-r from-blue-600 via-indigo-600 to-sky-500" />
 
               <div className="p-8 sm:p-14 text-center max-w-3xl mx-auto space-y-6">
-                {/* Badge & Lock Icon */}
-                <div className="flex items-center justify-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3.5 py-1 font-mono text-[11px] font-bold text-blue-700 dark:text-sky-300 border border-blue-500/20">
-                    <LockKey size={14} weight="bold" />
-                    <span>Private & Multi-Tenant Workspace</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                    <ShieldCheck size={14} weight="bold" />
-                    <span>Google Auth Required</span>
-                  </span>
-                </div>
-
                 <div className="space-y-3">
                   <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-5xl">
                     Sign in to Access Your Personal ESP32 IoT Cloud
@@ -395,40 +378,31 @@ export default function IoTCloudPage() {
                 </div>
 
                 {/* Multi-Tenant Feature Architecture Grid */}
-                <div className="mt-12 grid grid-cols-1 gap-4 pt-10 border-t border-[var(--color-rule-subtle)] text-left sm:grid-cols-3">
-                  <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 space-y-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-blue-500/10 text-blue-600">
-                      <Cpu size={20} weight="bold" />
-                    </div>
-                    <h3 className="text-sm font-bold text-[var(--color-ink)]">
-                      100% Isolated Dashboard
+                <div className="mt-10 grid grid-cols-1 gap-3 pt-8 border-t border-[var(--color-rule-subtle)] text-left sm:grid-cols-3">
+                  <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-4 space-y-1.5">
+                    <h3 className="text-xs font-bold text-[var(--color-ink)]">
+                      Isolated Dashboard
                     </h3>
-                    <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                      Every user has their own personal device fleet. Another person signing in gets their own separate dashboard and cannot see or access your hardware.
+                    <p className="text-[11.5px] text-[var(--color-ink-muted)] leading-normal">
+                      Your devices, telemetry streams, and relay controls remain completely private to your account.
                     </p>
                   </div>
 
-                  <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 space-y-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-emerald-500/10 text-emerald-600">
-                      <Sliders size={20} weight="bold" />
-                    </div>
-                    <h3 className="text-sm font-bold text-[var(--color-ink)]">
+                  <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-4 space-y-1.5">
+                    <h3 className="text-xs font-bold text-[var(--color-ink)]">
                       Live Telemetry & Relays
                     </h3>
-                    <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                      Stream temperature, humidity, soil moisture, and ambient light. Remotely toggle physical GPIO relay switches in real-time with sub-second latency.
+                    <p className="text-[11.5px] text-[var(--color-ink-muted)] leading-normal">
+                      Monitor sensors and toggle physical GPIO switches in real-time with instant bi-directional sync.
                     </p>
                   </div>
 
-                  <div className="rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-5 space-y-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-amber-500/10 text-amber-600">
-                      <ClockCountdown size={20} weight="bold" />
-                    </div>
-                    <h3 className="text-sm font-bold text-[var(--color-ink)]">
-                      15-Min Inactivity Auto-Logout
+                  <div className="rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-4 space-y-1.5">
+                    <h3 className="text-xs font-bold text-[var(--color-ink)]">
+                      15-Min Auto-Logout
                     </h3>
-                    <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                      Your session automatically locks and signs out after 15 minutes of inactivity or when closing the website to keep your hardware controls secure.
+                    <p className="text-[11.5px] text-[var(--color-ink-muted)] leading-normal">
+                      Sessions automatically sign out after 15 minutes of inactivity or upon closing the website.
                     </p>
                   </div>
                 </div>
