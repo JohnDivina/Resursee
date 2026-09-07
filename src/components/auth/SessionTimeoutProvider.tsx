@@ -39,25 +39,6 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
   const router = useRouter();
   const pathname = usePathname();
 
-  // Check initial session status
-  const checkAuthStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/auth/session');
-      if (res.ok) {
-        const data = await res.json();
-        setIsAuthenticated(Boolean(data.authenticated));
-      } else {
-        setIsAuthenticated(false);
-      }
-    } catch {
-      setIsAuthenticated(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    checkAuthStatus();
-  }, [pathname, checkAuthStatus]);
-
   // Execute Logout
   const handleLogout = useCallback(async (reason: 'inactivity' | 'user') => {
     if (isLoggingOutRef.current) return;
@@ -67,6 +48,9 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
 
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY);
+      }
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
       // ignore
@@ -94,12 +78,63 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
     router.refresh();
   }, [router]);
 
+  // Check initial session status
+  const checkAuthStatus = useCallback(async () => {
+    // Check if user was last active > 15 minutes ago before evaluating auth
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const parsed = stored ? parseInt(stored, 10) : NaN;
+      if (!isNaN(parsed) && Date.now() - parsed >= INACTIVITY_TIMEOUT_MS) {
+        setIsAuthenticated(false);
+        handleLogout('inactivity');
+        return;
+      }
+    }
+
+    try {
+      const res = await fetch('/api/auth/session');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          const now = Date.now();
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (!stored) {
+            localStorage.setItem(STORAGE_KEY, String(now));
+            lastActivityRef.current = now;
+          }
+        } else {
+          setIsAuthenticated(false);
+          if (data.reason === 'inactivity_timeout') {
+            setLoggedOutToast(true);
+            setTimeout(() => setLoggedOutToast(false), 60000);
+          }
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch {
+      setIsAuthenticated(false);
+    }
+  }, [handleLogout]);
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, [pathname, checkAuthStatus]);
+
   // Reset user activity timestamp
   const resetTimer = useCallback(() => {
     const now = Date.now();
     lastActivityRef.current = now;
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, String(now));
+      try {
+        document.cookie = `resursee_last_active=${now}; path=/; max-age=1209600; SameSite=Lax${
+          window.location.protocol === 'https:' ? '; Secure' : ''
+        }`;
+      } catch {
+        // ignore
+      }
     }
     if (showWarningModal) {
       setShowWarningModal(false);
@@ -109,7 +144,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
     }
   }, [showWarningModal]);
 
-  // Throttled User Activity Listener
+  // Throttled User Activity Listener & Idle Checker
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -121,6 +156,9 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
         lastActivityRef.current = now;
         try {
           localStorage.setItem(STORAGE_KEY, String(now));
+          document.cookie = `resursee_last_active=${now}; path=/; max-age=1209600; SameSite=Lax${
+            window.location.protocol === 'https:' ? '; Secure' : ''
+          }`;
         } catch {
           // ignore
         }
@@ -129,6 +167,21 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
 
     const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
     events.forEach((event) => window.addEventListener(event, handleUserActivity, { passive: true }));
+
+    // Listen to tab visibility changes (e.g. returning after sleep or inactive tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        const stored = localStorage.getItem(STORAGE_KEY);
+        const parsed = stored ? parseInt(stored, 10) : lastActivityRef.current;
+        if (!isNaN(parsed) && now - parsed >= INACTIVITY_TIMEOUT_MS) {
+          handleLogout('inactivity');
+        } else if (!isNaN(parsed)) {
+          lastActivityRef.current = parsed;
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Listen to activity or logout events from other tabs
     const handleStorageChange = (e: StorageEvent) => {
@@ -164,9 +217,13 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
       // ignore
     }
 
-    // Set initial activity time
+    // Set initial activity time & check immediately
     const stored = localStorage.getItem(STORAGE_KEY);
     const parsedStored = stored ? parseInt(stored, 10) : NaN;
+    if (!isNaN(parsedStored) && Date.now() - parsedStored >= INACTIVITY_TIMEOUT_MS) {
+      handleLogout('inactivity');
+      return;
+    }
     lastActivityRef.current = !isNaN(parsedStored) ? parsedStored : Date.now();
 
     // Check inactivity periodically
@@ -186,6 +243,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
 
     return () => {
       events.forEach((event) => window.removeEventListener(event, handleUserActivity));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('storage', handleStorageChange);
       if (timerCheckIntervalRef.current) clearInterval(timerCheckIntervalRef.current);
       if (channel) channel.close();

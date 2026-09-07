@@ -12,5 +12,13 @@ export async function POST(request: Request) {
     maxAge: 0,
   });
 
+  response.cookies.set('resursee_last_active', '', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+
   return response;
 }

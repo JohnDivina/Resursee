@@ -6,15 +6,16 @@ const STORAGE_KEY_ACTUATORS = 'resursee_iot_actuators';
 const STORAGE_KEY_WIDGETS = 'resursee_iot_widgets';
 
 // Generate default initial sample device if user is new
-export function getInitialDevices(userId: string): IoTDevice[] {
+export function getInitialDevices(userId: string, userName?: string): IoTDevice[] {
+  const shortName = userName ? `${userName.split(' ')[0]}'s Greenhouse` : 'Smart Greenhouse Station';
   return [
     {
-      id: `dev-${userId.substring(0, 6)}-greenhouse`,
+      id: `dev-${userId.substring(0, 8)}-gh`,
       userId,
-      name: 'Smart Greenhouse Station',
-      description: 'ESP32 Node monitoring ambient temp, humidity, and soil moisture with automated pump relay.',
+      name: shortName,
+      description: `ESP32 Node configured for ${userName || 'User'} monitoring ambient temp, humidity, and soil moisture with automated pump relay.`,
       deviceType: 'esp32',
-      deviceToken: `sk_esp32_gh_${Math.random().toString(36).substring(2, 10)}`,
+      deviceToken: `sk_esp32_${userId.substring(0, 6)}_${Math.random().toString(36).substring(2, 8)}`,
       status: 'online',
       lastSeenAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),

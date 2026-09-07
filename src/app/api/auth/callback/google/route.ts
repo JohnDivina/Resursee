@@ -132,6 +132,15 @@ export async function GET(request: Request) {
       maxAge: 60 * 60 * 24 * 14, // 14 days
     });
 
+    // Set last active timestamp for 15-minute inactivity tracking
+    response.cookies.set('resursee_last_active', Date.now().toString(), {
+      httpOnly: false, // Accessible to client-side activity tracker
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 14,
+    });
+
     // Clear one-time oauth state cookie
     response.cookies.delete('resursee_oauth_state');
 
