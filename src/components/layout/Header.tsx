@@ -39,7 +39,20 @@ interface HeaderProps {
 export default function Header({ onOpenSearch }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [session, setSession] = useState<UserSession | null>(null);
+  const [session, setSession] = useState<UserSession | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('resursee_user_session_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.email) return parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  });
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
@@ -47,25 +60,62 @@ export default function Header({ onOpenSearch }: HeaderProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let isMounted = true;
     async function loadSession() {
       try {
         const res = await fetch('/api/auth/session');
         if (res.ok) {
           const data = await res.json();
-          if (data.authenticated && data.user) {
-            setSession(data.user);
+          if (isMounted) {
+            if (data.authenticated && data.user) {
+              setSession(data.user);
+              try {
+                localStorage.setItem('resursee_user_session_cache', JSON.stringify(data.user));
+              } catch {
+                // ignore
+              }
+            } else {
+              setSession(null);
+              try {
+                localStorage.removeItem('resursee_user_session_cache');
+              } catch {
+                // ignore
+              }
+            }
+            if (data.quota) {
+              setQuota(data.quota);
+            }
           }
-          if (data.quota) {
-            setQuota(data.quota);
+        } else {
+          if (isMounted) {
+            setSession(null);
+            try {
+              localStorage.removeItem('resursee_user_session_cache');
+            } catch {
+              // ignore
+            }
           }
         }
       } catch (err) {
         console.error('Session load error:', err);
+        if (isMounted) {
+          setSession(null);
+          try {
+            localStorage.removeItem('resursee_user_session_cache');
+          } catch {
+            // ignore
+          }
+        }
       } finally {
-        setIsLoadingAuth(false);
+        if (isMounted) {
+          setIsLoadingAuth(false);
+        }
       }
     }
     loadSession();
+    return () => {
+      isMounted = false;
+    };
   }, [pathname]);
 
   // Close dropdown on outside click
@@ -80,7 +130,15 @@ export default function Header({ onOpenSearch }: HeaderProps) {
   }, []);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('resursee_user_session_cache');
+        localStorage.removeItem('resursee_last_active_time');
+      }
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
     setSession(null);
     setProfileDropdownOpen(false);
     window.location.reload();
@@ -195,6 +253,8 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                 </div>
               )}
             </div>
+          ) : isLoadingAuth ? (
+            <div className="h-9 w-20 rounded-full bg-[var(--color-paper-muted)] border border-black/[0.04] dark:border-white/[0.06] animate-pulse" />
           ) : (
             <a
               href={`/api/auth/google?returnTo=${returnToParam}`}
@@ -260,16 +320,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
         </div>
 
         <div className="pt-3 border-t border-[var(--color-rule-subtle)] flex flex-col gap-2">
-          {!session ? (
-            <a
-              href={`/api/auth/google?returnTo=${returnToParam}`}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-xs"
-            >
-              <GoogleLogo size={16} weight="bold" />
-              <span>Sign in with Google</span>
-            </a>
-          ) : (
+          {session ? (
             <button
               type="button"
               onClick={handleLogout}
@@ -278,6 +329,17 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               <SignOut size={16} weight="bold" />
               <span>Sign Out ({session.name})</span>
             </button>
+          ) : isLoadingAuth ? (
+            <div className="h-11 w-full rounded-full bg-[var(--color-paper-muted)] animate-pulse" />
+          ) : (
+            <a
+              href={`/api/auth/google?returnTo=${returnToParam}`}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3 text-xs font-bold text-white shadow-xs"
+            >
+              <GoogleLogo size={16} weight="bold" />
+              <span>Sign in with Google</span>
+            </a>
           )}
         </div>
       </MobileNavMenu>

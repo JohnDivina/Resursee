@@ -42,8 +42,21 @@ export default function IoTCloudPage() {
   const [firmwareModalOpen, setFirmwareModalOpen] = useState(false);
   const [copiedSketch, setCopiedSketch] = useState(false);
 
-  // Authentication State
-  const [session, setSession] = useState<UserSession | null>(null);
+  // Authentication State with instant local hydration to eliminate flicker
+  const [session, setSession] = useState<UserSession | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('resursee_user_session_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.email) return parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  });
   const [authLoading, setAuthLoading] = useState(true);
 
   // IoT Dashboard State
@@ -68,16 +81,40 @@ export default function IoTCloudPage() {
           if (isMounted) {
             if (data.authenticated && data.user) {
               setSession(data.user);
+              try {
+                localStorage.setItem('resursee_user_session_cache', JSON.stringify(data.user));
+              } catch {
+                // ignore
+              }
             } else {
               setSession(null);
+              try {
+                localStorage.removeItem('resursee_user_session_cache');
+              } catch {
+                // ignore
+              }
             }
           }
         } else {
-          if (isMounted) setSession(null);
+          if (isMounted) {
+            setSession(null);
+            try {
+              localStorage.removeItem('resursee_user_session_cache');
+            } catch {
+              // ignore
+            }
+          }
         }
       } catch (err) {
         console.error('Failed to verify session for IoT Cloud:', err);
-        if (isMounted) setSession(null);
+        if (isMounted) {
+          setSession(null);
+          try {
+            localStorage.removeItem('resursee_user_session_cache');
+          } catch {
+            // ignore
+          }
+        }
       } finally {
         if (isMounted) setAuthLoading(false);
       }
@@ -262,6 +299,10 @@ export default function IoTCloudPage() {
 
   const handleLogout = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('resursee_user_session_cache');
+        localStorage.removeItem('resursee_last_active_time');
+      }
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
       // ignore

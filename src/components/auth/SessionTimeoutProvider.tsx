@@ -50,6 +50,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
     try {
       if (typeof window !== 'undefined') {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('resursee_user_session_cache');
       }
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
