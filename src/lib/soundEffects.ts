@@ -154,20 +154,23 @@ export function playThock(pitchMultiplier = 1.0, volume = 0.08): boolean {
     const ctx = getAudioContext();
     if (!ctx) return false;
 
-    // If suspended or interrupted, try to resume in background without queueing delayed audio
+    // If suspended or interrupted, resume immediately and play the thock as soon as resumed
     if (ctx.state === 'suspended' || (ctx.state as string) === 'interrupted') {
       ctx.resume().then(() => {
         warmupHardware(ctx);
+        if (ctx.state === 'running') {
+          executeOriginalThock(ctx, pitchMultiplier, volume);
+        }
       }).catch(() => {});
-      return false;
+      return true;
     }
 
-    if (ctx.state !== 'running') {
-      return false;
+    if (ctx.state === 'running') {
+      executeOriginalThock(ctx, pitchMultiplier, volume);
+      return true;
     }
 
-    executeOriginalThock(ctx, pitchMultiplier, volume);
-    return true;
+    return false;
   } catch {
     return false;
   }

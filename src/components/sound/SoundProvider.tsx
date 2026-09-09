@@ -70,12 +70,24 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       unlockAudioEngine();
     }
 
-    // 2. Permanent interaction listeners to unlock AudioContext on user gestures
+    // 2. Eager interaction listeners to unlock AudioContext on the very first cursor movement or interaction
     const handleGestureUnlock = () => {
       unlockAudioEngine();
     };
 
-    const unlockEvents = ['pointerdown', 'mousedown', 'touchstart', 'keydown', 'click'];
+    const unlockEvents = [
+      'pointermove',
+      'mousemove',
+      'pointerover',
+      'mouseover',
+      'pointerdown',
+      'mousedown',
+      'touchstart',
+      'keydown',
+      'wheel',
+      'scroll',
+      'click',
+    ];
     unlockEvents.forEach((evt) => {
       window.addEventListener(evt, handleGestureUnlock, { capture: true, passive: true });
     });
@@ -111,6 +123,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
       if (interactiveEl) {
         if (interactiveEl !== lastHoveredElementRef.current) {
+          lastHoveredElementRef.current = interactiveEl;
+
           const now = performance.now();
           // Rate-limit throttle to max 1 thock per 25ms
           if (now - lastPlayTimeRef.current > 25) {
@@ -125,22 +139,12 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
               interactiveEl.matches('[data-thock="soft"]') ||
               interactiveEl.matches('kbd');
 
-            let played = false;
             if (isCard) {
-              played = playDeepThock(0.42);
+              playDeepThock(0.42);
             } else if (isPill) {
-              played = playSoftClick(0.28);
+              playSoftClick(0.28);
             } else {
-              played = playThock(1.0, 0.38);
-            }
-
-            if (played) {
-              lastHoveredElementRef.current = interactiveEl;
-            } else {
-              // Sound was blocked by browser autoplay or pending user gesture!
-              // Clear ref so that when audio unlocks, this element isn't locked out
-              lastHoveredElementRef.current = null;
-              unlockAudioEngine();
+              playThock(1.0, 0.38);
             }
           }
         }
