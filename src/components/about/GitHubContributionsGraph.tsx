@@ -50,7 +50,7 @@ export default function GitHubContributionsGraph() {
     };
   }, []);
 
-  // Auto-scroll to the right on mobile so the latest streak is immediately in view
+  // Auto-scroll to the right on mobile so latest contributions are in view
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
@@ -86,7 +86,6 @@ export default function GitHubContributionsGraph() {
   let lastMonth = -1;
 
   weeks.forEach((week, colIdx) => {
-    // Check the first valid day in this week
     const validDay = week.find((d) => d.date && d.level >= 0);
     if (validDay) {
       const d = new Date(validDay.date + 'T00:00:00');
@@ -112,52 +111,34 @@ export default function GitHubContributionsGraph() {
   };
 
   /**
-   * Dot size & color styling corresponding to contribution level.
-   * Matches the modern variable-diameter dot matrix design from developer portfolios.
+   * Authentic GitHub contribution square color palette.
+   * Matches GitHub dark and light themes with signature green levels.
    */
-  const getDotStyle = (level: number) => {
+  const getSquareColorClass = (level: number) => {
     switch (level) {
       case 1:
-        return {
-          sizeClass: 'h-1.5 w-1.5 sm:h-2 sm:w-2',
-          colorClass: 'bg-emerald-600/75 dark:bg-emerald-500/80',
-        };
+        return 'bg-[#9be9a8] dark:bg-[#0e4429] border border-black/5 dark:border-white/5';
       case 2:
-        return {
-          sizeClass: 'h-2 w-2 sm:h-2.5 sm:w-2.5',
-          colorClass: 'bg-emerald-600 dark:bg-emerald-400',
-        };
+        return 'bg-[#40c463] dark:bg-[#006d32] border border-black/5 dark:border-white/5';
       case 3:
-        return {
-          sizeClass: 'h-2.5 w-2.5 sm:h-3 sm:w-3',
-          colorClass: 'bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]',
-        };
+        return 'bg-[#30a14e] dark:bg-[#26a641] border border-black/5 dark:border-white/5';
       case 4:
-        return {
-          sizeClass: 'h-3 w-3 sm:h-3.5 sm:w-3.5',
-          colorClass:
-            'bg-emerald-400 dark:bg-[#39d353] shadow-[0_0_10px_rgba(57,211,83,0.85)] ring-1.5 ring-emerald-400/40',
-        };
+        return 'bg-[#216e39] dark:bg-[#39d353] border border-black/5 dark:border-white/10 shadow-[0_0_6px_rgba(57,211,83,0.4)]';
       case 0:
       default:
-        return {
-          sizeClass: 'h-1 w-1 sm:h-1 sm:w-1',
-          colorClass: 'bg-black/15 dark:bg-white/15',
-        };
+        return 'bg-[#ebedf0] dark:bg-[#161b22] border border-black/[0.04] dark:border-white/[0.04]';
     }
   };
 
   return (
-    <section className="mt-16 space-y-5">
+    <section className="mt-16 space-y-4">
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-              GitHub Activity & Contributions
-            </h2>
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
+            GitHub Contributions
+          </h2>
+          <span className="flex h-2 w-2 rounded-full bg-[#26a641] animate-pulse" />
         </div>
 
         <a
@@ -172,8 +153,8 @@ export default function GitHubContributionsGraph() {
         </a>
       </div>
 
-      {/* Main Glassmorphic Dot Matrix Card */}
-      <div className="relative rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/85 backdrop-blur-xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
+      {/* GitHub Calendar Card (Matches Screenshot & GitHub Look) */}
+      <div className="relative rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/90 backdrop-blur-xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
         {/* Horizontal Scroll Area */}
         <div
           ref={scrollContainerRef}
@@ -181,13 +162,13 @@ export default function GitHubContributionsGraph() {
         >
           <div className="inline-block min-w-full">
             {/* Months Header Row */}
-            <div className="flex text-[10px] font-mono font-medium text-[var(--color-ink-muted)] mb-2.5 pl-6 sm:pl-7">
+            <div className="flex text-[10px] font-mono font-medium text-[var(--color-ink-muted)] mb-2 pl-7 sm:pl-8">
               {weeks.map((_, colIdx) => {
                 const month = monthLabels.find((m) => m.colIndex === colIdx);
                 return (
                   <div
                     key={colIdx}
-                    className="w-3.5 sm:w-4 shrink-0 text-left"
+                    className="w-[11px] sm:w-[12px] mr-[3px] sm:mr-[3.5px] shrink-0 text-left"
                   >
                     {month ? (
                       <span className="inline-block whitespace-nowrap">{month.label}</span>
@@ -197,34 +178,43 @@ export default function GitHubContributionsGraph() {
               })}
             </div>
 
-            {/* Matrix Grid: Left Day Labels + Columns of Dots */}
+            {/* Matrix Grid: Left Day Labels + Columns of GitHub Squares */}
             <div className="flex items-start">
-              {/* Day Labels Column: Mon, Wed, Fri */}
-              <div className="flex flex-col justify-between h-[105px] sm:h-[119px] pr-2.5 sm:pr-3 text-[9px] font-mono text-[var(--color-ink-muted)] opacity-60 shrink-0 select-none py-0.5">
-                <span>Mon</span>
-                <span>Wed</span>
-                <span>Fri</span>
+              {/* Day Labels Column: Mon, Wed, Fri aligned with rows 1, 3, 5 */}
+              <div className="flex flex-col text-[9.5px] font-mono text-[var(--color-ink-muted)] opacity-70 shrink-0 select-none pr-2.5 sm:pr-3">
+                <div className="h-[11px] sm:h-[12px] mb-[3px] sm:mb-[3.5px]" />
+                <div className="h-[11px] sm:h-[12px] mb-[3px] sm:mb-[3.5px] flex items-center">
+                  <span>Mon</span>
+                </div>
+                <div className="h-[11px] sm:h-[12px] mb-[3px] sm:mb-[3.5px]" />
+                <div className="h-[11px] sm:h-[12px] mb-[3px] sm:mb-[3.5px] flex items-center">
+                  <span>Wed</span>
+                </div>
+                <div className="h-[11px] sm:h-[12px] mb-[3px] sm:mb-[3.5px]" />
+                <div className="h-[11px] sm:h-[12px] mb-[3px] sm:mb-[3.5px] flex items-center">
+                  <span>Fri</span>
+                </div>
+                <div className="h-[11px] sm:h-[12px]" />
               </div>
 
               {/* 53 Columns of Weeks */}
-              <div className="flex gap-1 sm:gap-1.5">
+              <div className="flex gap-[3px] sm:gap-[3.5px]">
                 {weeks.map((week, colIdx) => (
                   <div
                     key={colIdx}
-                    className="flex flex-col gap-1 sm:gap-1.5 w-3.5 sm:w-4 shrink-0 items-center justify-center"
+                    className="flex flex-col gap-[3px] sm:gap-[3.5px] shrink-0"
                   >
                     {week.map((day, rowIdx) => {
                       if (day.level < 0) {
-                        // Empty placeholder
                         return (
                           <div
                             key={rowIdx}
-                            className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center"
+                            className="w-[11px] h-[11px] sm:w-[12px] sm:h-[12px]"
                           />
                         );
                       }
 
-                      const { sizeClass, colorClass } = getDotStyle(day.level);
+                      const colorClass = getSquareColorClass(day.level);
 
                       return (
                         <div
@@ -238,12 +228,8 @@ export default function GitHubContributionsGraph() {
                             });
                           }}
                           onMouseLeave={() => setHoveredDay(null)}
-                          className="relative h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center cursor-pointer group"
-                        >
-                          <span
-                            className={`rounded-full transition-all duration-200 group-hover:scale-135 ${sizeClass} ${colorClass}`}
-                          />
-                        </div>
+                          className={`w-[11px] h-[11px] sm:w-[12px] sm:h-[12px] rounded-[2.5px] sm:rounded-[3px] cursor-pointer transition-all duration-150 hover:ring-1.5 hover:ring-black/40 dark:hover:ring-white/60 hover:scale-125 z-0 hover:z-10 ${colorClass}`}
+                        />
                       );
                     })}
                   </div>
@@ -253,30 +239,39 @@ export default function GitHubContributionsGraph() {
           </div>
         </div>
 
-        {/* Bottom Bar: Total Contributions Monospace + Legend (Matches Image 2 & 3!) */}
-        <div className="mt-6 pt-4 border-t border-[var(--color-rule-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Monospace Uppercase Summary */}
-          <div className="font-mono text-xs font-bold tracking-[0.14em] uppercase text-[var(--color-ink)] flex items-center gap-2">
-            <span>
-              {data.total.lastYear.toLocaleString()} CONTRIBUTIONS IN THE LAST YEAR
+        {/* Bottom Bar: Learn how we count contributions + Legend (Exact GitHub Look) */}
+        <div className="mt-5 pt-3.5 border-t border-[var(--color-rule-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          {/* Left: Summary & Docs Link */}
+          <div className="flex items-center gap-3 text-xs text-[var(--color-ink-muted)]">
+            <span className="font-semibold text-[var(--color-ink)]">
+              {data.total.lastYear.toLocaleString()} contributions in the last year
             </span>
+            <span>•</span>
+            <a
+              href="https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/managing-contribution-settings-on-your-profile/why-are-my-contributions-not-showing-up-on-my-profile"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-[var(--color-ink-muted)] hover:text-[var(--color-primary)] hover:underline transition-colors"
+            >
+              Learn how we count contributions
+            </a>
           </div>
 
-          {/* Minimalist Legend (Less -> More dots) */}
-          <div className="flex items-center gap-2 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
+          {/* Right: Authentic GitHub Square Legend (Less -> More) */}
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--color-ink-muted)]">
             <span>Less</span>
-            <div className="flex items-center gap-1.5 px-1 py-0.5 rounded-full bg-[var(--color-paper-muted)]">
-              <span className="h-1 w-1 rounded-full bg-black/15 dark:bg-white/15" />
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600/75 dark:bg-emerald-500/80" />
-              <span className="h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-              <span className="h-3 w-3 rounded-full bg-emerald-400 dark:bg-[#39d353] shadow-[0_0_6px_rgba(57,211,83,0.8)]" />
+            <div className="flex items-center gap-[3px]">
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#ebedf0] dark:bg-[#161b22] border border-black/[0.04] dark:border-white/[0.04]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#9be9a8] dark:bg-[#0e4429]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#40c463] dark:bg-[#006d32]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#30a14e] dark:bg-[#26a641]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#216e39] dark:bg-[#39d353]" />
             </div>
             <span>More</span>
           </div>
         </div>
 
-        {/* Floating Tooltip */}
+        {/* Floating Interactive Tooltip */}
         <AnimatePresence>
           {hoveredDay && (
             <motion.div
@@ -287,12 +282,12 @@ export default function GitHubContributionsGraph() {
               style={{
                 position: 'fixed',
                 left: hoveredDay.x,
-                top: hoveredDay.y - 12,
+                top: hoveredDay.y - 10,
                 transform: 'translate(-50%, -100%)',
                 pointerEvents: 'none',
                 zIndex: 100,
               }}
-              className="rounded-xl border border-[var(--color-rule-strong)] bg-[#0f172a]/95 px-3 py-1.5 text-center text-xs font-mono shadow-xl backdrop-blur-md whitespace-nowrap"
+              className="rounded-lg border border-[var(--color-rule-strong)] bg-[#0f172a]/95 px-2.5 py-1 text-center text-xs font-mono shadow-xl backdrop-blur-md whitespace-nowrap"
             >
               <p className="font-bold text-white text-[11px]">
                 {hoveredDay.day.count === 0
