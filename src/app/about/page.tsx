@@ -87,11 +87,6 @@ export default function AboutPage() {
         {/* 1. Hero Profile Header */}
         <section className="relative flex flex-col items-start md:flex-row md:items-center justify-between gap-8 rounded-[32px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/80 backdrop-blur-xl p-8 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
           <div className="space-y-4 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Available for collaborations & new builds</span>
-            </div>
-
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[var(--color-ink)]">
               Hi, I&apos;m <span className="bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent">John Rey Divina</span>.
             </h1>
