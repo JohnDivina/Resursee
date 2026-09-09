@@ -63,6 +63,11 @@ export default function Footer() {
             </h4>
             <ul className="mt-4 space-y-2 text-xs text-[var(--color-ink-muted)]">
               <li>
+                <Link href="/tools/merge-pdf" className="transition-colors hover:text-[var(--color-primary)]">
+                  Merge PDF
+                </Link>
+              </li>
+              <li>
                 <Link href="/tools/image-to-pdf" className="transition-colors hover:text-[var(--color-primary)]">
                   Image to PDF
                 </Link>

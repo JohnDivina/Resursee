@@ -13,6 +13,7 @@ import {
   Crop,
   FileArrowDown,
   FileArrowUp,
+  Files,
   HouseLine,
 } from '@phosphor-icons/react';
 
@@ -55,6 +56,15 @@ export default function ToolsPage() {
       icon: <Crop size={26} className="text-white" weight="bold" />,
       iconBg: 'bg-amber-500',
       href: '/tools/crop-image',
+    },
+    {
+      id: 'merge-pdf',
+      name: 'Merge PDF',
+      category: 'PDF',
+      description: 'Combine multiple PDF documents, syllabi, requirements, or receipts into a single organized PDF file.',
+      icon: <Files size={26} className="text-white" weight="bold" />,
+      iconBg: 'bg-violet-600',
+      href: '/tools/merge-pdf',
     },
     {
       id: 'pdf-to-image',
