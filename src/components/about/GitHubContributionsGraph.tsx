@@ -241,20 +241,11 @@ export default function GitHubContributionsGraph() {
 
         {/* Bottom Bar: Learn how we count contributions + Legend (Exact GitHub Look) */}
         <div className="mt-5 pt-3.5 border-t border-[var(--color-rule-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          {/* Left: Summary & Docs Link */}
+          {/* Left: Summary */}
           <div className="flex items-center gap-3 text-xs text-[var(--color-ink-muted)]">
             <span className="font-semibold text-[var(--color-ink)]">
               {data.total.lastYear.toLocaleString()} contributions in the last year
             </span>
-            <span>•</span>
-            <a
-              href="https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/managing-contribution-settings-on-your-profile/why-are-my-contributions-not-showing-up-on-my-profile"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-[var(--color-ink-muted)] hover:text-[var(--color-primary)] hover:underline transition-colors"
-            >
-              Learn how we count contributions
-            </a>
           </div>
 
           {/* Right: Authentic GitHub Square Legend (Less -> More) */}
