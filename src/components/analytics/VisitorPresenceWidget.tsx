@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users } from '@phosphor-icons/react';
+import { Broadcast } from '@phosphor-icons/react';
 
 interface VisitorData {
   activeVisitors: number;
@@ -113,59 +113,38 @@ export default function VisitorPresenceWidget() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Circle Online Status Button with Status Arc & Users Icon */}
+      {/* Circle Online Status Button: Clean, Symmetrical & Premium */}
       <button
         type="button"
         onClick={() => setIsPinned((prev) => !prev)}
         aria-label={`${stats.activeVisitors} users currently visiting the site`}
         title={`Live presence: ${stats.activeVisitors} visiting right now`}
-        className={`group relative flex h-9 w-9 items-center justify-center rounded-full transition-all cursor-pointer select-none ${
+        className={`group relative flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 cursor-pointer select-none ${
           isOpen
-            ? 'scale-105 border-emerald-500/60 shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-500/20'
-            : 'hover:scale-105 hover:border-emerald-500/50 hover:shadow-md hover:shadow-emerald-500/10 active:scale-95'
+            ? 'border-emerald-500 bg-[var(--color-paper-card)] shadow-md shadow-emerald-500/20 ring-2 ring-emerald-500/20 scale-102'
+            : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:border-emerald-500/60 hover:bg-[var(--color-paper-card)] shadow-2xs active:scale-95'
         }`}
       >
-        {/* Background Base */}
-        <span className="absolute inset-0 rounded-full bg-[var(--color-paper-surface)] dark:bg-[#0B0B0E] border border-[var(--color-rule-strong)] dark:border-white/[0.14] transition-colors" />
+        {/* Ambient Emerald Aura on hover */}
+        <span
+          className={`absolute inset-1 rounded-full bg-emerald-500/15 blur-[2px] transition-opacity duration-300 pointer-events-none ${
+            isOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        />
 
-        {/* Circular Glowing Status Ring (Matches attached screenshot dial) */}
-        <svg className="absolute inset-0 h-full w-full -rotate-90 p-[2.5px]" viewBox="0 0 36 36">
-          <path
-            className="text-black/[0.06] dark:text-white/[0.08]"
-            strokeWidth="2.5"
-            stroke="currentColor"
-            fill="none"
-            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-          />
-          <path
-            className="text-emerald-500 dark:text-emerald-400 transition-all duration-500 ease-out"
-            style={{
-              filter: 'drop-shadow(0 0 5px rgba(52, 211, 153, 0.85))',
-            }}
-            strokeDasharray="100, 100"
-            strokeDashoffset={isOpen ? '0' : '28'}
-            strokeLinecap="round"
-            strokeWidth="2.5"
-            stroke="currentColor"
-            fill="none"
-            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-          />
-        </svg>
+        {/* Centered Radiating Beacon Pulse behind icon */}
+        <span className="absolute h-3 w-3 rounded-full bg-emerald-400/40 animate-ping pointer-events-none" />
 
-        {/* Center Icon: Users presence */}
-        <div className="relative z-10 flex items-center justify-center">
-          <Users
-            size={14}
-            weight="bold"
-            className="text-[var(--color-ink-muted)] group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors duration-200"
-          />
-        </div>
-
-        {/* Live Organic Pulsing Beacon Badge */}
-        <span className="absolute top-0.5 right-0.5 z-20 flex h-2 w-2 items-center justify-center pointer-events-none">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,1)]" />
-        </span>
+        {/* Broadcast Live Icon: Unmistakably represents live presence & transmission */}
+        <Broadcast
+          size={18}
+          weight="bold"
+          className={`relative z-10 transition-all duration-200 ${
+            isOpen
+              ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.9)] scale-110'
+              : 'text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)] group-hover:scale-110'
+          }`}
+        />
       </button>
 
       {/* Codenotch Notch-Style Dropdown Animation */}
@@ -183,11 +162,11 @@ export default function VisitorPresenceWidget() {
             }}
             className="absolute right-0 top-full pt-2.5 z-50 whitespace-nowrap pointer-events-auto"
           >
-            {/* Top Pointer Caret pointing up to the circle */}
-            <div className="absolute top-1.5 right-3.5 h-2.5 w-2.5 rotate-45 rounded-[1px] bg-[var(--color-paper-card)] dark:bg-[#0A0A0C] border-l border-t border-black/[0.08] dark:border-white/[0.14] z-10" />
+            {/* Top Pointer Caret pointing exactly to center of the 36px circle button */}
+            <div className="absolute top-1.5 right-[13px] h-2.5 w-2.5 rotate-45 rounded-[1px] bg-[var(--color-paper-card)] border-l border-t border-[var(--color-rule-strong)] z-10" />
 
-            {/* Notch Pill Container (Previous clean design) */}
-            <div className="relative flex items-center gap-2 rounded-full border border-black/[0.08] dark:border-white/[0.14] bg-[var(--color-paper-card)]/95 dark:bg-[#0A0A0C]/95 backdrop-blur-xl px-3.5 py-1.5 shadow-xl shadow-black/10 dark:shadow-black/50">
+            {/* Notch Pill Container */}
+            <div className="relative flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)]/95 backdrop-blur-xl px-3.5 py-1.5 shadow-xl shadow-black/10 dark:shadow-black/40">
               {/* Inner Live Indicator */}
               <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -205,7 +184,7 @@ export default function VisitorPresenceWidget() {
                 >
                   {stats.activeVisitors}
                 </motion.span>
-                <span className="font-semibold text-[11.5px] text-[var(--color-ink)] dark:text-white">
+                <span className="font-semibold text-[11.5px] text-[var(--color-ink)]">
                   {stats.activeVisitors === 1 ? 'user visiting the site' : 'users visiting the site'}
                 </span>
               </div>
