@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Users } from '@phosphor-icons/react';
 
 interface VisitorData {
   activeVisitors: number;
@@ -112,25 +113,25 @@ export default function VisitorPresenceWidget() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Circle Online Status Button with Status Arc */}
+      {/* Circle Online Status Button with Status Arc & Users Icon */}
       <button
         type="button"
         onClick={() => setIsPinned((prev) => !prev)}
         aria-label={`${stats.activeVisitors} users currently visiting the site`}
-        title={`${stats.activeVisitors} users visiting the site right now`}
+        title={`Live presence: ${stats.activeVisitors} visiting right now`}
         className={`group relative flex h-9 w-9 items-center justify-center rounded-full transition-all cursor-pointer select-none ${
           isOpen
-            ? 'scale-105 shadow-md shadow-emerald-500/20'
-            : 'hover:scale-102 active:scale-95'
+            ? 'scale-105 border-emerald-500/60 shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-500/20'
+            : 'hover:scale-105 hover:border-emerald-500/50 hover:shadow-md hover:shadow-emerald-500/10 active:scale-95'
         }`}
       >
         {/* Background Base */}
-        <span className="absolute inset-0 rounded-full bg-[var(--color-paper-surface)] dark:bg-[#0A0A0C] border border-[var(--color-rule-strong)] dark:border-white/20" />
+        <span className="absolute inset-0 rounded-full bg-[var(--color-paper-surface)] dark:bg-[#0B0B0E] border border-[var(--color-rule-strong)] dark:border-white/[0.14] transition-colors" />
 
-        {/* Circular Glowing Status Ring */}
-        <svg className="absolute inset-0 h-full w-full -rotate-90 p-[2px]" viewBox="0 0 36 36">
+        {/* Circular Glowing Status Ring (Matches attached screenshot dial) */}
+        <svg className="absolute inset-0 h-full w-full -rotate-90 p-[2.5px]" viewBox="0 0 36 36">
           <path
-            className="text-black/5 dark:text-white/10"
+            className="text-black/[0.06] dark:text-white/[0.08]"
             strokeWidth="2.5"
             stroke="currentColor"
             fill="none"
@@ -139,10 +140,10 @@ export default function VisitorPresenceWidget() {
           <path
             className="text-emerald-500 dark:text-emerald-400 transition-all duration-500 ease-out"
             style={{
-              filter: 'drop-shadow(0 0 4px rgba(52, 211, 153, 0.8))',
+              filter: 'drop-shadow(0 0 5px rgba(52, 211, 153, 0.85))',
             }}
             strokeDasharray="100, 100"
-            strokeDashoffset={isOpen ? '0' : '35'}
+            strokeDashoffset={isOpen ? '0' : '28'}
             strokeLinecap="round"
             strokeWidth="2.5"
             stroke="currentColor"
@@ -151,10 +152,19 @@ export default function VisitorPresenceWidget() {
           />
         </svg>
 
-        {/* Center Pulsing Emerald Beacon */}
-        <span className="relative flex h-2.5 w-2.5 items-center justify-center z-10">
+        {/* Center Icon: Users presence */}
+        <div className="relative z-10 flex items-center justify-center">
+          <Users
+            size={14}
+            weight="bold"
+            className="text-[var(--color-ink-muted)] group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors duration-200"
+          />
+        </div>
+
+        {/* Live Organic Pulsing Beacon Badge */}
+        <span className="absolute top-0.5 right-0.5 z-20 flex h-2 w-2 items-center justify-center pointer-events-none">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,1)]" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,1)]" />
         </span>
       </button>
 
