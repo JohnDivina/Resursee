@@ -158,9 +158,6 @@ export default function GitHubContributionsGraph() {
             </h2>
             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           </div>
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-            Real-time commit telemetry and open-source contributions synchronized from GitHub.
-          </p>
         </div>
 
         <a
