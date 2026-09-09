@@ -11,6 +11,7 @@ import {
   FilePdf,
   FileArrowDown,
   FileArrowUp,
+  Files,
   ArrowRight,
   Sparkle,
   FileImage,
@@ -195,37 +196,39 @@ const SkeletonPdfToImage = () => {
   );
 };
 
-/** 6. Skeleton: Image to PDF (Merge Slips to Document) */
-const SkeletonImageToPdf = () => {
+/** 6. Skeleton: Merge PDF (Merge Multiple PDFs into a Unified File) */
+const SkeletonMergePdf = () => {
   return (
     <motion.div
       initial="initial"
       whileHover="hover"
       className="flex items-center justify-center gap-3 w-full h-full p-2"
     >
-      {/* Scattered Images */}
+      {/* Scattered Source PDFs */}
       <div className="flex -space-x-3">
         <motion.div
           variants={{
             initial: { rotate: -6 },
             hover: { rotate: 0, x: 2 },
           }}
-          className="h-16 w-14 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shadow-xs text-blue-600 dark:text-sky-400 font-mono text-[10px] font-bold"
+          className="h-16 w-14 rounded-lg bg-blue-500/15 border border-blue-500/30 flex flex-col items-center justify-center shadow-xs text-blue-600 dark:text-sky-400 font-mono text-[10px] font-bold"
         >
-          IMG 1
+          <FilePdf size={18} weight="fill" />
+          <span className="text-[8px] mt-0.5">PDF 1</span>
         </motion.div>
         <motion.div
           variants={{
             initial: { rotate: 6 },
             hover: { rotate: 0, x: -2 },
           }}
-          className="h-16 w-14 rounded-lg bg-blue-600/15 border border-blue-600/30 flex items-center justify-center shadow-xs text-blue-600 dark:text-sky-400 font-mono text-[10px] font-bold"
+          className="h-16 w-14 rounded-lg bg-blue-600/15 border border-blue-600/30 flex flex-col items-center justify-center shadow-xs text-blue-600 dark:text-sky-400 font-mono text-[10px] font-bold"
         >
-          IMG 2
+          <FilePdf size={18} weight="fill" />
+          <span className="text-[8px] mt-0.5">PDF 2</span>
         </motion.div>
       </div>
 
-      <span className="text-blue-600 dark:text-sky-400 font-bold">+</span>
+      <span className="text-blue-600 dark:text-sky-400 font-bold text-sm">+</span>
 
       {/* Compiled Unified PDF File */}
       <motion.div
@@ -235,8 +238,76 @@ const SkeletonImageToPdf = () => {
         }}
         className="h-20 w-16 rounded-[14px] bg-blue-600 text-white shadow-lg flex flex-col items-center justify-center p-1.5"
       >
-        <FilePdf size={22} weight="fill" />
+        <Files size={22} weight="fill" />
         <span className="font-mono text-[8px] font-bold uppercase mt-1 tracking-wider">Merged</span>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/** 7. Skeleton: Image to PDF (Convert Photo & Scan to PDF Document) */
+const SkeletonImageToPdf = () => {
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="hover"
+      className="flex items-center justify-center gap-3 w-full h-full p-2"
+    >
+      {/* Source Photo / Scan Card */}
+      <motion.div
+        variants={{
+          initial: { rotate: -4, scale: 1 },
+          hover: { rotate: 0, scale: 1.05 },
+        }}
+        transition={{ duration: 0.3 }}
+        className="relative h-20 w-16 rounded-[13px] border border-blue-500/30 bg-white dark:bg-slate-900 p-1.5 shadow-sm flex flex-col justify-between"
+      >
+        {/* Photo Viewfinder Mini Thumbnail */}
+        <div className="h-11 w-full rounded-[8px] bg-gradient-to-br from-sky-400/30 via-blue-500/20 to-indigo-500/30 flex items-center justify-center border border-blue-500/20 overflow-hidden relative">
+          <FileImage size={20} className="text-blue-600 dark:text-sky-400" weight="bold" />
+          <span className="absolute bottom-0.5 right-1 text-[6.5px] font-mono font-bold text-blue-700 dark:text-sky-300">
+            .JPG
+          </span>
+        </div>
+        <div className="flex items-center justify-between px-0.5 font-mono text-[7px] text-[var(--color-ink-muted)]">
+          <span>photo</span>
+          <span className="text-blue-600 dark:text-sky-400 font-bold">300dpi</span>
+        </div>
+      </motion.div>
+
+      {/* Conversion Arrow */}
+      <motion.div
+        variants={{
+          initial: { x: 0 },
+          hover: { x: 3 },
+        }}
+        transition={{ duration: 0.3 }}
+        className="text-blue-600 dark:text-sky-400"
+      >
+        <ArrowRight size={15} weight="bold" />
+      </motion.div>
+
+      {/* Converted PDF Page Document */}
+      <motion.div
+        variants={{
+          initial: { rotate: 2, scale: 1 },
+          hover: { rotate: 0, scale: 1.05, borderColor: '#2563eb' },
+        }}
+        transition={{ duration: 0.3 }}
+        className="relative h-22 w-16 rounded-[13px] border-2 border-dashed border-blue-500/50 bg-blue-500/5 dark:bg-blue-500/10 p-1.5 shadow-sm flex flex-col items-center justify-between"
+      >
+        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 text-white shadow-2xs mt-1">
+          <FilePdf size={12} weight="fill" />
+        </div>
+
+        <div className="w-full space-y-1 px-1">
+          <div className="h-1 w-full bg-blue-500/30 rounded-full" />
+          <div className="h-1 w-3/4 bg-blue-500/20 rounded-full" />
+        </div>
+
+        <span className="font-mono text-[7.5px] font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider mb-0.5">
+          PDF Page
+        </span>
       </motion.div>
     </motion.div>
   );
@@ -289,10 +360,18 @@ export default function ToolsPreview() {
       href: '/tools/pdf-to-image',
     },
     {
+      title: 'Merge PDF',
+      description: 'Combine multiple PDF documents, syllabi, or clearances into a single organized file with custom ordering.',
+      header: <SkeletonMergePdf />,
+      className: 'md:col-span-2',
+      icon: <Files size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
+      href: '/tools/merge-pdf',
+    },
+    {
       title: 'Image to PDF',
       description: 'Combine scanned clearance slips, IDs, and certificates into a single unified PDF.',
       header: <SkeletonImageToPdf />,
-      className: 'md:col-span-2',
+      className: 'md:col-span-1',
       icon: <FileArrowUp size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/image-to-pdf',
     },

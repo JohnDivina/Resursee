@@ -56,7 +56,7 @@ export default function HeroSection() {
         {/* 4. Clean Feature Badges (No search bar, no emojis) */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-semibold text-[var(--color-ink-secondary)]">
           <span className="rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3.5 py-1 shadow-2xs font-mono text-[11px]">
-            6 Client Tools
+            7 Client Tools
           </span>
           <span className="rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3.5 py-1 shadow-2xs font-mono text-[11px]">
             Plant Vision AI
