@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
 import { WavyBackground } from '@/components/ui/wavy-background';
+import GitHubContributionsGraph from '@/components/about/GitHubContributionsGraph';
 import {
   Code,
   Cpu,
@@ -13,12 +14,10 @@ import {
   EnvelopeSimple,
   ArrowSquareOut,
   TerminalWindow,
-  RocketLaunch,
   CheckCircle,
   Lightning,
   TreeStructure,
   ShieldCheck,
-  DeviceMobile,
   Globe,
   Database,
   BracketsAngle,
@@ -46,37 +45,6 @@ export default function AboutPage() {
     { name: 'Python', category: 'Data & Backend Automation', icon: TerminalWindow, highlight: false },
     { name: 'WebSockets & MQTT', category: 'Real-time Telemetry', icon: TreeStructure, highlight: false },
     { name: 'Security & RLS', category: 'Row Level Security & Hardening', icon: ShieldCheck, highlight: false },
-  ];
-
-  const coreFocusAreas = [
-    {
-      title: 'Full-Stack Web & SaaS Ecosystems',
-      description:
-        'Building lightning-fast, high-performance web applications with Next.js, Supabase, and custom micro-interactions that feel alive and responsive.',
-      icon: RocketLaunch,
-      color: 'bg-blue-500/10 text-blue-600 dark:text-sky-400 border-blue-500/20',
-    },
-    {
-      title: 'Multimodal AI & Intelligent Vision',
-      description:
-        'Harnessing state-of-the-art vision models and LLMs to solve real-world problems—from botanical disease diagnostics to autonomous workflows.',
-      icon: Sparkle,
-      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-    },
-    {
-      title: 'IoT & Real-Time Hardware Telemetry',
-      description:
-        'Bridging the physical and digital worlds with ESP32 microcontrollers, live sensor pipelines, cloud telemetry dashboards, and remote actuation.',
-      icon: Cpu,
-      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    },
-    {
-      title: 'Zero-Install Browser Utilities',
-      description:
-        'Engineering 100% private, client-side browser tools for image transformation, document manipulation, and instant developer productivity.',
-      icon: DeviceMobile,
-      color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-    },
   ];
 
   const works = [
@@ -174,41 +142,8 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* 2. Core Focus Pillars */}
-        <section className="mt-16 space-y-6">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
-              What I Build & Explore
-            </h2>
-            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-              Bridging modern web architectures, edge artificial intelligence, and physical IoT hardware.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {coreFocusAreas.map((area, idx) => {
-              const Icon = area.icon;
-              return (
-                <div
-                  key={idx}
-                  className="group flex flex-col justify-between rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/80 backdrop-blur-md p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:-translate-y-1 hover:border-[var(--color-rule-strong)] hover:shadow-lg"
-                >
-                  <div>
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-[16px] border ${area.color} shadow-xs`}>
-                      <Icon size={24} weight="bold" />
-                    </div>
-                    <h3 className="mt-5 text-lg font-bold text-[var(--color-ink)] tracking-tight">
-                      {area.title}
-                    </h3>
-                    <p className="mt-2 text-xs sm:text-sm text-[var(--color-ink-muted)] leading-relaxed">
-                      {area.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        {/* 2. Live GitHub Activity & Contributions Dot Matrix */}
+        <GitHubContributionsGraph />
 
         {/* 3. Tech Stack Matrix */}
         <section className="mt-16 space-y-6">
