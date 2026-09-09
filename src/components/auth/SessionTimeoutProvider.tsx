@@ -68,6 +68,15 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
       // ignore
     }
 
+    // Dispatch global event for same-window components (like Header)
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('resursee-auth-change', { detail: { session: null, reason } }));
+      }
+    } catch {
+      // ignore
+    }
+
     setIsAuthenticated(false);
     isLoggingOutRef.current = false;
 
@@ -96,16 +105,22 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
       const res = await fetch('/api/auth/session');
       if (res.ok) {
         const data = await res.json();
-        if (data.authenticated) {
+        if (data.authenticated && data.user) {
           setIsAuthenticated(true);
           const now = Date.now();
-          const stored = localStorage.getItem(STORAGE_KEY);
-          if (!stored) {
+          lastActivityRef.current = now;
+          if (typeof window !== 'undefined') {
             localStorage.setItem(STORAGE_KEY, String(now));
-            lastActivityRef.current = now;
+            localStorage.setItem('resursee_user_session_cache', JSON.stringify(data.user));
+            window.dispatchEvent(new CustomEvent('resursee-auth-change', { detail: { session: data.user } }));
           }
         } else {
           setIsAuthenticated(false);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem('resursee_user_session_cache');
+            window.dispatchEvent(new CustomEvent('resursee-auth-change', { detail: { session: null } }));
+          }
           if (data.reason === 'inactivity_timeout') {
             setLoggedOutToast(true);
             setTimeout(() => setLoggedOutToast(false), 60000);
@@ -113,6 +128,11 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
         }
       } else {
         setIsAuthenticated(false);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem('resursee_user_session_cache');
+          window.dispatchEvent(new CustomEvent('resursee-auth-change', { detail: { session: null } }));
+        }
       }
     } catch {
       setIsAuthenticated(false);
@@ -129,13 +149,6 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
     lastActivityRef.current = now;
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, String(now));
-      try {
-        document.cookie = `resursee_last_active=${now}; path=/; max-age=1209600; SameSite=Lax${
-          window.location.protocol === 'https:' ? '; Secure' : ''
-        }`;
-      } catch {
-        // ignore
-      }
     }
     if (showWarningModal) {
       setShowWarningModal(false);

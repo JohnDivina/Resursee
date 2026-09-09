@@ -31,6 +31,30 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 
+function getValidCachedSession(): UserSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const lastActiveStr = localStorage.getItem('resursee_last_active_time');
+    const cachedStr = localStorage.getItem('resursee_user_session_cache');
+    if (!cachedStr || !lastActiveStr) return null;
+
+    const lastActive = parseInt(lastActiveStr, 10);
+    const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+
+    // If last activity is missing or older than 15 minutes, cache is expired
+    if (isNaN(lastActive) || Date.now() - lastActive >= INACTIVITY_TIMEOUT_MS) {
+      localStorage.removeItem('resursee_user_session_cache');
+      localStorage.removeItem('resursee_last_active_time');
+      return null;
+    }
+
+    const parsed = JSON.parse(cachedStr);
+    return parsed && parsed.email ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function IoTCloudPage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -38,20 +62,7 @@ export default function IoTCloudPage() {
   const [copiedSketch, setCopiedSketch] = useState(false);
 
   // Authentication State with instant local hydration to eliminate flicker
-  const [session, setSession] = useState<UserSession | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('resursee_user_session_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.email) return parsed;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return null;
-  });
+  const [session, setSession] = useState<UserSession | null>(getValidCachedSession);
   const [authLoading, setAuthLoading] = useState(true);
 
   // IoT Dashboard State
@@ -63,6 +74,40 @@ export default function IoTCloudPage() {
   const [selectedChartMetric, setSelectedChartMetric] = useState<
     'temperature' | 'humidity' | 'soilMoisture' | 'light'
   >('temperature');
+
+  // Synchronize with global auth events and cross-tab broadcasts
+  useEffect(() => {
+    const handleAuthEvent = (e: any) => {
+      const updatedSession = e.detail?.session ?? null;
+      setSession(updatedSession);
+      if (!updatedSession) {
+        setDevices([]);
+        setSelectedDevice(null);
+      }
+    };
+    window.addEventListener('resursee-auth-change', handleAuthEvent);
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        channel = new BroadcastChannel('resursee_auth_sync');
+        channel.onmessage = (event) => {
+          if (event.data?.type === 'LOGOUT') {
+            setSession(null);
+            setDevices([]);
+            setSelectedDevice(null);
+          }
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    return () => {
+      window.removeEventListener('resursee-auth-change', handleAuthEvent);
+      if (channel) channel.close();
+    };
+  }, []);
 
   // Verify User Session via /api/auth/session
   useEffect(() => {
@@ -85,6 +130,7 @@ export default function IoTCloudPage() {
               setSession(null);
               try {
                 localStorage.removeItem('resursee_user_session_cache');
+                localStorage.removeItem('resursee_last_active_time');
               } catch {
                 // ignore
               }
@@ -95,6 +141,7 @@ export default function IoTCloudPage() {
             setSession(null);
             try {
               localStorage.removeItem('resursee_user_session_cache');
+              localStorage.removeItem('resursee_last_active_time');
             } catch {
               // ignore
             }
@@ -106,6 +153,7 @@ export default function IoTCloudPage() {
           setSession(null);
           try {
             localStorage.removeItem('resursee_user_session_cache');
+            localStorage.removeItem('resursee_last_active_time');
           } catch {
             // ignore
           }
@@ -116,28 +164,6 @@ export default function IoTCloudPage() {
     }
 
     checkAuth();
-
-    // Listen to session broadcast channel (e.g., auto-logout from inactivity)
-    let channel: BroadcastChannel | null = null;
-    try {
-      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-        channel = new BroadcastChannel('resursee_auth_sync');
-        channel.onmessage = (event) => {
-          if (event.data?.type === 'LOGOUT') {
-            setSession(null);
-            setDevices([]);
-            setSelectedDevice(null);
-          }
-        };
-      }
-    } catch {
-      // ignore
-    }
-
-    return () => {
-      isMounted = false;
-      if (channel) channel.close();
-    };
   }, []);
 
   // Compute unique User ID derived strictly from Google Account

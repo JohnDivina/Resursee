@@ -36,28 +36,71 @@ interface HeaderProps {
   onOpenSearch?: () => void;
 }
 
+function getValidCachedSession(): UserSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const lastActiveStr = localStorage.getItem('resursee_last_active_time');
+    const cachedStr = localStorage.getItem('resursee_user_session_cache');
+    if (!cachedStr || !lastActiveStr) return null;
+
+    const lastActive = parseInt(lastActiveStr, 10);
+    const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+
+    // If last activity is missing or older than 15 minutes, cache is expired
+    if (isNaN(lastActive) || Date.now() - lastActive >= INACTIVITY_TIMEOUT_MS) {
+      localStorage.removeItem('resursee_user_session_cache');
+      localStorage.removeItem('resursee_last_active_time');
+      return null;
+    }
+
+    const parsed = JSON.parse(cachedStr);
+    return parsed && parsed.email ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function Header({ onOpenSearch }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [session, setSession] = useState<UserSession | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('resursee_user_session_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.email) return parsed;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return null;
-  });
+  const [session, setSession] = useState<UserSession | null>(getValidCachedSession);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Synchronize with global auth events and cross-tab broadcasts
+  useEffect(() => {
+    const handleAuthEvent = (e: any) => {
+      const updatedSession = e.detail?.session ?? null;
+      setSession(updatedSession);
+      if (!updatedSession) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    window.addEventListener('resursee-auth-change', handleAuthEvent);
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        channel = new BroadcastChannel('resursee_auth_sync');
+        channel.onmessage = (event) => {
+          if (event.data?.type === 'LOGOUT') {
+            setSession(null);
+            setProfileDropdownOpen(false);
+          }
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    return () => {
+      window.removeEventListener('resursee-auth-change', handleAuthEvent);
+      if (channel) channel.close();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -78,6 +121,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               setSession(null);
               try {
                 localStorage.removeItem('resursee_user_session_cache');
+                localStorage.removeItem('resursee_last_active_time');
               } catch {
                 // ignore
               }
@@ -91,6 +135,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             setSession(null);
             try {
               localStorage.removeItem('resursee_user_session_cache');
+              localStorage.removeItem('resursee_last_active_time');
             } catch {
               // ignore
             }
@@ -102,6 +147,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           setSession(null);
           try {
             localStorage.removeItem('resursee_user_session_cache');
+            localStorage.removeItem('resursee_last_active_time');
           } catch {
             // ignore
           }
