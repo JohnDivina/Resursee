@@ -5,38 +5,43 @@
  *
  * Synthesizes deep, crisp mechanical keyboard "thock" tactile audio effects
  * with zero external assets, organic pitch randomization, and zero-latency playback.
+ * Hardened against browser autoplay policies, Safari WebKit restrictions, and context suspension.
  */
 
 let audioCtx: AudioContext | null = null;
 let noiseBuffer: AudioBuffer | null = null;
+let noiseBufferSampleRate: number | null = null;
 let masterGain: GainNode | null = null;
 let isSoundEnabled = true;
+let isHardwareUnlocked = false;
 
 // Active voice gains to smoothly fade out overlapping notes during fast sweeps
 const activeVoiceGains: GainNode[] = [];
 
 /**
- * Initialize or resume AudioContext lazily on user gesture
+ * Safe accessor for AudioContext. Recreates context if dead or closed.
  */
 export function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
 
   try {
-    if (!audioCtx) {
+    const isDead = !audioCtx || audioCtx.state === 'closed';
+
+    if (isDead) {
       const AudioContextClass =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 
-      if (AudioContextClass) {
-        audioCtx = new AudioContextClass();
-        masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-        masterGain.connect(audioCtx.destination);
-      }
-    }
+      if (!AudioContextClass) return null;
 
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
+      audioCtx = new AudioContextClass();
+      noiseBuffer = null;
+      noiseBufferSampleRate = null;
+      isHardwareUnlocked = false;
+
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      masterGain.connect(audioCtx.destination);
     }
   } catch {
     // ignore
@@ -45,9 +50,18 @@ export function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
+/**
+ * Check if the Web Audio engine is currently running and unblocked
+ */
+export function isAudioReady(): boolean {
+  return !!audioCtx && audioCtx.state === 'running';
+}
+
 // Generate small noise buffer for the tactile keycap collision transient
 function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
-  if (noiseBuffer) return noiseBuffer;
+  if (noiseBuffer && noiseBufferSampleRate === ctx.sampleRate) {
+    return noiseBuffer;
+  }
 
   const bufferSize = Math.floor(ctx.sampleRate * 0.008); // 8ms transient noise
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -59,34 +73,71 @@ function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
   }
 
   noiseBuffer = buffer;
+  noiseBufferSampleRate = ctx.sampleRate;
   return buffer;
 }
 
 export function setSoundEnabled(enabled: boolean) {
   isSoundEnabled = enabled;
   if (typeof window !== 'undefined') {
-    localStorage.setItem('resursee-sound-enabled', enabled ? '1' : '0');
+    try {
+      localStorage.setItem('resursee-sound-enabled', enabled ? '1' : '0');
+    } catch {
+      // ignore quota errors in private browsing
+    }
   }
 }
 
 export function getSoundEnabled(): boolean {
   if (typeof window === 'undefined') return true;
-  const saved = localStorage.getItem('resursee-sound-enabled');
-  if (saved === null) return true;
-  return saved === '1';
+  try {
+    const saved = localStorage.getItem('resursee-sound-enabled');
+    if (saved === null) return true;
+    return saved === '1';
+  } catch {
+    return true;
+  }
 }
 
 /**
- * Force unlock AudioContext on any user gesture (pointer/click/touch/key)
+ * Force unlock AudioContext on any user gesture (pointer/click/touch/key).
+ * Plays a 1-sample silent buffer to unlock the audio output hardware on WebKit/Safari.
  */
-export function unlockAudioEngine() {
+export function unlockAudioEngine(): boolean {
+  if (typeof window === 'undefined') return false;
+
   try {
     const ctx = getAudioContext();
-    if (ctx && ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+    if (!ctx) return false;
+
+    // Resume suspended or Safari-interrupted context
+    if (ctx.state === 'suspended' || (ctx.state as string) === 'interrupted') {
+      ctx.resume().then(() => {
+        warmupHardware(ctx);
+      }).catch(() => {});
+    } else if (ctx.state === 'running') {
+      warmupHardware(ctx);
+      return true;
     }
   } catch {
     // ignore
+  }
+
+  return isAudioReady();
+}
+
+function warmupHardware(ctx: AudioContext) {
+  if (!isHardwareUnlocked && ctx.state === 'running') {
+    try {
+      const silentBuf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = silentBuf;
+      src.connect(ctx.destination);
+      src.start(0);
+      isHardwareUnlocked = true;
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -94,24 +145,31 @@ export function unlockAudioEngine() {
  * Play the original rich, satisfying mechanical switch "Thock"
  * @param pitchMultiplier - fine-tune base frequency (0.88 = deeper, 1.35 = higher)
  * @param volume - master volume (0.22 - 0.32 is loud & punchy)
+ * @returns boolean - true if audio was dispatched, false if blocked or muted
  */
-export function playThock(pitchMultiplier = 1.0, volume = 0.08) {
-  if (!isSoundEnabled) return;
+export function playThock(pitchMultiplier = 1.0, volume = 0.08): boolean {
+  if (!isSoundEnabled) return false;
 
   try {
     const ctx = getAudioContext();
-    if (!ctx) return;
+    if (!ctx) return false;
 
-    if (ctx.state === 'suspended') {
+    // If suspended or interrupted, try to resume in background without queueing delayed audio
+    if (ctx.state === 'suspended' || (ctx.state as string) === 'interrupted') {
       ctx.resume().then(() => {
-        executeOriginalThock(ctx, pitchMultiplier, volume);
+        warmupHardware(ctx);
       }).catch(() => {});
-      return;
+      return false;
+    }
+
+    if (ctx.state !== 'running') {
+      return false;
     }
 
     executeOriginalThock(ctx, pitchMultiplier, volume);
+    return true;
   } catch {
-    // Fail silently if audio isn't supported or allowed yet
+    return false;
   }
 }
 
@@ -142,7 +200,12 @@ function executeOriginalThock(ctx: AudioContext, pitchMultiplier: number, volume
     setTimeout(() => {
       const idx = activeVoiceGains.indexOf(voiceGain);
       if (idx !== -1) activeVoiceGains.splice(idx, 1);
-    }, 60);
+      try {
+        voiceGain.disconnect();
+      } catch {
+        // ignore
+      }
+    }, 80);
 
     // Organic micro pitch variation (±4%)
     const randomVariation = 1 + (Math.random() * 0.08 - 0.04);
@@ -220,13 +283,13 @@ function executeOriginalThock(ctx: AudioContext, pitchMultiplier: number, volume
 /**
  * Higher-pitch tactile tick for smaller interactive elements (pills, badges, pagination dots)
  */
-export function playSoftClick(volume = 0.05) {
-  playThock(1.35, volume);
+export function playSoftClick(volume = 0.05): boolean {
+  return playThock(1.35, volume);
 }
 
 /**
  * Deep bass thock for major interactive elements (cards, major action buttons, search bar)
  */
-export function playDeepThock(volume = 0.10) {
-  playThock(0.88, volume);
+export function playDeepThock(volume = 0.10): boolean {
+  return playThock(0.88, volume);
 }

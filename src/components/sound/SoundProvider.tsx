@@ -7,24 +7,25 @@ import {
   playSoftClick,
   setSoundEnabled,
   getSoundEnabled,
-  getAudioContext,
   unlockAudioEngine,
 } from '@/lib/soundEffects';
 
 interface SoundContextType {
   soundEnabled: boolean;
   toggleSound: () => void;
-  playThock: (pitch?: number, volume?: number) => void;
-  playDeepThock: (volume?: number) => void;
-  playSoftClick: (volume?: number) => void;
+  playThock: (pitch?: number, volume?: number) => boolean | void;
+  playDeepThock: (volume?: number) => boolean | void;
+  playSoftClick: (volume?: number) => boolean | void;
+  unlockAudioEngine: () => void;
 }
 
 const SoundContext = createContext<SoundContextType>({
   soundEnabled: true,
   toggleSound: () => {},
-  playThock: () => {},
-  playDeepThock: () => {},
-  playSoftClick: () => {},
+  playThock: () => false,
+  playDeepThock: () => false,
+  playSoftClick: () => false,
+  unlockAudioEngine: () => {},
 });
 
 export const useSound = () => useContext(SoundContext);
@@ -40,9 +41,10 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     setSoundEnabledState(initial);
     setSoundEnabled(initial);
 
-    // Expose for testing in console if needed
+    // Expose for debugging/testing if needed
     if (typeof window !== 'undefined') {
       (window as unknown as { __playThock: typeof playThock }).__playThock = playThock;
+      (window as unknown as { __unlockAudio: typeof unlockAudioEngine }).__unlockAudio = unlockAudioEngine;
     }
   }, []);
 
@@ -58,40 +60,57 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Global Interaction Unlock & Hover Audio Handler
+  // Global Interaction Unlock & Tactile Audio Handler
   useEffect(() => {
-    // 1. Permanent interaction listeners to unlock AudioContext
+    // 1. If navigator has active user activation, immediately unlock AudioContext
+    if (
+      typeof navigator !== 'undefined' &&
+      (navigator as unknown as { userActivation?: { hasBeenActive?: boolean } }).userActivation?.hasBeenActive
+    ) {
+      unlockAudioEngine();
+    }
+
+    // 2. Permanent interaction listeners to unlock AudioContext on user gestures
     const handleGestureUnlock = () => {
       unlockAudioEngine();
     };
 
-    const unlockEvents = ['pointerdown', 'mousedown', 'click', 'touchstart', 'keydown', 'wheel', 'scroll'];
+    const unlockEvents = ['pointerdown', 'mousedown', 'touchstart', 'keydown', 'click'];
     unlockEvents.forEach((evt) => {
       window.addEventListener(evt, handleGestureUnlock, { capture: true, passive: true });
     });
+
+    // 3. Tab visibility and focus recovery
+    const handleVisibilityRecovery = () => {
+      if (document.visibilityState === 'visible') {
+        unlockAudioEngine();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityRecovery);
+    window.addEventListener('focus', handleVisibilityRecovery);
 
     if (!soundEnabled) {
       return () => {
         unlockEvents.forEach((evt) => {
           window.removeEventListener(evt, handleGestureUnlock, { capture: true });
         });
+        document.removeEventListener('visibilitychange', handleVisibilityRecovery);
+        window.removeEventListener('focus', handleVisibilityRecovery);
       };
     }
 
     const interactiveSelector =
       'a, button, [role="button"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], select, [data-thock], .hover-thock, summary, [tabindex="0"]';
 
+    // Hover Haptic Handler
     const handlePointerOver = (e: MouseEvent | PointerEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      // Find the closest interactive ancestor
       const interactiveEl = target.closest(interactiveSelector);
 
       if (interactiveEl) {
         if (interactiveEl !== lastHoveredElementRef.current) {
-          lastHoveredElementRef.current = interactiveEl;
-
           const now = performance.now();
           // Rate-limit throttle to max 1 thock per 25ms
           if (now - lastPlayTimeRef.current > 25) {
@@ -106,12 +125,22 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
               interactiveEl.matches('[data-thock="soft"]') ||
               interactiveEl.matches('kbd');
 
+            let played = false;
             if (isCard) {
-              playDeepThock(0.42);
+              played = playDeepThock(0.42);
             } else if (isPill) {
-              playSoftClick(0.28);
+              played = playSoftClick(0.28);
             } else {
-              playThock(1.0, 0.38);
+              played = playThock(1.0, 0.38);
+            }
+
+            if (played) {
+              lastHoveredElementRef.current = interactiveEl;
+            } else {
+              // Sound was blocked by browser autoplay or pending user gesture!
+              // Clear ref so that when audio unlocks, this element isn't locked out
+              lastHoveredElementRef.current = null;
+              unlockAudioEngine();
             }
           }
         }
@@ -127,15 +156,47 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // Tactile Click / Tap Feedback (Works on Desktop & Touch/Mobile)
+    const handlePointerDown = (e: MouseEvent | PointerEvent) => {
+      unlockAudioEngine();
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      const interactiveEl = target.closest(interactiveSelector);
+      if (interactiveEl) {
+        const now = performance.now();
+        // Short debounce (55ms) so hover + click don't double-fire harsh transient
+        if (now - lastPlayTimeRef.current > 55) {
+          lastPlayTimeRef.current = now;
+
+          const isCard =
+            interactiveEl.matches('[data-thock="card"]') ||
+            interactiveEl.classList.contains('group') ||
+            interactiveEl.tagName === 'ARTICLE';
+
+          if (isCard) {
+            playDeepThock(0.35);
+          } else {
+            playThock(1.15, 0.30);
+          }
+        }
+      }
+    };
+
     window.addEventListener('mouseover', handlePointerOver, { passive: true });
     window.addEventListener('mouseout', handlePointerOut, { passive: true });
+    window.addEventListener('pointerdown', handlePointerDown, { capture: true, passive: true });
 
     return () => {
       window.removeEventListener('mouseover', handlePointerOver);
       window.removeEventListener('mouseout', handlePointerOut);
+      window.removeEventListener('pointerdown', handlePointerDown, { capture: true });
       unlockEvents.forEach((evt) => {
         window.removeEventListener(evt, handleGestureUnlock, { capture: true });
       });
+      document.removeEventListener('visibilitychange', handleVisibilityRecovery);
+      window.removeEventListener('focus', handleVisibilityRecovery);
     };
   }, [soundEnabled]);
 
@@ -147,6 +208,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
         playThock,
         playDeepThock,
         playSoftClick,
+        unlockAudioEngine,
       }}
     >
       {children}
