@@ -313,6 +313,9 @@ export default function PlantDoctorPage() {
               <h1 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Plant Vision
               </h1>
+              <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm leading-relaxed max-w-2xl">
+                AI-powered crop diagnostics. Upload or snap a leaf photo to instantly detect plant diseases, assess foliar health, and receive actionable treatment plans.
+              </p>
             </div>
 
             <Link
