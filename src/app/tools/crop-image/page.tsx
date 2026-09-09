@@ -180,32 +180,30 @@ export default function CropImagePage() {
             <span className="font-semibold text-[var(--color-ink)]">Crop Image</span>
           </nav>
 
-          {/* Heading */}
+          {/* Clean Page Heading */}
           <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 sm:flex-row sm:items-end">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-amber-500 text-white shadow-xs">
-                  <Crop size={20} weight="bold" />
-                </span>
-                <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                  Image Utility
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[9.5px] font-bold text-emerald-700 border border-emerald-500/20">
-                  <ShieldCheck size={12} weight="bold" />
-                  <span>100% Client-Side</span>
-                </span>
-              </div>
-              <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
+            <div className="max-w-2xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Crop Image
               </h1>
-              <p className="mt-1 text-xs text-[var(--color-ink-muted)] sm:text-sm">
+              <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm leading-relaxed">
                 Precision frame and crop ID photos, application attachments, and signature clearances.
               </p>
+
+              {/* Verified Client-Side Privacy Notice */}
+              <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[11px] sm:text-xs text-[var(--color-ink-muted)]">
+                <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
+                  Client-side processing only
+                </span>
+                <span className="text-[var(--color-rule-strong)] hidden sm:inline">•</span>
+                <span>Your files never leave your browser and no data is stored or saved.</span>
+              </div>
             </div>
 
             <Link
               href="/tools"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-4 py-1.5 text-xs font-semibold text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-4 py-2 text-xs font-semibold text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)] hover:text-[var(--color-ink)] transition-colors shadow-2xs shrink-0"
             >
               <ArrowLeft size={14} />
               <span>Back to all tools</span>

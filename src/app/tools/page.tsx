@@ -115,6 +115,17 @@ export default function ToolsPage() {
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--color-ink)]">
                 Productivity Tools
               </h1>
+              <p className="mt-2 text-xs sm:text-sm text-[var(--color-ink-muted)] leading-relaxed">
+                Fast, zero-install document and image utilities built directly into your browser.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-[var(--color-ink-muted)]">
+                <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
+                  100% Client-Side Processing
+                </span>
+                <span className="text-[var(--color-rule-strong)] hidden sm:inline">•</span>
+                <span>Your files never leave your device and zero data is saved or uploaded to any server.</span>
+              </div>
             </div>
           </div>
         </section>
