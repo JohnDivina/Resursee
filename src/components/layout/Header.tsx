@@ -20,6 +20,7 @@ import {
 } from '@phosphor-icons/react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import SoundToggle from '@/components/sound/SoundToggle';
+import VisitorPresenceWidget from '@/components/analytics/VisitorPresenceWidget';
 import {
   Navbar,
   NavBody,
@@ -210,6 +211,9 @@ export default function Header({ onOpenSearch }: HeaderProps) {
 
         {/* Right Action Toolbar */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Live Visitor Presence / Codenotch Online Widget */}
+          <VisitorPresenceWidget />
+
           {/* User Profile / 1-Click Google Sign-In */}
           {session ? (
             <div className="relative" ref={dropdownRef}>

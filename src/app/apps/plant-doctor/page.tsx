@@ -10,8 +10,7 @@ import CameraCapture from '@/components/plant-doctor/CameraCapture';
 import DiagnosisReport from '@/components/plant-doctor/DiagnosisReport';
 import FollowUpChat from '@/components/plant-doctor/FollowUpChat';
 import ScanHistory from '@/components/plant-doctor/ScanHistory';
-import { samplePlants } from '@/lib/plantDoctorSamples';
-import { SamplePlant, PlantDiagnosisResult } from '@/types/plantDoctor';
+import { PlantDiagnosisResult } from '@/types/plantDoctor';
 import { QuotaStatus } from '@/lib/quotaManager';
 import { LoaderFive } from '@/components/ui/loader';
 import {
@@ -39,7 +38,7 @@ export default function PlantDoctorPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [isGuestExceeded, setIsGuestExceeded] = useState(false);
-  const [cachedPayload, setCachedPayload] = useState<{ imageBase64?: string; mimeType?: string; sampleId?: string } | null>(null);
+  const [cachedPayload, setCachedPayload] = useState<{ imageBase64?: string; mimeType?: string } | null>(null);
 
   // Load Session & Scan History
   useEffect(() => {
@@ -135,8 +134,7 @@ export default function PlantDoctorPage() {
 
   const runDiagnosis = async (options: {
     file?: File;
-    sample?: SamplePlant;
-    retryPayload?: { imageBase64?: string; mimeType?: string; sampleId?: string };
+    retryPayload?: { imageBase64?: string; mimeType?: string };
   }) => {
     setIsScanning(true);
     setErrorMessage(null);
@@ -157,7 +155,7 @@ export default function PlantDoctorPage() {
     }, 600);
 
     try {
-      let payload: { imageBase64?: string; mimeType?: string; sampleId?: string } = {};
+      let payload: { imageBase64?: string; mimeType?: string } = {};
 
       if (options.retryPayload) {
         payload = options.retryPayload;
@@ -167,12 +165,6 @@ export default function PlantDoctorPage() {
         payload = {
           imageBase64: base64,
           mimeType,
-        };
-        setCachedPayload(payload);
-      } else if (options.sample) {
-        setCurrentImagePreview(options.sample.imageUrl);
-        payload = {
-          sampleId: options.sample.id,
         };
         setCachedPayload(payload);
       }
@@ -229,7 +221,7 @@ export default function PlantDoctorPage() {
 
       const result: PlantDiagnosisResult = {
         ...data.result,
-        imageUrl: currentImagePreview || (options.sample ? options.sample.imageUrl : undefined),
+        imageUrl: currentImagePreview || undefined,
       };
 
       setDiagnosisResult(result);
@@ -443,55 +435,6 @@ export default function PlantDoctorPage() {
                 }}
               />
 
-              {/* 1-Click Sample Testing Gallery */}
-              <div className="space-y-4 pt-4 border-t border-[var(--color-rule-subtle)]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
-                      1-Click Instant Test Samples (0 Tokens Used)
-                    </h3>
-                    <p className="text-xs text-[var(--color-ink-muted)]">
-                      Test our AI diagnostic studio immediately with pre-loaded botanical cases:
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {samplePlants.map((sample) => (
-                    <button
-                      key={sample.id}
-                      type="button"
-                      onClick={() => runDiagnosis({ sample })}
-                      className="group flex flex-col justify-between overflow-hidden rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 text-left shadow-2xs transition-all hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-md active:scale-98 cursor-pointer"
-                    >
-                      <div className="relative aspect-4/3 w-full overflow-hidden rounded-[14px] bg-neutral-900">
-                        <img
-                          src={sample.imageUrl}
-                          alt={sample.name}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        <div className="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[9px] font-mono font-bold text-white backdrop-blur-xs">
-                          {sample.category}
-                        </div>
-                      </div>
-
-                      <div className="mt-3">
-                        <h4 className="text-xs font-bold text-[var(--color-ink)] group-hover:text-emerald-600 transition-colors line-clamp-1">
-                          {sample.name}
-                        </h4>
-                        <p className="mt-0.5 font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold line-clamp-1">
-                          {sample.issue}
-                        </p>
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-2 text-[10.5px] font-bold text-[var(--color-primary)]">
-                        <span>Instant Test</span>
-                        <Sparkle size={12} weight="fill" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Local Scan History */}
               <ScanHistory
