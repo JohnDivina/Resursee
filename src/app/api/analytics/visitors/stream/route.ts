@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { registerVisitorStream, unregisterVisitorStream } from '@/lib/visitorTracker';
+import crypto from 'crypto';
+import { registerVisitorStream, unregisterVisitorStream, incrementTotalVisitors } from '@/lib/visitorTracker';
 
 // Sliding-Window Connection Rate Limiter (AGENTS.md Directive)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_CONNECTS_PER_WINDOW = 30; // Max 30 connection attempts per minute per IP
+const MAX_CONNECTS_PER_WINDOW = 60; // Up to 60 connections per minute per IP
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds?: number; resetTime: number; remaining: number } {
   const now = Date.now();
@@ -54,12 +55,23 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Check visitor cookie
+  const existingCookie = request.cookies.get('resursee_vid')?.value;
+  const isUuid = existingCookie && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existingCookie);
+  let newVisitorCookie: string | null = null;
+
+  if (!isUuid) {
+    newVisitorCookie = crypto.randomUUID();
+    // Increment total visitors for brand new visitor
+    incrementTotalVisitors();
+  }
+
   let clientId: string | null = null;
   let keepAliveTimer: NodeJS.Timeout | null = null;
 
   const stream = new ReadableStream({
     start(controller) {
-      // Register this client to receive instant broadcast chunks
+      // Register client to receive immediate and subsequent broadcasts
       clientId = registerVisitorStream((chunk: Uint8Array) => {
         try {
           controller.enqueue(chunk);
@@ -68,7 +80,7 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      // Periodic keepalive comment every 15s to keep proxies alive
+      // Keepalive comment every 15s to keep proxies / browsers alive
       const keepAlivePing = new TextEncoder().encode(': keepalive\n\n');
       keepAliveTimer = setInterval(() => {
         try {
@@ -79,7 +91,7 @@ export async function GET(request: NextRequest) {
         }
       }, 15000);
 
-      // Clean up when browser tab/connection disconnects
+      // Clean up when connection closes
       request.signal.addEventListener('abort', () => {
         if (keepAliveTimer) clearInterval(keepAliveTimer);
         if (clientId) {
@@ -102,12 +114,16 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    },
-  });
+  const headers: Record<string, string> = {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  };
+
+  if (newVisitorCookie) {
+    headers['Set-Cookie'] = `resursee_vid=${newVisitorCookie}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`;
+  }
+
+  return new Response(stream, { headers });
 }
