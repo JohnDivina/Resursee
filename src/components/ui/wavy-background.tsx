@@ -69,7 +69,6 @@ export const WavyBackground = ({
     const parent = isFixed ? null : (containerRef.current || canvas.parentElement);
     w = ctx.canvas.width = parent ? parent.offsetWidth : window.innerWidth;
     h = ctx.canvas.height = parent ? parent.offsetHeight : window.innerHeight;
-    ctx.filter = `blur(${blur}px)`;
     nt = 0;
 
     const handleResize = () => {
@@ -77,7 +76,6 @@ export const WavyBackground = ({
       const p = isFixed ? null : (containerRef.current || canvas.parentElement);
       w = ctx.canvas.width = p ? p.offsetWidth : window.innerWidth;
       h = ctx.canvas.height = p ? p.offsetHeight : window.innerHeight;
-      ctx.filter = `blur(${blur}px)`;
     };
 
     window.addEventListener('resize', handleResize, { passive: true });
@@ -95,7 +93,7 @@ export const WavyBackground = ({
       ctx.beginPath();
       ctx.lineWidth = waveWidth || 45;
       ctx.strokeStyle = waveColors[i % waveColors.length];
-      for (x = 0; x < w; x += 6) {
+      for (x = 0; x < w; x += 12) {
         const y = noise(x / 800, 0.3 * i, nt) * 90;
         ctx.lineTo(x, y + h * 0.5);
       }
@@ -120,19 +118,22 @@ export const WavyBackground = ({
 
   useEffect(() => {
     const cleanup = init();
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(animationId);
+      } else {
+        render();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       cancelAnimationFrame(animationId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (cleanup) cleanup();
     };
-  }, []);
-
-  const [isSafari, setIsSafari] = useState(false);
-  useEffect(() => {
-    setIsSafari(
-      typeof window !== 'undefined' &&
-        navigator.userAgent.includes('Safari') &&
-        !navigator.userAgent.includes('Chrome')
-    );
   }, []);
 
   return (
@@ -153,7 +154,9 @@ export const WavyBackground = ({
         ref={canvasRef}
         id="canvas"
         style={{
-          ...(isSafari ? { filter: `blur(${blur}px)` } : {}),
+          filter: `blur(${blur}px)`,
+          transform: 'translate3d(0, 0, 0)',
+          willChange: 'transform',
         }}
       />
       {children && (

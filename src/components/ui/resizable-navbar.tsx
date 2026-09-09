@@ -13,7 +13,7 @@ interface NavItem {
 
 export function Navbar({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <header className={`sticky top-0 z-50 w-full flex justify-center p-2 sm:p-3 transition-all duration-300 ${className}`}>
+    <header className={`sticky top-0 z-50 w-full flex justify-center p-2 sm:p-3 pointer-events-none ${className}`}>
       {children}
     </header>
   );
@@ -30,30 +30,23 @@ export function NavBody({
   const [isScrolled, setIsScrolled] = useState(false);
 
   useMotionValueEvent(scrollY, 'change', (latest) => {
-    if (latest > 40) {
+    if (latest > 50) {
       setIsScrolled(true);
-    } else {
+    } else if (latest < 20) {
       setIsScrolled(false);
     }
   });
 
   return (
-    <motion.div
-      layout
-      transition={{
-        type: 'spring',
-        stiffness: 300,
-        damping: 30,
-        mass: 0.8,
-      }}
-      className={`relative flex items-center justify-between transition-colors duration-300 ${
+    <div
+      className={`pointer-events-auto relative flex items-center justify-between w-full max-w-5xl rounded-full px-4 sm:px-6 py-2.5 backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-200 ease-out will-change-[background-color,border-color,box-shadow] ${
         isScrolled
-          ? 'w-full max-w-5xl rounded-full border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-card)]/90 px-4 sm:px-6 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl'
-          : 'w-full max-w-7xl rounded-2xl sm:rounded-full border border-transparent bg-[var(--color-paper)]/70 px-4 sm:px-6 py-3 backdrop-blur-md'
+          ? 'border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-card)]/90 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
+          : 'border border-black/[0.04] dark:border-white/[0.06] bg-[var(--color-paper)]/75 shadow-2xs'
       } ${className}`}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
