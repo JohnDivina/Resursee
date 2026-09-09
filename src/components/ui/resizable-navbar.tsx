@@ -98,7 +98,7 @@ export function NavItems({
             href={item.link}
             onMouseEnter={() => setHoveredIndex(idx)}
             onMouseLeave={() => setHoveredIndex(null)}
-            className={`relative flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-colors duration-150 ${
+            className={`relative flex items-center gap-1.5 rounded-full px-2.5 lg:px-3.5 py-1.5 text-xs lg:text-sm font-semibold transition-colors duration-150 ${
               isActive
                 ? 'text-[var(--color-primary)] font-bold'
                 : 'text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]'

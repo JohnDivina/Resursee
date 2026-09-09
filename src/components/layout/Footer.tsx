@@ -10,9 +10,9 @@ export default function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--color-rule)] bg-[var(--color-paper-muted)]/60 pt-14 pb-12 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-5">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-10">
           {/* Column 1: Brand & Identity */}
-          <div className="md:col-span-2 space-y-3.5">
+          <div className="sm:col-span-2 md:col-span-3 lg:col-span-2 space-y-3.5">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white shadow-xs">
                 <span className="text-base select-none">🦦</span>

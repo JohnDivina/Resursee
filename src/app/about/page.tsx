@@ -263,11 +263,13 @@ export default function AboutPage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {works.map((work, idx) => (
               <div
                 key={idx}
-                className="flex flex-col justify-between rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/80 backdrop-blur-md p-6 shadow-xs transition-all hover:border-[var(--color-rule-strong)]"
+                className={`flex flex-col justify-between rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/80 backdrop-blur-md p-6 shadow-xs transition-all hover:border-[var(--color-rule-strong)] ${
+                  idx === 2 ? 'sm:col-span-2 lg:col-span-1' : 'col-span-1'
+                }`}
               >
                 <div>
                   <span className="rounded-full bg-[var(--color-paper-muted)] px-3 py-1 font-mono text-[10.5px] font-bold text-[var(--color-ink-secondary)]">

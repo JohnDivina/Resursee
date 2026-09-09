@@ -323,7 +323,7 @@ export default function ToolsPreview() {
       title: 'Compress Image',
       description: 'Reduce file size by up to 90% for university portal submissions with zero visual quality loss.',
       header: <SkeletonCompressImage />,
-      className: 'md:col-span-2',
+      className: 'md:col-span-2 lg:col-span-2',
       icon: <ArrowsInLineHorizontal size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/compress-image',
     },
@@ -331,7 +331,7 @@ export default function ToolsPreview() {
       title: 'Resize Image',
       description: 'Scale photos to standard 2×2, 1×1 passport ID dimensions or custom pixel specifications.',
       header: <SkeletonResizeImage />,
-      className: 'md:col-span-1',
+      className: 'md:col-span-1 lg:col-span-1',
       icon: <CornersOut size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/resize-image',
     },
@@ -339,7 +339,7 @@ export default function ToolsPreview() {
       title: 'Convert Image',
       description: 'Convert between PNG, JPG, and modern WebP formats in milliseconds directly in browser.',
       header: <SkeletonConvertImage />,
-      className: 'md:col-span-1',
+      className: 'md:col-span-1 lg:col-span-1',
       icon: <ArrowsClockwise size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/convert-image',
     },
@@ -347,7 +347,7 @@ export default function ToolsPreview() {
       title: 'Crop Image',
       description: 'Interactive canvas crop tool with standard ID photo aspect ratios and pan controls.',
       header: <SkeletonCropImage />,
-      className: 'md:col-span-1',
+      className: 'md:col-span-1 lg:col-span-1',
       icon: <Crop size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/crop-image',
     },
@@ -355,7 +355,7 @@ export default function ToolsPreview() {
       title: 'PDF to Image',
       description: 'Extract crisp high-resolution PNG or JPG pages directly from multi-page PDF documents.',
       header: <SkeletonPdfToImage />,
-      className: 'md:col-span-1',
+      className: 'md:col-span-1 lg:col-span-1',
       icon: <FileArrowDown size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/pdf-to-image',
     },
@@ -363,7 +363,7 @@ export default function ToolsPreview() {
       title: 'Merge PDF',
       description: 'Combine multiple PDF documents, syllabi, or clearances into a single organized file with custom ordering.',
       header: <SkeletonMergePdf />,
-      className: 'md:col-span-2',
+      className: 'md:col-span-2 lg:col-span-2',
       icon: <Files size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/merge-pdf',
     },
@@ -371,7 +371,7 @@ export default function ToolsPreview() {
       title: 'Image to PDF',
       description: 'Combine scanned clearance slips, IDs, and certificates into a single unified PDF.',
       header: <SkeletonImageToPdf />,
-      className: 'md:col-span-1',
+      className: 'md:col-span-2 lg:col-span-1',
       icon: <FileArrowUp size={18} weight="bold" className="text-blue-600 dark:text-sky-400" />,
       href: '/tools/image-to-pdf',
     },
@@ -388,7 +388,7 @@ export default function ToolsPreview() {
         </div>
 
         {/* Aceternity Bento Box Grid Style */}
-        <BentoGrid className="max-w-7xl mx-auto md:auto-rows-[19rem]">
+        <BentoGrid className="max-w-7xl mx-auto auto-rows-auto lg:auto-rows-[19rem] grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {bentoItems.map((item, i) => (
             <BentoGridItem
               key={i}

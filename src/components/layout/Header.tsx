@@ -233,7 +233,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     {session.name.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className="hidden md:inline max-w-[100px] truncate">{session.name}</span>
+                <span className="hidden lg:inline max-w-[100px] truncate">{session.name}</span>
                 <CaretDown size={12} weight="bold" className="text-[var(--color-ink-muted)]" />
               </button>
 
@@ -315,8 +315,10 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             </a>
           )}
 
-          {/* Sound Effect Toggle */}
-          <SoundToggle />
+          {/* Sound Effect Toggle (Desktop & Tablet) */}
+          <div className="hidden sm:flex items-center">
+            <SoundToggle />
+          </div>
 
           {/* Dark Mode Toggle */}
           <ThemeToggle />
@@ -369,7 +371,16 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           })}
         </div>
 
-        <div className="pt-3 border-t border-[var(--color-rule-subtle)] flex flex-col gap-2">
+        {/* Mobile Quick Preferences Strip */}
+        <div className="pt-2 border-t border-[var(--color-rule-subtle)] flex items-center justify-between px-2 py-1.5 rounded-[14px] bg-[var(--color-paper-muted)]/70">
+          <span className="text-[11px] font-semibold text-[var(--color-ink-muted)]">Preferences</span>
+          <div className="flex items-center gap-2">
+            <SoundToggle />
+            <ThemeToggle />
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-[var(--color-rule-subtle)] flex flex-col gap-2">
           {session ? (
             <button
               type="button"

@@ -135,6 +135,28 @@ export default function CropImagePage() {
     setIsDragging(false);
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setDragStart({ x: touch.clientX - offsetX, y: touch.clientY - offsetY });
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !imageObjRef.current || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const newX = touch.clientX - dragStart.x;
+    const newY = touch.clientY - dragStart.y;
+    setOffsetX(newX);
+    setOffsetY(newY);
+    renderCropPreview(imageObjRef.current, zoom, newX, newY, aspect);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   const handleExport = () => {
     const canvas = canvasRef.current;
     if (!canvas || !imageFile) return;
@@ -246,15 +268,19 @@ export default function CropImagePage() {
                   </div>
 
                   <div
-                    className="relative mt-6 flex h-96 items-center justify-center overflow-hidden rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] select-none cursor-grab active:cursor-grabbing"
+                    className="relative mt-6 flex h-80 sm:h-96 items-center justify-center overflow-hidden rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-surface)] select-none cursor-grab active:cursor-grabbing touch-none p-4"
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
                   >
                     <canvas
                       ref={canvasRef}
-                      className="rounded-[16px] shadow-lg ring-2 ring-[var(--color-primary)]"
+                      className="max-h-full max-w-full object-contain rounded-[16px] shadow-lg ring-2 ring-[var(--color-primary)]"
                     />
 
                     <div className="pointer-events-none absolute bottom-3.5 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-1.5 font-mono text-[10px] font-semibold text-white backdrop-blur-xs">
