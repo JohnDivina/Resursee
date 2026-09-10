@@ -23,12 +23,12 @@
   --color-rule-subtle: rgba(0, 0, 0, 0.04);
   --color-rule-strong: rgba(0, 0, 0, 0.12);
 
-  /* Primary Signal Accent: Electric Cobalt */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-active: #1e40af;
-  --color-primary-glow: rgba(37, 99, 235, 0.14);
-  --color-primary-subtle: #eff6ff;
+  /* Primary Signal Accent: High-Contrast Monochrome Slate / Pure Inks */
+  --color-primary: #0f172a;
+  --color-primary-hover: #1e293b;
+  --color-primary-active: #020617;
+  --color-primary-glow: rgba(0, 0, 0, 0.08);
+  --color-primary-subtle: #f4f4f5;
 
   /* Secondary Accents (Subdued Monochrome & Neutral Standards) */
   --color-accent-amber: #71717a;

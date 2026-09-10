@@ -233,7 +233,7 @@ export default function CompressImagePage() {
                           {compressedBlob ? formatBytes(compressedBlob.size) : 'Calculating...'}
                         </span>
                       </div>
-                      <div className="relative flex h-60 items-center justify-center overflow-hidden rounded-[18px] border-2 border-blue-500/30 bg-[var(--color-paper-surface)] p-2">
+                      <div className="relative flex h-60 items-center justify-center overflow-hidden rounded-[18px] border-2 border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2">
                         {isProcessing ? (
                           <div className="flex flex-col items-center gap-2 text-xs text-[var(--color-primary)]">
                             <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent" />

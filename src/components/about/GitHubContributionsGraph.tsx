@@ -112,21 +112,21 @@ export default function GitHubContributionsGraph() {
 
   /**
    * Authentic GitHub contribution square color palette styled with
-   * Resursee's primary blue accent color (#2563eb / #3b82f6).
+   * clean monochrome neutral tones (Apple / Linear minimal standard).
    */
   const getSquareColorClass = (level: number) => {
     switch (level) {
       case 1:
-        return 'bg-[#bfdbfe] dark:bg-[#262626] border border-black/5 dark:border-white/5';
+        return 'bg-[#e4e4e7] dark:bg-[#262626] border border-black/5 dark:border-white/5';
       case 2:
-        return 'bg-[#60a5fa] dark:bg-[#525252] border border-black/5 dark:border-white/5';
+        return 'bg-[#a1a1aa] dark:bg-[#525252] border border-black/5 dark:border-white/5';
       case 3:
-        return 'bg-[#2563eb] dark:bg-[#a1a1aa] border border-black/5 dark:border-white/5';
+        return 'bg-[#52525b] dark:bg-[#a1a1aa] border border-black/5 dark:border-white/5';
       case 4:
-        return 'bg-[#1d4ed8] dark:bg-white border border-black/5 dark:border-white/10 shadow-[0_0_8px_rgba(255,255,255,0.5)]';
+        return 'bg-[#18181b] dark:bg-white border border-black/5 dark:border-white/10';
       case 0:
       default:
-        return 'bg-[#ebedf0] dark:bg-[#121212] border border-black/[0.04] dark:border-white/[0.04]';
+        return 'bg-[#f4f4f5] dark:bg-[#121212] border border-black/[0.04] dark:border-white/[0.04]';
     }
   };
 
@@ -138,7 +138,7 @@ export default function GitHubContributionsGraph() {
           <h2 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-3xl">
             GitHub Contributions
           </h2>
-          <span className="flex h-2 w-2 rounded-full bg-[var(--color-primary)] animate-pulse" />
+          <span className="flex h-2 w-2 rounded-full bg-neutral-600 dark:bg-neutral-300" />
         </div>
 
         <a
@@ -252,11 +252,11 @@ export default function GitHubContributionsGraph() {
           <div className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--color-ink-muted)]">
             <span>Less</span>
             <div className="flex items-center gap-[3px]">
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#ebedf0] dark:bg-[#121212] border border-black/[0.04] dark:border-white/[0.04]" />
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#bfdbfe] dark:bg-[#262626]" />
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#60a5fa] dark:bg-[#525252]" />
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#2563eb] dark:bg-[#a1a1aa]" />
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#1d4ed8] dark:bg-white shadow-[0_0_6px_rgba(255,255,255,0.4)]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#f4f4f5] dark:bg-[#121212] border border-black/[0.04] dark:border-white/[0.04]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#e4e4e7] dark:bg-[#262626]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#a1a1aa] dark:bg-[#525252]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#52525b] dark:bg-[#a1a1aa]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#18181b] dark:bg-white" />
             </div>
             <span>More</span>
           </div>

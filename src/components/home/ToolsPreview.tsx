@@ -32,7 +32,7 @@ const SkeletonCompressImage = () => {
       className="flex flex-col w-full h-full justify-center space-y-2.5 p-2"
     >
       <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[var(--color-ink-muted)]">
-        <span className="flex items-center gap-1 text-blue-600 dark:text-white">
+        <span className="flex items-center gap-1 text-[var(--color-ink)]">
           <FileImage size={14} weight="bold" /> clearance_photo.png
         </span>
         <span className="font-mono text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 rounded-full">-88%</span>
@@ -43,15 +43,15 @@ const SkeletonCompressImage = () => {
           initial={{ width: '90%' }}
           whileHover={{ width: '22%' }}
           transition={{ duration: 0.8, ease: 'easeInOut' }}
-          className="h-full bg-gradient-to-r from-blue-700 to-blue-500 dark:from-neutral-400 dark:to-white rounded-full flex items-center justify-end pr-1.5"
+          className="h-full bg-neutral-900 dark:bg-white rounded-full flex items-center justify-end pr-1.5"
         >
-          <span className="h-2 w-2 rounded-full bg-white shadow-xs" />
+          <span className="h-2 w-2 rounded-full bg-white dark:bg-neutral-900 shadow-xs" />
         </motion.div>
       </div>
 
       <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink-muted)]">
         <span>Original: 4.8 MB</span>
-        <span className="font-bold text-blue-600 dark:text-white">Compressed: 580 KB</span>
+        <span className="font-bold text-[var(--color-ink)]">Compressed: 580 KB</span>
       </div>
     </motion.div>
   );
@@ -68,11 +68,11 @@ const SkeletonResizeImage = () => {
       <motion.div
         variants={{
           initial: { scale: 1 },
-          hover: { scale: 1.08, borderColor: 'rgba(37, 99, 235, 0.7)' },
+          hover: { scale: 1.08, borderColor: 'var(--color-ink)' },
         }}
         className="h-20 w-20 rounded-[14px] border-2 border-dashed border-slate-300 dark:border-neutral-800 bg-white/70 dark:bg-[#0f0f0f]/80 flex flex-col items-center justify-center shadow-xs"
       >
-        <span className="font-mono text-[10px] font-bold text-blue-600 dark:text-white">2 × 2 in</span>
+        <span className="font-mono text-[10px] font-bold text-[var(--color-ink)]">2 × 2 in</span>
         <span className="text-[9px] text-[var(--color-ink-muted)]">600×600px</span>
       </motion.div>
 
@@ -83,7 +83,7 @@ const SkeletonResizeImage = () => {
         }}
         className="h-16 w-16 rounded-[12px] border border-slate-300 dark:border-neutral-800 bg-slate-100/60 dark:bg-[#181818]/80 flex flex-col items-center justify-center"
       >
-        <span className="font-mono text-[9px] font-bold text-blue-600 dark:text-white">1 × 1 in</span>
+        <span className="font-mono text-[9px] font-bold text-[var(--color-ink)]">1 × 1 in</span>
         <span className="text-[8px] text-[var(--color-ink-muted)]">Passport</span>
       </motion.div>
     </motion.div>
@@ -104,7 +104,7 @@ const SkeletonConvertImage = () => {
       <motion.div
         animate={{ rotate: [0, 180, 360] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-        className="text-blue-600 dark:text-white"
+        className="text-[var(--color-ink)]"
       >
         <ArrowsClockwise size={18} weight="bold" />
       </motion.div>
@@ -171,7 +171,7 @@ const SkeletonPdfToImage = () => {
           initial: { x: 0 },
           hover: { x: 4 },
         }}
-        className="text-blue-600 dark:text-white"
+        className="text-[var(--color-ink)]"
       >
         <ArrowRight size={16} weight="bold" />
       </motion.div>
@@ -187,7 +187,7 @@ const SkeletonPdfToImage = () => {
             }}
             className="h-20 w-16 rounded-[12px] border border-slate-300 dark:border-neutral-800 bg-white dark:bg-[#0f0f0f] shadow-md flex flex-col items-center justify-center"
           >
-            <FileImage size={18} className="text-blue-600 dark:text-white" weight="bold" />
+            <FileImage size={18} className="text-[var(--color-ink)]" weight="bold" />
             <span className="font-mono text-[8px] text-[var(--color-ink-muted)] mt-1">P.{page}</span>
           </motion.div>
         ))}
@@ -228,15 +228,15 @@ const SkeletonMergePdf = () => {
         </motion.div>
       </div>
 
-      <span className="text-blue-600 dark:text-white font-bold text-sm">+</span>
+      <span className="text-[var(--color-ink)] font-bold text-sm">+</span>
 
       {/* Compiled Unified PDF File */}
       <motion.div
         variants={{
           initial: { scale: 1 },
-          hover: { scale: 1.08, borderColor: '#2563eb' },
+          hover: { scale: 1.08, borderColor: 'var(--color-ink)' },
         }}
-        className="h-20 w-16 rounded-[14px] bg-blue-600 dark:bg-white text-white dark:text-black shadow-lg flex flex-col items-center justify-center p-1.5"
+        className="h-20 w-16 rounded-[14px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-lg flex flex-col items-center justify-center p-1.5"
       >
         <Files size={22} weight="fill" />
         <span className="font-mono text-[8px] font-bold uppercase mt-1 tracking-wider">Merged</span>
@@ -282,7 +282,7 @@ const SkeletonImageToPdf = () => {
           hover: { x: 3 },
         }}
         transition={{ duration: 0.3 }}
-        className="text-blue-600 dark:text-white"
+        className="text-[var(--color-ink)]"
       >
         <ArrowRight size={15} weight="bold" />
       </motion.div>
@@ -324,7 +324,7 @@ export default function ToolsPreview() {
       description: 'Reduce file size by up to 90% for university portal submissions with zero visual quality loss.',
       header: <SkeletonCompressImage />,
       className: 'md:col-span-2 lg:col-span-2',
-      icon: <ArrowsInLineHorizontal size={18} weight="bold" className="text-blue-600 dark:text-white" />,
+      icon: <ArrowsInLineHorizontal size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/compress-image',
     },
     {
@@ -332,7 +332,7 @@ export default function ToolsPreview() {
       description: 'Scale photos to standard 2×2, 1×1 passport ID dimensions or custom pixel specifications.',
       header: <SkeletonResizeImage />,
       className: 'md:col-span-1 lg:col-span-1',
-      icon: <CornersOut size={18} weight="bold" className="text-blue-600 dark:text-white" />,
+      icon: <CornersOut size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/resize-image',
     },
     {
@@ -340,7 +340,7 @@ export default function ToolsPreview() {
       description: 'Convert between PNG, JPG, and modern WebP formats in milliseconds directly in browser.',
       header: <SkeletonConvertImage />,
       className: 'md:col-span-1 lg:col-span-1',
-      icon: <ArrowsClockwise size={18} weight="bold" className="text-blue-600 dark:text-white" />,
+      icon: <ArrowsClockwise size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/convert-image',
     },
     {
@@ -348,7 +348,7 @@ export default function ToolsPreview() {
       description: 'Interactive canvas crop tool with standard ID photo aspect ratios and pan controls.',
       header: <SkeletonCropImage />,
       className: 'md:col-span-1 lg:col-span-1',
-      icon: <Crop size={18} weight="bold" className="text-blue-600 dark:text-white" />,
+      icon: <Crop size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/crop-image',
     },
     {
@@ -356,7 +356,7 @@ export default function ToolsPreview() {
       description: 'Extract crisp high-resolution PNG or JPG pages directly from multi-page PDF documents.',
       header: <SkeletonPdfToImage />,
       className: 'md:col-span-1 lg:col-span-1',
-      icon: <FileArrowDown size={18} weight="bold" className="text-blue-600 dark:text-white" />,
+      icon: <FileArrowDown size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/pdf-to-image',
     },
     {
@@ -364,7 +364,7 @@ export default function ToolsPreview() {
       description: 'Combine multiple PDF documents, syllabi, or clearances into a single organized file with custom ordering.',
       header: <SkeletonMergePdf />,
       className: 'md:col-span-2 lg:col-span-2',
-      icon: <Files size={18} weight="bold" className="text-blue-600 dark:text-white" />,
+      icon: <Files size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/merge-pdf',
     },
     {
@@ -372,7 +372,7 @@ export default function ToolsPreview() {
       description: 'Combine scanned clearance slips, IDs, and certificates into a single unified PDF.',
       header: <SkeletonImageToPdf />,
       className: 'md:col-span-2 lg:col-span-1',
-      icon: <FileArrowUp size={18} weight="bold" className="text-blue-600 dark:text-white" />,
+      icon: <FileArrowUp size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/image-to-pdf',
     },
   ];

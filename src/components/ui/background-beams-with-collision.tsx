@@ -72,27 +72,27 @@ export function BackgroundBeamsWithCollision({
     handleResize();
     window.addEventListener('resize', handleResize, { passive: true });
 
-    // Curated Blue-Only Accent Color Palette
-    const bluePalettes = [
+    // Curated Monochrome Neutral Palette (zero neon/blue)
+    const monochromePalettes = [
       {
-        trail: 'rgba(37, 99, 235,', // Electric Royal Blue
-        head: '#60a5fa',
-        glow: 'rgba(37, 99, 235, 0.9)',
+        trail: 'rgba(255, 255, 255,',
+        head: '#ffffff',
+        glow: 'rgba(255, 255, 255, 0.45)',
       },
       {
-        trail: 'rgba(2, 132, 199,', // Sky Blue
-        head: '#38bdf8',
-        glow: 'rgba(2, 132, 199, 0.9)',
+        trail: 'rgba(212, 212, 216,',
+        head: '#e4e4e7',
+        glow: 'rgba(212, 212, 216, 0.40)',
       },
       {
-        trail: 'rgba(29, 78, 216,', // Deep Cobalt
-        head: '#93c5fd',
-        glow: 'rgba(29, 78, 216, 0.85)',
+        trail: 'rgba(161, 161, 170,',
+        head: '#d4d4d8',
+        glow: 'rgba(161, 161, 170, 0.35)',
       },
       {
-        trail: 'rgba(79, 70, 229,', // Indigo Blue
-        head: '#a5b4fc',
-        glow: 'rgba(79, 70, 229, 0.85)',
+        trail: 'rgba(113, 113, 122,',
+        head: '#a1a1aa',
+        glow: 'rgba(113, 113, 122, 0.30)',
       },
     ];
 
@@ -103,7 +103,7 @@ export function BackgroundBeamsWithCollision({
 
     // Initialize laser beams evenly spaced across the screen
     for (let i = 0; i < beamCount; i++) {
-      const p = bluePalettes[i % bluePalettes.length];
+      const p = monochromePalettes[i % monochromePalettes.length];
       const sectionWidth = width / beamCount;
       const x = sectionWidth * i + Math.random() * (sectionWidth * 0.7);
       const length = Math.random() * 70 + 60; // 60px - 130px beam length

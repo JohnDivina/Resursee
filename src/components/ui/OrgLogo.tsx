@@ -27,7 +27,7 @@ export function OrgLogo({
 
   if (hasError) {
     return (
-      <div className={`flex items-center justify-center rounded-full bg-blue-600/15 text-blue-600 font-bold font-mono text-[10px] ${className}`}>
+      <div className={`flex items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 font-bold font-mono text-[10px] ${className}`}>
         {isDost ? 'DOST' : 'RSU'}
       </div>
     );

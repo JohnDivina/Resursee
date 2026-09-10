@@ -113,14 +113,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const isGoingDark = targetTheme === 'dark';
 
-    // Color definitions for translucent rain (no solid blocks!)
+    // Color definitions for clean monochrome rain transition
     const streakColor = isGoingDark
-      ? { r: 37, g: 99, b: 235 } // Cobalt blue rain
-      : { r: 245, g: 158, b: 11 }; // Golden dew rain
+      ? { r: 255, g: 255, b: 255 } // Pure white rain
+      : { r: 71, g: 85, b: 105 }; // Slate neutral rain
 
     const headColor = isGoingDark
-      ? 'rgba(99, 102, 241, ' // Indigo glint
-      : 'rgba(251, 191, 36, '; // Amber glint
+      ? 'rgba(255, 255, 255, ' // Crisp white glint
+      : 'rgba(15, 23, 42, '; // Slate glint
 
     // Generate Rain Streaks
     const streakCount = Math.min(120, Math.floor((width * height) / 8000));

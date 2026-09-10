@@ -85,8 +85,8 @@ import { cn } from '@/lib/utils';
 const BottomGradient = () => {
   return (
     <>
-      <span className="absolute inset-x-0 -bottom-px block h-px w-full bg-gradient-to-r from-transparent via-sky-500 to-transparent opacity-0 transition duration-500 group-hover/btn:opacity-100" />
-      <span className="absolute inset-x-10 -bottom-px mx-auto block h-px w-1/2 bg-gradient-to-r from-transparent via-blue-600 to-transparent opacity-0 blur-xs transition duration-500 group-hover/btn:opacity-100" />
+      <span className="absolute inset-x-0 -bottom-px block h-px w-full bg-gradient-to-r from-transparent via-neutral-400 dark:via-neutral-300 to-transparent opacity-0 transition duration-500 group-hover/btn:opacity-100" />
+      <span className="absolute inset-x-10 -bottom-px mx-auto block h-px w-1/2 bg-gradient-to-r from-transparent via-neutral-500 dark:via-neutral-200 to-transparent opacity-0 blur-xs transition duration-500 group-hover/btn:opacity-100" />
     </>
   );
 };
@@ -898,7 +898,7 @@ export default function AdminDashboardPage() {
           <div className="mb-5">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-ink-muted)] hover:text-blue-600 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-colors"
             >
               <span>← Return to Home</span>
             </Link>
@@ -906,7 +906,7 @@ export default function AdminDashboardPage() {
 
           {/* Header */}
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-blue-600 text-white shadow-xs select-none">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs select-none">
               <ShieldCheck size={24} weight="bold" />
             </div>
             <div>
@@ -937,7 +937,7 @@ export default function AdminDashboardPage() {
             )}
 
             <button
-              className="group/btn relative block h-11 w-full rounded-[12px] bg-gradient-to-br from-blue-600 to-blue-700 font-bold text-xs text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-blue-600 dark:to-blue-800 disabled:opacity-50 cursor-pointer"
+              className="group/btn relative block h-11 w-full rounded-[12px] bg-neutral-900 dark:bg-white font-bold text-xs text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 cursor-pointer transition-colors shadow-sm"
               type="submit"
               disabled={isLocked}
             >
@@ -1943,7 +1943,7 @@ export default function AdminDashboardPage() {
                         {mod.picture ? (
                           <img src={mod.picture} alt={mod.name} className="h-9 w-9 rounded-full" />
                         ) : (
-                          <div className="h-9 w-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs">
+                          <div className="h-9 w-9 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center font-bold text-xs">
                             {mod.name[0]?.toUpperCase()}
                           </div>
                         )}
@@ -2036,11 +2036,11 @@ export default function AdminDashboardPage() {
 
                 <form onSubmit={handleUpdatePasskey} className="space-y-4">
                   {isMasterAdmin ? (
-                    <div className="rounded-[16px] bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-3.5 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
-                      <ShieldCheck size={20} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                    <div className="rounded-[16px] bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-3.5 text-xs text-neutral-800 dark:text-neutral-200 flex items-start gap-2.5">
+                      <ShieldCheck size={20} className="text-neutral-800 dark:text-neutral-200 shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold block">Authenticated with Master Google Workspace</span>
-                        <span className="text-[11px] text-blue-800 dark:text-blue-300">
+                        <span className="text-[11px] text-neutral-600 dark:text-neutral-400">
                           Signed in as <strong>{adminUser?.email || 'Master Administrator'}</strong>. You do not need an existing passkey. Set your custom emergency passkey below.
                         </span>
                       </div>

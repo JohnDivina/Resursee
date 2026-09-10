@@ -88,7 +88,7 @@ export default function AboutPage() {
         <section className="relative flex flex-col items-start md:flex-row md:items-center justify-between gap-8 rounded-[32px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-8 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
           <div className="space-y-4 max-w-2xl">
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[var(--color-ink)]">
-              Hi, I&apos;m <span className="bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent">John Rey Divina</span>.
+              Hi, I&apos;m <span className="text-[var(--color-ink)]">John Rey Divina</span>.
             </h1>
 
             <p className="text-base sm:text-lg text-[var(--color-ink-muted)] leading-relaxed">

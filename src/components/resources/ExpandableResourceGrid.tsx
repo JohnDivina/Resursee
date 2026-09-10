@@ -121,7 +121,7 @@ export default function ExpandableResourceGrid({
               <motion.div
                 layoutId={`image-${active.id}`}
                 transition={springTransition}
-                className="w-full h-44 sm:h-48 bg-gradient-to-br from-[var(--color-primary)] to-blue-700 p-6 flex flex-col justify-between text-white relative overflow-hidden shrink-0"
+                className="w-full h-44 sm:h-48 bg-gradient-to-br from-neutral-900 to-neutral-950 dark:from-neutral-900 dark:to-[#0d0d0d] p-6 flex flex-col justify-between text-white relative overflow-hidden shrink-0"
               >
                 <div className="absolute -right-6 -bottom-6 w-40 h-40 rounded-full bg-white/10 blur-xl pointer-events-none" />
 
@@ -276,7 +276,7 @@ function ExpandableCardItem({
         <motion.div
           layoutId={`image-${resource.id}`}
           transition={springTransition}
-          className="h-36 sm:h-40 w-full rounded-[18px] bg-gradient-to-br from-[var(--color-primary)] to-blue-700 p-4 flex flex-col justify-between text-white relative overflow-hidden"
+          className="h-36 sm:h-40 w-full rounded-[18px] bg-gradient-to-br from-neutral-900 to-neutral-950 dark:from-neutral-900 dark:to-[#0d0d0d] p-4 flex flex-col justify-between text-white relative overflow-hidden"
         >
           <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-2">

@@ -21,7 +21,7 @@ export default function SensorGauge({
   minVal = 0,
   maxVal = 100,
   metricKey,
-  color = '#3b82f6',
+  color = 'currentColor',
 }: SensorGaugeProps) {
   const percentage = Math.min(100, Math.max(0, ((value - minVal) / (maxVal - minVal)) * 100));
 

@@ -156,7 +156,7 @@ export default function ResourceDetailPage() {
                       className="h-5 w-5 object-contain"
                     />
                   </div>
-                  <span className="rounded-md bg-blue-600 px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-white uppercase">
+                  <span className="rounded-md bg-neutral-900 dark:bg-white px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-white dark:text-neutral-900 uppercase">
                     {activeResource.file_format}
                   </span>
                   <span className="flex items-center gap-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 text-[10.5px] font-medium">

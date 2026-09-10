@@ -378,8 +378,8 @@ export default function IoTCloudPage() {
           {/* UNAUTHENTICATED STATE: Mandatory Google Sign-In Gate */}
           {!authLoading && !session && (
             <div className="overflow-hidden rounded-[36px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] shadow-xl">
-              {/* Top Accent Strip */}
-              <div className="h-2 w-full bg-linear-to-r from-blue-600 via-indigo-600 to-sky-500" />
+              {/* Top Neutral Border Strip */}
+              <div className="h-1 w-full bg-neutral-200 dark:bg-neutral-800" />
 
               <div className="p-8 sm:p-14 text-center max-w-3xl mx-auto space-y-6">
                 <div className="space-y-3">
@@ -443,7 +443,7 @@ export default function IoTCloudPage() {
               <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 sm:flex-row sm:items-end">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-blue-600 text-white shadow-xs">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs">
                       <Cpu size={20} weight="bold" />
                     </span>
                     <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">

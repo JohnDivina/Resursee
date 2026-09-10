@@ -83,7 +83,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 dark:selection:bg-white/20 dark:selection:text-white font-sans">
+      <body className="min-h-full flex flex-col antialiased selection:bg-neutral-900 selection:text-white dark:selection:bg-white dark:selection:text-neutral-900 font-sans">
         <ThemeProvider>
           <SoundProvider>
             <SessionTimeoutProvider>

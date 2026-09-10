@@ -61,13 +61,13 @@ export const WavyBackground = ({
     }
   };
 
-  // Curated Light Mode Blue Palette
+  // Curated Light Mode Slate/Neutral Palette (subtle, elegant, zero neon/blue)
   const defaultLightWaveColors = [
-    '#2563eb', // Royal Blue
-    '#38bdf8', // Sky Blue
-    '#1d4ed8', // Deep Cobalt
-    '#0284c7', // Vivid Cyan
-    '#60a5fa', // Soft Blue
+    'rgba(15, 23, 42, 0.35)',
+    'rgba(51, 65, 85, 0.30)',
+    'rgba(71, 85, 105, 0.25)',
+    'rgba(100, 116, 139, 0.20)',
+    'rgba(148, 163, 184, 0.15)',
   ];
 
   // Curated Dark Mode White Palette (clean, ethereal, luminous white waves)
