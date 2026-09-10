@@ -39,10 +39,10 @@ export function NavBody({
 
   return (
     <div
-      className={`pointer-events-auto relative flex items-center justify-between w-full max-w-5xl rounded-full px-4 sm:px-6 py-2.5 backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-200 ease-out will-change-[background-color,border-color,box-shadow] ${
+      className={`pointer-events-auto relative flex items-center justify-between rounded-full backdrop-blur-xl transition-all duration-300 ease-out will-change-[max-width,padding,background-color,border-color,box-shadow] ${
         isScrolled
-          ? 'border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-card)]/90 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
-          : 'border border-black/[0.04] dark:border-white/[0.06] bg-[var(--color-paper)]/75 shadow-2xs'
+          ? 'w-full max-w-5xl border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-card)]/90 px-4 sm:px-6 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
+          : 'w-full max-w-7xl border border-black/[0.04] dark:border-white/[0.06] bg-[var(--color-paper)]/75 px-5 sm:px-8 py-3.5 shadow-2xs'
       } ${className}`}
     >
       {children}
