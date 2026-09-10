@@ -251,7 +251,6 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               )}
               aria-expanded={openDropdown === 'apps'}
             >
-              <Sparkle size={13} className="text-emerald-500 dark:text-emerald-400" />
               <span>Apps</span>
               <CaretDown
                 size={12}
