@@ -24,7 +24,7 @@ export const WavyBackground = ({
   waveWidth?: number;
   backgroundFill?: string;
   blur?: number;
-  speed?: 'slow' | 'fast';
+  speed?: 'slow' | 'fast' | number;
   waveOpacity?: number;
   isFixed?: boolean;
   [key: string]: any;
@@ -41,13 +41,14 @@ export const WavyBackground = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const getSpeed = () => {
+    if (typeof speed === 'number') return speed;
     switch (speed) {
       case 'slow':
-        return 0.0008;
+        return 0.0015;
       case 'fast':
-        return 0.0018;
+        return 0.0035;
       default:
-        return 0.0012;
+        return 0.0025;
     }
   };
 
