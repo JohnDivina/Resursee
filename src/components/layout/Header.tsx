@@ -15,11 +15,8 @@ import {
   List,
   X,
   Wrench,
-  UploadSimple,
   HouseLine,
-  Star,
   Globe,
-  GithubLogo,
 } from '@phosphor-icons/react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import SoundToggle from '@/components/sound/SoundToggle';
@@ -59,7 +56,7 @@ function getValidCachedSession(): UserSession | null {
 export default function Header({ onOpenSearch }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<'apps' | 'resources' | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<'apps' | null>(null);
   const [session, setSession] = useState<UserSession | null>(getValidCachedSession);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
@@ -67,7 +64,6 @@ export default function Header({ onOpenSearch }: HeaderProps) {
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const appsDropdownRef = useRef<HTMLDivElement>(null);
-  const resourcesDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on route change
   useEffect(() => {
@@ -179,9 +175,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
       }
       if (
         appsDropdownRef.current &&
-        !appsDropdownRef.current.contains(target) &&
-        resourcesDropdownRef.current &&
-        !resourcesDropdownRef.current.contains(target)
+        !appsDropdownRef.current.contains(target)
       ) {
         setOpenDropdown(null);
       }
@@ -320,101 +314,18 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             )}
           </div>
 
-          {/* Resources Dropdown */}
-          <div className="relative" ref={resourcesDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setOpenDropdown((prev) => (prev === 'resources' ? null : 'resources'))}
-              className={cn(
-                'px-3 py-1.5 rounded-lg tracking-wide transition-all flex items-center gap-1.5 cursor-pointer select-none',
-                openDropdown === 'resources' || ['/resources', '/news', '/contribute'].includes(pathname)
-                  ? 'text-[var(--color-ink)] bg-[var(--color-paper-muted)] font-bold shadow-2xs'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
-              )}
-              aria-expanded={openDropdown === 'resources'}
-            >
-              <span>Resources</span>
-              <CaretDown
-                size={12}
-                className={cn(
-                  'transition-transform duration-200',
-                  openDropdown === 'resources' ? 'rotate-180 text-[var(--color-ink)]' : 'text-[var(--color-ink-muted)]'
-                )}
-              />
-            </button>
-
-            {openDropdown === 'resources' && (
-              <div className="absolute left-0 mt-2 w-72 bg-[var(--color-paper-card)] dark:bg-[#0a0a0a] border border-[var(--color-rule-strong)] dark:border-white/10 rounded-2xl p-2 shadow-2xl z-50 animate-in zoom-in-95 duration-150 space-y-1">
-                <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-[var(--color-ink-muted)] font-bold">
-                  Learning & Hub
-                </div>
-
-                <Link
-                  href="/resources?tab=apis"
-                  onClick={() => setOpenDropdown(null)}
-                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
-                >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
-                    <Globe size={14} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-bold text-xs text-[var(--color-ink)]">Public APIs Directory</span>
-                    <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
-                      1,700+ curated developer APIs & tools
-                    </p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/resources?tab=repos"
-                  onClick={() => setOpenDropdown(null)}
-                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
-                >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-amber-500 shrink-0 mt-0.5">
-                    <Star size={14} weight="fill" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-bold text-xs text-[var(--color-ink)]">GitHub Repositories</span>
-                    <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
-                      Starred repos curated by @JohnDivina
-                    </p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/news"
-                  onClick={() => setOpenDropdown(null)}
-                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
-                >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
-                    <Sparkle size={14} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-bold text-xs text-[var(--color-ink)]">Tech & Agriculture News</span>
-                    <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
-                      Live RSS feeds & breakthroughs
-                    </p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/contribute"
-                  onClick={() => setOpenDropdown(null)}
-                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
-                >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
-                    <UploadSimple size={14} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-bold text-xs text-[var(--color-ink)]">Contribute Material</span>
-                    <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
-                      Share papers, notes and resources
-                    </p>
-                  </div>
-                </Link>
-              </div>
+          {/* Resources */}
+          <Link
+            href="/resources"
+            className={cn(
+              'px-3 py-1.5 rounded-lg tracking-wide transition-all',
+              pathname === '/resources' || pathname.startsWith('/resources/')
+                ? 'text-[var(--color-ink)] bg-[var(--color-paper-muted)] font-bold shadow-2xs'
+                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
             )}
-          </div>
+          >
+            Resources
+          </Link>
 
           {/* About */}
           <Link
@@ -622,29 +533,17 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             </Link>
 
             <Link
-              href="/resources?tab=apis"
+              href="/resources"
               onClick={() => setMobileMenuOpen(false)}
               className={cn(
                 'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center gap-2.5',
-                pathname === '/resources'
+                pathname === '/resources' || pathname.startsWith('/resources/')
                   ? 'text-[var(--color-ink)] bg-[var(--color-paper-muted)] font-bold'
                   : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
               )}
             >
               <Globe size={16} weight="bold" />
-              <span>Public APIs</span>
-            </Link>
-
-            <Link
-              href="/resources?tab=repos"
-              onClick={() => setMobileMenuOpen(false)}
-              className={cn(
-                'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center gap-2.5',
-                'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
-              )}
-            >
-              <Star size={16} weight="fill" className="text-amber-500" />
-              <span>Starred Repositories</span>
+              <span>Resources</span>
             </Link>
 
             <Link

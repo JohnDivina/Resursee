@@ -23,7 +23,6 @@ import {
   CaretLeft,
   CaretRight,
   ShieldCheck,
-  Sparkle,
   Check,
   Database,
   Globe,
@@ -361,10 +360,6 @@ function ResourcesDirectoryInner() {
         <section className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-rule)] pb-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-medium bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] border border-[var(--color-rule)] mb-3">
-                <Sparkle size={13} className="text-emerald-500" />
-                <span>Developer Hub & Knowledge Base</span>
-              </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[var(--color-ink)] font-display">
                 Resources Directory
               </h1>
