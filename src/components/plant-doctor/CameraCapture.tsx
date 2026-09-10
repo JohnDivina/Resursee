@@ -130,7 +130,7 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
         {/* Viewfinder Area */}
         <div className="relative aspect-4/3 w-full bg-black overflow-hidden flex items-center justify-center">
           {cameraError ? (
-            <div className="p-6 text-center text-xs text-rose-400">
+            <div className="p-6 text-center text-xs text-neutral-300 font-mono">
               {cameraError}
             </div>
           ) : capturedUrl ? (
@@ -150,8 +150,8 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
               />
               {/* Botanical Target Reticle */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 rounded-[24px] border-2 border-dashed border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center">
-                  <span className="font-mono text-[10px] text-emerald-300 bg-black/60 px-2 py-0.5 rounded-full">
+                <div className="h-48 w-48 rounded-[24px] border-2 border-dashed border-white/60 flex items-center justify-center">
+                  <span className="font-mono text-[10px] text-white/90 bg-black/70 px-2.5 py-1 rounded-full border border-white/20">
                     Center Leaf in Frame
                   </span>
                 </div>
@@ -178,7 +178,7 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 rounded-full bg-white text-black px-6 py-2.5 text-xs font-bold shadow-md hover:bg-neutral-200 active:scale-95 cursor-pointer"
               >
                 <Check size={16} weight="bold" />
                 <span>Use this Photo</span>
@@ -199,9 +199,9 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
               <button
                 type="button"
                 onClick={takeSnapshot}
-                className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white/40 bg-emerald-500 text-white shadow-xl shadow-emerald-500/40 hover:scale-105 active:scale-90 transition-transform cursor-pointer"
+                className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-neutral-600 bg-white text-black shadow-xl hover:scale-105 active:scale-90 transition-transform cursor-pointer"
               >
-                <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                <div className="h-12 w-12 rounded-full bg-neutral-200 flex items-center justify-center text-black">
                   <Camera size={24} weight="fill" />
                 </div>
               </button>

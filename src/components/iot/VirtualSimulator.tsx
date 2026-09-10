@@ -18,7 +18,7 @@ export default function VirtualSimulator({
     <div
       className={`rounded-[24px] border p-4 sm:p-5 transition-all ${
         isSimulating
-          ? 'border-emerald-500/40 bg-emerald-500/[0.04] shadow-md'
+          ? 'border-neutral-400 dark:border-neutral-600 shadow-md'
           : 'border-[var(--color-rule)] bg-[var(--color-paper-card)]'
       }`}
     >
@@ -27,7 +27,7 @@ export default function VirtualSimulator({
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${
               isSimulating
-                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
                 : 'bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)]'
             }`}
           >
@@ -44,7 +44,7 @@ export default function VirtualSimulator({
               >
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${
-                    isSimulating ? 'bg-emerald-500 animate-ping' : 'bg-neutral-400'
+                    isSimulating ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
                   }`}
                 />
                 <span>{isSimulating ? 'SIMULATOR ACTIVE' : 'IDLE'}</span>
@@ -64,8 +64,8 @@ export default function VirtualSimulator({
           onClick={onToggleSimulator}
           className={`flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0 ${
             isSimulating
-              ? 'bg-rose-500 text-white shadow-sm hover:bg-rose-600'
-              : 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700'
+              ? 'bg-neutral-800 text-white hover:bg-neutral-900'
+              : 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs hover:opacity-90'
           }`}
         >
           {isSimulating ? (

@@ -279,7 +279,7 @@ export default function PlantDoctorPage() {
             {/* Quota Indicator */}
             {quota && (
               <div className="flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3.5 py-1 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
                 <span>
                   {quota.maxQuota > 100
                     ? 'Admin Access: Unlimited Scans'

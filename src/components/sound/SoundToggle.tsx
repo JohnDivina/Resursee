@@ -28,7 +28,7 @@ export default function SoundToggle({ className = '' }: SoundToggleProps) {
           <SpeakerHigh
             size={16}
             weight="bold"
-            className="text-emerald-500 transition-transform duration-200 animate-pulse"
+            className="text-[var(--color-ink)] transition-transform duration-200"
           />
         ) : (
           <SpeakerSlash
@@ -42,7 +42,7 @@ export default function SoundToggle({ className = '' }: SoundToggleProps) {
       {/* 3D Spatial Status Dot */}
       <span
         className={`pointer-events-none absolute top-1 right-1 h-1.5 w-1.5 rounded-full transition-colors ${
-          soundEnabled ? 'bg-emerald-400' : 'bg-rose-400 opacity-60'
+          soundEnabled ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400/60 dark:bg-neutral-600'
         }`}
       />
     </button>

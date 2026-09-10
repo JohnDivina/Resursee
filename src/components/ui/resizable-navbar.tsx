@@ -152,7 +152,7 @@ export function NavbarButton({
     primary:
       'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-xs px-4 py-2',
     secondary:
-      'bg-[var(--color-ink)] dark:bg-white hover:bg-[var(--color-primary)] dark:hover:bg-blue-400 text-white dark:text-black shadow-2xs px-4 py-2',
+      'bg-[var(--color-ink)] dark:bg-white hover:bg-[var(--color-primary)] dark:hover:bg-neutral-200 text-white dark:text-black shadow-2xs px-4 py-2',
     ghost:
       'border border-black/[0.08] dark:border-white/[0.12] bg-[var(--color-paper-surface)] hover:border-[var(--color-primary)] hover:text-[var(--color-ink)] text-[var(--color-ink-muted)] px-3 py-2',
   };

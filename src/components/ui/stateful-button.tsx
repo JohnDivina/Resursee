@@ -72,12 +72,12 @@ export function Button({
 
     switch (variant) {
       case 'secondary':
-        return 'bg-[var(--color-ink)] dark:bg-white text-white dark:text-black hover:bg-[var(--color-primary)] dark:hover:bg-blue-400';
+        return 'bg-[var(--color-ink)] dark:bg-white text-white dark:text-black hover:bg-[var(--color-primary)] dark:hover:bg-neutral-200';
       case 'emerald':
         return 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md';
       case 'primary':
       default:
-        return 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-md shadow-blue-500/20';
+        return 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-xs';
     }
   };
 

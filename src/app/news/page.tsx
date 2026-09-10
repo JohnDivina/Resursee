@@ -157,7 +157,7 @@ export default function NewsPage() {
                       />
                       <div className="absolute top-3 left-3">
                         <span className="inline-flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-white backdrop-blur-xs">
-                          <ShieldCheck size={12} className="text-emerald-400" />
+                          <ShieldCheck size={12} className="text-white/90" />
                           <span>Approved Circular</span>
                         </span>
                       </div>

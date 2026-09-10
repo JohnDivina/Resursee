@@ -881,7 +881,7 @@ export default function AdminDashboardPage() {
         {/* Action Toast Feedback */}
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
-            <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
+            <CheckCircle size={18} weight="fill" className="text-white shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}

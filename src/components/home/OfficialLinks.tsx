@@ -11,17 +11,17 @@ export default function OfficialLinks({ links = mockOfficialLinks }: OfficialLin
   const getLinkIcon = (category: string) => {
     switch (category.toLowerCase()) {
       case 'portals':
-        return <Globe size={18} className="text-[var(--color-primary)]" />;
+        return <Globe size={18} className="text-[var(--color-ink)]" />;
       case 'academic services':
-        return <BookOpen size={18} className="text-indigo-600" />;
+        return <BookOpen size={18} className="text-[var(--color-ink)]" />;
       case 'administrative services':
-        return <Buildings size={18} className="text-emerald-600" />;
+        return <Buildings size={18} className="text-[var(--color-ink)]" />;
       case 'research & innovation':
-        return <GraduationCap size={18} className="text-amber-600" />;
+        return <GraduationCap size={18} className="text-[var(--color-ink)]" />;
       case 'technical support':
-        return <Lifebuoy size={18} className="text-rose-600" />;
+        return <Lifebuoy size={18} className="text-[var(--color-ink)]" />;
       default:
-        return <Globe size={18} className="text-[var(--color-primary)]" />;
+        return <Globe size={18} className="text-[var(--color-ink)]" />;
     }
   };
 

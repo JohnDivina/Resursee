@@ -176,8 +176,8 @@ export default function StarredRepoCard({
           >
             {copied ? (
               <>
-                <Check size={13} className="text-emerald-500" />
-                <span className="text-emerald-500 text-[11px]">Copied</span>
+                <Check size={13} className="text-[var(--color-ink)]" />
+                <span className="text-[var(--color-ink)] font-semibold text-[11px]">Copied</span>
               </>
             ) : (
               <>

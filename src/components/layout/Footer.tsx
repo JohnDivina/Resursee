@@ -24,7 +24,7 @@ export default function Footer() {
               </span>
             </div>
             <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-[var(--color-ink-muted)]">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
               <span>All systems live & operational</span>
             </div>
           </div>
@@ -46,7 +46,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/apps/plant-doctor" className="transition-colors hover:text-emerald-500 font-medium text-[var(--color-ink)]">
+                <Link href="/apps/plant-doctor" className="transition-colors hover:text-[var(--color-primary)] font-medium text-[var(--color-ink)]">
                   Plant Doctor AI (App #1)
                 </Link>
               </li>

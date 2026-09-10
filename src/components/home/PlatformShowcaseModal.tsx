@@ -237,7 +237,7 @@ export default function PlatformShowcaseModal() {
               {/* Bottom Keyboard Pro-Tip Bar */}
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-[20px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-muted)]/40 p-4 text-xs">
                 <div className="flex items-center gap-2 text-[var(--color-ink-secondary)]">
-                  <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
+                  <ShieldCheck size={16} className="text-neutral-700 dark:text-neutral-300 shrink-0" />
                   <span>100% Client-Side privacy for all paperwork tools.</span>
                 </div>
 

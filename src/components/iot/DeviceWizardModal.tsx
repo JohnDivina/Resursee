@@ -240,7 +240,7 @@ export default function DeviceWizardModal({
               <button
                 type="button"
                 onClick={handleFinish}
-                className="rounded-full bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 active:scale-95 cursor-pointer"
+                className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-6 py-2.5 text-xs font-bold hover:opacity-90 active:scale-95 cursor-pointer"
               >
                 Go to Live Dashboard
               </button>

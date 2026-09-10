@@ -392,7 +392,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     {quota && (
                       <div className="mt-2 flex items-center justify-between rounded-lg bg-[var(--color-paper-muted)] px-2 py-1 text-[10px] font-mono font-bold">
                         <span className="text-[var(--color-ink-muted)]">Daily AI Scans:</span>
-                        <span className="text-emerald-600 dark:text-emerald-400">
+                        <span className="text-[var(--color-ink)]">
                           {quota.maxQuota > 100 ? 'Unlimited' : `${quota.remaining} / ${quota.maxQuota} left`}
                         </span>
                       </div>

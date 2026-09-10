@@ -38,7 +38,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
 
           {/* Real-time Download Count Indicator */}
           <div className="flex items-center gap-1 rounded-full bg-[var(--color-paper-muted)] px-3 py-1 text-xs font-bold text-[var(--color-ink)] transition-colors group-hover:bg-[var(--color-primary-subtle)]">
-            <CaretUp size={14} weight="fill" className="text-emerald-600 dark:text-emerald-400" />
+            <CaretUp size={14} weight="fill" className="text-neutral-700 dark:text-neutral-300" />
             <span className="font-mono text-xs font-bold">
               {realtimeDownloads}
             </span>

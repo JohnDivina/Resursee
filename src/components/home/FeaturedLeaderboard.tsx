@@ -89,17 +89,17 @@ function LeaderboardItemCard({
         {/* Rank Trend Indicator */}
         <div className="flex items-center gap-0.5 font-mono text-[11px] font-bold">
           {rankDiff > 0 ? (
-            <span className="flex items-center text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-0.5 text-neutral-800 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 rounded-full">
               <CaretUp size={12} weight="bold" />
               <span>+{rankDiff}</span>
             </span>
           ) : rankDiff < 0 ? (
-            <span className="flex items-center text-rose-500 bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-0.5 text-neutral-800 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 rounded-full">
               <CaretDown size={12} weight="bold" />
               <span>{rankDiff}</span>
             </span>
           ) : (
-            <span className="flex items-center text-[var(--color-ink-muted)] bg-[var(--color-paper-muted)] px-2 py-0.5 rounded-full text-[10px]">
+            <span className="flex items-center text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 rounded-full text-[10px]">
               • Hot
             </span>
           )}
@@ -107,7 +107,7 @@ function LeaderboardItemCard({
 
         {/* Real-Time Total Downloads Box */}
         <div className="flex flex-col items-center justify-center rounded-[12px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] px-3 py-1 min-w-[54px] shadow-2xs group-hover:border-[var(--color-rule-strong)] transition-colors">
-          <CaretUp size={12} weight="fill" className="text-emerald-600" />
+          <CaretUp size={12} weight="fill" className="text-neutral-700 dark:text-neutral-300" />
           <span className="font-mono text-xs font-bold text-[var(--color-ink)]">
             {liveDownloads.toLocaleString()}
           </span>

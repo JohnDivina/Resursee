@@ -369,7 +369,7 @@ export default function ContributePage() {
           {/* SUCCESS SCREEN */}
           {isSubmitted ? (
             <div className="mt-8 rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-8 sm:p-12 text-center shadow-lg animate-in fade-in zoom-in-95">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-emerald-500">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[var(--color-ink)]">
                 <CheckCircle size={40} weight="fill" />
               </div>
               <h2 className="mt-4 text-xl sm:text-2xl font-extrabold text-[var(--color-ink)]">

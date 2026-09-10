@@ -20,19 +20,19 @@ export default function QuickCategories({ categories = mockCategories }: QuickCa
   const getCategoryIcon = (slug: string) => {
     switch (slug) {
       case 'forms':
-        return <FileText size={24} className="text-[var(--color-primary)]" />;
+        return <FileText size={24} className="text-[var(--color-ink)]" />;
       case 'templates':
-        return <Layout size={24} className="text-indigo-600" />;
+        return <Layout size={24} className="text-[var(--color-ink)]" />;
       case 'policies-guidelines':
-        return <ShieldCheck size={24} className="text-emerald-600" />;
+        return <ShieldCheck size={24} className="text-[var(--color-ink)]" />;
       case 'memorandums':
-        return <Megaphone size={24} className="text-amber-600" />;
+        return <Megaphone size={24} className="text-[var(--color-ink)]" />;
       case 'academic':
-        return <GraduationCap size={24} className="text-sky-600" />;
+        return <GraduationCap size={24} className="text-[var(--color-ink)]" />;
       case 'research':
-        return <Flask size={24} className="text-rose-600" />;
+        return <Flask size={24} className="text-[var(--color-ink)]" />;
       default:
-        return <FileText size={24} className="text-[var(--color-primary)]" />;
+        return <FileText size={24} className="text-[var(--color-ink)]" />;
     }
   };
 

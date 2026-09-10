@@ -61,19 +61,19 @@ export default function CategoryDetailPage() {
   const getCategoryIcon = (slug: string) => {
     switch (slug) {
       case 'forms':
-        return <FileText size={32} className="text-[var(--color-primary)]" />;
+        return <FileText size={32} className="text-[var(--color-ink)]" />;
       case 'templates':
-        return <Layout size={32} className="text-indigo-600" />;
+        return <Layout size={32} className="text-[var(--color-ink)]" />;
       case 'policies-guidelines':
-        return <ShieldCheck size={32} className="text-emerald-600" />;
+        return <ShieldCheck size={32} className="text-[var(--color-ink)]" />;
       case 'memorandums':
-        return <Megaphone size={32} className="text-amber-600" />;
+        return <Megaphone size={32} className="text-[var(--color-ink)]" />;
       case 'academic':
-        return <GraduationCap size={32} className="text-sky-600" />;
+        return <GraduationCap size={32} className="text-[var(--color-ink)]" />;
       case 'research':
-        return <Flask size={32} className="text-rose-600" />;
+        return <Flask size={32} className="text-[var(--color-ink)]" />;
       default:
-        return <FileText size={32} className="text-[var(--color-primary)]" />;
+        return <FileText size={32} className="text-[var(--color-ink)]" />;
     }
   };
 
@@ -167,7 +167,7 @@ export default function CategoryDetailPage() {
 
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-dark-surface)] px-4 py-3 text-xs font-medium text-white shadow-xl animate-in slide-in-from-bottom-5">
-          <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
+          <CheckCircle size={18} weight="fill" className="text-white shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

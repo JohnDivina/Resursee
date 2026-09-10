@@ -30,7 +30,7 @@ export default function RelaySwitch({ actuator, onToggle }: RelaySwitchProps) {
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-[16px] transition-all duration-300 ${
             actuator.state
-              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+              ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
               : 'bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)]'
           }`}
         >
@@ -46,7 +46,7 @@ export default function RelaySwitch({ actuator, onToggle }: RelaySwitchProps) {
             <span>•</span>
             <span
               className={`font-bold ${
-                actuator.state ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'
+                actuator.state ? 'text-[var(--color-ink)]' : 'text-neutral-400'
               }`}
             >
               {actuator.state ? 'ENERGIZED (HIGH)' : 'DE-ENERGIZED (LOW)'}
@@ -61,11 +61,11 @@ export default function RelaySwitch({ actuator, onToggle }: RelaySwitchProps) {
         disabled={isUpdating}
         onClick={handleToggle}
         className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-          actuator.state ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-700'
+          actuator.state ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-300 dark:bg-neutral-700'
         } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
       >
         <span
-          className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+          className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white dark:bg-neutral-900 shadow-md ring-0 transition duration-200 ease-in-out ${
             actuator.state ? 'translate-x-6' : 'translate-x-0'
           }`}
         />

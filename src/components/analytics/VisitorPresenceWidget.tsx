@@ -154,10 +154,7 @@ export default function VisitorPresenceWidget() {
             {/* Notch Pill Container */}
             <div className="relative flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3.5 py-1.5 shadow-xl">
               {/* Inner Live Indicator */}
-              <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
+              <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
 
               {/* Dynamic Realtime Active Visitors Count */}
               <div className="flex items-center gap-1.5 text-xs select-none">

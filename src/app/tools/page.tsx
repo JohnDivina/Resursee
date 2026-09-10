@@ -120,7 +120,7 @@ export default function ToolsPage() {
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-[var(--color-ink-muted)]">
                 <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
                   100% Client-Side Processing
                 </span>
                 <span className="text-[var(--color-rule-strong)] hidden sm:inline">•</span>

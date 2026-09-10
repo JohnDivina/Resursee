@@ -153,8 +153,8 @@ export default function PublicApiCard({ api, onCopyNotice }: PublicApiCardProps)
           >
             {copied ? (
               <>
-                <Check size={13} className="text-emerald-500" />
-                <span className="text-emerald-500">Copied</span>
+                <Check size={13} className="text-[var(--color-ink)]" />
+                <span className="text-[var(--color-ink)] font-semibold">Copied</span>
               </>
             ) : (
               <>

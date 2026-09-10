@@ -212,7 +212,7 @@ export default function TelemetryChart({
       {/* Footer Status */}
       <div className="flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-3 text-[11px] font-mono text-[var(--color-ink-muted)]">
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
           <span>Polling stream every 2000ms</span>
         </span>
         <span>

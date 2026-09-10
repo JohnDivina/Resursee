@@ -446,7 +446,7 @@ export default function IoTCloudPage() {
                     <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-blue-600 text-white shadow-xs">
                       <Cpu size={20} weight="bold" />
                     </span>
-                    <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400">
+                    <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                       ESP32 IoT Cloud · App #2
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[9.5px] font-medium">
@@ -538,7 +538,7 @@ export default function IoTCloudPage() {
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
                               selectedDevice.status === 'online'
-                                ? 'bg-emerald-500 animate-pulse'
+                                ? 'bg-neutral-900 dark:bg-white'
                                 : 'bg-neutral-400'
                             }`}
                           />
@@ -550,11 +550,11 @@ export default function IoTCloudPage() {
                         <span>IP: {selectedDevice.ipAddress || '192.168.1.142'}</span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
-                          <WifiHigh size={13} className="text-emerald-500" />
+                          <WifiHigh size={13} className="text-[var(--color-ink-muted)]" />
                           <span>{selectedDevice.rssi || -58} dBm</span>
                         </span>
                         <span>•</span>
-                        <span className="text-[10px] text-blue-600 dark:text-sky-400 font-bold">
+                        <span className="text-[10px] text-[var(--color-ink)] font-bold">
                           Owner: {session.name.split(' ')[0]}
                         </span>
                       </p>
