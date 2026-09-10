@@ -623,7 +623,7 @@ export default function ContributePage() {
                       required
                       value={submitterEmail}
                       onChange={(e) => setSubmitterEmail(e.target.value)}
-                      placeholder="juan@clsu.edu.ph"
+                      placeholder="juan@university.edu"
                       className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)] font-mono"
                     />
                   </div>
@@ -763,7 +763,7 @@ export default function ContributePage() {
                       required
                       value={newsSubmitterEmail}
                       onChange={(e) => setNewsSubmitterEmail(e.target.value)}
-                      placeholder="maria@clsu.edu.ph"
+                      placeholder="maria@university.edu"
                       className="mt-1.5 w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)] font-mono"
                     />
                   </div>

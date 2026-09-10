@@ -22,13 +22,13 @@ export function OrgLogo({
   const textToCheck = `${sourceName || ''} ${departmentName || ''} ${title || ''}`.toUpperCase();
   const isDost = textToCheck.includes('DOST') || textToCheck.includes('DEPARTMENT OF SCIENCE');
 
-  const logoSrc = isDost ? '/logos/dost.svg' : '/logos/clsu.png';
-  const logoAlt = isDost ? 'DOST Philippines' : 'CLSU Central Luzon State University';
+  const logoSrc = isDost ? '/logos/dost.svg' : '/favicon.svg';
+  const logoAlt = isDost ? 'DOST Philippines' : 'Resursee Hub';
 
   if (hasError) {
     return (
       <div className={`flex items-center justify-center rounded-full bg-blue-600/15 text-blue-600 font-bold font-mono text-[10px] ${className}`}>
-        {isDost ? 'DOST' : 'CLSU'}
+        {isDost ? 'DOST' : 'RSU'}
       </div>
     );
   }

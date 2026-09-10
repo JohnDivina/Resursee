@@ -50,7 +50,7 @@ export function generateValidDocx(doc: {
           <w:color w:val="0F172A"/>
           <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>
         </w:rPr>
-        <w:t>CENTRAL LUZON STATE UNIVERSITY</w:t>
+        <w:t>RESURSEE DIGITAL REPOSITORY</w:t>
       </w:r>
     </w:p>
     <w:p>
@@ -312,7 +312,7 @@ export function generateValidExcelWorkbook(doc: {
    <Column ss:Width="160"/>
    <Column ss:Width="120"/>
    <Row ss:Height="26">
-    <Cell ss:MergeAcross="4" ss:StyleID="Header"><Data ss:Type="String">CENTRAL LUZON STATE UNIVERSITY</Data></Cell>
+    <Cell ss:MergeAcross="4" ss:StyleID="Header"><Data ss:Type="String">RESURSEE DIGITAL REPOSITORY</Data></Cell>
    </Row>
    <Row ss:Height="22">
     <Cell ss:MergeAcross="4" ss:StyleID="SubHeader"><Data ss:Type="String">${department} - Resursee Open Repository</Data></Cell>
@@ -391,7 +391,7 @@ export function generateValidDocumentPdf(doc: {
     'BT',
     '/F2 18 Tf',
     '50 730 Td',
-    '(CENTRAL LUZON STATE UNIVERSITY) Tj',
+    '(RESURSEE DIGITAL REPOSITORY) Tj',
     '/F1 11 Tf',
     '0 -20 Td',
     `(${department} - Resursee Digital Repository) Tj`,
