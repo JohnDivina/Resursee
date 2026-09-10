@@ -8,14 +8,17 @@ import {
   setSoundEnabled,
   getSoundEnabled,
   unlockAudioEngine,
+  setSpatialPan,
+  calculatePanFromClientX,
+  calculatePanFromElement,
 } from '@/lib/soundEffects';
 
 interface SoundContextType {
   soundEnabled: boolean;
   toggleSound: () => void;
-  playThock: (pitch?: number, volume?: number) => boolean | void;
-  playDeepThock: (volume?: number) => boolean | void;
-  playSoftClick: (volume?: number) => boolean | void;
+  playThock: (pitch?: number, volume?: number, pan?: number) => boolean | void;
+  playDeepThock: (volume?: number, pan?: number) => boolean | void;
+  playSoftClick: (volume?: number, pan?: number) => boolean | void;
   unlockAudioEngine: () => void;
 }
 
@@ -60,7 +63,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Global Interaction Unlock & Tactile Audio Handler
+  // Global Interaction Unlock & Tactile 3D Spatial Audio Handler
   useEffect(() => {
     // 1. If navigator has active user activation, immediately unlock AudioContext
     if (
@@ -74,6 +77,16 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     const handleGestureUnlock = () => {
       unlockAudioEngine();
     };
+
+    // 3. Continuous 3D Spatial Stereo tracking based on mouse X position (DomoDomo style)
+    const handlePointerMove = (e: MouseEvent | PointerEvent) => {
+      if (e.clientX > 0) {
+        setSpatialPan(calculatePanFromClientX(e.clientX));
+      }
+    };
+
+    window.addEventListener('mousemove', handlePointerMove, { passive: true, capture: true });
+    window.addEventListener('pointermove', handlePointerMove, { passive: true, capture: true });
 
     const unlockEvents = [
       'pointermove',
@@ -92,7 +105,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       window.addEventListener(evt, handleGestureUnlock, { capture: true, passive: true });
     });
 
-    // 3. Tab visibility and focus recovery
+    // 4. Tab visibility and focus recovery
     const handleVisibilityRecovery = () => {
       if (document.visibilityState === 'visible') {
         unlockAudioEngine();
@@ -103,6 +116,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
     if (!soundEnabled) {
       return () => {
+        window.removeEventListener('mousemove', handlePointerMove, { capture: true });
+        window.removeEventListener('pointermove', handlePointerMove, { capture: true });
         unlockEvents.forEach((evt) => {
           window.removeEventListener(evt, handleGestureUnlock, { capture: true });
         });
@@ -112,9 +127,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     }
 
     const interactiveSelector =
-      'a, button, [role="button"], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], select, [data-thock], .hover-thock, summary, [tabindex="0"]';
+      'button, a, input, textarea, select, .cursor-pointer, [role="button"], [role="tab"], [role="link"], [data-thock], .tool-card, .glass-card, .category-pill, nav a, header button, header a, .btn-primary, .btn-secondary, label, summary, [tabindex="0"]';
 
-    // Hover Haptic Handler
+    // Hover 3D Spatial Haptic Handler
     const handlePointerOver = (e: MouseEvent | PointerEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
@@ -130,6 +145,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
           if (now - lastPlayTimeRef.current > 25) {
             lastPlayTimeRef.current = now;
 
+            // Calculate precise earphone spatial pan from element and cursor
+            const pan = calculatePanFromElement(interactiveEl, e.clientX);
+
             const isCard =
               interactiveEl.matches('[data-thock="card"]') ||
               interactiveEl.classList.contains('group') ||
@@ -140,11 +158,11 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
               interactiveEl.matches('kbd');
 
             if (isCard) {
-              playDeepThock(0.42);
+              playDeepThock(0.42, pan);
             } else if (isPill) {
-              playSoftClick(0.28);
+              playSoftClick(0.28, pan);
             } else {
-              playThock(1.0, 0.38);
+              playThock(1.0, 0.36, pan);
             }
           }
         }
@@ -160,7 +178,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Tactile Click / Tap Feedback (Works on Desktop & Touch/Mobile)
+    // Tactile Click / Tap Feedback (Works on Desktop & Touch/Mobile with 3D Spatial Position)
     const handlePointerDown = (e: MouseEvent | PointerEvent) => {
       unlockAudioEngine();
 
@@ -170,9 +188,11 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       const interactiveEl = target.closest(interactiveSelector);
       if (interactiveEl) {
         const now = performance.now();
-        // Short debounce (55ms) so hover + click don't double-fire harsh transient
-        if (now - lastPlayTimeRef.current > 55) {
+        // Short debounce (50ms) so hover + click don't double-fire harsh transient
+        if (now - lastPlayTimeRef.current > 50) {
           lastPlayTimeRef.current = now;
+
+          const pan = calculatePanFromElement(interactiveEl, e.clientX);
 
           const isCard =
             interactiveEl.matches('[data-thock="card"]') ||
@@ -180,9 +200,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
             interactiveEl.tagName === 'ARTICLE';
 
           if (isCard) {
-            playDeepThock(0.35);
+            playDeepThock(0.40, pan);
           } else {
-            playThock(1.15, 0.30);
+            playThock(1.15, 0.35, pan);
           }
         }
       }
@@ -193,6 +213,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('pointerdown', handlePointerDown, { capture: true, passive: true });
 
     return () => {
+      window.removeEventListener('mousemove', handlePointerMove, { capture: true });
+      window.removeEventListener('pointermove', handlePointerMove, { capture: true });
       window.removeEventListener('mouseover', handlePointerOver);
       window.removeEventListener('mouseout', handlePointerOut);
       window.removeEventListener('pointerdown', handlePointerDown, { capture: true });

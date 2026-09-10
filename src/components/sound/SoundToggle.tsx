@@ -15,30 +15,34 @@ export default function SoundToggle({ className = '' }: SoundToggleProps) {
     <button
       type="button"
       onClick={toggleSound}
-      aria-label={soundEnabled ? 'Mute thocky hover sounds' : 'Enable thocky hover sounds'}
-      title={soundEnabled ? 'Thocky Sounds: ON (Click to mute)' : 'Thocky Sounds: OFF (Click to enable)'}
-      className={`group relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink)] shadow-2xs transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-paper-card)] active:scale-95 ${className}`}
+      aria-label={soundEnabled ? 'Mute 3D spatial thock sounds' : 'Enable 3D spatial thock sounds'}
+      title={soundEnabled ? '3D Spatial Sounds: ON (Click to mute)' : '3D Spatial Sounds: OFF (Click to enable)'}
+      className={`group relative flex h-8 w-8 items-center justify-center rounded-lg border transition-transform duration-160 active:scale-[0.92] ${
+        soundEnabled
+          ? 'border-emerald-500/40 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]'
+          : 'border-[var(--color-rule-strong)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-card)]'
+      } ${className}`}
     >
       <div className="relative flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
         {soundEnabled ? (
           <SpeakerHigh
-            size={18}
+            size={16}
             weight="bold"
-            className="text-[var(--color-primary)] transition-transform duration-200"
+            className="text-emerald-500 transition-transform duration-200 animate-pulse"
           />
         ) : (
           <SpeakerSlash
-            size={18}
+            size={16}
             weight="regular"
             className="text-[var(--color-ink-muted)] opacity-60 transition-transform duration-200"
           />
         )}
       </div>
 
-      {/* Tiny Status Indicator Dot */}
+      {/* 3D Spatial Status Dot */}
       <span
-        className={`pointer-events-none absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full transition-colors ${
-          soundEnabled ? 'bg-emerald-500' : 'bg-rose-400 opacity-70'
+        className={`pointer-events-none absolute top-1 right-1 h-1.5 w-1.5 rounded-full transition-colors ${
+          soundEnabled ? 'bg-emerald-400' : 'bg-rose-400 opacity-60'
         }`}
       />
     </button>
