@@ -115,7 +115,7 @@ export default function AboutPage() {
               >
                 {copiedEmail ? (
                   <>
-                    <CheckCircle size={16} weight="bold" className="text-emerald-300" />
+                    <CheckCircle size={16} weight="bold" className="text-white" />
                     <span>Email Copied!</span>
                   </>
                 ) : (

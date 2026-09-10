@@ -33,7 +33,7 @@ export default function ScanHistory({ history, onSelect, onClear }: ScanHistoryP
         <button
           type="button"
           onClick={onClear}
-          className="flex items-center gap-1 text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
+          className="flex items-center gap-1 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
         >
           <Trash size={13} />
           <span>Clear History</span>

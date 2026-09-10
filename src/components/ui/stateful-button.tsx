@@ -64,17 +64,17 @@ export function Button({
 
   const getVariantStyles = () => {
     if (status === 'success') {
-      return 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/25';
+      return 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs';
     }
     if (status === 'error') {
-      return 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/25';
+      return 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900 shadow-2xs';
     }
 
     switch (variant) {
       case 'secondary':
-        return 'bg-[var(--color-ink)] dark:bg-white text-white dark:text-black hover:bg-[var(--color-primary)] dark:hover:bg-neutral-200';
+        return 'bg-[var(--color-ink)] dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200';
       case 'emerald':
-        return 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md';
+        return 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 shadow-md';
       case 'primary':
       default:
         return 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-xs';

@@ -313,7 +313,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
             >
               {/* Top Warning Icon */}
               <div className="flex items-center justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-amber-500 border border-neutral-200 dark:border-neutral-700 shadow-inner">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-[var(--color-ink)] border border-neutral-200 dark:border-neutral-700 shadow-inner">
                   <ShieldWarning size={32} weight="bold" />
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
                 <button
                   type="button"
                   onClick={() => handleLogout('user')}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] py-2.5 text-xs font-bold text-[var(--color-ink-muted)] hover:text-rose-600 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] py-2.5 text-xs font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   <SignOut size={15} />
                   <span>Log Out Now</span>
@@ -369,7 +369,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             className="fixed bottom-6 right-6 z-[99999] flex items-center gap-3 rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xl text-xs font-bold text-[var(--color-ink)]"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-amber-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[var(--color-ink)]">
               <ShieldWarning size={18} weight="bold" />
             </div>
             <div>

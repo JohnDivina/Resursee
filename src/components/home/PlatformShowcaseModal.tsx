@@ -69,8 +69,8 @@ export default function PlatformShowcaseModal() {
       category: 'Document Central',
       description:
         'Instant access to official university forms, clearance slips, cross-enrollment templates, and department circulars with real-time version history.',
-      icon: <FileText size={22} className="text-white" weight="bold" />,
-      iconBg: 'bg-blue-600',
+      icon: <FileText size={22} className="text-white dark:text-neutral-900" weight="bold" />,
+      iconBg: 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900',
       href: '/resources',
       ctaText: 'Explore directory',
       badge: '50+ Forms',
@@ -80,8 +80,8 @@ export default function PlatformShowcaseModal() {
       category: '100% Client-Side',
       description:
         'Compress scanned documents, scale 2x2 ID photos, crop application signatures, convert WebP/PNG/JPG, and merge pages into PDFs with zero server uploads.',
-      icon: <Wrench size={22} className="text-white" weight="bold" />,
-      iconBg: 'bg-indigo-600',
+      icon: <Wrench size={22} className="text-white dark:text-neutral-900" weight="bold" />,
+      iconBg: 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900',
       href: '/tools',
       ctaText: 'Open toolbox',
       badge: '6 Utilities',
@@ -91,8 +91,8 @@ export default function PlatformShowcaseModal() {
       category: 'Automated Ingestion',
       description:
         'Live announcements, registrar advisories, enrollment schedules, and policy circulars curated in a single distraction-free feed.',
-      icon: <Newspaper size={22} className="text-white" weight="bold" />,
-      iconBg: 'bg-emerald-600',
+      icon: <Newspaper size={22} className="text-white dark:text-neutral-900" weight="bold" />,
+      iconBg: 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900',
       href: '/news',
       ctaText: 'Read updates',
       badge: 'Live Feed',
@@ -102,8 +102,8 @@ export default function PlatformShowcaseModal() {
       category: 'Crowdsourced Catalog',
       description:
         'Found a new syllabus template or updated form? Submit it directly for administrative review to keep the campus repository complete.',
-      icon: <UploadSimple size={22} className="text-white" weight="bold" />,
-      iconBg: 'bg-amber-500',
+      icon: <UploadSimple size={22} className="text-white dark:text-neutral-900" weight="bold" />,
+      iconBg: 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900',
       href: '/contribute',
       ctaText: 'Contribute a form',
       badge: 'Community',
@@ -121,18 +121,16 @@ export default function PlatformShowcaseModal() {
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           aria-label="What can I use Resursee for?"
-          className="group relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-[var(--color-primary)] hover:shadow-[0_0_24px_var(--color-primary-glow)] hover:scale-105 active:scale-95 cursor-pointer"
+          className="group relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-[var(--color-primary)] hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <span className="pointer-events-none absolute inset-0 -m-1 rounded-full border border-[var(--color-primary)]/25 animate-ping opacity-75" />
-
           <div className="relative flex items-center justify-center">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary-subtle)] text-[var(--color-primary)] transition-transform duration-300 group-hover:scale-110">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-paper-muted)] text-[var(--color-ink)] transition-transform duration-300 group-hover:scale-110">
               <span className="text-sm select-none">🦦</span>
             </div>
             <Sparkle
               size={12}
               weight="fill"
-              className="absolute -top-1 -right-1 text-amber-500 animate-pulse"
+              className="absolute -top-1 -right-1 text-neutral-400 dark:text-neutral-500"
             />
           </div>
         </button>

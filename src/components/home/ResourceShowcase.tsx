@@ -139,13 +139,13 @@ export default function ResourceShowcase({
               <X size={20} weight="bold" className="transition-transform rotate-0 group-hover:rotate-90 duration-200" />
             ) : (
               <div className="relative flex items-center justify-center">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary-subtle)] text-[var(--color-primary)] transition-transform group-hover:scale-110">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-paper-muted)] text-[var(--color-ink)] transition-transform group-hover:scale-110">
                   <span className="text-sm select-none">🦦</span>
                 </div>
                 <Sparkle
                   size={12}
                   weight="fill"
-                  className="absolute -top-1 -right-1 text-amber-500 animate-pulse"
+                  className="absolute -top-1 -right-1 text-neutral-400 dark:text-neutral-500"
                 />
               </div>
             )}

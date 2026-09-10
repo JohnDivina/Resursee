@@ -51,13 +51,13 @@ export default function InteractiveParticles({
       isActive: false,
     };
 
-    // Blue-Only Accent Color Palette (harmonious shades of Royal Blue, Sky, Cobalt, and Indigo)
+    // Clean Monochrome & Neutral Particle Palette
     const colorPalette = [
-      { fill: 'rgba(37, 99, 235,', glow: 'rgba(37, 99, 235, 0.75)' },  // Electric Royal Blue (#2563eb)
-      { fill: 'rgba(2, 132, 199,', glow: 'rgba(2, 132, 199, 0.75)' },   // Sky Blue (#0284c7)
-      { fill: 'rgba(29, 78, 216,', glow: 'rgba(29, 78, 216, 0.75)' },   // Deep Cobalt Blue (#1d4ed8)
-      { fill: 'rgba(56, 189, 248,', glow: 'rgba(56, 189, 248, 0.70)' }, // Sapphire Cyan (#38bdf8)
-      { fill: 'rgba(79, 70, 229,', glow: 'rgba(79, 70, 229, 0.70)' },   // Indigo Blue (#4f46e5)
+      { fill: 'rgba(255, 255, 255,', glow: 'rgba(255, 255, 255, 0.40)' },
+      { fill: 'rgba(240, 240, 245,', glow: 'rgba(240, 240, 245, 0.35)' },
+      { fill: 'rgba(215, 215, 225,', glow: 'rgba(215, 215, 225, 0.30)' },
+      { fill: 'rgba(180, 180, 190,', glow: 'rgba(180, 180, 190, 0.25)' },
+      { fill: 'rgba(255, 255, 255,', glow: 'rgba(255, 255, 255, 0.35)' },
     ];
 
     const actualCount = width < 768 ? Math.floor(particleCount * 0.5) : particleCount;

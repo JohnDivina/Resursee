@@ -229,7 +229,7 @@ export default function ExpandableResourceGrid({
                 </div>
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--color-ink-muted)] pt-1">
-                  <ShieldCheck size={14} className="text-emerald-600" />
+                  <ShieldCheck size={14} className="text-[var(--color-ink)]" />
                   <span>Direct authenticated file download with zero server latency</span>
                 </div>
               </motion.div>

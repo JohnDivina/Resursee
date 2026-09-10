@@ -30,14 +30,14 @@
   --color-primary-glow: rgba(37, 99, 235, 0.14);
   --color-primary-subtle: #eff6ff;
 
-  /* Secondary Accents */
-  --color-accent-amber: #f59e0b;
-  --color-accent-amber-subtle: #fffbeb;
-  --color-accent-amber-glow: rgba(245, 158, 11, 0.16);
-  --color-accent-emerald: #10b981;
-  --color-accent-emerald-subtle: #ecfdf5;
-  --color-accent-rose: #f43f5e;
-  --color-accent-rose-subtle: #fff1f2;
+  /* Secondary Accents (Subdued Monochrome & Neutral Standards) */
+  --color-accent-amber: #71717a;
+  --color-accent-amber-subtle: #f4f4f5;
+  --color-accent-amber-glow: rgba(0, 0, 0, 0.05);
+  --color-accent-emerald: #52525b;
+  --color-accent-emerald-subtle: #f4f4f5;
+  --color-accent-rose: #71717a;
+  --color-accent-rose-subtle: #f4f4f5;
 
   /* Dark Graphite Band / Command Palette */
   --color-dark-surface: #0f172a;

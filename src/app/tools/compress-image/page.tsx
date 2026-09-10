@@ -196,7 +196,7 @@ export default function CompressImagePage() {
                     <button
                       type="button"
                       onClick={handleReset}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:underline"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
                     >
                       <Trash size={14} />
                       <span>Upload different image</span>
@@ -229,7 +229,7 @@ export default function CompressImagePage() {
                         <span className="font-bold text-[var(--color-primary)]">
                           Compressed Output
                         </span>
-                        <span className="font-mono text-[11px] font-bold text-emerald-600">
+                        <span className="font-mono text-[11px] font-bold text-[var(--color-ink)]">
                           {compressedBlob ? formatBytes(compressedBlob.size) : 'Calculating...'}
                         </span>
                       </div>
@@ -254,7 +254,7 @@ export default function CompressImagePage() {
                   {savingsPercent > 0 && (
                     <div className="mt-6 flex items-center justify-between rounded-[16px] bg-neutral-100 dark:bg-neutral-800 p-3.5 border border-neutral-200 dark:border-neutral-700 text-xs">
                       <div className="flex items-center gap-2 font-bold text-[var(--color-ink)]">
-                        <CheckCircle size={18} weight="fill" className="text-emerald-500" />
+                        <CheckCircle size={18} weight="fill" className="text-[var(--color-ink)]" />
                         <span>Saved {savingsPercent}% in file size!</span>
                       </div>
                       <span className="font-mono text-[11px] text-[var(--color-ink-muted)] font-medium">

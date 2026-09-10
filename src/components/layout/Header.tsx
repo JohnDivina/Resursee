@@ -405,7 +405,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                       onClick={() => setProfileDropdownOpen(false)}
                       className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-colors"
                     >
-                      <Plant size={15} className="text-emerald-500" />
+                      <Plant size={15} className="text-[var(--color-ink)]" />
                       <span>Plant Doctor AI</span>
                     </Link>
 
@@ -414,7 +414,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                       onClick={() => setProfileDropdownOpen(false)}
                       className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-colors"
                     >
-                      <Cpu size={15} className="text-blue-500" />
+                      <Cpu size={15} className="text-[var(--color-ink)]" />
                       <span>ESP32 IoT Cloud</span>
                     </Link>
 
@@ -424,7 +424,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                         onClick={() => setProfileDropdownOpen(false)}
                         className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-colors"
                       >
-                        <ShieldCheck size={15} className="text-purple-500" />
+                        <ShieldCheck size={15} className="text-[var(--color-ink)]" />
                         <span>Admin Portal</span>
                       </Link>
                     )}
@@ -434,7 +434,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-2 rounded-[12px] px-2.5 py-2 text-xs font-bold text-rose-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-2 rounded-[12px] px-2.5 py-2 text-xs font-bold text-[var(--color-ink)] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                     >
                       <SignOut size={15} weight="bold" />
                       <span>Sign Out</span>
@@ -460,7 +460,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
-            className="lg:hidden flex items-center justify-center h-8 w-8 rounded-lg border border-[var(--color-rule-strong)] dark:border-white/10 hover:border-emerald-600/50 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-transform duration-160 active:scale-[0.92] hover:bg-[var(--color-paper-muted)]"
+            className="lg:hidden flex items-center justify-center h-8 w-8 rounded-lg border border-[var(--color-rule-strong)] dark:border-white/10 hover:border-[var(--color-ink)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-transform duration-160 active:scale-[0.92] hover:bg-[var(--color-paper-muted)]"
           >
             {mobileMenuOpen ? <X size={17} weight="bold" /> : <List size={17} weight="bold" />}
           </button>

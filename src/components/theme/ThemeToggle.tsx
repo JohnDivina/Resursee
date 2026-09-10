@@ -22,14 +22,14 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
     >
       <div className="relative flex items-center justify-center transition-transform duration-300 group-hover:rotate-12">
         {theme === 'dark' ? (
-          <Sun size={16} weight="bold" className="text-amber-400 animate-in spin-in-180 duration-200" />
+          <Sun size={16} weight="bold" className="text-white animate-in spin-in-180 duration-200" />
         ) : (
-          <Moon size={16} weight="bold" className="text-[var(--color-primary)] animate-in spin-in-180 duration-200" />
+          <Moon size={16} weight="bold" className="text-neutral-900 animate-in spin-in-180 duration-200" />
         )}
       </div>
 
       {/* Atmospheric indicator */}
-      <span className="pointer-events-none absolute -bottom-0.5 right-1 h-1 w-1 rounded-full bg-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <span className="pointer-events-none absolute -bottom-0.5 right-1 h-1 w-1 rounded-full bg-neutral-900 dark:bg-white opacity-0 group-hover:opacity-100 transition-opacity" />
     </button>
   );
 }

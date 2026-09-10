@@ -324,7 +324,7 @@ export default function MergePdfPage() {
           {/* Feedback Alerts */}
           {errorMessage && (
             <div className="mt-6 flex items-start gap-3 rounded-[18px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 text-xs font-medium text-[var(--color-ink)]">
-              <WarningCircle size={18} weight="bold" className="shrink-0 mt-0.5 text-rose-500" />
+              <WarningCircle size={18} weight="bold" className="shrink-0 mt-0.5 text-[var(--color-ink)]" />
               <div>
                 <p className="font-bold">Error merging PDFs</p>
                 <p className="mt-0.5 text-[var(--color-ink-muted)]">{errorMessage}</p>
@@ -334,7 +334,7 @@ export default function MergePdfPage() {
 
           {mergeSuccess && (
             <div className="mt-6 flex items-start gap-3 rounded-[18px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 text-xs font-medium text-[var(--color-ink)]">
-              <CheckCircle size={18} weight="bold" className="shrink-0 mt-0.5 text-emerald-500" />
+              <CheckCircle size={18} weight="bold" className="shrink-0 mt-0.5 text-[var(--color-ink)]" />
               <div>
                 <p className="font-bold">PDF Successfully Merged!</p>
                 <p className="mt-0.5 text-[var(--color-ink-muted)]">
@@ -371,7 +371,7 @@ export default function MergePdfPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-rule-subtle)] pb-4">
                     <div>
                       <h3 className="text-sm font-bold text-[var(--color-ink)] flex items-center gap-2">
-                        <Stack size={16} className="text-violet-600 dark:text-violet-400" />
+                        <Stack size={16} className="text-[var(--color-ink)]" />
                         <span>Documents to Merge</span>
                         <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--color-ink-muted)]">
                           {pdfItems.length} files
@@ -394,7 +394,7 @@ export default function MergePdfPage() {
                       <button
                         type="button"
                         onClick={handleClearAll}
-                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-[var(--color-ink-muted)] hover:text-rose-600 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                         title="Clear all uploaded documents"
                       >
                         <Trash size={14} />
@@ -424,7 +424,7 @@ export default function MergePdfPage() {
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
                           {/* Order Position Badge */}
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-paper-muted)] font-mono text-xs font-extrabold text-[var(--color-ink)] group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-paper-muted)] font-mono text-xs font-extrabold text-[var(--color-ink)] group-hover:bg-neutral-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors">
                             {index + 1}
                           </div>
 
@@ -437,7 +437,7 @@ export default function MergePdfPage() {
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <FilePdf size={24} weight="bold" className="text-rose-500" />
+                              <FilePdf size={24} weight="bold" className="text-[var(--color-ink)]" />
                             )}
                           </div>
 
@@ -496,7 +496,7 @@ export default function MergePdfPage() {
                             <button
                               type="button"
                               onClick={() => handleRemove(item.id)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-ink-muted)] hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-rose-600 transition-all cursor-pointer"
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-ink-muted)] hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-[var(--color-ink)] transition-all cursor-pointer"
                               title="Remove Document"
                             >
                               <Trash size={15} />
@@ -513,7 +513,7 @@ export default function MergePdfPage() {
               <div className="space-y-6 lg:col-span-1">
                 <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-6">
                   <div className="flex items-center gap-2 border-b border-[var(--color-rule-subtle)] pb-3.5">
-                    <Sliders size={18} className="text-violet-600 dark:text-violet-400" />
+                    <Sliders size={18} className="text-[var(--color-ink)]" />
                     <h3 className="text-sm font-bold text-[var(--color-ink)]">Merge Options</h3>
                   </div>
 
@@ -548,7 +548,7 @@ export default function MergePdfPage() {
                       </div>
                       <div className="flex items-center justify-between text-[var(--color-ink-muted)]">
                         <span>Total Merged Pages:</span>
-                        <span className="font-mono font-bold text-violet-600 dark:text-violet-400">
+                        <span className="font-mono font-bold text-[var(--color-ink)]">
                           {calculateTotalOutputPages()} pages
                         </span>
                       </div>
@@ -563,7 +563,7 @@ export default function MergePdfPage() {
 
                   {/* Privacy Guarantee */}
                   <div className="flex items-start gap-2.5 rounded-[16px] bg-[var(--color-paper-muted)] p-3 text-[11px] text-[var(--color-ink-muted)]">
-                    <ShieldCheck size={16} weight="bold" className="shrink-0 text-emerald-600 mt-0.5" />
+                    <ShieldCheck size={16} weight="bold" className="shrink-0 text-[var(--color-ink-muted)] mt-0.5" />
                     <p>
                       Files are processed 100% in your browser. No files are uploaded to any server.
                     </p>
@@ -574,7 +574,7 @@ export default function MergePdfPage() {
                     type="button"
                     onClick={handleMergePdfs}
                     disabled={isMerging || pdfItems.length < 2}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-violet-600 py-3.5 text-xs font-bold text-white shadow-md transition-all hover:bg-violet-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-3.5 text-xs font-bold shadow-md transition-all hover:bg-neutral-800 dark:hover:bg-neutral-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <DownloadSimple size={16} weight="bold" />
                     <span>

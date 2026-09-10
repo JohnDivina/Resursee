@@ -238,7 +238,7 @@ export default function ResourceDetailPage() {
 
                       <div className="flex items-center justify-between p-3">
                         <span className="text-[var(--color-ink-muted)]">Total Community Downloads</span>
-                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="font-mono font-bold text-[var(--color-ink)]">
                           {realtimeCount.toLocaleString()} verified downloads
                         </span>
                       </div>
@@ -304,7 +304,7 @@ export default function ResourceDetailPage() {
                 </button>
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--color-ink-muted)] pt-1">
-                  <ShieldCheck size={14} className="text-emerald-600" />
+                  <ShieldCheck size={14} className="text-[var(--color-ink)]" />
                   <span>Verified authentic document</span>
                 </div>
 
@@ -363,7 +363,7 @@ export default function ResourceDetailPage() {
       {/* Action Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
-          <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
+          <CheckCircle size={18} weight="fill" className="text-white shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

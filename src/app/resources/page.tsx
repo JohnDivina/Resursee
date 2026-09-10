@@ -349,7 +349,7 @@ function ResourcesDirectoryInner() {
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl border border-neutral-700 bg-[#121212] px-4 py-3 text-sm text-white shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <Check size={16} className="text-emerald-400" />
+          <Check size={16} className="text-white" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -397,7 +397,7 @@ function ResourcesDirectoryInner() {
                 <Star
                   size={16}
                   weight={activeTab === 'repos' ? 'fill' : 'regular'}
-                  className={activeTab === 'repos' ? 'text-amber-500' : ''}
+                  className={activeTab === 'repos' ? 'text-[var(--color-ink)]' : ''}
                 />
                 <span>GitHub Repositories</span>
                 <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)]">
@@ -624,7 +624,7 @@ function ResourcesDirectoryInner() {
                         type="checkbox"
                         checked={httpsOnly}
                         onChange={(e) => setHttpsOnly(e.target.checked)}
-                        className="accent-emerald-500 rounded"
+                        className="accent-neutral-900 dark:accent-neutral-100 rounded"
                       />
                       <span className="font-mono text-[11px]">HTTPS</span>
                     </label>
@@ -668,7 +668,7 @@ function ResourcesDirectoryInner() {
                     type="button"
                     onClick={handleResetApiFilters}
                     data-thock="button"
-                    className="text-xs font-medium text-rose-500 hover:text-rose-600 underline cursor-pointer"
+                    className="text-xs font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
                   >
                     Reset all filters
                   </button>
@@ -882,7 +882,7 @@ function ResourcesDirectoryInner() {
 
                 <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 sm:p-4">
                   <span className="text-xs text-[var(--color-ink-muted)] font-mono uppercase tracking-wider flex items-center gap-1">
-                    <Star size={13} weight="fill" className="text-amber-500" />
+                    <Star size={13} weight="fill" className="text-neutral-500 dark:text-neutral-400" />
                     Combined Stars
                   </span>
                   <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono">
@@ -1094,7 +1094,7 @@ function ResourcesDirectoryInner() {
                     type="button"
                     onClick={handleResetRepoFilters}
                     data-thock="button"
-                    className="text-xs font-medium text-rose-500 hover:text-rose-600 underline cursor-pointer"
+                    className="text-xs font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
                   >
                     Reset all filters
                   </button>
@@ -1221,7 +1221,7 @@ function ResourcesDirectoryInner() {
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div className="max-w-2xl">
                   <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink-muted)] uppercase tracking-wider mb-2">
-                    <Star size={16} weight="fill" className="text-amber-500" />
+                    <Star size={16} weight="fill" className="text-neutral-500 dark:text-neutral-400" />
                     <span>Curated GitHub Collection</span>
                   </div>
 
@@ -1246,7 +1246,7 @@ function ResourcesDirectoryInner() {
                     data-thock="button"
                     className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--color-ink)] text-[var(--color-paper-card)] dark:bg-white dark:text-black hover:opacity-90 transition-opacity shadow-sm"
                   >
-                    <Star size={18} weight="fill" className="text-amber-400" />
+                    <Star size={18} weight="fill" className="text-neutral-900 dark:text-black" />
                     <span>View All Stars on GitHub</span>
                     <ArrowSquareOut size={15} weight="bold" />
                   </a>

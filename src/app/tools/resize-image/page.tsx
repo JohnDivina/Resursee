@@ -207,7 +207,7 @@ export default function ResizeImagePage() {
                     <button
                       type="button"
                       onClick={handleReset}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:underline"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
                     >
                       <Trash size={14} />
                       <span>Upload different image</span>

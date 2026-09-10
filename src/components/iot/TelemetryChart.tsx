@@ -54,17 +54,7 @@ export default function TelemetryChart({
     : '';
 
   const getMetricColor = () => {
-    switch (selectedMetric) {
-      case 'humidity':
-        return { stroke: '#10b981', fill: 'url(#grad-humidity)' };
-      case 'soilMoisture':
-        return { stroke: '#f59e0b', fill: 'url(#grad-soil)' };
-      case 'light':
-        return { stroke: '#eab308', fill: 'url(#grad-light)' };
-      case 'temperature':
-      default:
-        return { stroke: '#3b82f6', fill: 'url(#grad-temp)' };
-    }
+    return { stroke: 'currentColor', fill: 'url(#grad-metric)' };
   };
 
   const metricColors = getMetricColor();
@@ -101,7 +91,7 @@ export default function TelemetryChart({
               onClick={() => onMetricChange?.(m.id as typeof selectedMetric)}
               className={`rounded-full px-3 py-1 text-[11px] font-bold transition-all cursor-pointer ${
                 selectedMetric === m.id
-                  ? 'bg-[var(--color-primary)] text-white shadow-2xs'
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
                   : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
               }`}
             >
@@ -112,20 +102,12 @@ export default function TelemetryChart({
       </div>
 
       {/* SVG Chart */}
-      <div className="mt-4 w-full overflow-hidden">
+      <div className="mt-4 w-full overflow-hidden text-[var(--color-ink)]">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48 sm:h-56">
           <defs>
-            <linearGradient id="grad-temp" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
-            </linearGradient>
-            <linearGradient id="grad-humidity" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-            </linearGradient>
-            <linearGradient id="grad-soil" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
+            <linearGradient id="grad-metric" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="currentColor" stopOpacity="0.20" />
+              <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 

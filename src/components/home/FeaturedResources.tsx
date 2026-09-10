@@ -21,7 +21,7 @@ export default function FeaturedResources({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end">
           <div>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-amber-600 uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
               <Star size={14} weight="fill" />
               <span>Frequently Used Documents</span>
             </div>

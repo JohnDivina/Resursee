@@ -93,12 +93,12 @@ export function FileUpload({
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'avif'].includes(ext || '')) {
-      return <FileImage size={24} weight="bold" className="text-blue-500" />;
+      return <FileImage size={24} weight="bold" className="text-[var(--color-ink)]" />;
     }
-    if (ext === 'pdf') return <FilePdf size={24} weight="bold" className="text-rose-500" />;
-    if (ext === 'docx' || ext === 'doc') return <FileDoc size={24} weight="bold" className="text-sky-500" />;
-    if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return <FileXls size={24} weight="bold" className="text-emerald-500" />;
-    return <FileText size={24} weight="bold" className="text-[var(--color-primary)]" />;
+    if (ext === 'pdf') return <FilePdf size={24} weight="bold" className="text-[var(--color-ink)]" />;
+    if (ext === 'docx' || ext === 'doc') return <FileDoc size={24} weight="bold" className="text-[var(--color-ink)]" />;
+    if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return <FileXls size={24} weight="bold" className="text-[var(--color-ink)]" />;
+    return <FileText size={24} weight="bold" className="text-[var(--color-ink)]" />;
   };
 
   return (
@@ -204,7 +204,7 @@ export function FileUpload({
                       <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
                         <span>{formatFileSize(file.size)}</span>
                         <span>•</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <span className="text-[var(--color-ink)] font-bold flex items-center gap-1">
                           <CheckCircle size={12} weight="fill" />
                           Ready
                         </span>
@@ -215,7 +215,7 @@ export function FileUpload({
                   <button
                     type="button"
                     onClick={(e) => removeFile(idx, e)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-950 dark:hover:text-rose-300 transition-colors shrink-0 cursor-pointer"
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:bg-neutral-200 hover:text-[var(--color-ink)] dark:hover:bg-neutral-800 transition-colors shrink-0 cursor-pointer"
                     title="Remove file"
                   >
                     <X size={14} weight="bold" />

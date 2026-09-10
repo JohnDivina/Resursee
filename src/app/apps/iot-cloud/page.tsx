@@ -489,7 +489,7 @@ export default function IoTCloudPage() {
                       type="button"
                       onClick={handleLogout}
                       title="Sign Out of IoT Cloud"
-                      className="ml-1 text-[var(--color-ink-muted)] hover:text-rose-600 transition-colors cursor-pointer"
+                      className="ml-1 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
                     >
                       <SignOut size={15} />
                     </button>
@@ -592,7 +592,7 @@ export default function IoTCloudPage() {
                   minVal={0}
                   maxVal={50}
                   metricKey="temperature"
-                  color="#3b82f6"
+                  color="currentColor"
                 />
                 <SensorGauge
                   title="Relative Humidity"
@@ -601,7 +601,7 @@ export default function IoTCloudPage() {
                   minVal={0}
                   maxVal={100}
                   metricKey="humidity"
-                  color="#10b981"
+                  color="currentColor"
                 />
                 <SensorGauge
                   title="Soil Moisture"
@@ -610,7 +610,7 @@ export default function IoTCloudPage() {
                   minVal={0}
                   maxVal={100}
                   metricKey="soilMoisture"
-                  color="#f59e0b"
+                  color="currentColor"
                 />
                 <SensorGauge
                   title="Ambient Light"
@@ -619,7 +619,7 @@ export default function IoTCloudPage() {
                   minVal={0}
                   maxVal={1200}
                   metricKey="light"
-                  color="#eab308"
+                  color="currentColor"
                 />
               </div>
 

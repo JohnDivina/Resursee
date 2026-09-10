@@ -356,7 +356,7 @@ export default function ContributePage() {
                 onClick={() => { setActiveMode('news'); setIsSubmitted(false); }}
                 className={`flex items-center gap-2 rounded-[14px] px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
                   activeMode === 'news'
-                    ? 'bg-amber-500 text-slate-950 shadow-xs'
+                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs'
                     : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                 }`}
               >
@@ -435,7 +435,7 @@ export default function ContributePage() {
                         : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] hover:border-[var(--color-rule-strong)]'
                     }`}
                   >
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500 text-slate-950 text-xs font-bold">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-bold">
                       <ClockCounterClockwise size={15} weight="bold" />
                     </div>
                     <div>
@@ -448,7 +448,7 @@ export default function ContributePage() {
                 {submissionType === 'update_existing' && (
                   <div className="pt-3 border-t border-[var(--color-rule-subtle)] animate-in fade-in">
                     <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Select Document to Update <span className="text-rose-500">*</span>
+                      Select Document to Update <span className="text-neutral-400 dark:text-neutral-500">*</span>
                     </label>
                     <select
                       value={existingResourceId}
@@ -489,7 +489,7 @@ export default function ContributePage() {
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    Document Title <span className="text-rose-500">*</span>
+                    Document Title <span className="text-neutral-400 dark:text-neutral-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -602,7 +602,7 @@ export default function ContributePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Your Full Name <span className="text-rose-500">*</span>
+                      Your Full Name <span className="text-neutral-400 dark:text-neutral-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -616,7 +616,7 @@ export default function ContributePage() {
 
                   <div>
                     <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Your Email Address <span className="text-rose-500">*</span>
+                      Your Email Address <span className="text-neutral-400 dark:text-neutral-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -661,7 +661,7 @@ export default function ContributePage() {
             <form onSubmit={handleNewsSubmit} className="mt-8 space-y-8">
               <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-2xs space-y-5">
                 <div className="flex items-center gap-2 border-b border-[var(--color-rule-subtle)] pb-3">
-                  <Megaphone size={20} className="text-amber-500" />
+                  <Megaphone size={20} className="text-[var(--color-ink)]" />
                   <h3 className="text-sm font-bold text-[var(--color-ink)]">
                     Official Announcement Details
                   </h3>
@@ -669,7 +669,7 @@ export default function ContributePage() {
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    Bulletin / Circular Title <span className="text-rose-500">*</span>
+                    Bulletin / Circular Title <span className="text-neutral-400 dark:text-neutral-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -709,7 +709,7 @@ export default function ContributePage() {
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    Summary / Announcement Body <span className="text-rose-500">*</span>
+                    Summary / Announcement Body <span className="text-neutral-400 dark:text-neutral-500">*</span>
                   </label>
                   <textarea
                     rows={4}
@@ -742,7 +742,7 @@ export default function ContributePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Your Full Name <span className="text-rose-500">*</span>
+                      Your Full Name <span className="text-neutral-400 dark:text-neutral-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -756,7 +756,7 @@ export default function ContributePage() {
 
                   <div>
                     <label className="block text-xs font-bold text-[var(--color-ink)]">
-                      Your Email Address <span className="text-rose-500">*</span>
+                      Your Email Address <span className="text-neutral-400 dark:text-neutral-500">*</span>
                     </label>
                     <input
                       type="email"

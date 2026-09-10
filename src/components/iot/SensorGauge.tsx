@@ -33,16 +33,16 @@ export default function SensorGauge({
   const getMetricIcon = () => {
     switch (metricKey) {
       case 'temperature':
-        return <Thermometer size={18} weight="bold" className="text-blue-500" />;
+        return <Thermometer size={18} weight="bold" className="text-[var(--color-ink)]" />;
       case 'humidity':
-        return <Drop size={18} weight="bold" className="text-emerald-500" />;
+        return <Drop size={18} weight="bold" className="text-[var(--color-ink)]" />;
       case 'light':
-        return <Sun size={18} weight="bold" className="text-amber-500" />;
+        return <Sun size={18} weight="bold" className="text-[var(--color-ink)]" />;
       case 'soilMoisture':
-        return <Drop size={18} weight="fill" className="text-indigo-500" />;
+        return <Drop size={18} weight="fill" className="text-[var(--color-ink)]" />;
       case 'battery':
       default:
-        return <BatteryHigh size={18} weight="bold" className="text-emerald-500" />;
+        return <BatteryHigh size={18} weight="bold" className="text-[var(--color-ink)]" />;
     }
   };
 

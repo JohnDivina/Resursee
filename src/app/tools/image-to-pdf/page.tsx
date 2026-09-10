@@ -288,7 +288,7 @@ export default function ImageToPdfPage() {
                           <button
                             type="button"
                             onClick={() => handleRemove(item.id)}
-                            className="rounded-full p-2 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
+                            className="rounded-full p-2 text-[var(--color-ink-muted)] hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-[var(--color-ink)] transition-colors cursor-pointer"
                             title="Remove Page"
                           >
                             <Trash size={15} />

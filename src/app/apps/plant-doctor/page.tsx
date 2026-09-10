@@ -354,7 +354,7 @@ export default function PlantDoctorPage() {
                   <button
                     type="button"
                     onClick={() => runDiagnosis({ retryPayload: cachedPayload })}
-                    className="font-bold underline cursor-pointer hover:text-rose-900 dark:hover:text-rose-100"
+                    className="font-bold underline cursor-pointer hover:text-neutral-900 dark:hover:text-white"
                   >
                     Retry Diagnosis
                   </button>
@@ -414,7 +414,7 @@ export default function PlantDoctorPage() {
                 <button
                   type="button"
                   onClick={() => setCameraModalOpen(true)}
-                  className="flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
+                  className="flex items-center gap-2 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-5 py-2.5 text-xs font-bold shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200 active:scale-95 transition-all cursor-pointer"
                 >
                   <Camera size={16} weight="bold" />
                   <span>Open Live Camera</span>

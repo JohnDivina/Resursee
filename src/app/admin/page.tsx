@@ -832,7 +832,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-paper)] p-4 sm:p-6">
         <div className="w-full max-w-md overflow-hidden rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-7 sm:p-8 shadow-[0_16px_48px_rgba(0,0,0,0.08)] text-center space-y-5">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-amber-500">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[var(--color-ink)]">
             <Hourglass size={32} weight="bold" />
           </div>
 
@@ -931,7 +931,7 @@ export default function AdminDashboardPage() {
             </LabelInputContainer>
 
             {authError && (
-              <div className="rounded-[12px] border border-rose-200 bg-rose-50/70 dark:bg-rose-950/30 p-3 text-xs font-semibold text-rose-700 dark:text-rose-400">
+              <div className="rounded-[12px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
                 {authError}
               </div>
             )}
@@ -984,7 +984,7 @@ export default function AdminDashboardPage() {
         {/* Action Toast Feedback */}
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
-            <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
+            <CheckCircle size={18} weight="fill" className="text-white shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
@@ -1151,7 +1151,7 @@ export default function AdminDashboardPage() {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* 🚨 Master Admin Floating Notification Banner for Pending Staff Requests */}
         {isMasterAdmin && pendingStaffRequests.length > 0 && (
-          <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-bold shadow-md">
+          <div className="bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold shadow-md">
             <div className="mx-auto flex max-w-7xl items-center justify-between">
               <div className="flex items-center gap-2">
                 <BellRinging size={18} weight="fill" className="animate-bounce" />
@@ -1215,7 +1215,7 @@ export default function AdminDashboardPage() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 rounded-[12px] border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 rounded-[12px] border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-[var(--color-ink)] transition-all cursor-pointer"
               >
                 <SignOut size={15} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -1243,7 +1243,7 @@ export default function AdminDashboardPage() {
                 <span className="text-xs font-medium">Pending Contributions</span>
                 <UploadSimple size={18} className="text-neutral-500 dark:text-neutral-400" />
               </div>
-              <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400">
+              <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)]">
                 {pendingSubmissions.length}
               </p>
             </div>
@@ -1253,7 +1253,7 @@ export default function AdminDashboardPage() {
                 <span className="text-xs font-medium">Total Downloads</span>
                 <ChartBar size={18} className="text-neutral-500 dark:text-neutral-400" />
               </div>
-              <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+              <p className="mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)]">
                 {totalDownloads.toLocaleString()}
               </p>
             </div>
@@ -1324,7 +1324,7 @@ export default function AdminDashboardPage() {
                             <td className="px-5 py-4 text-right">
                               <button
                                 onClick={() => handleDeleteResource(res.id, res.title)}
-                                className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                className="rounded-lg p-2 text-[var(--color-ink-muted)] hover:bg-neutral-200 hover:text-[var(--color-ink)] dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                                 title="Delete document permanently"
                               >
                                 <Trash size={16} weight="bold" />
@@ -1358,7 +1358,7 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={handleClearReviewedSubmissions}
-                    className="flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer shadow-2xs"
+                    className="flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3.5 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer shadow-2xs"
                   >
                     <Trash size={14} weight="bold" />
                     <span>Clear Reviewed & Rejected ({submissionsList.filter((s) => s.status !== 'pending').length})</span>
@@ -1384,7 +1384,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setSubmissionFilter('pending')}
                   className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
                     submissionFilter === 'pending'
-                      ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
                       : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   }`}
                 >
@@ -1395,7 +1395,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setSubmissionFilter('approved')}
                   className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
                     submissionFilter === 'approved'
-                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
                       : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   }`}
                 >
@@ -1406,7 +1406,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setSubmissionFilter('rejected')}
                   className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
                     submissionFilter === 'rejected'
-                      ? 'bg-rose-600 text-white shadow-2xs'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
                       : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   }`}
                 >
@@ -1425,13 +1425,7 @@ export default function AdminDashboardPage() {
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
-                              sub.status === 'pending'
-                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                : sub.status === 'approved'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                            }`}
+                            className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase"
                           >
                             {sub.status}
                           </span>
@@ -1458,7 +1452,7 @@ export default function AdminDashboardPage() {
                           {sub.reviewed_by && (
                             <>
                               <span>•</span>
-                              <span className="text-emerald-600 dark:text-emerald-400">Reviewed by {sub.reviewed_by}</span>
+                              <span className="text-[var(--color-ink-muted)]">Reviewed by {sub.reviewed_by}</span>
                             </>
                           )}
                         </div>
@@ -1470,7 +1464,7 @@ export default function AdminDashboardPage() {
                           <>
                             <button
                               onClick={() => handleApproveSubmission(sub)}
-                              className="flex items-center gap-1 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all cursor-pointer"
+                              className="flex items-center gap-1 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold shadow-2xs hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all cursor-pointer"
                             >
                               <CheckCircle size={15} weight="bold" />
                               <span>Approve & Publish</span>
@@ -1478,7 +1472,7 @@ export default function AdminDashboardPage() {
 
                             <button
                               onClick={() => handleRejectSubmission(sub.id)}
-                              className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
+                              className="flex items-center gap-1 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3.5 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer"
                             >
                               <XCircle size={15} weight="bold" />
                               <span>Reject</span>
@@ -1494,7 +1488,7 @@ export default function AdminDashboardPage() {
                             <button
                               type="button"
                               onClick={() => handleDeleteSingleSubmission(sub.id, sub.title)}
-                              className="rounded-lg p-1.5 text-[var(--color-ink-muted)] hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                              className="rounded-lg p-1.5 text-[var(--color-ink-muted)] hover:bg-neutral-200 hover:text-[var(--color-ink)] dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                               title="Delete from history"
                             >
                               <Trash size={16} />
@@ -1579,7 +1573,7 @@ export default function AdminDashboardPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                            className="flex items-center gap-1 font-semibold text-rose-600 hover:underline cursor-pointer"
+                            className="flex items-center gap-1 font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
                           >
                             <Trash size={14} />
                             <span>Delete</span>
@@ -1626,7 +1620,7 @@ export default function AdminDashboardPage() {
                       <div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold text-xs">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 font-bold text-xs">
                               {dept.abbreviation.slice(0, 3)}
                             </div>
                             <span className="font-mono text-xs font-bold text-[var(--color-ink)]">
@@ -1670,7 +1664,7 @@ export default function AdminDashboardPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteOffice(dept.id, dept.name)}
-                            className="flex items-center gap-1 font-semibold text-rose-600 hover:underline cursor-pointer"
+                            className="flex items-center gap-1 font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
                           >
                             <Trash size={14} />
                             <span>Delete</span>
@@ -1716,7 +1710,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setNewsFilter('approved')}
                   className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
                     newsFilter === 'approved'
-                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
                       : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   }`}
                 >
@@ -1727,7 +1721,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setNewsFilter('pending')}
                   className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
                     newsFilter === 'pending'
-                      ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
                       : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   }`}
                 >
@@ -1738,7 +1732,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setNewsFilter('rejected')}
                   className={`rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
                     newsFilter === 'rejected'
-                      ? 'bg-rose-600 text-white shadow-2xs'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
                       : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   }`}
                 >
@@ -1757,13 +1751,7 @@ export default function AdminDashboardPage() {
                       <div className="space-y-1.5 flex-1">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
-                              art.status === 'pending'
-                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                : art.status === 'approved'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                            }`}
+                            className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase"
                           >
                             {art.status === 'approved' ? 'Live on Campus Feed' : art.status}
                           </span>
@@ -1802,7 +1790,7 @@ export default function AdminDashboardPage() {
                             <button
                               type="button"
                               onClick={() => handleApproveNews(art.id)}
-                              className="flex items-center gap-1 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all cursor-pointer"
+                              className="flex items-center gap-1 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold shadow-2xs hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all cursor-pointer"
                             >
                               <CheckCircle size={15} weight="bold" />
                               <span>Approve & Publish</span>
@@ -1811,7 +1799,7 @@ export default function AdminDashboardPage() {
                             <button
                               type="button"
                               onClick={() => handleRejectNews(art.id)}
-                              className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
+                              className="flex items-center gap-1 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3.5 py-1.5 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer"
                             >
                               <XCircle size={15} weight="bold" />
                               <span>Reject</span>
@@ -1823,7 +1811,7 @@ export default function AdminDashboardPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteNews(art.id, art.title)}
-                          className="rounded-lg p-2 text-[var(--color-ink-muted)] hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                          className="rounded-lg p-2 text-[var(--color-ink-muted)] hover:bg-neutral-200 hover:text-[var(--color-ink)] dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                           title="Delete Bulletin"
                         >
                           <Trash size={16} weight="bold" />
@@ -1854,17 +1842,17 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Pending Requests Section */}
-              <div className="rounded-[24px] border-2 border-amber-400 dark:border-amber-600/70 bg-amber-50/60 dark:bg-amber-950/30 p-6 shadow-md space-y-4">
+              <div className="rounded-[24px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-6 shadow-md space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <UserPlus size={22} className="text-amber-600 dark:text-amber-400" />
-                    <h3 className="text-base font-bold text-amber-950 dark:text-amber-100">
+                    <UserPlus size={22} className="text-[var(--color-ink)]" />
+                    <h3 className="text-base font-bold text-[var(--color-ink)]">
                       Pending Moderator Access Requests ({pendingStaffRequests.length})
                     </h3>
                   </div>
                   <button
                     onClick={fetchStaffData}
-                    className="flex items-center gap-1 text-xs font-bold text-amber-800 dark:text-amber-300 hover:underline cursor-pointer"
+                    className="flex items-center gap-1 text-xs font-bold text-[var(--color-ink)] hover:underline cursor-pointer"
                   >
                     <ArrowsClockwise size={14} />
                     <span>Refresh</span>
@@ -1880,13 +1868,13 @@ export default function AdminDashboardPage() {
                     {pendingStaffRequests.map((req) => (
                       <div
                         key={req.email}
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-[18px] border border-amber-300 dark:border-amber-700 bg-[var(--color-paper-card)] p-4 shadow-sm"
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-[18px] border border-neutral-200 dark:border-neutral-700 bg-[var(--color-paper-card)] p-4 shadow-sm"
                       >
                         <div className="flex items-center gap-3">
                           {req.picture ? (
                             <img src={req.picture} alt={req.name} className="h-10 w-10 rounded-full" />
                           ) : (
-                            <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center font-bold text-amber-800">
+                            <div className="h-10 w-10 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center font-bold text-neutral-800 dark:text-neutral-200">
                               {req.name[0]?.toUpperCase()}
                             </div>
                           )}
@@ -1899,14 +1887,14 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center gap-2 self-end sm:self-center">
                           <button
                             onClick={() => handleApproveStaff(req)}
-                            className="flex items-center gap-1 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-all cursor-pointer"
+                            className="flex items-center gap-1 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all cursor-pointer"
                           >
                             <Check size={14} weight="bold" />
                             <span>Approve as Moderator</span>
                           </button>
                           <button
                             onClick={() => handleRejectStaff(req.email)}
-                            className="flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
+                            className="flex items-center gap-1 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3.5 py-2 text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer"
                           >
                             <X size={14} weight="bold" />
                             <span>Reject</span>
@@ -1931,7 +1919,7 @@ export default function AdminDashboardPage() {
                   {/* Master Admin Entry */}
                   <div className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-amber-800 font-bold text-sm">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-[var(--color-ink)] font-bold text-sm">
                         👑
                       </div>
                       <div>
@@ -1943,7 +1931,7 @@ export default function AdminDashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <span className="rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
+                    <span className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
                       Owner
                     </span>
                   </div>
@@ -1966,12 +1954,12 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <span className="rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
+                        <span className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
                           Moderator (Review Only)
                         </span>
                         <button
                           onClick={() => handleRevokeStaff(mod.email)}
-                          className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+                          className="text-xs font-bold text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
                         >
                           Revoke Access
                         </button>
@@ -2035,16 +2023,12 @@ export default function AdminDashboardPage() {
 
                 {settingsFeedback && (
                   <div
-                    className={`flex items-center gap-2 rounded-[14px] p-3 text-xs font-semibold ${
-                      settingsFeedback.type === 'success'
-                        ? 'border border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                        : 'border border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
-                    }`}
+                    className="flex items-center gap-2 rounded-[14px] p-3 text-xs font-semibold border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
                   >
                     {settingsFeedback.type === 'success' ? (
-                      <Check size={16} weight="bold" className="shrink-0 text-emerald-600" />
+                      <Check size={16} weight="bold" className="shrink-0 text-[var(--color-ink)]" />
                     ) : (
-                      <WarningCircle size={16} weight="bold" className="shrink-0 text-rose-600" />
+                      <WarningCircle size={16} weight="bold" className="shrink-0 text-[var(--color-ink)]" />
                     )}
                     <span>{settingsFeedback.message}</span>
                   </div>
@@ -2120,7 +2104,7 @@ export default function AdminDashboardPage() {
               {/* Security Hardening Status Card */}
               <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-7 shadow-2xs space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-emerald-600 text-white shadow-2xs">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs">
                     <ShieldCheck size={20} weight="bold" />
                   </div>
                   <div>
@@ -2618,7 +2602,7 @@ export default function AdminDashboardPage() {
       {/* Action Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
-          <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
+          <CheckCircle size={18} weight="fill" className="text-white shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

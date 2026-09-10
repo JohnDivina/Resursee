@@ -27,31 +27,8 @@ export function formatNumber(num: number): string {
   return num.toString();
 }
 
-export function getLanguageColor(language: string): string {
-  switch (language.toLowerCase()) {
-    case 'typescript':
-      return 'bg-blue-500';
-    case 'javascript':
-      return 'bg-amber-400';
-    case 'python':
-      return 'bg-emerald-500';
-    case 'swift':
-      return 'bg-orange-500';
-    case 'go':
-      return 'bg-cyan-500';
-    case 'rust':
-      return 'bg-rose-500';
-    case 'c++':
-      return 'bg-pink-500';
-    case 'c':
-      return 'bg-neutral-400';
-    case 'css':
-      return 'bg-indigo-500';
-    case 'batchfile':
-      return 'bg-teal-500';
-    default:
-      return 'bg-neutral-400';
-  }
+export function getLanguageColor(_language: string): string {
+  return 'bg-neutral-500 dark:bg-neutral-400';
 }
 
 export default function StarredRepoCard({
@@ -107,7 +84,7 @@ export default function StarredRepoCard({
           {/* Star & Fork Counts */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
-              <Star size={12} weight="fill" className="text-amber-500" />
+              <Star size={12} weight="fill" className="text-neutral-500 dark:text-neutral-400" />
               <span>{formatNumber(repo.stargazersCount)}</span>
             </div>
           </div>

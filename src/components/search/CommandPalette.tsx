@@ -203,7 +203,7 @@ export default function CommandPalette({
                             {resource.title}
                           </p>
                           {resource.is_featured && (
-                            <span className="shrink-0 rounded-full bg-[var(--color-accent-amber-subtle)] px-1.5 py-0.2 font-mono text-[9px] font-semibold text-amber-700">
+                            <span className="shrink-0 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.5 font-mono text-[9px] font-medium">
                               ★ Featured
                             </span>
                           )}
