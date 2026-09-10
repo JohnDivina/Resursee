@@ -106,7 +106,7 @@ export default function StarredRepoCard({
 
           {/* Star & Fork Counts */}
           <div className="flex items-center gap-2 shrink-0">
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
               <Star size={12} weight="fill" className="text-amber-500" />
               <span>{formatNumber(repo.stargazersCount)}</span>
             </div>

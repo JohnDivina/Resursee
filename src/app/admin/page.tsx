@@ -832,12 +832,12 @@ export default function AdminDashboardPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-paper)] p-4 sm:p-6">
         <div className="w-full max-w-md overflow-hidden rounded-[28px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-7 sm:p-8 shadow-[0_16px_48px_rgba(0,0,0,0.08)] text-center space-y-5">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-amber-500">
             <Hourglass size={32} weight="bold" />
           </div>
 
           <div>
-            <span className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-3 py-1 font-mono text-xs font-bold uppercase">
+            <span className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-3 py-1 font-mono text-xs font-medium uppercase">
               Approval Pending
             </span>
             <h1 className="mt-3 text-xl font-extrabold text-[var(--color-ink)]">
@@ -2132,16 +2132,16 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 text-xs">
-                    <span className="font-bold text-emerald-800 dark:text-emerald-300 block">Rate Limiting</span>
+                  <div className="rounded-[16px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3.5 text-xs">
+                    <span className="font-bold text-neutral-800 dark:text-neutral-200 block">Rate Limiting</span>
                     <span className="text-[11px] text-[var(--color-ink-muted)]">5 attempts / 30s lockout</span>
                   </div>
-                  <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 text-xs">
-                    <span className="font-bold text-emerald-800 dark:text-emerald-300 block">Two-Tier RBAC</span>
+                  <div className="rounded-[16px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3.5 text-xs">
+                    <span className="font-bold text-neutral-800 dark:text-neutral-200 block">Two-Tier RBAC</span>
                     <span className="text-[11px] text-[var(--color-ink-muted)]">Master Admin & Moderator</span>
                   </div>
-                  <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 text-xs">
-                    <span className="font-bold text-emerald-800 dark:text-emerald-300 block">Encrypted Session</span>
+                  <div className="rounded-[16px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3.5 text-xs">
+                    <span className="font-bold text-neutral-800 dark:text-neutral-200 block">Encrypted Session</span>
                     <span className="text-[11px] text-[var(--color-ink-muted)]">HTTP-Only / SameSite Lax</span>
                   </div>
                 </div>

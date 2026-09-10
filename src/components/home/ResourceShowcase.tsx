@@ -41,7 +41,7 @@ function ShowcaseCardItem({ item }: { item: Resource }) {
               className="h-4.5 w-4.5 object-contain"
             />
           </div>
-          <span className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:bg-white/10 dark:text-white dark:border-white/20 border border-blue-500/20">
+          <span className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
             {item.file_format}
           </span>
           <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">

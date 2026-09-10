@@ -90,7 +90,7 @@ export default function DeviceWizardModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] px-6 py-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-blue-500/10 text-blue-600">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
               <Cpu size={18} weight="bold" />
             </span>
             <span className="text-sm font-bold text-[var(--color-ink)]">
@@ -184,18 +184,18 @@ export default function DeviceWizardModal({
         {step === 2 && createdDevice && (
           <div className="p-6 sm:p-8 space-y-6">
             {/* Credentials Pill Box */}
-            <div className="rounded-[20px] bg-emerald-500/10 border border-emerald-500/20 p-4 space-y-2">
+            <div className="rounded-[20px] bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                <span className="font-mono text-xs font-bold text-neutral-800 dark:text-neutral-200">
                   Device Created: {createdDevice.name}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 font-mono text-[9px] font-bold text-white">
+                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2.5 py-0.5 font-mono text-[9px] font-bold">
                   <ShieldCheck size={11} />
                   Token Active
                 </span>
               </div>
-              <p className="font-mono text-[11px] text-[var(--color-ink)] truncate bg-white/70 dark:bg-black/40 p-2 rounded-lg border border-[var(--color-rule)]">
-                Device Token: <strong className="text-emerald-600 dark:text-emerald-400">{createdDevice.deviceToken}</strong>
+              <p className="font-mono text-[11px] text-[var(--color-ink)] truncate bg-white dark:bg-neutral-900 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                Device Token: <strong className="text-neutral-900 dark:text-white font-bold">{createdDevice.deviceToken}</strong>
               </p>
             </div>
 

@@ -38,30 +38,30 @@ export default function PublicApiRow({ api, onCopyNotice }: PublicApiRowProps) {
     const lower = auth.toLowerCase();
     if (lower === 'no' || lower === '') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-          <ShieldCheck size={12} weight="bold" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+          <ShieldCheck size={12} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
           No Auth
         </span>
       );
     }
     if (lower.includes('apikey')) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-          <Key size={12} weight="bold" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+          <Key size={12} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
           API Key
         </span>
       );
     }
     if (lower.includes('oauth')) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-          <Lock size={12} weight="bold" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+          <Lock size={12} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
           OAuth
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
         {auth}
       </span>
     );
@@ -92,14 +92,14 @@ export default function PublicApiRow({ api, onCopyNotice }: PublicApiRowProps) {
           {api.https ? (
             <span
               title="HTTPS Supported"
-              className="text-emerald-500 p-0.5"
+              className="p-1 rounded-md text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
             >
               <Lock size={12} weight="bold" />
             </span>
           ) : (
             <span
               title="HTTP Only"
-              className="text-amber-500 p-0.5"
+              className="p-1 rounded-md text-neutral-500 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
             >
               <LockOpen size={12} weight="bold" />
             </span>

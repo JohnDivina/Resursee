@@ -363,7 +363,7 @@ export default function IoTCloudPage() {
           {/* Loading State */}
           {authLoading && (
             <div className="flex min-h-[420px] flex-col items-center justify-center rounded-[32px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-12 text-center shadow-xs">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 animate-pulse">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 animate-pulse">
                 <Cpu size={36} weight="bold" />
               </div>
               <h3 className="mt-4 text-base font-extrabold text-[var(--color-ink)]">
@@ -449,8 +449,8 @@ export default function IoTCloudPage() {
                     <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400">
                       ESP32 IoT Cloud · App #2
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 font-mono text-[9.5px] font-bold text-blue-700 dark:text-sky-300 border border-blue-500/20">
-                      <ShieldCheck size={12} weight="bold" />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[9.5px] font-medium">
+                      <ShieldCheck size={12} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
                       <span>Isolated Multi-Tenant Session</span>
                     </span>
                   </div>
@@ -534,13 +534,7 @@ export default function IoTCloudPage() {
                           ))}
                         </select>
 
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${
-                            selectedDevice.status === 'online'
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                              : 'bg-neutral-500/10 text-neutral-500'
-                          }`}
-                        >
+                        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
                               selectedDevice.status === 'online'
@@ -647,7 +641,7 @@ export default function IoTCloudPage() {
                       Click any switch to toggle physical GPIO pins on your ESP32 in real-time
                     </p>
                   </div>
-                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-3 py-1 font-mono text-xs font-medium">
                     Live Bi-Directional Sync
                   </span>
                 </div>

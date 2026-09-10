@@ -368,8 +368,8 @@ export default function ContributePage() {
 
           {/* SUCCESS SCREEN */}
           {isSubmitted ? (
-            <div className="mt-8 rounded-[28px] border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-8 sm:p-12 text-center shadow-lg animate-in fade-in zoom-in-95">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <div className="mt-8 rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-8 sm:p-12 text-center shadow-lg animate-in fade-in zoom-in-95">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-emerald-500">
                 <CheckCircle size={40} weight="fill" />
               </div>
               <h2 className="mt-4 text-xl sm:text-2xl font-extrabold text-[var(--color-ink)]">
@@ -379,7 +379,7 @@ export default function ContributePage() {
                 Thank you for your contribution! Your submission has been securely queued and is now visible to the University Administration for review.
               </p>
 
-              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-[var(--color-paper-card)] px-4 py-1.5 font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300 shadow-2xs">
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-4 py-1.5 font-mono text-xs font-bold text-neutral-800 dark:text-neutral-200 shadow-2xs">
                 <span>Tracking ID:</span>
                 <span className="font-extrabold text-[var(--color-primary)]">{submissionId}</span>
               </div>

@@ -159,8 +159,8 @@ export default function ResourceDetailPage() {
                   <span className="rounded-md bg-blue-600 px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-white uppercase">
                     {activeResource.file_format}
                   </span>
-                  <span className="flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[10.5px] font-bold text-blue-600 dark:text-sky-400">
-                    <ShieldCheck size={12} weight="bold" />
+                  <span className="flex items-center gap-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 text-[10.5px] font-medium">
+                    <ShieldCheck size={12} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
                     <span>Official Document</span>
                   </span>
                   <span className="rounded-md bg-[var(--color-paper-muted)] px-2 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink-muted)]">
@@ -257,12 +257,12 @@ export default function ResourceDetailPage() {
                 </div>
 
                 <div className="space-y-2.5">
-                  <div className="flex items-center justify-between rounded-[16px] border border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/20 p-3.5 text-xs">
+                  <div className="flex items-center justify-between rounded-[16px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3.5 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300">
+                      <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">
                         Version {activeResource.current_version}
                       </span>
-                      <span className="rounded-full bg-emerald-600 text-white px-2 py-0.2 font-mono text-[9px] font-bold uppercase">
+                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 font-mono text-[9px] font-bold uppercase">
                         Current
                       </span>
                     </div>

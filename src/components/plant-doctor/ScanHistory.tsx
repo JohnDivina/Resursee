@@ -17,7 +17,7 @@ export default function ScanHistory({ history, onSelect, onClear }: ScanHistoryP
     <div className="rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-xs">
       <div className="flex items-center justify-between pb-4 border-b border-[var(--color-rule-subtle)]">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-blue-500/10 text-blue-600 dark:text-sky-400">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
             <ClockCounterClockwise size={18} weight="bold" />
           </span>
           <div>
@@ -56,16 +56,12 @@ export default function ScanHistory({ history, onSelect, onClear }: ScanHistoryP
                   })}
                 </span>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9.5px] font-bold ${
-                    item.isHealthy
-                      ? 'bg-emerald-500/10 text-emerald-600'
-                      : 'bg-rose-500/10 text-rose-600'
-                  }`}
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9.5px] font-bold bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700"
                 >
                   {item.isHealthy ? (
-                    <CheckCircle size={10} weight="fill" />
+                    <CheckCircle size={10} weight="fill" className="text-emerald-500" />
                   ) : (
-                    <WarningCircle size={10} weight="fill" />
+                    <WarningCircle size={10} weight="fill" className="text-rose-500" />
                   )}
                   <span className="capitalize">{item.severity}</span>
                 </span>

@@ -35,7 +35,7 @@ const SkeletonCompressImage = () => {
         <span className="flex items-center gap-1 text-blue-600 dark:text-white">
           <FileImage size={14} weight="bold" /> clearance_photo.png
         </span>
-        <span className="text-blue-600 dark:text-white font-bold bg-blue-500/10 dark:bg-white/10 px-2 py-0.5 rounded-full">-88%</span>
+        <span className="font-mono text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 rounded-full">-88%</span>
       </div>
 
       <div className="relative h-4 w-full bg-slate-200 dark:bg-[#181818] rounded-full overflow-hidden p-0.5">
@@ -108,7 +108,7 @@ const SkeletonConvertImage = () => {
       >
         <ArrowsClockwise size={18} weight="bold" />
       </motion.div>
-      <div className="rounded-xl border border-blue-500/30 dark:border-white/20 bg-blue-500/10 dark:bg-white/10 px-3 py-2 font-mono text-xs font-bold text-blue-600 dark:text-white shadow-xs">
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3 py-2 font-mono text-xs font-bold text-neutral-800 dark:text-neutral-200 shadow-xs">
         WEBP
       </div>
     </motion.div>
@@ -143,9 +143,9 @@ const SkeletonCropImage = () => {
             hover: { scale: 0.85, rotate: -2 },
           }}
           transition={{ duration: 0.3 }}
-          className="relative h-18 w-24 rounded-lg border-2 border-blue-600 dark:border-white bg-blue-500/10 dark:bg-white/10 shadow-xs flex items-center justify-center"
+          className="relative h-18 w-24 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 shadow-xs flex items-center justify-center text-neutral-800 dark:text-neutral-200"
         >
-          <Crop size={22} className="text-blue-600 dark:text-white" weight="bold" />
+          <Crop size={22} weight="bold" />
         </motion.div>
       </div>
     </motion.div>
@@ -161,9 +161,9 @@ const SkeletonPdfToImage = () => {
       className="flex items-center justify-center gap-2 w-full h-full p-2"
     >
       {/* PDF Document Source */}
-      <div className="h-20 w-16 rounded-[12px] border border-blue-500/40 dark:border-white/20 bg-blue-500/10 dark:bg-white/10 flex flex-col items-center justify-center shadow-xs">
-        <FilePdf size={24} className="text-blue-600 dark:text-white" weight="fill" />
-        <span className="font-mono text-[9px] font-bold text-blue-600 dark:text-white mt-1">.PDF</span>
+      <div className="h-20 w-16 rounded-[12px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 flex flex-col items-center justify-center shadow-xs text-neutral-800 dark:text-neutral-200">
+        <FilePdf size={24} weight="fill" />
+        <span className="font-mono text-[9px] font-bold mt-1">.PDF</span>
       </div>
 
       <motion.div
@@ -211,7 +211,7 @@ const SkeletonMergePdf = () => {
             initial: { rotate: -6 },
             hover: { rotate: 0, x: 2 },
           }}
-          className="h-16 w-14 rounded-lg bg-blue-500/15 dark:bg-white/10 border border-blue-500/30 dark:border-white/20 flex flex-col items-center justify-center shadow-xs text-blue-600 dark:text-white font-mono text-[10px] font-bold"
+          className="h-16 w-14 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex flex-col items-center justify-center shadow-xs text-neutral-800 dark:text-neutral-200 font-mono text-[10px] font-bold"
         >
           <FilePdf size={18} weight="fill" />
           <span className="text-[8px] mt-0.5">PDF 1</span>
@@ -221,7 +221,7 @@ const SkeletonMergePdf = () => {
             initial: { rotate: 6 },
             hover: { rotate: 0, x: -2 },
           }}
-          className="h-16 w-14 rounded-lg bg-blue-600/15 dark:bg-white/10 border border-blue-600/30 dark:border-white/20 flex flex-col items-center justify-center shadow-xs text-blue-600 dark:text-white font-mono text-[10px] font-bold"
+          className="h-16 w-14 rounded-lg bg-neutral-200 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center shadow-xs text-neutral-800 dark:text-neutral-200 font-mono text-[10px] font-bold"
         >
           <FilePdf size={18} weight="fill" />
           <span className="text-[8px] mt-0.5">PDF 2</span>
@@ -260,18 +260,18 @@ const SkeletonImageToPdf = () => {
           hover: { rotate: 0, scale: 1.05 },
         }}
         transition={{ duration: 0.3 }}
-        className="relative h-20 w-16 rounded-[13px] border border-blue-500/30 dark:border-white/20 bg-white dark:bg-[#0f0f0f] p-1.5 shadow-sm flex flex-col justify-between"
+        className="relative h-20 w-16 rounded-[13px] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#0f0f0f] p-1.5 shadow-sm flex flex-col justify-between"
       >
         {/* Photo Viewfinder Mini Thumbnail */}
-        <div className="h-11 w-full rounded-[8px] bg-gradient-to-br from-sky-400/30 via-blue-500/20 to-indigo-500/30 dark:from-white/10 dark:via-white/5 dark:to-white/10 flex items-center justify-center border border-blue-500/20 dark:border-white/10 overflow-hidden relative">
-          <FileImage size={20} className="text-blue-600 dark:text-white" weight="bold" />
-          <span className="absolute bottom-0.5 right-1 text-[6.5px] font-mono font-bold text-blue-700 dark:text-white">
+        <div className="h-11 w-full rounded-[8px] bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-neutral-700 overflow-hidden relative text-neutral-800 dark:text-neutral-200">
+          <FileImage size={20} weight="bold" />
+          <span className="absolute bottom-0.5 right-1 text-[6.5px] font-mono font-bold text-neutral-800 dark:text-neutral-200">
             .JPG
           </span>
         </div>
         <div className="flex items-center justify-between px-0.5 font-mono text-[7px] text-[var(--color-ink-muted)]">
           <span>photo</span>
-          <span className="text-blue-600 dark:text-white font-bold">300dpi</span>
+          <span className="text-neutral-800 dark:text-neutral-200 font-bold">300dpi</span>
         </div>
       </motion.div>
 
@@ -291,21 +291,21 @@ const SkeletonImageToPdf = () => {
       <motion.div
         variants={{
           initial: { rotate: 2, scale: 1 },
-          hover: { rotate: 0, scale: 1.05, borderColor: '#2563eb' },
+          hover: { rotate: 0, scale: 1.05, borderColor: '#525252' },
         }}
         transition={{ duration: 0.3 }}
-        className="relative h-22 w-16 rounded-[13px] border-2 border-dashed border-blue-500/50 dark:border-white/20 bg-blue-500/5 dark:bg-white/5 p-1.5 shadow-sm flex flex-col items-center justify-between"
+        className="relative h-22 w-16 rounded-[13px] border-2 border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-1.5 shadow-sm flex flex-col items-center justify-between"
       >
-        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 dark:bg-white text-white dark:text-black shadow-2xs mt-1">
+        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-900 dark:bg-white text-white dark:text-black shadow-2xs mt-1">
           <FilePdf size={12} weight="fill" />
         </div>
 
         <div className="w-full space-y-1 px-1">
-          <div className="h-1 w-full bg-blue-500/30 dark:bg-white/20 rounded-full" />
-          <div className="h-1 w-3/4 bg-blue-500/20 dark:bg-white/10 rounded-full" />
+          <div className="h-1 w-full bg-neutral-300 dark:bg-neutral-600 rounded-full" />
+          <div className="h-1 w-3/4 bg-neutral-200 dark:bg-neutral-700 rounded-full" />
         </div>
 
-        <span className="font-mono text-[7.5px] font-bold text-blue-600 dark:text-white uppercase tracking-wider mb-0.5">
+        <span className="font-mono text-[7.5px] font-bold text-neutral-800 dark:text-neutral-200 uppercase tracking-wider mb-0.5">
           PDF Page
         </span>
       </motion.div>

@@ -113,7 +113,7 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800 text-neutral-200 border border-neutral-700">
               <Camera size={18} weight="bold" />
             </span>
             <span className="text-sm font-bold">Snap Plant or Leaf Photo</span>

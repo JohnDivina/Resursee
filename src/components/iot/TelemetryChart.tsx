@@ -74,7 +74,7 @@ export default function TelemetryChart({
       {/* Header Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-4">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-blue-500/10 text-blue-600 dark:text-sky-400">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
             <ChartLineUp size={18} weight="bold" />
           </span>
           <div>

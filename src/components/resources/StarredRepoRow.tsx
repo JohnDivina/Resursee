@@ -73,7 +73,7 @@ export default function StarredRepoRow({
             </span>
           )}
 
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
             <Star size={11} weight="fill" className="text-amber-500" />
             <span>{formatNumber(repo.stargazersCount)}</span>
           </div>

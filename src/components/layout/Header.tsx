@@ -270,17 +270,17 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                   className={cn(
                     'flex items-start gap-3 p-2.5 rounded-xl transition-all',
                     pathname === '/apps/plant-doctor'
-                      ? 'bg-emerald-500/15 text-[var(--color-ink)]'
+                      ? 'bg-neutral-100 dark:bg-neutral-800 text-[var(--color-ink)]'
                       : 'hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   )}
                 >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-emerald-500/20 text-emerald-500 shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-neutral-200 dark:border-neutral-700 text-[var(--color-ink)] shrink-0 mt-0.5">
                     <Plant size={15} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-xs text-[var(--color-ink)]">Plant Doctor AI</span>
-                      <span className="text-[9px] font-mono font-black bg-emerald-600 text-white px-1.5 py-0.2 rounded-full">
+                      <span className="text-[9px] font-mono font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.5 rounded-full">
                         NEW
                       </span>
                     </div>
@@ -296,11 +296,11 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                   className={cn(
                     'flex items-start gap-3 p-2.5 rounded-xl transition-all',
                     pathname === '/apps/iot-cloud'
-                      ? 'bg-blue-500/15 text-[var(--color-ink)]'
+                      ? 'bg-neutral-100 dark:bg-neutral-800 text-[var(--color-ink)]'
                       : 'hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   )}
                 >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-blue-500/20 text-blue-500 shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-neutral-200 dark:border-neutral-700 text-[var(--color-ink)] shrink-0 mt-0.5">
                     <Cpu size={15} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -434,7 +434,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-2 rounded-[12px] px-2.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-2 rounded-[12px] px-2.5 py-2 text-xs font-bold text-rose-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                     >
                       <SignOut size={15} weight="bold" />
                       <span>Sign Out</span>
@@ -505,15 +505,15 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               className={cn(
                 'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center justify-between',
                 pathname === '/apps/plant-doctor'
-                  ? 'text-emerald-500 bg-emerald-500/10 font-bold'
+                  ? 'text-[var(--color-ink)] bg-neutral-100 dark:bg-neutral-800 font-bold border border-neutral-200 dark:border-neutral-700'
                   : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
               )}
             >
               <div className="flex items-center gap-2.5">
-                <Plant size={16} weight="bold" className="text-emerald-500" />
+                <Plant size={16} weight="bold" />
                 <span>Plant Doctor AI</span>
               </div>
-              <span className="text-[9px] font-mono font-black bg-emerald-600 text-white px-1.5 py-0.2 rounded-full">
+              <span className="text-[9px] font-mono font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.5 rounded-full">
                 NEW
               </span>
             </Link>
@@ -524,11 +524,11 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               className={cn(
                 'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center gap-2.5',
                 pathname === '/apps/iot-cloud'
-                  ? 'text-blue-500 bg-blue-500/10 font-bold'
+                  ? 'text-[var(--color-ink)] bg-neutral-100 dark:bg-neutral-800 font-bold border border-neutral-200 dark:border-neutral-700'
                   : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
               )}
             >
-              <Cpu size={16} weight="bold" className="text-blue-500" />
+              <Cpu size={16} weight="bold" />
               <span>ESP32 IoT Cloud</span>
             </Link>
 

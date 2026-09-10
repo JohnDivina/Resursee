@@ -303,8 +303,8 @@ export default function MergePdfPage() {
 
               {/* Verified Client-Side Privacy Notice */}
               <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[11px] sm:text-xs text-[var(--color-ink-muted)]">
-                <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
+                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   Client-side processing only
                 </span>
                 <span className="text-[var(--color-rule-strong)] hidden sm:inline">•</span>
@@ -323,21 +323,21 @@ export default function MergePdfPage() {
 
           {/* Feedback Alerts */}
           {errorMessage && (
-            <div className="mt-6 flex items-start gap-3 rounded-[18px] border border-rose-500/30 bg-rose-500/10 p-4 text-xs font-medium text-rose-700 dark:text-rose-300">
-              <WarningCircle size={18} weight="bold" className="shrink-0 mt-0.5" />
+            <div className="mt-6 flex items-start gap-3 rounded-[18px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 text-xs font-medium text-[var(--color-ink)]">
+              <WarningCircle size={18} weight="bold" className="shrink-0 mt-0.5 text-rose-500" />
               <div>
                 <p className="font-bold">Error merging PDFs</p>
-                <p className="mt-0.5">{errorMessage}</p>
+                <p className="mt-0.5 text-[var(--color-ink-muted)]">{errorMessage}</p>
               </div>
             </div>
           )}
 
           {mergeSuccess && (
-            <div className="mt-6 flex items-start gap-3 rounded-[18px] border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-              <CheckCircle size={18} weight="bold" className="shrink-0 mt-0.5" />
+            <div className="mt-6 flex items-start gap-3 rounded-[18px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 text-xs font-medium text-[var(--color-ink)]">
+              <CheckCircle size={18} weight="bold" className="shrink-0 mt-0.5 text-emerald-500" />
               <div>
                 <p className="font-bold">PDF Successfully Merged!</p>
-                <p className="mt-0.5">
+                <p className="mt-0.5 text-[var(--color-ink-muted)]">
                   Your merged PDF has been created and downloaded to your device.
                 </p>
               </div>
@@ -394,7 +394,7 @@ export default function MergePdfPage() {
                       <button
                         type="button"
                         onClick={handleClearAll}
-                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-[var(--color-ink-muted)] hover:text-rose-600 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                         title="Clear all uploaded documents"
                       >
                         <Trash size={14} />
@@ -496,7 +496,7 @@ export default function MergePdfPage() {
                             <button
                               type="button"
                               onClick={() => handleRemove(item.id)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition-all cursor-pointer"
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-ink-muted)] hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-rose-600 transition-all cursor-pointer"
                               title="Remove Document"
                             >
                               <Trash size={15} />

@@ -46,12 +46,8 @@ function LeaderboardItemCard({
         {/* Rank Number Badge */}
         <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold ${
           rank === 1
-            ? 'bg-blue-600 text-white shadow-xs'
-            : rank === 2
-            ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
-            : rank === 3
-            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-            : 'bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)]'
+            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs'
+            : 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700'
         }`}>
           {rank}
         </div>

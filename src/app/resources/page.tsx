@@ -439,11 +439,11 @@ function ResourcesDirectoryInner() {
                 </div>
 
                 <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 sm:p-4">
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono uppercase tracking-wider flex items-center gap-1">
+                  <span className="text-xs text-[var(--color-ink-muted)] font-mono uppercase tracking-wider flex items-center gap-1">
                     <ShieldCheck size={13} />
                     No Auth Required
                   </span>
-                  <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400">
+                  <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono">
                     {apiStats.noAuthCount.toLocaleString()}
                   </p>
                 </div>
@@ -658,7 +658,7 @@ function ResourcesDirectoryInner() {
                       </span>
                     )}
                     {httpsOnly && (
-                      <span className="inline-flex items-center gap-1 bg-[var(--color-paper-muted)] px-2 py-0.5 rounded text-[11px] font-mono text-emerald-500">
+                      <span className="inline-flex items-center gap-1 bg-[var(--color-paper-muted)] px-2 py-0.5 rounded text-[11px] font-mono text-[var(--color-ink)]">
                         HTTPS Only
                       </span>
                     )}
@@ -881,11 +881,11 @@ function ResourcesDirectoryInner() {
                 </div>
 
                 <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 sm:p-4">
-                  <span className="text-xs text-amber-500 font-mono uppercase tracking-wider flex items-center gap-1">
-                    <Star size={13} weight="fill" />
+                  <span className="text-xs text-[var(--color-ink-muted)] font-mono uppercase tracking-wider flex items-center gap-1">
+                    <Star size={13} weight="fill" className="text-amber-500" />
                     Combined Stars
                   </span>
-                  <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono text-amber-500">
+                  <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono">
                     {(repoStats.totalStars / 1000000).toFixed(2)}M+
                   </p>
                 </div>
@@ -1220,8 +1220,8 @@ function ResourcesDirectoryInner() {
             <section className="mt-16 rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 relative overflow-hidden">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div className="max-w-2xl">
-                  <div className="flex items-center gap-2 text-xs font-mono text-amber-500 uppercase tracking-wider mb-2">
-                    <Star size={16} weight="fill" />
+                  <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink-muted)] uppercase tracking-wider mb-2">
+                    <Star size={16} weight="fill" className="text-amber-500" />
                     <span>Curated GitHub Collection</span>
                   </div>
 

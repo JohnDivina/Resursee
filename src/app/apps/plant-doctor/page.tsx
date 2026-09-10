@@ -347,7 +347,7 @@ export default function PlantDoctorPage() {
 
           {/* 4. Error Alert with 1-Click Retry */}
           {errorMessage && !isGuestExceeded && (
-            <div className="rounded-[20px] border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-medium text-rose-700 dark:text-rose-300 flex flex-wrap items-center justify-between gap-3">
+            <div className="rounded-[20px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 text-xs font-medium text-[var(--color-ink)] flex flex-wrap items-center justify-between gap-3">
               <span>{errorMessage}</span>
               <div className="flex items-center gap-3 shrink-0">
                 {cachedPayload && (

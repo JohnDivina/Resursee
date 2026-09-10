@@ -139,8 +139,8 @@ export default function PdfToImagePage() {
 
               {/* Verified Client-Side Privacy Notice */}
               <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[11px] sm:text-xs text-[var(--color-ink-muted)]">
-                <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
+                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   Client-side processing only
                 </span>
                 <span className="text-[var(--color-rule-strong)] hidden sm:inline">•</span>

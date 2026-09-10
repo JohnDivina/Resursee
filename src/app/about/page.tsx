@@ -129,7 +129,7 @@ export default function AboutPage() {
           </div>
 
           {/* Profile Avatar / Visual Squircle */}
-          <div className="relative flex h-32 w-32 sm:h-40 sm:w-40 shrink-0 items-center justify-center rounded-[28px] border-2 border-[var(--color-rule)] bg-gradient-to-br from-blue-600/10 via-sky-500/10 to-indigo-600/10 p-4 shadow-xl">
+          <div className="relative flex h-32 w-32 sm:h-40 sm:w-40 shrink-0 items-center justify-center rounded-[28px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 shadow-xl">
             <span className="text-6xl sm:text-7xl select-none">🦦</span>
             <div className="absolute -bottom-2 -right-2 rounded-full bg-[var(--color-paper-card)] border border-[var(--color-rule)] p-2 shadow-md text-sm">
               🚀

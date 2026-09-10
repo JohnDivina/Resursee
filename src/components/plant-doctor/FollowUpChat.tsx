@@ -73,7 +73,7 @@ export default function FollowUpChat({ diagnosis }: FollowUpChatProps) {
   return (
     <div className="rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 shadow-xs">
       <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--color-rule-subtle)]">
-        <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-emerald-500/10 text-emerald-600">
+        <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
           <Sparkle size={18} weight="fill" />
         </span>
         <div>
@@ -96,7 +96,7 @@ export default function FollowUpChat({ diagnosis }: FollowUpChatProps) {
             }`}
           >
             {msg.sender === 'bot' && (
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
                 <Robot size={15} weight="bold" />
               </span>
             )}
@@ -128,7 +128,7 @@ export default function FollowUpChat({ diagnosis }: FollowUpChatProps) {
 
         {isTyping && (
           <div className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
               <Robot size={15} weight="bold" />
             </span>
             <div className="rounded-[16px] bg-[var(--color-paper-muted)] px-3 py-2">

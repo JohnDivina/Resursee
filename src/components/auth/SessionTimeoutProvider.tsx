@@ -313,7 +313,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
             >
               {/* Top Warning Icon */}
               <div className="flex items-center justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-inner">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-amber-500 border border-neutral-200 dark:border-neutral-700 shadow-inner">
                   <ShieldWarning size={32} weight="bold" />
                 </div>
               </div>
@@ -329,8 +329,8 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
 
                 {/* Animated Countdown Ring / Pill */}
                 <div className="py-3 flex items-center justify-center">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 font-mono text-sm font-bold text-amber-600 dark:text-amber-400">
-                    <Clock size={16} weight="bold" className="animate-spin" />
+                  <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-4 py-1.5 font-mono text-sm font-medium text-[var(--color-ink)]">
+                    <Clock size={16} weight="bold" className="animate-spin text-neutral-500" />
                     <span>{countdown} seconds remaining</span>
                   </div>
                 </div>
@@ -341,7 +341,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
                 <button
                   type="button"
                   onClick={() => handleLogout('user')}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] py-2.5 text-xs font-bold text-[var(--color-ink-muted)] hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] py-2.5 text-xs font-bold text-[var(--color-ink-muted)] hover:text-rose-600 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   <SignOut size={15} />
                   <span>Log Out Now</span>
@@ -350,9 +350,8 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
                 <button
                   type="button"
                   onClick={resetTimer}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[var(--color-primary)] py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-[var(--color-ink)] text-[var(--color-paper-card)] py-2.5 text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
                 >
-                  <CheckCircle size={15} weight="bold" />
                   <span>Stay Logged In</span>
                 </button>
               </div>
@@ -361,7 +360,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
         )}
       </AnimatePresence>
 
-      {/* Logged Out Toast Notification */}
+      {/* Post-Logout Toast Notification */}
       <AnimatePresence>
         {loggedOutToast && (
           <motion.div
@@ -370,7 +369,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             className="fixed bottom-6 right-6 z-[99999] flex items-center gap-3 rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xl text-xs font-bold text-[var(--color-ink)]"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-amber-500">
               <ShieldWarning size={18} weight="bold" />
             </div>
             <div>

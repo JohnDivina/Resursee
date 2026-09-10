@@ -148,8 +148,8 @@ export default function CompressImagePage() {
 
               {/* Verified Client-Side Privacy Notice */}
               <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[11px] sm:text-xs text-[var(--color-ink-muted)]">
-                <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
+                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   Client-side processing only
                 </span>
                 <span className="text-[var(--color-rule-strong)] hidden sm:inline">•</span>
@@ -252,12 +252,12 @@ export default function CompressImagePage() {
 
                   {/* Savings Ribbon */}
                   {savingsPercent > 0 && (
-                    <div className="mt-6 flex items-center justify-between rounded-[16px] bg-emerald-500/10 p-3.5 border border-emerald-500/20 text-xs">
-                      <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-300">
-                        <CheckCircle size={18} weight="fill" className="text-emerald-600" />
+                    <div className="mt-6 flex items-center justify-between rounded-[16px] bg-neutral-100 dark:bg-neutral-800 p-3.5 border border-neutral-200 dark:border-neutral-700 text-xs">
+                      <div className="flex items-center gap-2 font-bold text-[var(--color-ink)]">
+                        <CheckCircle size={18} weight="fill" className="text-emerald-500" />
                         <span>Saved {savingsPercent}% in file size!</span>
                       </div>
-                      <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
+                      <span className="font-mono text-[11px] text-[var(--color-ink-muted)] font-medium">
                         {formatBytes(originalFile.size)} → {compressedBlob ? formatBytes(compressedBlob.size) : ''}
                       </span>
                     </div>

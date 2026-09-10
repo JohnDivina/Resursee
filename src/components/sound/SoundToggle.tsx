@@ -19,7 +19,7 @@ export default function SoundToggle({ className = '' }: SoundToggleProps) {
       title={soundEnabled ? '3D Spatial Sounds: ON (Click to mute)' : '3D Spatial Sounds: OFF (Click to enable)'}
       className={`group relative flex h-8 w-8 items-center justify-center rounded-lg border transition-transform duration-160 active:scale-[0.92] ${
         soundEnabled
-          ? 'border-emerald-500/40 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]'
+          ? 'border-[var(--color-rule-strong)] text-[var(--color-ink)] bg-[var(--color-paper-card)] dark:bg-[#1a1a1a] shadow-xs'
           : 'border-[var(--color-rule-strong)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-card)]'
       } ${className}`}
     >

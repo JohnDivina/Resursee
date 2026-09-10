@@ -121,29 +121,15 @@ export default function VisitorPresenceWidget() {
         title={`Live presence: ${stats.activeVisitors} visiting right now`}
         className={`group relative flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 cursor-pointer select-none ${
           isOpen
-            ? 'border-emerald-500 bg-[var(--color-paper-card)] shadow-md shadow-emerald-500/20 ring-2 ring-emerald-500/20 scale-102'
-            : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:border-emerald-500/60 hover:bg-[var(--color-paper-card)] shadow-2xs active:scale-95'
+            ? 'border-[var(--color-rule-strong)] bg-neutral-100 dark:bg-neutral-800 shadow-md scale-102'
+            : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-neutral-100 dark:hover:bg-neutral-800 shadow-2xs active:scale-95'
         }`}
       >
-        {/* Ambient Emerald Aura on hover */}
-        <span
-          className={`absolute inset-1 rounded-full bg-emerald-500/15 blur-[2px] transition-opacity duration-300 pointer-events-none ${
-            isOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          }`}
-        />
-
-        {/* Centered Radiating Beacon Pulse behind icon */}
-        <span className="absolute h-3 w-3 rounded-full bg-emerald-400/40 animate-ping pointer-events-none" />
-
-        {/* Broadcast Live Icon: Unmistakably represents live presence & transmission */}
+        {/* Broadcast Live Icon */}
         <Broadcast
           size={18}
           weight="bold"
-          className={`relative z-10 transition-all duration-200 ${
-            isOpen
-              ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.9)] scale-110'
-              : 'text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)] group-hover:scale-110'
-          }`}
+          className="relative z-10 transition-all duration-200 text-neutral-800 dark:text-neutral-200"
         />
       </button>
 
@@ -151,7 +137,7 @@ export default function VisitorPresenceWidget() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.94 }}
+            initial={{ opacity: 0, y: -4, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.94 }}
             transition={{
@@ -166,21 +152,21 @@ export default function VisitorPresenceWidget() {
             <div className="absolute top-1.5 right-[13px] h-2.5 w-2.5 rotate-45 rounded-[1px] bg-[var(--color-paper-card)] border-l border-t border-[var(--color-rule-strong)] z-10" />
 
             {/* Notch Pill Container */}
-            <div className="relative flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)]/95 backdrop-blur-xl px-3.5 py-1.5 shadow-xl shadow-black/10 dark:shadow-black/40">
+            <div className="relative flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3.5 py-1.5 shadow-xl">
               {/* Inner Live Indicator */}
               <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.9)]" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </span>
 
               {/* Dynamic Realtime Active Visitors Count */}
               <div className="flex items-center gap-1.5 text-xs select-none">
                 <motion.span
                   key={stats.activeVisitors}
-                  initial={{ scale: 1.25, color: '#10b981' }}
+                  initial={{ scale: 1.15 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.2 }}
-                  className="font-mono font-extrabold text-xs text-emerald-600 dark:text-emerald-400"
+                  className="font-mono font-extrabold text-xs text-neutral-900 dark:text-white"
                 >
                   {stats.activeVisitors}
                 </motion.span>
