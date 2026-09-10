@@ -85,7 +85,7 @@ export default function AboutPage() {
 
       <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-20">
         {/* 1. Hero Profile Header */}
-        <section className="relative flex flex-col items-start md:flex-row md:items-center justify-between gap-8 rounded-[32px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/80 backdrop-blur-xl p-8 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
+        <section className="relative flex flex-col items-start md:flex-row md:items-center justify-between gap-8 rounded-[32px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-8 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
           <div className="space-y-4 max-w-2xl">
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[var(--color-ink)]">
               Hi, I&apos;m <span className="bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent">John Rey Divina</span>.
@@ -157,7 +157,7 @@ export default function AboutPage() {
               return (
                 <div
                   key={idx}
-                  className="flex flex-col items-center justify-center rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/80 backdrop-blur-xs p-4 text-center shadow-xs transition-all hover:border-[var(--color-rule-strong)] hover:scale-105"
+                  className="flex flex-col items-center justify-center rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 text-center shadow-xs transition-all hover:border-[var(--color-rule-strong)] hover:scale-105"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--color-paper-muted)] text-[var(--color-primary)]">
                     <Icon size={20} weight="bold" />
@@ -197,7 +197,7 @@ export default function AboutPage() {
             {works.map((work, idx) => (
               <div
                 key={idx}
-                className={`flex flex-col justify-between rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/80 backdrop-blur-md p-6 shadow-xs transition-all hover:border-[var(--color-rule-strong)] ${
+                className={`flex flex-col justify-between rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 shadow-xs transition-all hover:border-[var(--color-rule-strong)] ${
                   idx === 2 ? 'sm:col-span-2 lg:col-span-1' : 'col-span-1'
                 }`}
               >

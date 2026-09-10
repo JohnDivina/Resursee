@@ -154,7 +154,7 @@ export default function GitHubContributionsGraph() {
       </div>
 
       {/* GitHub Calendar Card (Matches Screenshot & GitHub Look) */}
-      <div className="relative rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)]/90 backdrop-blur-xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
+      <div className="relative rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
         {/* Horizontal Scroll Area */}
         <div
           ref={scrollContainerRef}
