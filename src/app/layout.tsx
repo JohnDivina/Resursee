@@ -20,22 +20,24 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Resursee · Central University Resource Hub',
+  title: {
+    default: 'Resursee',
+    template: '%s · Resursee',
+  },
   description:
-    'The centralized discovery platform for official university forms, templates, policies, guidelines, announcements, and campus updates.',
+    'The centralized platform for developer tools, public APIs, GitHub repositories, and intelligent client-side utilities.',
   keywords: [
-    'University Resources',
-    'University Forms',
-    'Official Templates',
-    'Campus Policies',
-    'University Hub',
+    'Developer Tools',
+    'Public APIs',
+    'GitHub Repositories',
+    'Productivity Tools',
     'Resursee',
   ],
-  authors: [{ name: 'University Central Resource Hub' }],
+  authors: [{ name: 'John Rey Divina' }],
   openGraph: {
-    title: 'Resursee · Central University Resource Hub',
+    title: 'Resursee',
     description:
-      'Search, find, and download official university forms, templates, policies, and news in seconds.',
+      'The centralized platform for developer tools, public APIs, GitHub repositories, and intelligent client-side utilities.',
     type: 'website',
   },
   icons: {
