@@ -355,9 +355,9 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     <UploadSimple size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-bold text-xs text-[var(--color-ink)]">Academic Resources</span>
+                    <span className="font-bold text-xs text-[var(--color-ink)]">Public APIs Directory</span>
                     <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
-                      Guides, datasets & research library
+                      1,700+ curated developer APIs & tools
                     </p>
                   </div>
                 </Link>
@@ -613,7 +613,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               )}
             >
               <UploadSimple size={16} weight="bold" />
-              <span>Academic Resources</span>
+              <span>Public APIs Directory</span>
             </Link>
 
             <Link

@@ -1,431 +1,683 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import CommandPalette from '@/components/search/CommandPalette';
-import ResourceCard from '@/components/resources/ResourceCard';
-import ExpandableResourceGrid from '@/components/resources/ExpandableResourceGrid';
+import PublicApiCard from '@/components/resources/PublicApiCard';
+import PublicApiRow from '@/components/resources/PublicApiRow';
+import { PublicApi, ViewMode, AuthFilterType, CorsFilterType, SortOption } from '@/types/publicApi';
+import publicApisRaw from '@/data/public-apis.json';
 import {
   MagnifyingGlass,
-  Funnel,
   SquaresFour,
   ListBullets,
+  Funnel,
+  ArrowSquareOut,
+  GithubLogo,
+  Star,
   ArrowsDownUp,
   X,
-  Buildings,
-  CheckCircle,
-  CaretUp,
+  CaretLeft,
+  CaretRight,
+  ShieldCheck,
+  Sparkle,
+  Check,
+  Database,
+  Globe,
+  Lock,
 } from '@phosphor-icons/react';
-import { mockResources } from '@/lib/mockData';
-import { Resource, Category, Department } from '@/types/database';
-import { useRealtimeDownloadCount } from '@/lib/downloadStore';
-import { getLiveResources, fetchResourcesFromCloud } from '@/lib/resourceStore';
-import { getLiveCategories, fetchCategoriesFromCloud } from '@/lib/categoryStore';
-import { getLiveDepartments, fetchDepartmentsFromCloud } from '@/lib/departmentStore';
-import { OrgLogo } from '@/components/ui/OrgLogo';
 
-function ListRowItem({ resource }: { resource: Resource }) {
-  const realtimeDownloads = useRealtimeDownloadCount(resource.id, resource.download_count);
-  const officeName = resource.department?.name || resource.source_name || 'Academic Office';
+const publicApis = publicApisRaw as PublicApi[];
+const ITEMS_PER_PAGE = 36;
 
-  return (
-    <Link
-      href={`/resources/${resource.slug}`}
-      data-thock="card"
-      className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[22px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
-    >
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-white dark:bg-slate-900 border border-[var(--color-rule)] p-2 shadow-2xs group-hover:scale-105 transition-transform select-none">
-          <OrgLogo
-            sourceName={resource.source_name}
-            departmentName={resource.department?.name}
-            title={resource.title}
-            size={32}
-            className="h-7 w-7 object-contain"
-          />
-        </div>
-
-        <div>
-          <h3 className="text-base font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors tracking-tight">
-            {resource.title}
-          </h3>
-          <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--color-ink-muted)]">
-            <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-semibold text-[var(--color-ink-secondary)]">
-              {resource.category?.name}
-            </span>
-            <span className="font-mono text-[10.5px]">v{resource.current_version}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 self-end sm:self-auto shrink-0 text-xs">
-        <div className="flex items-center gap-1.5 font-semibold text-[var(--color-ink-muted)] group-hover:text-[var(--color-primary)] transition-colors">
-          <Buildings size={14} className="shrink-0 text-[var(--color-primary)]" />
-          <span>{officeName}</span>
-        </div>
-
-        <div className="flex items-center gap-1 rounded-full bg-[var(--color-paper-muted)] px-2.5 py-1 font-mono text-xs font-bold text-[var(--color-ink)]">
-          <CaretUp size={13} weight="fill" className="text-emerald-600" />
-          <span>{realtimeDownloads}</span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-export default function ResourcesDirectoryPage() {
-  const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
+export default function PublicApisDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [selectedFormat, setSelectedFormat] = useState('all');
-  const [sortBy, setSortBy] = useState<'downloads' | 'recent' | 'alphabetical'>('downloads');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedAuth, setSelectedAuth] = useState<AuthFilterType>('all');
+  const [selectedCors, setSelectedCors] = useState<CorsFilterType>('all');
+  const [httpsOnly, setHttpsOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [liveResources, setLiveResources] = useState<Resource[]>([]);
-  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
-  const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
 
-  const refreshLiveStores = () => {
-    setLiveResources(getLiveResources());
-    setCategoriesList(getLiveCategories());
-    setDepartmentsList(getLiveDepartments());
-  };
+  const resultsAnchorRef = useRef<HTMLDivElement>(null);
 
+  // Restore preferred view mode from localStorage
   useEffect(() => {
-    refreshLiveStores();
-
-    fetchResourcesFromCloud();
-    fetchCategoriesFromCloud();
-    fetchDepartmentsFromCloud();
-
-    const handleCatalogUpdate = () => setLiveResources(getLiveResources());
-    const handleCategoryUpdate = () => setCategoriesList(getLiveCategories());
-    const handleDeptUpdate = () => setDepartmentsList(getLiveDepartments());
-
-    window.addEventListener('resursee_catalog_updated', handleCatalogUpdate);
-    window.addEventListener('resursee_categories_updated', handleCategoryUpdate);
-    window.addEventListener('resursee_departments_updated', handleDeptUpdate);
-    window.addEventListener('storage', refreshLiveStores);
-
-    return () => {
-      window.removeEventListener('resursee_catalog_updated', handleCatalogUpdate);
-      window.removeEventListener('resursee_categories_updated', handleCategoryUpdate);
-      window.removeEventListener('resursee_departments_updated', handleDeptUpdate);
-      window.removeEventListener('storage', refreshLiveStores);
-    };
+    try {
+      const savedMode = localStorage.getItem('resursee_api_view_mode') as ViewMode | null;
+      if (savedMode === 'grid' || savedMode === 'list') {
+        setViewMode(savedMode);
+      }
+    } catch {
+      // Ignore localStorage access errors
+    }
   }, []);
 
-  // Filtered and Sorted Resources
-  const filteredResources = useMemo(() => {
-    return liveResources
-      .filter((res) => {
-        // Query search
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          const matchTitle = res.title.toLowerCase().includes(q);
-          const matchDesc = res.description?.toLowerCase().includes(q);
-          const matchDept = res.department?.name.toLowerCase().includes(q);
-          const matchCat = res.category?.name.toLowerCase().includes(q);
-          if (!matchTitle && !matchDesc && !matchDept && !matchCat) {
+  const handleSetViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('resursee_api_view_mode', mode);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
+
+  // Distinct categories sorted alphabetically
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    publicApis.forEach((item) => {
+      if (item.category) set.add(item.category);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  // Compute directory overview metrics
+  const stats = useMemo(() => {
+    const total = publicApis.length;
+    const noAuthCount = publicApis.filter(
+      (a) => a.auth.toLowerCase() === 'no' || a.auth === ''
+    ).length;
+    const httpsCount = publicApis.filter((a) => a.https).length;
+    const corsCount = publicApis.filter((a) => a.cors.toLowerCase() === 'yes').length;
+    return {
+      total,
+      categoriesCount: categories.length,
+      noAuthCount,
+      httpsCount,
+      corsCount,
+    };
+  }, [categories]);
+
+  // Filtered & Sorted APIs
+  const filteredApis = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return publicApis
+      .filter((api) => {
+        // Search query filter (matches name, description, category, auth)
+        if (q) {
+          const matchName = api.name.toLowerCase().includes(q);
+          const matchDesc = api.description.toLowerCase().includes(q);
+          const matchCat = api.category.toLowerCase().includes(q);
+          const matchAuth = api.auth.toLowerCase().includes(q);
+          if (!matchName && !matchDesc && !matchCat && !matchAuth) {
             return false;
           }
         }
 
         // Category filter
-        if (selectedCategory !== 'all' && res.category_id !== selectedCategory) {
+        if (selectedCategory !== 'all' && api.category !== selectedCategory) {
           return false;
         }
 
-        // Department filter
-        if (selectedDepartment !== 'all' && res.department_id !== selectedDepartment) {
-          return false;
+        // Auth filter
+        if (selectedAuth !== 'all') {
+          const authLower = api.auth.toLowerCase();
+          if (selectedAuth === 'none') {
+            if (authLower !== 'no' && authLower !== '') return false;
+          } else if (selectedAuth === 'apiKey') {
+            if (!authLower.includes('apikey')) return false;
+          } else if (selectedAuth === 'OAuth') {
+            if (!authLower.includes('oauth')) return false;
+          }
         }
 
-        // Format filter
-        if (selectedFormat !== 'all' && res.file_format !== selectedFormat) {
+        // CORS filter
+        if (selectedCors !== 'all') {
+          const corsLower = api.cors.toLowerCase();
+          if (selectedCors === 'yes' && corsLower !== 'yes') return false;
+          if (selectedCors === 'no' && corsLower !== 'no') return false;
+          if (selectedCors === 'unknown' && corsLower !== 'unknown') return false;
+        }
+
+        // HTTPS filter
+        if (httpsOnly && !api.https) {
           return false;
         }
 
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === 'downloads') {
-          return b.download_count - a.download_count;
-        } else if (sortBy === 'recent') {
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        } else {
-          return a.title.localeCompare(b.title);
+        if (sortBy === 'name-asc') {
+          return a.name.localeCompare(b.name);
         }
+        if (sortBy === 'name-desc') {
+          return b.name.localeCompare(a.name);
+        }
+        if (sortBy === 'category') {
+          const catComp = a.category.localeCompare(b.category);
+          return catComp !== 0 ? catComp : a.name.localeCompare(b.name);
+        }
+        return 0;
       });
-  }, [liveResources, searchQuery, selectedCategory, selectedDepartment, selectedFormat, sortBy]);
+  }, [searchQuery, selectedCategory, selectedAuth, selectedCors, httpsOnly, sortBy]);
 
-  const clearAllFilters = () => {
+  // Reset page when any filter criteria changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedAuth, selectedCors, httpsOnly, sortBy]);
+
+  // Total pages
+  const totalPages = Math.ceil(filteredApis.length / ITEMS_PER_PAGE) || 1;
+
+  // Paginated slice
+  const paginatedApis = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredApis.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredApis, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      if (resultsAnchorRef.current) {
+        resultsAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
+  const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedCategory('all');
-    setSelectedDepartment('all');
-    setSelectedFormat('all');
-    setSortBy('downloads');
+    setSelectedAuth('all');
+    setSelectedCors('all');
+    setHttpsOnly(false);
+    setSortBy('name-asc');
+    setCurrentPage(1);
   };
 
   const hasActiveFilters =
     searchQuery !== '' ||
     selectedCategory !== 'all' ||
-    selectedDepartment !== 'all' ||
-    selectedFormat !== 'all';
+    selectedAuth !== 'all' ||
+    selectedCors !== 'all' ||
+    httpsOnly ||
+    sortBy !== 'name-asc';
+
+  // Popular quick categories for the pill bar
+  const quickCategories = [
+    'all',
+    'Development',
+    'Cryptocurrency',
+    'Machine Learning',
+    'Finance',
+    'Security',
+    'Weather',
+    'Games & Comics',
+    'Open Data',
+    'Music',
+    'Science & Math',
+  ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
-      <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
-      <CommandPalette
-        isOpen={searchPaletteOpen}
-        onClose={() => setSearchPaletteOpen(false)}
-        resources={mockResources}
-      />
+    <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] flex flex-col selection:bg-neutral-800 selection:text-white dark:selection:bg-white dark:selection:text-black">
+      <Header />
 
-      <main className="flex-1 py-8 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Breadcrumb Navigation */}
-          <nav className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
-            <Link href="/" className="hover:text-[var(--color-primary)]">
-              Home
-            </Link>
-            <span>/</span>
-            <span className="font-semibold text-[var(--color-ink)]">Resources Directory</span>
-          </nav>
-
-          {/* Page Heading & Search Filter Bar */}
-          <div className="mt-4 flex flex-col items-start justify-between gap-4 border-b border-[var(--color-rule-subtle)] pb-6 md:flex-row md:items-end">
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-[var(--color-ink)] sm:text-4xl">
-                Resources Directory
-              </h1>
-              <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm">
-                Showing {filteredResources.length} of {liveResources.length} documents and forms.
-              </p>
-            </div>
-
-            {/* Quick Search Bar */}
-            <div className="w-full md:w-80">
-              <div className="relative flex items-center">
-                <MagnifyingGlass size={18} className="absolute left-3.5 text-[var(--color-primary)]" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter resources..."
-                  className="w-full rounded-[16px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] py-2.5 pr-8 pl-10 text-xs font-semibold text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] shadow-[0_2px_8px_rgba(0,0,0,0.03)] outline-hidden focus:border-[var(--color-primary)]"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Main Grid with Filter Sidebar + Results Area */}
-          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-4">
-            {/* Filter Sidebar */}
-            <aside className="space-y-6 lg:col-span-1">
-              <div className="rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
-                  <div className="flex items-center gap-2">
-                    <Funnel size={16} className="text-[var(--color-primary)]" />
-                    <h2 className="text-sm font-bold text-[var(--color-ink)]">
-                      Filters
-                    </h2>
-                  </div>
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAllFilters}
-                      className="text-[11px] font-bold text-[var(--color-primary)] hover:underline"
-                    >
-                      Reset All
-                    </button>
-                  )}
-                </div>
-
-                {/* Categories */}
-                <div className="mt-5">
-                  <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    Category
-                  </label>
-                  <div className="mt-2 space-y-1">
-                    <button
-                      onClick={() => setSelectedCategory('all')}
-                      className={`flex w-full items-center justify-between rounded-[12px] px-3 py-2 text-xs font-medium transition-colors ${
-                        selectedCategory === 'all'
-                          ? 'bg-[var(--color-primary-subtle)] font-bold text-[var(--color-primary)]'
-                          : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
-                      }`}
-                    >
-                      <span>All Categories</span>
-                      <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
-                        {liveResources.length}
-                      </span>
-                    </button>
-
-                    {categoriesList.map((cat) => {
-                      const count = liveResources.filter((r) => r.category_id === cat.id).length;
-                      return (
-                        <button
-                          key={cat.id}
-                          onClick={() => setSelectedCategory(cat.id)}
-                          className={`flex w-full items-center justify-between rounded-[12px] px-3 py-2 text-xs font-medium transition-colors ${
-                            selectedCategory === cat.id
-                              ? 'bg-[var(--color-primary-subtle)] font-bold text-[var(--color-primary)]'
-                              : 'text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
-                          }`}
-                        >
-                          <span className="truncate">{cat.name}</span>
-                          <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Departments */}
-                <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-5">
-                  <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    Department / Office
-                  </label>
-                  <div className="mt-2">
-                    <select
-                      value={selectedDepartment}
-                      onChange={(e) => setSelectedDepartment(e.target.value)}
-                      className="w-full rounded-[14px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
-                    >
-                      <option value="all">All Offices ({departmentsList.length})</option>
-                      {departmentsList.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.abbreviation} - {d.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Format Filter */}
-                <div className="mt-6 border-t border-[var(--color-rule-subtle)] pt-5">
-                  <label className="block text-xs font-bold text-[var(--color-ink)]">
-                    File Format
-                  </label>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {['all', 'PDF', 'DOCX', 'XLSX'].map((fmt) => (
-                      <button
-                        key={fmt}
-                        onClick={() => setSelectedFormat(fmt)}
-                        className={`rounded-[12px] border p-2 text-center text-xs font-mono font-bold transition-all ${
-                          selectedFormat === fmt
-                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]'
-                            : 'border-[var(--color-rule)] bg-[var(--color-paper-surface)] text-[var(--color-ink-secondary)] hover:bg-[var(--color-paper-muted)]'
-                        }`}
-                      >
-                        {fmt === 'all' ? 'All' : fmt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </aside>
-
-            {/* Results Grid / List Area */}
-            <div className="space-y-6 lg:col-span-3">
-              {/* Controls Bar: Sort By + View Toggle (Grid / List) */}
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                {/* Sort dropdown */}
-                <div className="flex items-center gap-2 text-xs">
-                  <ArrowsDownUp size={15} className="text-[var(--color-ink-muted)]" />
-                  <span className="font-semibold text-[var(--color-ink-secondary)]">Sort by:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="rounded-[10px] border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-2.5 py-1 text-xs font-semibold text-[var(--color-ink)] outline-hidden focus:border-[var(--color-primary)]"
-                  >
-                    <option value="downloads">Most Popular</option>
-                    <option value="recent">Recently Added</option>
-                    <option value="alphabetical">Alphabetical (A-Z)</option>
-                  </select>
-                </div>
-
-                {/* View Mode Toggle: Grid vs List */}
-                <div className="flex items-center gap-1 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-surface)] p-1 text-xs">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`rounded-full p-1.5 transition-colors ${
-                      viewMode === 'grid'
-                        ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                        : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                    }`}
-                    title="Grid View"
-                  >
-                    <SquaresFour size={16} />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`rounded-full p-1.5 transition-colors ${
-                      viewMode === 'list'
-                        ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                        : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                    }`}
-                    title="List View"
-                  >
-                    <ListBullets size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Resource Grid / List Output */}
-              {filteredResources.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-12 text-center shadow-xs">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)]">
-                    <MagnifyingGlass size={24} />
-                  </div>
-                  <h3 className="mt-4 text-base font-bold text-[var(--color-ink)]">
-                    No resources matched your criteria
-                  </h3>
-                  <p className="mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
-                    Try clearing some filters or searching with a different term.
-                  </p>
-                  <button
-                    onClick={clearAllFilters}
-                    className="mt-4 rounded-full bg-[var(--color-primary)] px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)]"
-                  >
-                    Reset All Filters
-                  </button>
-                </div>
-              ) : viewMode === 'grid' ? (
-                <ExpandableResourceGrid resources={filteredResources} />
-              ) : (
-                <div className="space-y-3.5">
-                  {filteredResources.map((resource) => (
-                    <ListRowItem key={resource.id} resource={resource} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <Footer />
-
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-[var(--color-rule-strong)] bg-[#0f172a] px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in slide-in-from-bottom-5">
-          <CheckCircle size={18} weight="fill" className="text-emerald-400 shrink-0" />
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl border border-neutral-700 bg-[#121212] px-4 py-3 text-sm text-white shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <Check size={16} className="text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Main Container */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
+        {/* Hero Section */}
+        <section className="mb-10 text-center sm:text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-medium bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] border border-[var(--color-rule)] mb-4">
+            <Sparkle size={13} className="text-emerald-500" />
+            <span>Developer Public API Directory</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[var(--color-ink)] font-display">
+            Explore Public APIs
+          </h1>
+
+          <p className="mt-3 text-base sm:text-lg text-[var(--color-ink-muted)] max-w-3xl leading-relaxed">
+            A comprehensive, searchable directory of over {stats.total.toLocaleString()} usable public APIs across {stats.categoriesCount} categories for web apps, automation, machine learning, and rapid prototyping.
+          </p>
+
+          {/* Quick Metrics Cards */}
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl">
+            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 sm:p-4 text-center sm:text-left">
+              <span className="text-xs text-[var(--color-ink-muted)] font-mono uppercase tracking-wider">
+                Total APIs
+              </span>
+              <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono">
+                {stats.total.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 sm:p-4 text-center sm:text-left">
+              <span className="text-xs text-[var(--color-ink-muted)] font-mono uppercase tracking-wider">
+                Categories
+              </span>
+              <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono">
+                {stats.categoriesCount}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 sm:p-4 text-center sm:text-left">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono uppercase tracking-wider flex items-center justify-center sm:justify-start gap-1">
+                <ShieldCheck size={13} />
+                No Auth Required
+              </span>
+              <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400">
+                {stats.noAuthCount.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-3 sm:p-4 text-center sm:text-left">
+              <span className="text-xs text-[var(--color-ink-muted)] font-mono uppercase tracking-wider flex items-center justify-center sm:justify-start gap-1">
+                <Lock size={13} />
+                HTTPS Secured
+              </span>
+              <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight font-mono">
+                {stats.httpsCount.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Anchor for Smooth Scrolling on Page Change */}
+        <div ref={resultsAnchorRef} className="-mt-4 pt-4" />
+
+        {/* Filter & Controls Panel */}
+        <section className="mb-6 rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-xs">
+          {/* Top Search Bar & View Mode Switcher */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <MagnifyingGlass
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]"
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search APIs by name, keyword, category, or auth..."
+                className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper)] text-sm text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-hidden focus:border-neutral-500 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] p-0.5"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--color-paper-muted)] border border-[var(--color-rule)] shrink-0 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => handleSetViewMode('grid')}
+                data-thock="button"
+                aria-label="Grid View"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-xs border border-[var(--color-rule)]'
+                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                }`}
+              >
+                <SquaresFour size={16} weight={viewMode === 'grid' ? 'bold' : 'regular'} />
+                <span>Grid</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSetViewMode('list')}
+                data-thock="button"
+                aria-label="List View"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-xs border border-[var(--color-rule)]'
+                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                }`}
+              >
+                <ListBullets size={16} weight={viewMode === 'list' ? 'bold' : 'regular'} />
+                <span>List</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Categories Pills */}
+          <div className="mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+            <span className="text-[var(--color-ink-muted)] font-mono text-[11px] uppercase mr-1 shrink-0">
+              Popular:
+            </span>
+            {quickCategories.map((cat) => {
+              const isSelected = selectedCategory === (cat === 'all' ? 'all' : cat);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  data-thock="button"
+                  onClick={() => setSelectedCategory(cat === 'all' ? 'all' : cat)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
+                    isSelected
+                      ? 'bg-[var(--color-ink)] text-[var(--color-paper)] dark:bg-white dark:text-black font-semibold'
+                      : 'bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] border border-[var(--color-rule-subtle)]'
+                  }`}
+                >
+                  {cat === 'all' ? 'All' : cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Detailed Filter Dropdowns */}
+          <div className="mt-4 pt-3.5 border-t border-[var(--color-rule-subtle)] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            {/* All Categories Dropdown */}
+            <div>
+              <label className="block text-[11px] font-mono uppercase text-[var(--color-ink-muted)] mb-1">
+                Category ({categories.length})
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full py-2 px-2.5 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper)] text-[var(--color-ink)] focus:outline-hidden text-xs"
+              >
+                <option value="all">All Categories ({stats.total})</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Authentication Filter */}
+            <div>
+              <label className="block text-[11px] font-mono uppercase text-[var(--color-ink-muted)] mb-1">
+                Authentication
+              </label>
+              <select
+                value={selectedAuth}
+                onChange={(e) => setSelectedAuth(e.target.value as AuthFilterType)}
+                className="w-full py-2 px-2.5 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper)] text-[var(--color-ink)] focus:outline-hidden text-xs"
+              >
+                <option value="all">All Authentication Types</option>
+                <option value="none">No Auth (Free / Open)</option>
+                <option value="apiKey">API Key Required</option>
+                <option value="OAuth">OAuth Required</option>
+              </select>
+            </div>
+
+            {/* CORS Filter */}
+            <div>
+              <label className="block text-[11px] font-mono uppercase text-[var(--color-ink-muted)] mb-1">
+                CORS Support
+              </label>
+              <select
+                value={selectedCors}
+                onChange={(e) => setSelectedCors(e.target.value as CorsFilterType)}
+                className="w-full py-2 px-2.5 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper)] text-[var(--color-ink)] focus:outline-hidden text-xs"
+              >
+                <option value="all">All CORS Types</option>
+                <option value="yes">CORS: Yes (Client-side OK)</option>
+                <option value="no">CORS: No (Proxy needed)</option>
+                <option value="unknown">CORS: Unknown</option>
+              </select>
+            </div>
+
+            {/* Sorting & HTTPS Check */}
+            <div>
+              <label className="block text-[11px] font-mono uppercase text-[var(--color-ink-muted)] mb-1">
+                Sort Order
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="w-full py-2 px-2.5 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper)] text-[var(--color-ink)] focus:outline-hidden text-xs"
+                >
+                  <option value="name-asc">Name (A → Z)</option>
+                  <option value="name-desc">Name (Z → A)</option>
+                  <option value="category">By Category</option>
+                </select>
+
+                <label
+                  title="Only show HTTPS enabled APIs"
+                  className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper)] cursor-pointer select-none shrink-0"
+                >
+                  <input
+                    type="checkbox"
+                    checked={httpsOnly}
+                    onChange={(e) => setHttpsOnly(e.target.checked)}
+                    className="accent-emerald-500 rounded"
+                  />
+                  <span className="font-mono text-[11px]">HTTPS</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Filter Summary Bar */}
+          {hasActiveFilters && (
+            <div className="mt-3.5 pt-3 border-t border-[var(--color-rule-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-2 text-[var(--color-ink-muted)]">
+                <span>Filtering by:</span>
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-1 bg-[var(--color-paper-muted)] px-2 py-0.5 rounded text-[11px] font-mono">
+                    Query: &quot;{searchQuery}&quot;
+                  </span>
+                )}
+                {selectedCategory !== 'all' && (
+                  <span className="inline-flex items-center gap-1 bg-[var(--color-paper-muted)] px-2 py-0.5 rounded text-[11px] font-mono">
+                    Category: {selectedCategory}
+                  </span>
+                )}
+                {selectedAuth !== 'all' && (
+                  <span className="inline-flex items-center gap-1 bg-[var(--color-paper-muted)] px-2 py-0.5 rounded text-[11px] font-mono">
+                    Auth: {selectedAuth}
+                  </span>
+                )}
+                {selectedCors !== 'all' && (
+                  <span className="inline-flex items-center gap-1 bg-[var(--color-paper-muted)] px-2 py-0.5 rounded text-[11px] font-mono">
+                    CORS: {selectedCors}
+                  </span>
+                )}
+                {httpsOnly && (
+                  <span className="inline-flex items-center gap-1 bg-[var(--color-paper-muted)] px-2 py-0.5 rounded text-[11px] font-mono text-emerald-500">
+                    HTTPS Only
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                data-thock="button"
+                className="text-xs font-medium text-rose-500 hover:text-rose-600 underline cursor-pointer"
+              >
+                Reset all filters
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Results Header Count */}
+        <div className="mb-4 flex items-center justify-between text-xs text-[var(--color-ink-muted)] font-mono">
+          <span>
+            Showing <strong className="text-[var(--color-ink)] font-bold">{filteredApis.length.toLocaleString()}</strong> APIs
+            {filteredApis.length < stats.total && ` (filtered from ${stats.total.toLocaleString()})`}
+          </span>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        </div>
+
+        {/* Directory Listings: Grid or List */}
+        {paginatedApis.length > 0 ? (
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {paginatedApis.map((api) => (
+                <PublicApiCard key={api.id} api={api} onCopyNotice={showToast} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {paginatedApis.map((api) => (
+                <PublicApiRow key={api.id} api={api} onCopyNotice={showToast} />
+              ))}
+            </div>
+          )
+        ) : (
+          /* Empty State */
+          <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-12 text-center my-8">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)]">
+              <Database size={28} />
+            </div>
+            <h3 className="mt-4 text-base font-bold text-[var(--color-ink)]">
+              No public APIs found
+            </h3>
+            <p className="mt-1 text-sm text-[var(--color-ink-muted)] max-w-sm mx-auto">
+              We couldn&apos;t find any APIs matching your search and filter criteria. Try adjusting keywords or resetting filters.
+            </p>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                data-thock="button"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-ink)] text-[var(--color-paper-card)] dark:bg-white dark:text-black hover:opacity-90 transition-opacity"
+              >
+                Reset Filters
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <nav
+            aria-label="Pagination"
+            className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[var(--color-rule)] pt-6"
+          >
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                data-thock="button"
+                className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-paper-muted)] transition-colors"
+              >
+                <CaretLeft size={14} weight="bold" />
+                <span>Previous</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                data-thock="button"
+                className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-paper-muted)] transition-colors"
+              >
+                <span>Next</span>
+                <CaretRight size={14} weight="bold" />
+              </button>
+            </div>
+
+            {/* Page number indicators */}
+            <div className="flex items-center gap-1 text-xs font-mono">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
+                let p = idx + 1;
+                if (totalPages > 5 && currentPage > 3) {
+                  p = currentPage - 3 + idx;
+                  if (p > totalPages) p = totalPages - (4 - idx);
+                }
+                if (p <= 0 || p > totalPages) return null;
+
+                const isCurrent = p === currentPage;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handlePageChange(p)}
+                    data-thock="button"
+                    className={`h-8 w-8 rounded-lg font-semibold flex items-center justify-center transition-colors ${
+                      isCurrent
+                        ? 'bg-[var(--color-ink)] text-[var(--color-paper-card)] dark:bg-white dark:text-black'
+                        : 'bg-[var(--color-paper-card)] border border-[var(--color-rule)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <>
+                  <span className="px-1 text-[var(--color-ink-muted)]">...</span>
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(totalPages)}
+                    data-thock="button"
+                    className="h-8 w-8 rounded-lg font-semibold flex items-center justify-center bg-[var(--color-paper-card)] border border-[var(--color-rule)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+            </div>
+          </nav>
+        )}
+
+        {/* GitHub Repository Credit & Attribution Section (As requested by USER) */}
+        <section className="mt-16 rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-8 relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink-muted)] uppercase tracking-wider mb-2">
+                <GithubLogo size={16} weight="fill" />
+                <span>Open Source Attribution</span>
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-bold text-[var(--color-ink)] tracking-tight">
+                Curated from the public-apis Community Repository
+              </h2>
+
+              <p className="mt-2 text-sm text-[var(--color-ink-muted)] leading-relaxed">
+                This public API directory is powered by and derived from the collective open-source work of the{' '}
+                <strong className="text-[var(--color-ink)]">public-apis/public-apis</strong> repository, created by Todd Motto, Dave Machado, and maintained by hundreds of software engineering contributors worldwide.
+              </p>
+
+              <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+                Want to suggest a new API, fix a broken link, or contribute? Check out the upstream repository on GitHub.
+              </p>
+            </div>
+
+            <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+              <a
+                href="https://github.com/public-apis/public-apis"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-thock="button"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--color-ink)] text-[var(--color-paper-card)] dark:bg-white dark:text-black hover:opacity-90 transition-opacity shadow-sm"
+              >
+                <GithubLogo size={18} weight="fill" />
+                <span>View public-apis on GitHub</span>
+                <ArrowSquareOut size={15} weight="bold" />
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
     </div>
   );
 }

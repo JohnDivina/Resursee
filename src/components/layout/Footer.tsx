@@ -41,6 +41,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/resources" className="transition-colors hover:text-[var(--color-primary)] font-medium text-[var(--color-ink)]">
+                  Public APIs Directory
+                </Link>
+              </li>
+              <li>
                 <Link href="/apps/plant-doctor" className="transition-colors hover:text-emerald-500 font-medium text-[var(--color-ink)]">
                   Plant Doctor AI (App #1)
                 </Link>
