@@ -40,10 +40,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg?v=4', type: 'image/svg+xml' },
+      { url: '/favicon.ico?v=4', sizes: 'any' },
     ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+    shortcut: '/favicon.ico?v=4',
+    apple: [{ url: '/apple-touch-icon.png?v=4', sizes: '180x180' }],
   },
 };
 
@@ -58,6 +59,11 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico?v=4" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4" sizes="180x180" />
+      </head>
       <body className="min-h-full flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 font-sans">
         <ThemeProvider>
           <SoundProvider>
