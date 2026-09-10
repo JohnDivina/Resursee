@@ -53,7 +53,6 @@ export function NavBody({
 export function NavbarLogo({
   href = '/',
   label = 'Resursee',
-  emoji = '🦦',
 }: {
   href?: string;
   label?: string;
@@ -65,9 +64,11 @@ export function NavbarLogo({
       className="group flex items-center gap-2.5 transition-transform active:scale-95 shrink-0"
       aria-label={label}
     >
-      <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--color-primary)] text-white shadow-xs transition-all group-hover:bg-[var(--color-primary-hover)] group-hover:shadow-[0_0_12px_var(--color-primary-glow)]">
-        <span className="text-lg font-bold select-none">{emoji}</span>
-      </div>
+      <img
+        src="/favicon.svg"
+        alt={label}
+        className="h-8 w-8 rounded-lg shadow-xs shrink-0 object-contain"
+      />
       <span className="text-lg font-extrabold tracking-tight text-[var(--color-ink)]">
         {label}
       </span>

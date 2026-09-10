@@ -213,9 +213,11 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           className="hover:opacity-90 transition-opacity shrink-0 flex items-center gap-2.5"
           aria-label="Resursee Home"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-primary)] text-white shadow-xs">
-            <span className="text-base select-none">🦦</span>
-          </div>
+          <img
+            src="/favicon.svg"
+            alt="Resursee Logo"
+            className="h-8 w-8 rounded-lg shadow-xs shrink-0 object-contain"
+          />
           <span className="text-base font-extrabold tracking-tight text-[var(--color-ink)]">
             Resursee
           </span>

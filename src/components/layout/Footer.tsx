@@ -14,9 +14,11 @@ export default function Footer() {
           {/* Column 1: Brand & Identity */}
           <div className="sm:col-span-2 md:col-span-3 lg:col-span-2 space-y-3.5">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white shadow-xs">
-                <span className="text-base select-none">🦦</span>
-              </div>
+              <img
+                src="/favicon.svg"
+                alt="Resursee Logo"
+                className="h-8 w-8 rounded-lg shadow-xs shrink-0 object-contain"
+              />
               <span className="font-display text-lg font-bold tracking-tight text-[var(--color-ink)]">
                 Resursee
               </span>
