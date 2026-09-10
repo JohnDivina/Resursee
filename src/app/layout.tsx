@@ -40,11 +40,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.svg?v=4', type: 'image/svg+xml' },
-      { url: '/favicon.ico?v=4', sizes: 'any' },
+      { url: '/favicon-32x32.png?v=5', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png?v=5', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon.svg?v=5', type: 'image/svg+xml' },
+      { url: '/favicon.ico?v=5', sizes: 'any' },
     ],
-    shortcut: '/favicon.ico?v=4',
-    apple: [{ url: '/apple-touch-icon.png?v=4', sizes: '180x180' }],
+    shortcut: '/favicon.ico?v=5',
+    apple: [{ url: '/apple-touch-icon.png?v=5', sizes: '180x180' }],
   },
 };
 
@@ -61,9 +63,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml" />
-        <link rel="alternate icon" href="/favicon.ico?v=4" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4" sizes="180x180" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=5" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=5" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=5" />
+        <link rel="shortcut icon" href="/favicon.ico?v=5" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=5" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
