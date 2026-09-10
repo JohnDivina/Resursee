@@ -17,6 +17,9 @@ import {
   Wrench,
   UploadSimple,
   HouseLine,
+  Star,
+  Globe,
+  GithubLogo,
 } from '@phosphor-icons/react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import SoundToggle from '@/components/sound/SoundToggle';
@@ -347,17 +350,33 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                 </div>
 
                 <Link
-                  href="/resources"
+                  href="/resources?tab=apis"
                   onClick={() => setOpenDropdown(null)}
                   className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
                 >
                   <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
-                    <UploadSimple size={14} />
+                    <Globe size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="font-bold text-xs text-[var(--color-ink)]">Public APIs Directory</span>
                     <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
                       1,700+ curated developer APIs & tools
+                    </p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/resources?tab=repos"
+                  onClick={() => setOpenDropdown(null)}
+                  className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
+                >
+                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-amber-500 shrink-0 mt-0.5">
+                    <Star size={14} weight="fill" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-bold text-xs text-[var(--color-ink)]">GitHub Repositories</span>
+                    <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
+                      Starred repos curated by @JohnDivina
                     </p>
                   </div>
                 </Link>
@@ -603,7 +622,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             </Link>
 
             <Link
-              href="/resources"
+              href="/resources?tab=apis"
               onClick={() => setMobileMenuOpen(false)}
               className={cn(
                 'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center gap-2.5',
@@ -612,8 +631,20 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                   : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
               )}
             >
-              <UploadSimple size={16} weight="bold" />
-              <span>Public APIs Directory</span>
+              <Globe size={16} weight="bold" />
+              <span>Public APIs</span>
+            </Link>
+
+            <Link
+              href="/resources?tab=repos"
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center gap-2.5',
+                'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
+              )}
+            >
+              <Star size={16} weight="fill" className="text-amber-500" />
+              <span>Starred Repositories</span>
             </Link>
 
             <Link
