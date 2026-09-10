@@ -30,6 +30,7 @@ import {
   MobileNavToggle,
   MobileNavMenu,
 } from '@/components/ui/resizable-navbar';
+import { Menu, MenuItem, ProductItem, HoveredLink } from '@/components/ui/navbar-menu';
 import { UserSession } from '@/lib/sessionCrypto';
 import { QuotaStatus } from '@/lib/quotaManager';
 
@@ -67,9 +68,14 @@ export default function Header({ onOpenSearch }: HeaderProps) {
   const [session, setSession] = useState<UserSession | null>(getValidCachedSession);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [activeNav, setActiveNav] = useState<string | null>(null);
 
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setActiveNav(null);
+  }, [pathname]);
 
   // Synchronize with global auth events and cross-tab broadcasts
   useEffect(() => {
@@ -206,8 +212,68 @@ export default function Header({ onOpenSearch }: HeaderProps) {
         {/* Brand Logo */}
         <NavbarLogo href="/" label="Resursee" emoji="🦦" />
 
-        {/* Center Desktop Navigation with Floating Hover Pill */}
-        <NavItems items={navItems} pathname={pathname} />
+        {/* Center Desktop Navigation with Aceternity Hover Mega-Menu */}
+        <div className="hidden md:flex items-center">
+          <Menu
+            setActive={setActiveNav}
+            className="border-0 bg-transparent dark:bg-transparent shadow-none px-1 py-0 space-x-2 lg:space-x-5"
+          >
+            {/* Apps Mega Menu */}
+            <MenuItem setActive={setActiveNav} active={activeNav} item="Apps">
+              <div className="grid grid-cols-2 gap-4 p-2 text-sm w-[460px]">
+                <ProductItem
+                  title="Plant Doctor AI"
+                  href="/apps/plant-doctor"
+                  src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=300&auto=format&fit=crop&q=80"
+                  description="AI crop pathology, leaf diagnostics, and smart treatment recommendations."
+                />
+                <ProductItem
+                  title="ESP32 IoT Cloud"
+                  href="/apps/iot-cloud"
+                  src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=300&auto=format&fit=crop&q=80"
+                  description="Real-time telemetry chart streams, sensor metrics, and relay GPIO controls."
+                />
+              </div>
+            </MenuItem>
+
+            {/* Tools Dropdown */}
+            <MenuItem setActive={setActiveNav} active={activeNav} item="Tools">
+              <div className="flex flex-col space-y-2.5 text-sm min-w-[210px] p-2">
+                <div className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)] mb-0.5">
+                  PDF Documents
+                </div>
+                <HoveredLink href="/tools/merge-pdf">Merge PDF Documents</HoveredLink>
+                <HoveredLink href="/tools/split-pdf">Split PDF Pages</HoveredLink>
+
+                <div className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)] pt-2 mb-0.5 border-t border-[var(--color-rule-subtle)]">
+                  Media & Tools
+                </div>
+                <HoveredLink href="/tools/convert-image">Convert Images</HoveredLink>
+                <HoveredLink href="/tools/compress-image">Compress Images</HoveredLink>
+                <HoveredLink href="/tools/qr-generator">QR Code Generator</HoveredLink>
+
+                <div className="border-t border-[var(--color-rule-subtle)] pt-2 mt-1">
+                  <HoveredLink href="/tools" className="font-bold text-[var(--color-primary)]">
+                    Explore All Tools →
+                  </HoveredLink>
+                </div>
+              </div>
+            </MenuItem>
+
+            {/* Resources Dropdown */}
+            <MenuItem setActive={setActiveNav} active={activeNav} item="Resources">
+              <div className="flex flex-col space-y-2.5 text-sm min-w-[190px] p-2">
+                <HoveredLink href="/resources">Academic Resources</HoveredLink>
+                <HoveredLink href="/news">Tech & Research News</HoveredLink>
+                <HoveredLink href="/contribute">Contribute Material</HoveredLink>
+                <HoveredLink href="/about">About Resursee</HoveredLink>
+              </div>
+            </MenuItem>
+
+            {/* Direct About Link */}
+            <MenuItem setActive={setActiveNav} active={activeNav} item="About" href="/about" />
+          </Menu>
+        </div>
 
         {/* Right Action Toolbar */}
         <div className="flex items-center gap-1.5 sm:gap-2">
