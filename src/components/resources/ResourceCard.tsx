@@ -26,7 +26,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
         {/* Top Header: Official Institutional Seal & Real-time Upvote/Download Counter */}
         <div className="flex items-start justify-between">
           {/* Official Institutional Seal */}
-          <div className="flex h-13 w-13 items-center justify-center rounded-[18px] bg-white dark:bg-slate-900 border border-[var(--color-rule)] p-2 shadow-xs transition-transform duration-300 ease-out group-hover:scale-110 select-none">
+          <div className="flex h-13 w-13 items-center justify-center rounded-[18px] bg-white dark:bg-[#141414] border border-[var(--color-rule)] p-2 shadow-xs transition-transform duration-300 ease-out group-hover:scale-110 select-none">
             <OrgLogo
               sourceName={resource.source_name}
               departmentName={resource.department?.name}

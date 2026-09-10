@@ -117,16 +117,16 @@ export default function GitHubContributionsGraph() {
   const getSquareColorClass = (level: number) => {
     switch (level) {
       case 1:
-        return 'bg-[#bfdbfe] dark:bg-[#172554] border border-black/5 dark:border-white/5';
+        return 'bg-[#bfdbfe] dark:bg-[#262626] border border-black/5 dark:border-white/5';
       case 2:
-        return 'bg-[#60a5fa] dark:bg-[#1d4ed8] border border-black/5 dark:border-white/5';
+        return 'bg-[#60a5fa] dark:bg-[#525252] border border-black/5 dark:border-white/5';
       case 3:
-        return 'bg-[#2563eb] dark:bg-[#2563eb] border border-black/5 dark:border-white/5';
+        return 'bg-[#2563eb] dark:bg-[#a1a1aa] border border-black/5 dark:border-white/5';
       case 4:
-        return 'bg-[#1d4ed8] dark:bg-[#3b82f6] border border-black/5 dark:border-white/10 shadow-[0_0_8px_rgba(59,130,246,0.5)]';
+        return 'bg-[#1d4ed8] dark:bg-white border border-black/5 dark:border-white/10 shadow-[0_0_8px_rgba(255,255,255,0.5)]';
       case 0:
       default:
-        return 'bg-[#ebedf0] dark:bg-[#161b22] border border-black/[0.04] dark:border-white/[0.04]';
+        return 'bg-[#ebedf0] dark:bg-[#121212] border border-black/[0.04] dark:border-white/[0.04]';
     }
   };
 
@@ -252,11 +252,11 @@ export default function GitHubContributionsGraph() {
           <div className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--color-ink-muted)]">
             <span>Less</span>
             <div className="flex items-center gap-[3px]">
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#ebedf0] dark:bg-[#161b22] border border-black/[0.04] dark:border-white/[0.04]" />
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#bfdbfe] dark:bg-[#172554]" />
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#60a5fa] dark:bg-[#1d4ed8]" />
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#2563eb] dark:bg-[#2563eb]" />
-              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#1d4ed8] dark:bg-[#3b82f6] shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#ebedf0] dark:bg-[#121212] border border-black/[0.04] dark:border-white/[0.04]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#bfdbfe] dark:bg-[#262626]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#60a5fa] dark:bg-[#525252]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#2563eb] dark:bg-[#a1a1aa]" />
+              <div className="w-[10px] h-[10px] rounded-[2px] bg-[#1d4ed8] dark:bg-white shadow-[0_0_6px_rgba(255,255,255,0.4)]" />
             </div>
             <span>More</span>
           </div>

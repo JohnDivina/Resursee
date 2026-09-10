@@ -42,11 +42,11 @@ export const BentoGridItem = ({
     <div
       data-thock="card"
       className={cn(
-        'row-span-1 rounded-[26px] group/bento transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] p-5 sm:p-6 bg-white/85 dark:bg-slate-950/80 border border-black/10 dark:border-white/15 backdrop-blur-xl justify-between flex flex-col space-y-4 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:border-black/20 dark:hover:border-white/25 relative overflow-hidden h-full',
+        'row-span-1 rounded-[26px] group/bento transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] p-5 sm:p-6 bg-white/85 dark:bg-[#0c0c0c]/90 border border-black/10 dark:border-white/10 backdrop-blur-xl justify-between flex flex-col space-y-4 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.6)] hover:border-black/20 dark:hover:border-white/20 relative overflow-hidden h-full',
         className
       )}
     >
-      <div className="flex-1 w-full overflow-hidden rounded-[18px] bg-slate-50/80 dark:bg-slate-900/60 border border-black/5 dark:border-white/10 p-3 flex items-center justify-center">
+      <div className="flex-1 w-full overflow-hidden rounded-[18px] bg-slate-50/80 dark:bg-[#141414]/90 border border-black/5 dark:border-white/5 p-3 flex items-center justify-center">
         {header}
       </div>
       <div className="group-hover/bento:translate-x-1 transition-transform duration-200">

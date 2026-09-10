@@ -102,12 +102,47 @@ html, body {
   border: 1px solid rgba(37, 99, 235, 0.16);
 }
 
-/* Dark mode badge overrides */
+/* Dark mode badge overrides - pure white text & translucent white border */
 [data-theme='dark'] .badge-pdf,
 [data-theme='dark'] .badge-docx,
 [data-theme='dark'] .badge-xlsx,
-[data-theme='dark'] .badge-pptx {
-  background-color: rgba(59, 130, 246, 0.16);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.25);
+[data-theme='dark'] .badge-pptx,
+.dark .badge-pdf,
+.dark .badge-docx,
+.dark .badge-xlsx,
+.dark .badge-pptx {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+/* In dark mode, primary solid buttons (bg-[var(--color-primary)]) render pure white with black text */
+[data-theme='dark'] button.bg-\[var\(--color-primary\)\],
+[data-theme='dark'] a.bg-\[var\(--color-primary\)\],
+.dark button.bg-\[var\(--color-primary\)\],
+.dark a.bg-\[var\(--color-primary\)\] {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+[data-theme='dark'] button.bg-\[var\(--color-primary\)\] svg,
+[data-theme='dark'] a.bg-\[var\(--color-primary\)\] svg,
+.dark button.bg-\[var\(--color-primary\)\] svg,
+.dark a.bg-\[var\(--color-primary\)\] svg {
+  color: #000000 !important;
+  fill: currentColor !important;
+}
+
+[data-theme='dark'] button.bg-\[var\(--color-primary\)\].text-white,
+[data-theme='dark'] a.bg-\[var\(--color-primary\)\].text-white,
+.dark button.bg-\[var\(--color-primary\)\].text-white,
+.dark a.bg-\[var\(--color-primary\)\].text-white {
+  color: #000000 !important;
+}
+
+[data-theme='dark'] button.bg-\[var\(--color-primary\)\]:hover,
+[data-theme='dark'] a.bg-\[var\(--color-primary\)\]:hover,
+.dark button.bg-\[var\(--color-primary\)\]:hover,
+.dark a.bg-\[var\(--color-primary\)\]:hover {
+  background-color: #e5e5e5 !important;
 }

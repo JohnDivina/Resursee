@@ -76,26 +76,39 @@
 
 [data-theme='dark'],
 .dark {
-  --color-paper: #0b0f17;
-  --color-paper-surface: #111726;
-  --color-paper-muted: #172033;
-  --color-paper-card: #131b2e;
-  --color-paper-elevated: #1a243d;
+  /* Rich Neutral Shades of Black (Pure Monochrome Dark Mode) */
+  --color-paper: #000000;
+  --color-paper-surface: #0a0a0a;
+  --color-paper-muted: #141414;
+  --color-paper-card: #0d0d0d;
+  --color-paper-elevated: #171717;
 
-  --color-ink: #f8fafc;
-  --color-ink-secondary: #cbd5e1;
-  --color-ink-muted: #94a3b8;
-  --color-ink-faint: #64748b;
+  /* Typography: Crisp Pure White & High-Contrast Neutral Silver */
+  --color-ink: #ffffff;
+  --color-ink-secondary: #e4e4e7;
+  --color-ink-muted: #a1a1aa;
+  --color-ink-faint: #71717a;
 
-  --color-rule: rgba(255, 255, 255, 0.08);
+  /* Crisp Monochrome Hairline Borders */
+  --color-rule: rgba(255, 255, 255, 0.10);
   --color-rule-subtle: rgba(255, 255, 255, 0.05);
-  --color-rule-strong: rgba(255, 255, 255, 0.15);
+  --color-rule-strong: rgba(255, 255, 255, 0.18);
 
-  --color-primary: #3b82f6;
-  --color-primary-hover: #60a5fa;
-  --color-primary-subtle: rgba(59, 130, 246, 0.15);
+  /* Primary Signal Accent: Pure White */
+  --color-primary: #ffffff;
+  --color-primary-hover: #e4e4e7;
+  --color-primary-active: #d4d4d8;
+  --color-primary-glow: rgba(255, 255, 255, 0.18);
+  --color-primary-subtle: rgba(255, 255, 255, 0.08);
+
+  /* Dark Command Palette / Surfaces */
+  --color-dark-surface: #000000;
+  --color-dark-card: #0a0a0a;
+  --color-dark-border: #262626;
+  --color-dark-ink: #ffffff;
+  --color-dark-muted: #a1a1aa;
 
   --shadow-hairline: 0 0 0 1px var(--color-rule);
-  --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--color-rule);
-  --shadow-card-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--color-primary);
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--color-rule);
+  --shadow-card-hover: 0 12px 36px -4px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.25);
 }

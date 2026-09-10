@@ -17,8 +17,8 @@ export default function HomePage() {
   return (
     <WavyBackground
       isFixed={true}
-      colors={['#2563eb', '#38bdf8', '#1d4ed8', '#0284c7', '#60a5fa']}
       waveOpacity={0.32}
+      darkWaveOpacity={0.28}
       blur={10}
       speed="fast"
       containerClassName="min-h-screen bg-[var(--color-paper)]"

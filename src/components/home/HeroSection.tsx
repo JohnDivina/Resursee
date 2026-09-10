@@ -36,7 +36,7 @@ export default function HeroSection() {
           <Link
             href="/tools"
             data-thock="card"
-            className="group flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-3 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-[var(--color-primary-hover)] hover:shadow-lg active:scale-95 cursor-pointer"
+            className="group flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-3 text-sm font-bold text-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 shadow-md transition-all duration-200 hover:bg-[var(--color-primary-hover)] hover:shadow-lg active:scale-95 cursor-pointer"
           >
             <Wrench size={17} weight="bold" />
             <span>Productivity Tools</span>
@@ -48,7 +48,7 @@ export default function HeroSection() {
             data-thock="card"
             className="group flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-muted)] px-6 py-3 text-sm font-bold text-[var(--color-ink)] shadow-2xs transition-all duration-200 hover:bg-[var(--color-paper-surface)] hover:border-[var(--color-rule-strong)] active:scale-95 cursor-pointer"
           >
-            <Sparkle size={17} weight="bold" className="text-[var(--color-primary)]" />
+            <Sparkle size={17} weight="bold" className="text-[var(--color-primary)] dark:text-white" />
             <span>About Developer</span>
           </Link>
         </div>

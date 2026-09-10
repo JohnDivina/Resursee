@@ -205,7 +205,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
   const returnToParam = encodeURIComponent(pathname || '/');
 
   return (
-    <header className="bg-[var(--color-paper-card)]/90 dark:bg-[#18191B]/95 border-b border-[var(--color-rule-strong)] dark:border-[#2A2D30] sticky top-0 z-50 backdrop-blur-md transition-colors">
+    <header className="bg-[var(--color-paper-card)]/90 dark:bg-black/90 border-b border-[var(--color-rule-strong)] dark:border-white/10 sticky top-0 z-50 backdrop-blur-md transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
         {/* Brand Logo (DomoDomo style) */}
         <Link
@@ -262,7 +262,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             </button>
 
             {openDropdown === 'apps' && (
-              <div className="absolute left-0 mt-2 w-80 bg-[var(--color-paper-card)] dark:bg-[#18191B] border border-[var(--color-rule-strong)] dark:border-[#2A2D30] rounded-2xl p-2 shadow-2xl z-50 animate-in zoom-in-95 duration-150 space-y-1">
+              <div className="absolute left-0 mt-2 w-80 bg-[var(--color-paper-card)] dark:bg-[#0a0a0a] border border-[var(--color-rule-strong)] dark:border-white/10 rounded-2xl p-2 shadow-2xl z-50 animate-in zoom-in-95 duration-150 space-y-1">
                 <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-[var(--color-ink-muted)] font-bold">
                   Resursee Ecosystem
                 </div>
@@ -277,7 +277,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                       : 'hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   )}
                 >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#111213] border border-emerald-500/20 text-emerald-500 shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-emerald-500/20 text-emerald-500 shrink-0 mt-0.5">
                     <Plant size={15} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -303,7 +303,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                       : 'hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                   )}
                 >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#111213] border border-blue-500/20 text-blue-500 shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-blue-500/20 text-blue-500 shrink-0 mt-0.5">
                     <Cpu size={15} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -341,7 +341,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             </button>
 
             {openDropdown === 'resources' && (
-              <div className="absolute left-0 mt-2 w-72 bg-[var(--color-paper-card)] dark:bg-[#18191B] border border-[var(--color-rule-strong)] dark:border-[#2A2D30] rounded-2xl p-2 shadow-2xl z-50 animate-in zoom-in-95 duration-150 space-y-1">
+              <div className="absolute left-0 mt-2 w-72 bg-[var(--color-paper-card)] dark:bg-[#0a0a0a] border border-[var(--color-rule-strong)] dark:border-white/10 rounded-2xl p-2 shadow-2xl z-50 animate-in zoom-in-95 duration-150 space-y-1">
                 <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-[var(--color-ink-muted)] font-bold">
                   Learning & Hub
                 </div>
@@ -351,7 +351,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                   onClick={() => setOpenDropdown(null)}
                   className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
                 >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#111213] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
                     <UploadSimple size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -367,7 +367,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                   onClick={() => setOpenDropdown(null)}
                   className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
                 >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#111213] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
                     <Sparkle size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -383,7 +383,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                   onClick={() => setOpenDropdown(null)}
                   className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-all"
                 >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#111213] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shrink-0 mt-0.5">
                     <UploadSimple size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -417,7 +417,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           <VisitorPresenceWidget />
 
           {/* Divider */}
-          <div className="hidden sm:block h-5 w-px bg-[var(--color-rule-strong)] dark:bg-[#2A2D30] mx-0.5" />
+          <div className="hidden sm:block h-5 w-px bg-[var(--color-rule-strong)] dark:bg-white/10 mx-0.5" />
 
           {/* 3D Spatial Sound Toggle */}
           <SoundToggle />
@@ -431,7 +431,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               <button
                 type="button"
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="flex h-8 items-center gap-2 rounded-lg border border-[var(--color-rule-strong)] dark:border-[#2A2D30] bg-[var(--color-paper-surface)] pl-1.5 pr-2.5 text-xs font-bold text-[var(--color-ink)] shadow-2xs hover:border-[var(--color-primary)] transition-transform duration-160 active:scale-[0.92] cursor-pointer"
+                className="flex h-8 items-center gap-2 rounded-lg border border-[var(--color-rule-strong)] dark:border-white/10 bg-[var(--color-paper-surface)] pl-1.5 pr-2.5 text-xs font-bold text-[var(--color-ink)] shadow-2xs hover:border-[var(--color-primary)] transition-transform duration-160 active:scale-[0.92] cursor-pointer"
               >
                 {session.picture ? (
                   <img
@@ -449,7 +449,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
               </button>
 
               {profileDropdownOpen && (
-                <div className="absolute right-0 top-10 z-50 w-64 rounded-2xl border border-[var(--color-rule-strong)] dark:border-[#2A2D30] bg-[var(--color-paper-card)] dark:bg-[#18191B] p-3 shadow-2xl animate-in zoom-in-95 duration-150">
+                <div className="absolute right-0 top-10 z-50 w-64 rounded-2xl border border-[var(--color-rule-strong)] dark:border-white/10 bg-[var(--color-paper-card)] dark:bg-[#0a0a0a] p-3 shadow-2xl animate-in zoom-in-95 duration-150">
                   <div className="border-b border-[var(--color-rule-subtle)] pb-2.5 px-2">
                     <p className="text-xs font-extrabold text-[var(--color-ink)] truncate">
                       {session.name}
@@ -518,7 +518,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           ) : (
             <a
               href={`/api/auth/google?returnTo=${returnToParam}`}
-              className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-3 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] active:scale-[0.92] transition-all"
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-primary)] dark:bg-white dark:text-black dark:hover:bg-neutral-200 px-3 text-xs font-bold text-white shadow-xs hover:bg-[var(--color-primary-hover)] active:scale-[0.92] transition-all"
             >
               <GoogleLogo size={13} weight="bold" />
               <span className="hidden sm:inline">Sign In</span>
@@ -530,7 +530,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
-            className="lg:hidden flex items-center justify-center h-8 w-8 rounded-lg border border-[var(--color-rule-strong)] dark:border-[#2A2D30] hover:border-emerald-600/50 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-transform duration-160 active:scale-[0.92] hover:bg-[var(--color-paper-muted)]"
+            className="lg:hidden flex items-center justify-center h-8 w-8 rounded-lg border border-[var(--color-rule-strong)] dark:border-white/10 hover:border-emerald-600/50 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-transform duration-160 active:scale-[0.92] hover:bg-[var(--color-paper-muted)]"
           >
             {mobileMenuOpen ? <X size={17} weight="bold" /> : <List size={17} weight="bold" />}
           </button>
@@ -539,7 +539,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
 
       {/* Mobile Navigation Drawer (DomoDomo style) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[var(--color-rule-strong)] dark:border-[#2A2D30] bg-[var(--color-paper-card)] dark:bg-[#18191B] px-4 pb-4 animate-in slide-in-from-top-2 duration-150">
+        <div className="lg:hidden border-t border-[var(--color-rule-strong)] dark:border-white/10 bg-[var(--color-paper-card)] dark:bg-black px-4 pb-4 animate-in slide-in-from-top-2 duration-150">
           <nav className="flex flex-col gap-1 py-3">
             <Link
               href="/"

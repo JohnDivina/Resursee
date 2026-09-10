@@ -64,7 +64,7 @@ export default function RootLayout({
         <link rel="alternate icon" href="/favicon.ico?v=4" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4" sizes="180x180" />
       </head>
-      <body className="min-h-full flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 font-sans">
+      <body className="min-h-full flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 dark:selection:bg-white/20 dark:selection:text-white font-sans">
         <ThemeProvider>
           <SoundProvider>
             <SessionTimeoutProvider>

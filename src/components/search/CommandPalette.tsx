@@ -183,7 +183,7 @@ export default function CommandPalette({
                     <div className="flex items-start gap-3 overflow-hidden">
                       {/* Institutional Logo & Format Badge */}
                       <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-[var(--color-rule)] p-0.5 shadow-2xs">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white dark:bg-[#141414] border border-[var(--color-rule)] p-0.5 shadow-2xs">
                           <OrgLogo
                             sourceName={resource.source_name}
                             departmentName={resource.department?.name}
@@ -192,7 +192,7 @@ export default function CommandPalette({
                             className="h-4 w-4 object-contain"
                           />
                         </div>
-                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 font-mono text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-sky-400 border border-blue-500/20">
+                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 font-mono text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:bg-white/10 dark:text-white dark:border-white/20 border border-blue-500/20">
                           {resource.file_format}
                         </span>
                       </div>

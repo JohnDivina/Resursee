@@ -3,17 +3,20 @@
 import { cn } from '@/lib/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { createNoise3D } from 'simplex-noise';
+import { useTheme } from '@/components/theme/ThemeProvider';
 
 export const WavyBackground = ({
   children,
   className,
   containerClassName,
   colors,
+  darkColors,
   waveWidth,
   backgroundFill = 'transparent',
   blur = 8,
   speed = 'fast',
   waveOpacity = 0.45,
+  darkWaveOpacity = 0.30,
   isFixed = false,
   ...props
 }: {
@@ -21,14 +24,20 @@ export const WavyBackground = ({
   className?: string;
   containerClassName?: string;
   colors?: string[];
+  darkColors?: string[];
   waveWidth?: number;
   backgroundFill?: string;
   blur?: number;
   speed?: 'slow' | 'fast' | number;
   waveOpacity?: number;
+  darkWaveOpacity?: number;
   isFixed?: boolean;
   [key: string]: any;
 }) => {
+  const { theme } = useTheme();
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
+
   const noise = createNoise3D();
   let w: number,
     h: number,
@@ -52,14 +61,43 @@ export const WavyBackground = ({
     }
   };
 
-  // Curated Shades of Blue Palette
-  const waveColors = colors ?? [
+  // Curated Light Mode Blue Palette
+  const defaultLightWaveColors = [
     '#2563eb', // Royal Blue
     '#38bdf8', // Sky Blue
     '#1d4ed8', // Deep Cobalt
     '#0284c7', // Vivid Cyan
     '#60a5fa', // Soft Blue
   ];
+
+  // Curated Dark Mode White Palette (clean, ethereal, luminous white waves)
+  const defaultDarkWaveColors = [
+    '#ffffff',
+    'rgba(255, 255, 255, 0.95)',
+    'rgba(240, 240, 240, 0.85)',
+    'rgba(255, 255, 255, 0.70)',
+    'rgba(230, 230, 230, 0.90)',
+  ];
+
+  const getWaveColors = () => {
+    const isDark =
+      themeRef.current === 'dark' ||
+      (typeof document !== 'undefined' &&
+        (document.documentElement.getAttribute('data-theme') === 'dark' ||
+          document.documentElement.classList.contains('dark')));
+    return isDark
+      ? (darkColors ?? defaultDarkWaveColors)
+      : (colors ?? defaultLightWaveColors);
+  };
+
+  const getWaveOpacity = () => {
+    const isDark =
+      themeRef.current === 'dark' ||
+      (typeof document !== 'undefined' &&
+        (document.documentElement.getAttribute('data-theme') === 'dark' ||
+          document.documentElement.classList.contains('dark')));
+    return isDark ? (darkWaveOpacity ?? 0.30) : (waveOpacity || 0.45);
+  };
 
   const init = () => {
     canvas = canvasRef.current;
@@ -90,10 +128,11 @@ export const WavyBackground = ({
   const drawWave = (n: number) => {
     if (!ctx) return;
     nt += getSpeed();
+    const currentColors = getWaveColors();
     for (i = 0; i < n; i++) {
       ctx.beginPath();
       ctx.lineWidth = waveWidth || 45;
-      ctx.strokeStyle = waveColors[i % waveColors.length];
+      ctx.strokeStyle = currentColors[i % currentColors.length];
       for (x = 0; x < w; x += 12) {
         const y = noise(x / 800, 0.3 * i, nt) * 90;
         ctx.lineTo(x, y + h * 0.5);
@@ -112,7 +151,7 @@ export const WavyBackground = ({
       ctx.fillStyle = backgroundFill;
       ctx.fillRect(0, 0, w, h);
     }
-    ctx.globalAlpha = waveOpacity || 0.45;
+    ctx.globalAlpha = getWaveOpacity();
     drawWave(5);
     animationId = requestAnimationFrame(render);
   };

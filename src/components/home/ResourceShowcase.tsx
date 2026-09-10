@@ -32,7 +32,7 @@ function ShowcaseCardItem({ item }: { item: Resource }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-[var(--color-rule)] p-0.5 shadow-2xs">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white dark:bg-[#141414] border border-[var(--color-rule)] p-0.5 shadow-2xs">
             <OrgLogo
               sourceName={item.source_name}
               departmentName={item.department?.name}
@@ -41,7 +41,7 @@ function ShowcaseCardItem({ item }: { item: Resource }) {
               className="h-4.5 w-4.5 object-contain"
             />
           </div>
-          <span className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-sky-400 border border-blue-500/20">
+          <span className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:bg-white/10 dark:text-white dark:border-white/20 border border-blue-500/20">
             {item.file_format}
           </span>
           <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">
