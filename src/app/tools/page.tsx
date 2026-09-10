@@ -87,7 +87,7 @@ export default function ToolsPage() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
+    <div className="flex min-h-screen flex-col bg-transparent">
       {/* Header */}
       <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
 
@@ -100,7 +100,7 @@ export default function ToolsPage() {
 
       <main className="flex-1">
         {/* Top Banner */}
-        <section className="border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] py-12 sm:py-16">
+        <section className="border-b border-[var(--color-rule-subtle)] bg-transparent py-12 sm:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)] mb-3">
               <Link href="/" className="flex items-center gap-1 hover:text-[var(--color-primary)]">

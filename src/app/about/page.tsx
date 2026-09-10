@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CommandPalette from '@/components/search/CommandPalette';
-import { WavyBackground } from '@/components/ui/wavy-background';
 import GitHubContributionsGraph from '@/components/about/GitHubContributionsGraph';
 import {
   Code,
@@ -58,28 +57,28 @@ export default function AboutPage() {
     {
       title: 'Plant Doctor AI Vision',
       badge: 'In Development',
-      description: 'Instant botanical disease, pest, and nutrient deficiency diagnosis with structured treatment recommendations via Gemini multimodal AI.',
-      link: '#',
-      actionText: 'Coming Soon',
+      description: 'Computer vision diagnostics for plant health, leaf disease detection, and cultivation insights powered by Google Gemini.',
+      link: '/apps/plant-doctor',
+      actionText: 'Explore App',
     },
     {
       title: 'Resursee IoT Cloud Platform',
-      badge: 'In Development',
-      description: 'Arduino Cloud-style multi-tenant telemetry hub for ESP32 devices with zero-friction pairing, live graphs, and remote switches.',
+      badge: 'Live Hardware Telemetry',
+      description: 'Real-time telemetry, relay controller, and analytics dashboard engineered for custom ESP32 / Arduino sensor networks.',
+      link: '/apps/iot-cloud',
+      actionText: 'Launch IoT Cloud',
+    },
+    {
+      title: 'Autonomous Multi-Agent Systems',
+      badge: 'Research',
+      description: 'Architecting self-correcting agent swarms, semantic indexers, and local LLM pipelines for hardware automation.',
       link: '#',
       actionText: 'Coming Soon',
     },
   ];
 
   return (
-    <WavyBackground
-      isFixed={true}
-      waveOpacity={0.32}
-      darkWaveOpacity={0.28}
-      blur={10}
-      speed="fast"
-      containerClassName="min-h-screen bg-[var(--color-paper)]"
-    >
+    <div className="flex min-h-screen flex-col bg-transparent">
       <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
       <CommandPalette isOpen={searchPaletteOpen} onClose={() => setSearchPaletteOpen(false)} />
 
@@ -233,6 +232,6 @@ export default function AboutPage() {
       </main>
 
       <Footer />
-    </WavyBackground>
+    </div>
   );
 }

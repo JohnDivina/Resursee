@@ -8,21 +8,13 @@ import AppsSection from '@/components/home/AppsSection';
 import ToolsPreview from '@/components/home/ToolsPreview';
 import CommandPalette from '@/components/search/CommandPalette';
 import { CheckCircle } from '@phosphor-icons/react';
-import { WavyBackground } from '@/components/ui/wavy-background';
 
 export default function HomePage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   return (
-    <WavyBackground
-      isFixed={true}
-      waveOpacity={0.32}
-      darkWaveOpacity={0.28}
-      blur={10}
-      speed="fast"
-      containerClassName="min-h-screen bg-[var(--color-paper)]"
-    >
+    <div className="flex min-h-screen flex-col bg-transparent">
       {/* 1. Minimal Header */}
       <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
 
@@ -53,6 +45,6 @@ export default function HomePage() {
           <span>{toastMessage}</span>
         </div>
       )}
-    </WavyBackground>
+    </div>
   );
 }

@@ -343,7 +343,7 @@ function ResourcesDirectoryInner() {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] flex flex-col selection:bg-neutral-800 selection:text-white dark:selection:bg-white dark:selection:text-black">
+    <div className="min-h-screen bg-transparent text-[var(--color-ink)] flex flex-col selection:bg-neutral-800 selection:text-white dark:selection:bg-white dark:selection:text-black">
       <Header />
 
       {/* Toast Notification */}
@@ -1266,7 +1266,7 @@ export default function ResourcesDirectoryPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] flex items-center justify-center font-mono text-xs">
+        <div className="min-h-screen bg-transparent text-[var(--color-ink)] flex items-center justify-center font-mono text-xs">
           Loading Resources Directory...
         </div>
       }

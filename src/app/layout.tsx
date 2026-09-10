@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SoundProvider } from '@/components/sound/SoundProvider';
 import SessionTimeoutProvider from '@/components/auth/SessionTimeoutProvider';
+import { WavyBackground } from '@/components/ui/wavy-background';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -93,7 +94,16 @@ export default function RootLayout({
         <ThemeProvider>
           <SoundProvider>
             <SessionTimeoutProvider>
-              {children}
+              <WavyBackground
+                isFixed={true}
+                waveOpacity={0.32}
+                darkWaveOpacity={0.28}
+                blur={10}
+                speed="fast"
+                containerClassName="min-h-screen bg-[var(--color-paper)]"
+              >
+                {children}
+              </WavyBackground>
             </SessionTimeoutProvider>
           </SoundProvider>
         </ThemeProvider>

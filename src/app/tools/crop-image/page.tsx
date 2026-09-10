@@ -179,7 +179,7 @@ export default function CropImagePage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-paper)]">
+    <div className="flex min-h-screen flex-col bg-transparent">
       <Header onOpenSearch={() => setSearchPaletteOpen(true)} />
       <CommandPalette
         isOpen={searchPaletteOpen}
