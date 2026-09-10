@@ -92,7 +92,7 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-base sm:text-lg text-[var(--color-ink-muted)] leading-relaxed">
-              Product Engineer, Full-Stack Developer & Embedded Systems Explorer. I design and build high-performance web applications, intelligent AI tools, and connected hardware platforms.
+              I am a Master&apos;s student passionate about building software, Internet of Things (IoT), running and experimenting with LLMs, and engineering embedded systems.
             </p>
 
             {/* Social & Contact Bar */}
@@ -129,11 +129,15 @@ export default function AboutPage() {
           </div>
 
           {/* Profile Avatar / Visual Squircle */}
-          <div className="relative flex h-32 w-32 sm:h-40 sm:w-40 shrink-0 items-center justify-center rounded-[28px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 shadow-xl">
-            <span className="text-6xl sm:text-7xl select-none">🦦</span>
-            <div className="absolute -bottom-2 -right-2 rounded-full bg-[var(--color-paper-card)] border border-[var(--color-rule)] p-2 shadow-md text-sm">
-              🚀
-            </div>
+          <div className="relative flex h-32 w-32 sm:h-40 sm:w-40 shrink-0 items-center justify-center overflow-hidden rounded-[28px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 shadow-xl">
+            <img
+              src="/avatar.png"
+              alt="John Rey Divina"
+              className="h-full w-full object-cover object-center select-none"
+              onError={(e) => {
+                e.currentTarget.src = 'https://github.com/JohnDivina.png';
+              }}
+            />
           </div>
         </section>
 
