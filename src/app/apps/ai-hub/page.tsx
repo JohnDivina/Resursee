@@ -44,9 +44,19 @@ import {
   showOllamaModel,
   streamOllamaChat,
   startOllamaDaemon,
+  chunkText,
+  retrieveTopKChunks,
+  getOllamaEmbedding,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
-import { OllamaModel, OllamaConnectionStatus, AIHubSession } from '@/types/aiHub';
+import {
+  OllamaModel,
+  OllamaConnectionStatus,
+  AIHubSession,
+  DocumentChunk,
+  IndexedDocument,
+  RetrievalResult,
+} from '@/types/aiHub';
 
 // --- Types ---
 type ActiveTab = 'chat' | 'models' | 'vision' | 'rag' | 'settings';
@@ -232,6 +242,75 @@ const SAMPLE_PRESETS: Record<
   },
 };
 
+// 1-Click Interactive Sample Documents for RAG Knowledge Studio (Phase 5)
+const SAMPLE_KNOWLEDGE_DOCS: Record<
+  'esp32' | 'pathology' | 'resursee',
+  { title: string; filename: string; content: string }
+> = {
+  esp32: {
+    title: 'ESP32 IoT & Sensor Hardware Datasheet',
+    filename: 'esp32_iot_datasheet.md',
+    content: `# ESP32-WROOM-32 Hardware Architecture & Sensor Interfaces
+
+## 1. Core System & Electrical Ratings
+The ESP32-WROOM-32 is a dual-core 32-bit MCU running at up to 240 MHz (Tensilica Xtensa LX6).
+- Operating Voltage: 3.0V to 3.6V (Standard 3.3V VCC).
+- Operating Current: 80mA average during WiFi active transmission; 10µA during Deep Sleep mode.
+- Internal Flash: 4MB SPI Flash; 520 KB internal SRAM.
+- ADC: Two 12-bit SAR ADCs (ADC1: GPIO32–39; ADC2: GPIO0, 2, 4, 12–15, 25–27).
+
+## 2. GPIO4 to DHT22 Telemetry Interface
+- DHT22 (AM2302) is a single-bus digital relative humidity and temperature sensor.
+- Pinout: Pin 1 = VCC (3.3V), Pin 2 = DATA (Connected to ESP32 GPIO4), Pin 3 = NC (No Connection), Pin 4 = GND.
+- Pull-Up Resistor: A 4.7kΩ to 10kΩ resistor must be wired between Pin 2 (DATA) and Pin 1 (3V3). The pull-up holds the bus HIGH when idle and ensures sharp square-wave rise times. Without this pull-up resistor, the line floats, resulting in DHT22 checksum timeouts and reading errors.
+- Sampling Cadence: The minimum polling interval is 2000ms (0.5 Hz). Polling faster than 2 seconds causes internal sensor heating and corrupts humidity telemetry.
+
+## 3. Deep Sleep & RTC Power Management
+- Entering Deep Sleep: \`esp_deep_sleep_start();\` shuts down both CPUs and high-speed peripherals.
+- Wakeup Sources: Timer wakeup (\`esp_sleep_enable_timer_wakeup(60 * 1000000ULL);\`) or external GPIO pin interrupt (\`esp_sleep_enable_ext0_wakeup(GPIO_NUM_33, 0);\`).`,
+  },
+  pathology: {
+    title: 'Agricultural Foliar Pathology & Integrated Pest Management',
+    filename: 'foliar_pathology_handbook.md',
+    content: `# Clinical Plant Pathology Field Guide
+
+## 1. Tomato Early Blight (Alternaria solani)
+- Symptoms: Dark brown to black circular lesions displaying prominent concentric target-board rings. Surrounded by bright chlorotic yellow halos. Typically initiates on lower mature leaves and progresses upward.
+- Pathology: Soil-borne fungal spores splashing onto foliage during rain or overhead sprinkler irrigation. Optimal spore germination occurs at 24°C–29°C with relative humidity above 85%.
+- Cultural Treatment: Sterilize shears in 70% isopropyl alcohol. Prune lower canopy foliage touching the ground. Apply a 2-inch straw mulch barrier to prevent soil rain-splash.
+- Organic Treatment: Spray foliar mixture of 1 tbsp baking soda + 1 tsp horticultural oil + 1/2 tsp mild Castile soap per gallon of water, or apply organic liquid copper octanoate every 7 days.
+
+## 2. Citrus Leafminer (Phyllocnistis citrella)
+- Symptoms: Silvery, translucent, serpentine tunnels coiled across the leaf blade. Foliage curls upward along the margins and becomes brittle.
+- Biological Cycle: Microscopic moths deposit eggs on tender young shoot flushes. Larvae pupate inside curled leaf edges.
+- Organic Control: Cold-pressed neem oil foliar spray (2 tbsp cold-pressed neem + 1 tsp Castile soap per gallon lukewarm water) applied at dusk every 7–10 days during flush periods.
+
+## 3. Corn Common Rust (Puccinia sorghi)
+- Symptoms: Elongated, powdery, cinnamon-brown to golden-brown pustules (uredinia) on both upper and lower leaf surfaces. Spores rub off readily on fingers.
+- Control: Preventive bio-fungicide foliar applications using Bacillus subtilis (Serenade ASO) to colonize leaf surface stomata.`,
+  },
+  resursee: {
+    title: 'Resursee Architecture & Security Standards',
+    filename: 'resursee_developer_guide.md',
+    content: `# Resursee Platform Architecture & Standards
+
+## 1. Zero Cloud Egress & Local AI Workstation
+Resursee's AI Hub Studio runs directly against local hardware using the local Ollama daemon (http://localhost:11434).
+- 100% Data Sovereignty: User chat messages, uploaded photos, and document embeddings never touch external cloud servers or analytics telemetry.
+- Direct Browser Streaming: Uses native ReadableStream and TextDecoder to stream tokens directly into the React canvas.
+- 1-Click Daemon Launcher: An internal API route (/api/ai/ollama/start) allows launching Ollama in the background on macOS, Windows, and Linux without touching the terminal.
+
+## 2. Anti-Slop UI & Design Directives
+- Strict Monochrome Hierarchy: Elimination of translucent pastel color washes (no bg-emerald-500/10, no neon cyan/purple glows).
+- Solid Neutral Grey Bubbles: Badges and indicators use solid neutral surfaces (bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700).
+- High Contrast Focus: High contrast solid blacks and whites (bg-neutral-900 text-white dark:bg-white dark:text-neutral-900) for active states.
+
+## 3. Mandatory Security Hardening Directives
+- 100% Row Level Security (RLS) enabled on all PostgreSQL database tables.
+- Sliding-window rate limiting on all API endpoints.
+- IDOR Prevention: Never perform lookup, update, or deletion operations using client-supplied IDs alone. Always scope to authenticated sessions.`,
+  },
+};
 
 // Helper to format inline code & bold text within markdown lines
 function parseInlineFormatting(text: string) {
@@ -439,14 +518,31 @@ export default function AIHubPage() {
   const visionFileInputRef = useRef<HTMLInputElement | null>(null);
   const visionAbortControllerRef = useRef<AbortController | null>(null);
 
+  // RAG & Knowledge Documents State (Phase 5)
+  const [indexedDocs, setIndexedDocs] = useState<IndexedDocument[]>([]);
+  const [ragQuery, setRagQuery] = useState<string>('');
+  const [ragRetrievalResults, setRagRetrievalResults] = useState<RetrievalResult[]>([]);
+  const [ragAnswer, setRagAnswer] = useState<string>('');
+  const [isSearchingRag, setIsSearchingRag] = useState<boolean>(false);
+  const [isGeneratingRagAnswer, setIsGeneratingRagAnswer] = useState<boolean>(false);
+  const [ragEmbeddingEngine, setRagEmbeddingEngine] = useState<string>('hybrid');
+  const [ragViewMode, setRagViewMode] = useState<'answer' | 'chunks'>('answer');
+  const [isAddDocModalOpen, setIsAddDocModalOpen] = useState<boolean>(false);
+  const [newDocTitle, setNewDocTitle] = useState<string>('');
+  const [newDocContent, setNewDocContent] = useState<string>('');
+  const ragAbortControllerRef = useRef<AbortController | null>(null);
+  const docFileInputRef = useRef<HTMLInputElement | null>(null);
+
   // Auto-scroll messages anchor
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isGenerating]);
 
-  // Load Sessions from localStorage on mount
+  // Load Sessions and Documents from localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // 1. Sessions
     try {
       const raw = localStorage.getItem('resursee_ai_hub_sessions');
       if (raw) {
@@ -459,26 +555,67 @@ export default function AIHubPage() {
           if (active.model) setSelectedModel(active.model);
           if (active.temperature !== undefined) setTemperature(active.temperature);
           if (active.systemPrompt) setSystemPrompt(active.systemPrompt);
-          return;
         }
+      } else {
+        const initialSession: AIHubSession = {
+          id: `sess-${Date.now()}`,
+          title: 'New Conversation',
+          model: selectedModel,
+          temperature: 0.7,
+          systemPrompt,
+          messages: [DEFAULT_WELCOME],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setSessions([initialSession]);
+        setCurrentSessionId(initialSession.id);
+        setMessages(initialSession.messages as ChatMessage[]);
       }
     } catch (e) {
       console.error('Failed to parse sessions:', e);
     }
 
-    const initialSession: AIHubSession = {
-      id: `sess-${Date.now()}`,
-      title: 'New Conversation',
-      model: selectedModel,
-      temperature: 0.7,
-      systemPrompt,
-      messages: [DEFAULT_WELCOME],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setSessions([initialSession]);
-    setCurrentSessionId(initialSession.id);
-    setMessages(initialSession.messages as ChatMessage[]);
+    // 2. Knowledge Documents (Phase 5)
+    try {
+      const rawDocs = localStorage.getItem('resursee_ai_hub_documents');
+      if (rawDocs) {
+        const parsed: IndexedDocument[] = JSON.parse(rawDocs);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setIndexedDocs(parsed);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse documents:', e);
+    }
+
+    // Seed default sample knowledge documents for instant testing
+    const initialDocs: IndexedDocument[] = Object.entries(SAMPLE_KNOWLEDGE_DOCS).map(
+      ([key, doc], idx) => {
+        const docId = `doc-${key}-${Date.now() + idx}`;
+        const rawChunks = chunkText(doc.content, 450, 45);
+        const chunks: DocumentChunk[] = rawChunks.map((c, cIdx) => ({
+          id: `chunk-${docId}-${cIdx}`,
+          documentId: docId,
+          documentName: doc.filename,
+          chunkIndex: cIdx + 1,
+          text: c,
+          tokenCount: Math.round(c.length / 4),
+        }));
+        return {
+          id: docId,
+          name: doc.filename,
+          size: doc.content.length,
+          characterCount: doc.content.length,
+          chunks,
+          createdAt: new Date().toISOString(),
+        };
+      }
+    );
+    setIndexedDocs(initialDocs);
+    try {
+      localStorage.setItem('resursee_ai_hub_documents', JSON.stringify(initialDocs));
+    } catch {}
   }, []);
 
   // Save active session to localStorage
@@ -868,6 +1005,207 @@ export default function AIHubPage() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `resursee-vision-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // --- RAG & Knowledge Documents Handlers (Phase 5) ---
+  const handleIndexDocument = (title: string, content: string) => {
+    if (!title.trim() || !content.trim()) return;
+    const docId = `doc-${Date.now()}`;
+    const filename = title.trim().includes('.') ? title.trim() : `${title.trim()}.md`;
+    const rawChunks = chunkText(content, 450, 45);
+    const chunks: DocumentChunk[] = rawChunks.map((c, cIdx) => ({
+      id: `chunk-${docId}-${cIdx}`,
+      documentId: docId,
+      documentName: filename,
+      chunkIndex: cIdx + 1,
+      text: c,
+      tokenCount: Math.round(c.length / 4),
+    }));
+
+    const newDoc: IndexedDocument = {
+      id: docId,
+      name: filename,
+      size: content.length,
+      characterCount: content.length,
+      chunks,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [newDoc, ...indexedDocs];
+    setIndexedDocs(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('resursee_ai_hub_documents', JSON.stringify(updated));
+      } catch {}
+    }
+    setNewDocTitle('');
+    setNewDocContent('');
+    setIsAddDocModalOpen(false);
+  };
+
+  const handleDocFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        handleIndexDocument(file.name, text);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleLoadSampleDoc = (key: 'esp32' | 'pathology' | 'resursee') => {
+    const sample = SAMPLE_KNOWLEDGE_DOCS[key];
+    if (!sample) return;
+    handleIndexDocument(sample.filename, sample.content);
+  };
+
+  const handleDeleteDoc = (docId: string) => {
+    const updated = indexedDocs.filter((d) => d.id !== docId);
+    setIndexedDocs(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('resursee_ai_hub_documents', JSON.stringify(updated));
+      } catch {}
+    }
+    setRagRetrievalResults([]);
+    setRagAnswer('');
+  };
+
+  const handleClearAllDocs = () => {
+    setIndexedDocs([]);
+    setRagRetrievalResults([]);
+    setRagAnswer('');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('resursee_ai_hub_documents');
+    }
+  };
+
+  const handleExecuteRetrieval = async (queryText: string): Promise<RetrievalResult[]> => {
+    if (!queryText.trim()) return [];
+    setIsSearchingRag(true);
+    try {
+      const allChunks = indexedDocs.flatMap((d) => d.chunks);
+      const results = await retrieveTopKChunks(queryText, allChunks, {
+        endpoint,
+        embeddingModel: 'nomic-embed-text',
+        topK: 4,
+        useDenseVectors: ragEmbeddingEngine !== 'tfidf',
+      });
+      setRagRetrievalResults(results);
+      return results;
+    } finally {
+      setIsSearchingRag(false);
+    }
+  };
+
+  const handleAskRag = async (overrideQuery?: string) => {
+    const q = (overrideQuery || ragQuery).trim();
+    if (!q) return;
+    if (connectionStatus !== 'connected') {
+      setRagAnswer('Ollama daemon is offline. Click "Start Ollama Engine" to connect and ask questions.');
+      setRagViewMode('answer');
+      return;
+    }
+
+    setRagQuery(q);
+    setIsGeneratingRagAnswer(true);
+    setRagViewMode('answer');
+    setRagAnswer('');
+    const controller = new AbortController();
+    ragAbortControllerRef.current = controller;
+
+    try {
+      const retrieved = await handleExecuteRetrieval(q);
+
+      let contextText = '';
+      if (retrieved.length > 0) {
+        contextText = retrieved
+          .map(
+            (r, i) =>
+              `[Source ${i + 1}: ${r.chunk.documentName} | Chunk #${r.chunk.chunkIndex} | Match Relevance: ${(
+                r.score * 100
+              ).toFixed(1)}%]\n${r.chunk.text}`
+          )
+          .join('\n\n');
+      } else {
+        contextText = 'No direct matches found in indexed knowledge base.';
+      }
+
+      const groundedPrompt = `You are a private, offline intelligence engine for Resursee. Use the following verified excerpts from the user's indexed document knowledge base to answer the inquiry accurately and factually.
+
+--- VERIFIED LOCAL KNOWLEDGE EXCERPTS ---
+${contextText}
+--- END EXCERPTS ---
+
+User Inquiry: ${q}
+
+Instructions:
+1. Provide a direct, highly accurate, and structured answer.
+2. Cite the source document name (e.g. "[esp32_iot_datasheet.md]") when stating facts from the context.
+3. If the context does not contain the answer, state that clearly and provide the best known factual answer.`;
+
+      const accumulated = await streamOllamaChat(
+        endpoint,
+        {
+          model: selectedModel,
+          messages: [{ role: 'user', content: groundedPrompt }],
+          temperature: 0.2,
+          num_ctx: 4096,
+        },
+        (fullText) => {
+          setRagAnswer(fullText);
+        },
+        controller.signal
+      );
+      setRagAnswer(accumulated);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        setRagAnswer(`Error generating grounded response: ${err.message || 'Unknown error'}`);
+      }
+    } finally {
+      setIsGeneratingRagAnswer(false);
+      ragAbortControllerRef.current = null;
+    }
+  };
+
+  const handleStopRagGeneration = () => {
+    if (ragAbortControllerRef.current) {
+      ragAbortControllerRef.current.abort();
+      ragAbortControllerRef.current = null;
+    }
+    setIsGeneratingRagAnswer(false);
+  };
+
+  const handleExportRagReport = () => {
+    if (!ragAnswer) return;
+    let md = `# Local AI Hub - Grounded Knowledge Report\n\n`;
+    md += `- **Date**: ${new Date().toLocaleString()}\n`;
+    md += `- **Model**: \`${selectedModel}\`\n`;
+    md += `- **Inquiry**: ${ragQuery}\n`;
+    md += `- **Indexed Documents**: ${indexedDocs.length} documents\n\n---\n\n`;
+    md += `## Grounded Answer\n\n${ragAnswer}\n\n---\n\n`;
+    md += `## Retrieved Context Excerpts\n\n`;
+    ragRetrievalResults.forEach((r, idx) => {
+      md += `### Source ${idx + 1}: ${r.chunk.documentName} (Chunk #${r.chunk.chunkIndex} • ${(
+        r.score * 100
+      ).toFixed(1)}% match)\n\n`;
+      md += `\`\`\`\n${r.chunk.text}\n\`\`\`\n\n`;
+    });
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `resursee-rag-${Date.now()}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -2319,52 +2657,450 @@ export default function AIHubPage() {
             </div>
           )}
 
-          {/* VIEW 4: RAG & KNOWLEDGE DOCUMENTS */}
+          {/* VIEW 4: RAG & KNOWLEDGE DOCUMENTS (Phase 5) */}
           {activeTab === 'rag' && (
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div>
-                <h2 className="text-lg font-extrabold text-[var(--color-ink)]">RAG Vector Search & Embeddings</h2>
-                <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
-                  Generate local vector embeddings via Ollama (`nomic-embed-text`) to perform semantic search across your personal notes.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-[var(--color-ink)]">Indexed Knowledge Sources</h3>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
-                  >
-                    <IconFileText size={14} />
-                    <span>Upload Document</span>
-                  </button>
+            <div className="max-w-5xl mx-auto space-y-6">
+              {/* Header & Stats Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--color-rule-subtle)] pb-4">
+                <div>
+                  <h2 className="text-lg font-extrabold text-[var(--color-ink)]">
+                    RAG & Knowledge Documents Studio
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
+                    Ground local AI inference in private documents, technical datasheets, and code files with 100% offline semantic retrieval.
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  {[
-                    { name: 'esp32_gpio_registers.pdf', chunks: 14, size: '240 KB', status: 'Indexed' },
-                    { name: 'foliar_disease_guide_2026.md', chunks: 32, size: '480 KB', status: 'Indexed' },
-                    { name: 'university_research_handbook.pdf', chunks: 68, size: '1.2 MB', status: 'Indexed' },
-                  ].map((doc, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] text-xs"
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddDocModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+                  >
+                    <IconPlus size={14} />
+                    <span>Add Document</span>
+                  </button>
+
+                  {!installedModels.some(
+                    (m) => m.name.includes('nomic-embed') || m.name.includes('embed')
+                  ) && (
+                    <button
+                      type="button"
+                      onClick={() => handlePullModel('nomic-embed-text')}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <IconFileText size={16} className="text-[var(--color-ink-muted)] shrink-0" />
-                        <span className="font-semibold text-[var(--color-ink)] truncate">{doc.name}</span>
+                      <IconDownload size={13} />
+                      <span>Pull nomic-embed (274 MB)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Daemon Offline Notice if applicable */}
+              {connectionStatus !== 'connected' && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200">
+                  <div className="flex items-center gap-2.5 text-xs font-semibold">
+                    <IconAlertCircle size={16} className="shrink-0" />
+                    <span>Ollama daemon is currently offline. Start the engine to generate grounded answers.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleStartOllama}
+                    disabled={isStartingDaemon}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shrink-0 shadow-2xs"
+                  >
+                    {isStartingDaemon ? (
+                      <>
+                        <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                        <span>Starting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <IconPlayerPlay size={13} />
+                        <span>Start Ollama Engine (1-Click)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Main 2-Column Workspace */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Left Column (5 cols): Knowledge Index & Document Sources */}
+                <div className="lg:col-span-5 space-y-4">
+                  {/* Documents List Card */}
+                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <IconDatabase size={16} className="text-[var(--color-ink)]" />
+                        <h3 className="text-xs font-bold text-[var(--color-ink)]">
+                          Indexed Documents ({indexedDocs.length})
+                        </h3>
                       </div>
-                      <div className="flex items-center gap-2 font-mono text-[10px] text-[var(--color-ink-muted)]">
-                        <span>{doc.chunks} chunks</span>
-                        <span>•</span>
-                        <span>{doc.size}</span>
-                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-bold">
-                          {doc.status}
-                        </span>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={docFileInputRef}
+                          type="file"
+                          accept=".txt,.md,.markdown,.json,.ts,.js,.py,.csv"
+                          className="hidden"
+                          onChange={handleDocFileUpload}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => docFileInputRef.current?.click()}
+                          className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] cursor-pointer"
+                        >
+                          Upload File
+                        </button>
+                        {indexedDocs.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleClearAllDocs}
+                            className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 cursor-pointer ml-1"
+                          >
+                            Clear
+                          </button>
+                        )}
                       </div>
                     </div>
-                  ))}
+
+                    {/* Document Items List */}
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {indexedDocs.length === 0 ? (
+                        <div className="text-center py-8 text-xs font-mono text-[var(--color-ink-muted)] space-y-2">
+                          <p>No documents indexed yet.</p>
+                          <p className="text-[11px]">Add custom notes or click a sample below.</p>
+                        </div>
+                      ) : (
+                        indexedDocs.map((doc) => (
+                          <div
+                            key={doc.id}
+                            className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] text-xs group hover:border-[var(--color-rule-strong)] transition-all"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <IconFileText size={16} className="text-[var(--color-ink-muted)] shrink-0" />
+                              <div className="min-w-0">
+                                <span className="font-semibold text-[var(--color-ink)] block truncate">
+                                  {doc.name}
+                                </span>
+                                <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+                                  {doc.chunks.length} chunks • {(doc.size / 1024).toFixed(1)} KB
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDoc(doc.id)}
+                              className="p-1 rounded-md text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                              title="Delete document"
+                            >
+                              <IconTrash size={14} />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 1-Click Sample Technical Documents */}
+                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                        Load Sample Knowledge Docs
+                      </span>
+                      <span className="text-[10px] text-[var(--color-ink-muted)]">1-Click Index</span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleLoadSampleDoc('esp32')}
+                        className="w-full flex items-center justify-between p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🔌</span>
+                          <div>
+                            <span className="text-xs font-bold text-[var(--color-ink)] block">
+                              ESP32 Hardware Datasheet
+                            </span>
+                            <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                              GPIO4, DHT22 pull-up, Deep Sleep
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">+ Add</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleLoadSampleDoc('pathology')}
+                        className="w-full flex items-center justify-between p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🌿</span>
+                          <div>
+                            <span className="text-xs font-bold text-[var(--color-ink)] block">
+                              Foliar Pathology Field Guide
+                            </span>
+                            <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                              Early blight, leafminer, rust remedies
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">+ Add</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleLoadSampleDoc('resursee')}
+                        className="w-full flex items-center justify-between p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">📜</span>
+                          <div>
+                            <span className="text-xs font-bold text-[var(--color-ink)] block">
+                              Resursee Architecture & Security
+                            </span>
+                            <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                              Zero cloud egress, RLS, anti-slop UI
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">+ Add</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column (7 cols): Semantic Query & Grounded Answer */}
+                <div className="lg:col-span-7 space-y-4">
+                  {/* Query Input Card */}
+                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 space-y-3.5">
+                    {/* Prompt Starters */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[var(--color-ink)] block">
+                        Quick Knowledge Questions:
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          'What is the pull-up resistor on GPIO4 for ESP32?',
+                          'How do you treat Alternaria early blight on tomatoes?',
+                          'What is the minimum sampling interval for DHT22?',
+                          'How does Resursee guarantee zero cloud data egress?',
+                        ].map((starter, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setRagQuery(starter);
+                              handleAskRag(starter);
+                            }}
+                            className="rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-2.5 py-1 text-[11px] font-medium text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
+                          >
+                            {starter}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Query Input Bar */}
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={ragQuery}
+                          onChange={(e) => setRagQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAskRag();
+                          }}
+                          placeholder="Search or ask a question across all indexed documents..."
+                          className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] pl-3 pr-20 py-2.5 text-xs text-[var(--color-ink)] focus:outline-hidden"
+                        />
+                        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleExecuteRetrieval(ragQuery)}
+                            disabled={isSearchingRag || !ragQuery.trim()}
+                            className="p-1.5 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer disabled:opacity-40"
+                            title="Semantic Search Only"
+                          >
+                            <IconSearch size={15} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--color-ink-muted)]">
+                          <span>
+                            Model: <strong className="text-[var(--color-ink)]">{selectedModel}</strong>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleExecuteRetrieval(ragQuery);
+                              setRagViewMode('chunks');
+                            }}
+                            disabled={!ragQuery.trim() || indexedDocs.length === 0}
+                            className="inline-flex items-center gap-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer disabled:opacity-40"
+                          >
+                            <IconSearch size={13} />
+                            <span>Retrieve Chunks</span>
+                          </button>
+
+                          {isGeneratingRagAnswer ? (
+                            <button
+                              type="button"
+                              onClick={handleStopRagGeneration}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+                            >
+                              <IconPlayerStop size={13} />
+                              <span>Stop</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleAskRag()}
+                              disabled={!ragQuery.trim() || indexedDocs.length === 0}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 shadow-2xs"
+                            >
+                              <IconSparkles size={13} />
+                              <span>Ask Grounded AI</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Results Display Console */}
+                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 space-y-3 min-h-[260px] flex flex-col justify-between">
+                    <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setRagViewMode('answer')}
+                            className={cn(
+                              'px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                              ragViewMode === 'answer'
+                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+                                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                            )}
+                          >
+                            Grounded Answer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRagViewMode('chunks')}
+                            className={cn(
+                              'px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1',
+                              ragViewMode === 'chunks'
+                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+                                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                            )}
+                          >
+                            <span>Retrieved Context</span>
+                            {ragRetrievalResults.length > 0 && (
+                              <span className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-700 text-[10px] inline-flex items-center justify-center font-mono">
+                                {ragRetrievalResults.length}
+                              </span>
+                            )}
+                          </button>
+                        </div>
+
+                        {isGeneratingRagAnswer && (
+                          <span className="flex items-center gap-1 text-[10px] font-mono text-[var(--color-ink-muted)] animate-pulse">
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                            <span>Synthesizing...</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {ragAnswer && ragViewMode === 'answer' && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(ragAnswer, 'rag-answer')}
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                          >
+                            {copiedKey === 'rag-answer' ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                            <span>{copiedKey === 'rag-answer' ? 'Copied' : 'Copy'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleExportRagReport}
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                          >
+                            <IconFileExport size={12} />
+                            <span>Export .md</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto text-xs text-[var(--color-ink)] leading-relaxed space-y-3">
+                      {ragViewMode === 'answer' ? (
+                        ragAnswer ? (
+                          <FormattedMessage
+                            content={ragAnswer}
+                            messageId="rag-active-answer"
+                            copiedKey={copiedKey}
+                            onCopy={handleCopy}
+                          />
+                        ) : isGeneratingRagAnswer ? (
+                          <div className="flex items-center justify-center py-12 text-xs font-mono text-[var(--color-ink-muted)] gap-2">
+                            <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                            <span>Retrieving vector context and generating grounded answer...</span>
+                          </div>
+                        ) : (
+                          <div className="text-center py-12 text-xs font-mono text-[var(--color-ink-muted)] space-y-1">
+                            <p>No grounded query executed yet.</p>
+                            <p className="text-[11px]">
+                              Ask a question or select a starter prompt to synthesize answers with citations.
+                            </p>
+                          </div>
+                        )
+                      ) : (
+                        /* CHUNKS VIEW */
+                        ragRetrievalResults.length > 0 ? (
+                          <div className="space-y-3">
+                            {ragRetrievalResults.map((result) => (
+                              <div
+                                key={result.chunk.id}
+                                className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-2 text-xs"
+                              >
+                                <div className="flex items-center justify-between text-[11px] font-mono">
+                                  <div className="flex items-center gap-1.5 font-bold text-[var(--color-ink)] truncate max-w-[280px]">
+                                    <IconFileText size={13} className="shrink-0 text-[var(--color-ink-muted)]" />
+                                    <span>{result.chunk.documentName}</span>
+                                    <span className="text-[10px] text-[var(--color-ink-muted)] font-normal">
+                                      (Chunk #{result.chunk.chunkIndex})
+                                    </span>
+                                  </div>
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 text-[10px] font-bold">
+                                    {(result.score * 100).toFixed(1)}% Match
+                                  </span>
+                                </div>
+                                <div className="p-2.5 rounded-lg bg-[var(--color-paper-card)] border border-[var(--color-rule-subtle)] font-mono text-[11px] text-[var(--color-ink)] leading-relaxed whitespace-pre-wrap">
+                                  {result.chunk.text}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-12 text-xs font-mono text-[var(--color-ink-muted)] space-y-1">
+                            <p>No retrieved chunks to display.</p>
+                            <p className="text-[11px]">Click &quot;Retrieve Chunks&quot; to inspect matching excerpts.</p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3017,6 +3753,139 @@ export default function AIHubPage() {
                   className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
                 >
                   Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 📄 Add Document Modal (Phase 5) */}
+      <AnimatePresence>
+        {isAddDocModalOpen && (
+          <div
+            onClick={() => setIsAddDocModalOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xl space-y-4 text-left max-h-[90vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+                <div className="flex items-center gap-2">
+                  <IconFileText size={18} className="text-[var(--color-ink)]" />
+                  <div>
+                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">Add Knowledge Document</h3>
+                    <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+                      Indexed locally for semantic RAG retrieval (0 bytes uploaded)
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddDocModalOpen(false)}
+                  className="p-1 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto space-y-4 text-xs pr-1">
+                {/* File Upload Trigger */}
+                <div className="p-4 rounded-xl border border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] transition-all text-center space-y-2">
+                  <input
+                    ref={docFileInputRef}
+                    type="file"
+                    accept=".txt,.md,.json,.csv,.py,.ts,.tsx,.js,.cpp,.h,.log"
+                    onChange={handleDocFileUpload}
+                    className="hidden"
+                  />
+                  <div className="flex justify-center">
+                    <div className="p-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
+                      <IconUpload size={20} />
+                    </div>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => docFileInputRef.current?.click()}
+                      className="font-bold text-xs text-[var(--color-ink)] hover:underline cursor-pointer"
+                    >
+                      Choose file to index
+                    </button>
+                    <p className="text-[10.5px] font-mono text-[var(--color-ink-muted)] mt-0.5">
+                      Supports .md, .txt, .json, .csv, and source code files
+                    </p>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-[var(--color-rule-subtle)]" />
+                  <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase">or paste text</span>
+                  <div className="h-px flex-1 bg-[var(--color-rule-subtle)]" />
+                </div>
+
+                {/* Manual Text Input */}
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[var(--color-ink)]">
+                      Document Title / Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newDocTitle}
+                      onChange={(e) => setNewDocTitle(e.target.value)}
+                      placeholder="e.g. system_architecture_notes.md"
+                      className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-2 text-xs text-[var(--color-ink)] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-[var(--color-ink)]">
+                        Document Content
+                      </label>
+                      <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                        {newDocContent.length} chars (approx. {Math.max(1, Math.ceil(newDocContent.length / 500))} chunks)
+                      </span>
+                    </div>
+                    <textarea
+                      rows={7}
+                      value={newDocContent}
+                      onChange={(e) => setNewDocContent(e.target.value)}
+                      placeholder="Paste technical documentation, notes, API specifications, or code snippets here..."
+                      className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] font-mono focus:outline-hidden resize-none leading-relaxed"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setIsAddDocModalOpen(false)}
+                  className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] px-4 py-1.5 text-xs font-bold text-[var(--color-ink)] cursor-pointer transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newDocContent.trim()) return;
+                    handleIndexDocument(newDocTitle.trim() || 'Untitled_Document.md', newDocContent);
+                  }}
+                  disabled={!newDocContent.trim()}
+                  className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 disabled:opacity-40 cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <IconPlus size={13} />
+                  <span>Index Document</span>
                 </button>
               </div>
             </motion.div>

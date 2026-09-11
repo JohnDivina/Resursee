@@ -80,3 +80,30 @@ export interface AIHubSession {
 }
 
 export type OllamaConnectionStatus = 'checking' | 'connected' | 'offline';
+
+// --- Phase 5: RAG & Document Knowledge Types ---
+export interface DocumentChunk {
+  id: string;
+  documentId: string;
+  documentName: string;
+  chunkIndex: number;
+  text: string;
+  tokenCount: number;
+  embedding?: number[];
+}
+
+export interface IndexedDocument {
+  id: string;
+  name: string;
+  size: number;
+  characterCount: number;
+  chunks: DocumentChunk[];
+  createdAt: string;
+}
+
+export interface RetrievalResult {
+  chunk: DocumentChunk;
+  score: number; // 0 to 1
+  matchedTerms?: string[];
+}
+

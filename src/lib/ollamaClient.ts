@@ -4,6 +4,8 @@ import {
   OllamaChatMessage,
   OllamaChatResponseChunk,
   OllamaPullProgress,
+  DocumentChunk,
+  RetrievalResult,
 } from '@/types/aiHub';
 
 export const DEFAULT_OLLAMA_ENDPOINT = 'http://localhost:11434';
@@ -289,4 +291,217 @@ export async function startOllamaDaemon(): Promise<{
     };
   }
 }
+
+/**
+ * Recursively splits long text into overlapping chunks respecting natural paragraph and sentence boundaries.
+ */
+export function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {
+  const cleaned = text.trim();
+  if (!cleaned) return [];
+  if (cleaned.length <= chunkSize) return [cleaned];
+
+  const chunks: string[] = [];
+  let startIndex = 0;
+
+  while (startIndex < cleaned.length) {
+    let endIndex = startIndex + chunkSize;
+
+    if (endIndex < cleaned.length) {
+      // Look for a natural break: double newline, single newline, period, or space
+      const slice = cleaned.slice(startIndex, endIndex + 80);
+      const paragraphBreak = slice.lastIndexOf('\n\n', chunkSize);
+      const lineBreak = slice.lastIndexOf('\n', chunkSize);
+      const sentenceBreak = slice.lastIndexOf('. ', chunkSize);
+      const spaceBreak = slice.lastIndexOf(' ', chunkSize);
+
+      if (paragraphBreak > chunkSize * 0.6) {
+        endIndex = startIndex + paragraphBreak + 2;
+      } else if (sentenceBreak > chunkSize * 0.6) {
+        endIndex = startIndex + sentenceBreak + 2;
+      } else if (lineBreak > chunkSize * 0.5) {
+        endIndex = startIndex + lineBreak + 1;
+      } else if (spaceBreak > chunkSize * 0.5) {
+        endIndex = startIndex + spaceBreak + 1;
+      }
+    }
+
+    const chunk = cleaned.slice(startIndex, endIndex).trim();
+    if (chunk) {
+      chunks.push(chunk);
+    }
+
+    // Step forward, keeping overlap
+    startIndex = Math.max(startIndex + 1, endIndex - overlap);
+  }
+
+  return chunks;
+}
+
+/**
+ * Computes cosine similarity between two numeric vectors.
+ */
+export function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length || vecA.length === 0) return 0;
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+
+  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+  if (denominator === 0) return 0;
+  return Math.max(0, Math.min(1, dotProduct / denominator));
+}
+
+/**
+ * Fetches dense vector embedding from Ollama /api/embed or /api/embeddings.
+ */
+export async function getOllamaEmbedding(
+  endpoint: string = DEFAULT_OLLAMA_ENDPOINT,
+  model: string = 'nomic-embed-text',
+  prompt: string
+): Promise<number[]> {
+  const cleanEndpoint = endpoint.replace(/\/+$/, '');
+
+  // Try modern /api/embed first
+  try {
+    const embedRes = await fetch(`${cleanEndpoint}/api/embed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, input: prompt }),
+    });
+    if (embedRes.ok) {
+      const data = await embedRes.json();
+      if (Array.isArray(data?.embeddings) && data.embeddings[0]) {
+        return data.embeddings[0];
+      }
+    }
+  } catch {
+    // fallback to legacy /api/embeddings
+  }
+
+  // Fallback to legacy /api/embeddings
+  const res = await fetch(`${cleanEndpoint}/api/embeddings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, prompt }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Embedding failed (HTTP ${res.status}): ${errText}`);
+  }
+
+  const data = await res.json();
+  if (Array.isArray(data.embedding)) {
+    return data.embedding;
+  }
+
+  throw new Error('No embedding returned by model');
+}
+
+/**
+ * Hybrid Semantic & Lexical (TF-IDF Cosine) Retriever.
+ * Works with dense Ollama vectors when available, or client-side TF-IDF vector space with 100% reliability.
+ */
+export async function retrieveTopKChunks(
+  query: string,
+  chunks: DocumentChunk[],
+  options: {
+    endpoint?: string;
+    embeddingModel?: string;
+    topK?: number;
+    useDenseVectors?: boolean;
+  } = {}
+): Promise<RetrievalResult[]> {
+  if (chunks.length === 0 || !query.trim()) return [];
+
+  const topK = options.topK ?? 3;
+  const cleanQuery = query.toLowerCase().trim();
+  const queryTokens = cleanQuery.split(/[^a-z0-9_]+/).filter((t) => t.length > 2);
+
+  // 1. Try Dense Vector Embedding via Ollama if requested & model is active
+  if (options.useDenseVectors && options.embeddingModel) {
+    try {
+      const queryVec = await getOllamaEmbedding(
+        options.endpoint || DEFAULT_OLLAMA_ENDPOINT,
+        options.embeddingModel,
+        query
+      );
+
+      // Score chunks with vector similarity
+      const scored = chunks
+        .map((chunk) => {
+          const score = chunk.embedding ? cosineSimilarity(queryVec, chunk.embedding) : 0;
+          return { chunk, score };
+        })
+        .filter((r) => r.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      if (scored.length > 0) {
+        return scored.slice(0, topK);
+      }
+    } catch {
+      // Fallback cleanly to high-performance client-side TF-IDF vector space
+    }
+  }
+
+  // 2. High-Precision Client-Side TF-IDF Cosine Vector Space Retriever
+  const docFreq: Record<string, number> = {};
+  const chunkTokenized = chunks.map((chunk) => {
+    const tokens = chunk.text.toLowerCase().split(/[^a-z0-9_]+/).filter((t) => t.length > 2);
+    const unique = new Set(tokens);
+    unique.forEach((t) => {
+      docFreq[t] = (docFreq[t] || 0) + 1;
+    });
+    return { chunk, tokens };
+  });
+
+  const totalDocs = chunks.length;
+
+  // Score each chunk
+  const results: RetrievalResult[] = chunkTokenized.map(({ chunk, tokens }) => {
+    const tf: Record<string, number> = {};
+    tokens.forEach((t) => {
+      tf[t] = (tf[t] || 0) + 1;
+    });
+
+    let score = 0;
+    const matchedTerms: string[] = [];
+
+    queryTokens.forEach((qToken) => {
+      if (tf[qToken]) {
+        const idf = Math.log((totalDocs + 1) / ((docFreq[qToken] || 1) + 0.5)) + 1;
+        const termFreq = tf[qToken];
+        const tfWeight = (termFreq * 2.2) / (termFreq + 1.2 * (1 - 0.25 + 0.25 * (tokens.length / 120)));
+        score += tfWeight * idf;
+        matchedTerms.push(qToken);
+      } else {
+        const subMatch = tokens.some((t) => t.includes(qToken) || qToken.includes(t));
+        if (subMatch) {
+          score += 0.35;
+          matchedTerms.push(qToken);
+        }
+      }
+    });
+
+    const normalized = Math.min(0.98, Math.max(0.05, score / (queryTokens.length * 2.8 + 1)));
+
+    return {
+      chunk,
+      score: matchedTerms.length > 0 ? normalized : 0,
+      matchedTerms,
+    };
+  });
+
+  return results
+    .filter((r) => r.score > 0.1)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+}
+
 
