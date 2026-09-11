@@ -22,9 +22,15 @@ import {
   IconUpload,
   IconSparkles,
   IconPlayerPlay,
+  IconPlayerStop,
   IconRefresh,
   IconAlertCircle,
   IconX,
+  IconHistory,
+  IconPlus,
+  IconTrash,
+  IconFileExport,
+  IconAdjustmentsHorizontal,
 } from '@tabler/icons-react';
 import {
   checkOllamaConnection,
@@ -34,7 +40,7 @@ import {
   streamOllamaChat,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
-import { OllamaModel, OllamaConnectionStatus } from '@/types/aiHub';
+import { OllamaModel, OllamaConnectionStatus, AIHubSession } from '@/types/aiHub';
 
 // --- Types ---
 type ActiveTab = 'chat' | 'models' | 'vision' | 'rag' | 'settings';
@@ -121,6 +127,129 @@ const CATALOG_MODELS: ModelItem[] = [
   },
 ];
 
+// Helper to format inline code & bold text within markdown lines
+function parseInlineFormatting(text: string) {
+  const regex = /(`[^`]+`|\*\*[^*]+\*\*)/g;
+  const tokens = text.split(regex);
+
+  return tokens.map((token, i) => {
+    if (token.startsWith('`') && token.endsWith('`') && token.length > 2) {
+      return (
+        <code
+          key={i}
+          className="rounded-md bg-neutral-200/80 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[var(--color-ink)] border border-neutral-300 dark:border-neutral-700"
+        >
+          {token.slice(1, -1)}
+        </code>
+      );
+    }
+    if (token.startsWith('**') && token.endsWith('**') && token.length > 4) {
+      return (
+        <strong key={i} className="font-bold text-[var(--color-ink)]">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    }
+    return token;
+  });
+}
+
+// Formatted Message component for parsing markdown code blocks and inline styles
+function FormattedMessage({
+  content,
+  messageId,
+  copiedKey,
+  onCopy,
+}: {
+  content: string;
+  messageId: string;
+  copiedKey: string | null;
+  onCopy: (text: string, key: string) => void;
+}) {
+  const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)(?:```|$)/g;
+  const parts: Array<{ type: 'text' | 'code'; content: string; language?: string }> = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      const textChunk = content.substring(lastIndex, match.index);
+      if (textChunk) parts.push({ type: 'text', content: textChunk });
+    }
+    parts.push({
+      type: 'code',
+      language: match[1] || 'code',
+      content: match[2],
+    });
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < content.length) {
+    const textChunk = content.substring(lastIndex);
+    if (textChunk) parts.push({ type: 'text', content: textChunk });
+  }
+
+  if (parts.length === 0) {
+    parts.push({ type: 'text', content });
+  }
+
+  return (
+    <div className="space-y-3">
+      {parts.map((part, idx) => {
+        if (part.type === 'code') {
+          const codeKey = `code-${messageId}-${idx}`;
+          return (
+            <div
+              key={idx}
+              className="rounded-xl border border-[var(--color-rule-strong)] bg-neutral-950 text-neutral-100 p-3 font-mono text-[11px] overflow-x-auto relative my-2 shadow-xs"
+            >
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-[10px] text-neutral-400">
+                <span className="font-bold uppercase tracking-wider text-neutral-300">
+                  {part.language || 'code'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onCopy(part.content, codeKey)}
+                  className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer bg-neutral-900 hover:bg-neutral-800 px-2 py-0.5 rounded-md border border-neutral-800 text-[10px]"
+                >
+                  {copiedKey === codeKey ? (
+                    <>
+                      <IconCheck size={11} className="text-white" />
+                      <span className="font-semibold text-white">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <IconCopy size={11} />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <pre className="overflow-x-auto leading-relaxed whitespace-pre font-mono">
+                {part.content}
+              </pre>
+            </div>
+          );
+        }
+
+        return (
+          <div key={idx} className="space-y-1.5">
+            {part.content.split('\n').map((line, lineIdx) =>
+              line.trim() === '' ? (
+                <div key={lineIdx} className="h-1.5" />
+              ) : (
+                <p key={lineIdx} className="leading-relaxed">
+                  {parseInlineFormatting(line)}
+                </p>
+              )
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AIHubPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
@@ -136,31 +265,215 @@ export default function AIHubPage() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState<boolean>(false);
 
-  // Dynamic Inference Parameters
+  // Dynamic Inference Parameters (Phase 2)
   const [temperature, setTemperature] = useState<number>(0.7);
   const [numCtx, setNumCtx] = useState<number>(4096);
   const [systemPrompt, setSystemPrompt] = useState<string>(
     'You are a private, offline intelligence engine integrated into Resursee. Provide concise, factual, and direct answers without unnecessary filler.'
   );
 
-  // Chat State
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content:
-        'Welcome to **Resursee Local AI Hub**. All inference and embeddings run 100% locally on your machine via the local Ollama daemon (`http://localhost:11434`) with zero cloud data egress.\n\nSelect a model or try a sample inquiry below to begin exploring.',
-      timestamp: 'Just now',
-    },
-  ]);
+  // Chat State & Sessions (Phase 2)
+  const DEFAULT_WELCOME: ChatMessage = {
+    id: 'welcome',
+    role: 'assistant',
+    content:
+      'Welcome to **Resursee Local AI Hub**. All inference and embeddings run 100% locally on your machine via the local Ollama daemon (`http://localhost:11434`) with zero cloud data egress.\n\nSelect a model or try a sample inquiry below to begin exploring.',
+    timestamp: 'Just now',
+  };
+
+  const [messages, setMessages] = useState<ChatMessage[]>([DEFAULT_WELCOME]);
   const [promptInput, setPromptInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Session Persistence & Modals (Phase 2)
+  const [sessions, setSessions] = useState<AIHubSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('default-session');
+  const [isSessionDrawerOpen, setIsSessionDrawerOpen] = useState(false);
+  const [isParametersModalOpen, setIsParametersModalOpen] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Model Library State
   const [modelCategory, setModelCategory] = useState<string>('all');
   const [modelSearch, setModelSearch] = useState<string>('');
   const [downloadingModelId, setDownloadingModelId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
+
+  // Auto-scroll messages anchor
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isGenerating]);
+
+  // Load Sessions from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('resursee_ai_hub_sessions');
+      if (raw) {
+        const parsed: AIHubSession[] = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSessions(parsed);
+          const active = parsed[0];
+          setCurrentSessionId(active.id);
+          setMessages(active.messages as ChatMessage[]);
+          if (active.model) setSelectedModel(active.model);
+          if (active.temperature !== undefined) setTemperature(active.temperature);
+          if (active.systemPrompt) setSystemPrompt(active.systemPrompt);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse sessions:', e);
+    }
+
+    const initialSession: AIHubSession = {
+      id: `sess-${Date.now()}`,
+      title: 'New Conversation',
+      model: selectedModel,
+      temperature: 0.7,
+      systemPrompt,
+      messages: [DEFAULT_WELCOME],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setSessions([initialSession]);
+    setCurrentSessionId(initialSession.id);
+    setMessages(initialSession.messages as ChatMessage[]);
+  }, []);
+
+  // Save active session to localStorage
+  const saveCurrentSession = (updatedMessages: ChatMessage[], newTitle?: string) => {
+    setSessions((prev) => {
+      const next = prev.map((s) => {
+        if (s.id === currentSessionId) {
+          return {
+            ...s,
+            title: newTitle || s.title,
+            model: selectedModel,
+            temperature,
+            systemPrompt,
+            messages: updatedMessages,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return s;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('resursee_ai_hub_sessions', JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  // Session Handlers
+  const handleNewChat = () => {
+    if (isGenerating) handleStopGeneration();
+    const newSession: AIHubSession = {
+      id: `sess-${Date.now()}`,
+      title: 'New Conversation',
+      model: selectedModel,
+      temperature,
+      systemPrompt,
+      messages: [
+        {
+          id: `welcome-${Date.now()}`,
+          role: 'assistant',
+          content: `New session initialized. Running on local engine **${selectedModel}** with zero data egress.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const updated = [newSession, ...sessions];
+    setSessions(updated);
+    setCurrentSessionId(newSession.id);
+    setMessages(newSession.messages as ChatMessage[]);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('resursee_ai_hub_sessions', JSON.stringify(updated));
+    }
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    if (isGenerating) handleStopGeneration();
+    const target = sessions.find((s) => s.id === sessionId);
+    if (target) {
+      setCurrentSessionId(target.id);
+      setMessages(target.messages as ChatMessage[]);
+      if (target.model) setSelectedModel(target.model);
+      if (target.temperature !== undefined) setTemperature(target.temperature);
+      if (target.systemPrompt) setSystemPrompt(target.systemPrompt);
+      setIsSessionDrawerOpen(false);
+    }
+  };
+
+  const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const remaining = sessions.filter((s) => s.id !== sessionId);
+    if (remaining.length === 0) {
+      handleNewChat();
+    } else {
+      setSessions(remaining);
+      if (sessionId === currentSessionId) {
+        setCurrentSessionId(remaining[0].id);
+        setMessages(remaining[0].messages as ChatMessage[]);
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('resursee_ai_hub_sessions', JSON.stringify(remaining));
+      }
+    }
+  };
+
+  const handleClearChat = () => {
+    if (isGenerating) handleStopGeneration();
+    const cleared: ChatMessage[] = [
+      {
+        id: `welcome-${Date.now()}`,
+        role: 'assistant',
+        content: `Conversation reset. Ready for your inquiries on local engine **${selectedModel}**.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ];
+    setMessages(cleared);
+    saveCurrentSession(cleared);
+  };
+
+  const handleExportChat = () => {
+    const session = sessions.find((s) => s.id === currentSessionId);
+    const title = session?.title || 'Resursee AI Hub Conversation';
+    let md = `# ${title}\n\n`;
+    md += `- **Date**: ${new Date().toLocaleString()}\n`;
+    md += `- **Model**: \`${selectedModel}\`\n`;
+    md += `- **Daemon Endpoint**: \`${endpoint}\`\n`;
+    md += `- **Temperature**: \`${temperature.toFixed(2)}\`\n`;
+    md += `- **Data Sovereignty**: 100% Local Inference via Ollama\n\n---\n\n`;
+
+    messages.forEach((m) => {
+      const roleName = m.role === 'user' ? 'User' : `Assistant (${selectedModel})`;
+      md += `### ${roleName} [${m.timestamp}]\n\n${m.content}\n\n`;
+      if (m.codeSnippet) {
+        md += `\`\`\`\n${m.codeSnippet}\n\`\`\`\n\n`;
+      }
+    });
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `resursee-chat-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsGenerating(false);
+  };
 
   // Connection Bridge Check
   const refreshConnection = async (targetEndpoint: string = endpoint) => {
@@ -216,7 +529,7 @@ export default function AIHubPage() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Live Chat Generation (Phase 2 with Real Ollama Stream & Offline Fallback)
+  // Live Chat Generation (Phase 2 with Real Multi-Turn History, Streaming & Abort)
   const handleSendMessage = async () => {
     if (!promptInput.trim() || isGenerating) return;
 
@@ -229,6 +542,15 @@ export default function AIHubPage() {
 
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
+
+    // Auto title session from first prompt if still default
+    let updatedTitle: string | undefined;
+    const curSess = sessions.find((s) => s.id === currentSessionId);
+    if (curSess && curSess.title === 'New Conversation') {
+      updatedTitle = userMsg.content.slice(0, 36) + (userMsg.content.length > 36 ? '...' : '');
+    }
+
+    saveCurrentSession(newMessages, updatedTitle);
     const inquiry = promptInput.trim();
     setPromptInput('');
     setIsGenerating(true);
@@ -241,20 +563,24 @@ export default function AIHubPage() {
         content: '',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      const withAssistant = [...newMessages, assistantMsg];
+      setMessages(withAssistant);
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
       try {
         const ollamaHistory = [
           { role: 'system' as const, content: systemPrompt },
           ...newMessages
-            .filter((m) => m.id !== 'welcome')
+            .filter((m) => !m.id.startsWith('welcome'))
             .map((m) => ({
               role: m.role as 'user' | 'assistant',
               content: m.content,
             })),
         ];
 
-        await streamOllamaChat(
+        const fullOutput = await streamOllamaChat(
           endpoint,
           {
             model: selectedModel,
@@ -266,21 +592,35 @@ export default function AIHubPage() {
             setMessages((prev) =>
               prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullText } : msg))
             );
-          }
+          },
+          controller.signal
         );
+
+        const finalized = withAssistant.map((msg) =>
+          msg.id === assistantId ? { ...msg, content: fullOutput } : msg
+        );
+        saveCurrentSession(finalized, updatedTitle);
       } catch (err: any) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantId
-              ? {
-                  ...msg,
-                  content: `⚠️ Failed to stream from Ollama (${err.message}). Ensure model "${selectedModel}" is pulled locally.`,
-                }
-              : msg
-          )
-        );
+        if (err.name === 'AbortError') {
+          setMessages((prev) => {
+            saveCurrentSession(prev, updatedTitle);
+            return prev;
+          });
+        } else {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? {
+                    ...msg,
+                    content: `⚠️ Failed to stream from Ollama (${err.message}). Ensure model "${selectedModel}" is pulled locally.`,
+                  }
+                : msg
+            )
+          );
+        }
       } finally {
         setIsGenerating(false);
+        abortControllerRef.current = null;
       }
     } else {
       // Offline fallback simulation
@@ -289,23 +629,7 @@ export default function AIHubPage() {
         let code = '';
 
         if (inquiry.toLowerCase().includes('esp32') || inquiry.toLowerCase().includes('iot')) {
-          replyContent = `Here is a lightweight FreeRTOS sensor telemetry task for the ESP32 connecting to Resursee's IoT Cloud ingestion API:`;
-          code = `#include <WiFi.h>
-#include <HTTPClient.h>
-
-void telemetryTask(void *pvParameters) {
-  for(;;) {
-    float temperature = readDHT22();
-    if (WiFi.status() == WL_CONNECTED) {
-      HTTPClient http;
-      http.begin("http://localhost:3000/api/iot/ingest");
-      http.addHeader("Content-Type", "application/json");
-      http.POST("{\\"device_id\\":\\"esp32-node\\",\\"temp\\":" + String(temperature) + "}");
-      http.end();
-    }
-    vTaskDelay(pdMS_TO_TICKS(5000));
-  }
-}`;
+          replyContent = `Here is a lightweight FreeRTOS sensor telemetry task for the ESP32 connecting to Resursee's IoT Cloud ingestion API:\n\n\`\`\`cpp\n#include <WiFi.h>\n#include <HTTPClient.h>\n\nvoid telemetryTask(void *pvParameters) {\n  for(;;) {\n    float temperature = readDHT22();\n    if (WiFi.status() == WL_CONNECTED) {\n      HTTPClient http;\n      http.begin("http://localhost:3000/api/iot/ingest");\n      http.addHeader("Content-Type", "application/json");\n      http.POST("{\\"device_id\\":\\"esp32-node\\",\\"temp\\":" + String(temperature) + "}");\n      http.end();\n    }\n    vTaskDelay(pdMS_TO_TICKS(5000));\n  }\n}\n\`\`\``;
         } else if (inquiry.toLowerCase().includes('quant') || inquiry.toLowerCase().includes('gguf')) {
           replyContent = `**Quantization Comparison: Q4_K_M vs Q8_0**\n\n- **Q4_K_M (4-bit)**: Compresses weights down to ~4.5 bits/weight. Ideal for consumer laptops (fits in 8GB–16GB RAM) with minimal perplexity degradation (< 0.15 PPL loss).\n- **Q8_0 (8-bit)**: Near-lossless precision matching original FP16 checkpoints, but requires double the VRAM.\n\nFor local execution on edge hardware, **Q4_K_M** delivers the optimal speed-to-accuracy ratio.`;
         } else {
@@ -320,7 +644,9 @@ void telemetryTask(void *pvParameters) {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
 
-        setMessages((prev) => [...prev, assistantMsg]);
+        const updated = [...newMessages, assistantMsg];
+        setMessages(updated);
+        saveCurrentSession(updated, updatedTitle);
         setIsGenerating(false);
       }, 700);
     }
@@ -577,13 +903,71 @@ void telemetryTask(void *pvParameters) {
           {/* VIEW 1: CHAT & INFERENCE */}
           {activeTab === 'chat' && (
             <div className="max-w-4xl mx-auto h-full flex flex-col justify-between gap-4">
+              {/* Chat Sub-Toolbar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--color-rule-subtle)] shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsSessionDrawerOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
+                  >
+                    <IconHistory size={14} className="shrink-0" />
+                    <span>Sessions ({sessions.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleNewChat}
+                    className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-2.5 py-1.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
+                  >
+                    <IconPlus size={14} className="shrink-0" />
+                    <span className="hidden sm:inline">New Chat</span>
+                  </button>
+
+                  <span className="text-xs font-mono text-[var(--color-ink-muted)] truncate max-w-[140px] sm:max-w-[220px]">
+                    {sessions.find((s) => s.id === currentSessionId)?.title || 'New Conversation'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsParametersModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-2.5 py-1.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
+                    title="Inference Parameters (Temperature, Context Length, System Prompt)"
+                  >
+                    <IconAdjustmentsHorizontal size={14} />
+                    <span className="hidden sm:inline">Parameters</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportChat}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-2.5 py-1.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
+                    title="Export conversation to Markdown (.md)"
+                  >
+                    <IconFileExport size={14} />
+                    <span className="hidden sm:inline">Export</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleClearChat}
+                    className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 p-1.5 text-xs text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
+                    title="Reset current conversation"
+                  >
+                    <IconTrash size={14} />
+                  </button>
+                </div>
+              </div>
+
               {/* Message List */}
               <div className="flex-1 overflow-y-auto space-y-4 pr-1">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
                     className={cn(
-                      'flex flex-col gap-1.5 max-w-[88%] sm:max-w-[80%]',
+                      'flex flex-col gap-1.5 max-w-[90%] sm:max-w-[82%]',
                       msg.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
                     )}
                   >
@@ -601,10 +985,19 @@ void telemetryTask(void *pvParameters) {
                           : 'bg-[var(--color-paper-card)] border border-[var(--color-rule-subtle)] text-[var(--color-ink)] shadow-2xs'
                       )}
                     >
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      {msg.role === 'user' ? (
+                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                      ) : (
+                        <FormattedMessage
+                          content={msg.content}
+                          messageId={msg.id}
+                          copiedKey={copiedKey}
+                          onCopy={handleCopy}
+                        />
+                      )}
 
-                      {/* Code Block if Present */}
-                      {msg.codeSnippet && (
+                      {/* Fallback code snippet if present */}
+                      {msg.codeSnippet && !msg.content.includes('```') && (
                         <div className="mt-3 rounded-xl border border-[var(--color-rule-strong)] bg-neutral-950 text-neutral-100 p-3 font-mono text-[11px] overflow-x-auto relative group">
                           <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-[10px] text-neutral-400">
                             <span>code</span>
@@ -639,6 +1032,8 @@ void telemetryTask(void *pvParameters) {
                     <span>Streaming local inference from {selectedModel}...</span>
                   </div>
                 )}
+
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Quick Starter Suggestions */}
@@ -680,23 +1075,44 @@ void telemetryTask(void *pvParameters) {
 
                 <div className="flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-2 px-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
-                      Temp: 0.7
-                    </span>
-                    <span className="hidden sm:inline rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
-                      Ctx: 4096
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsParametersModalOpen(true)}
+                      className="rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold cursor-pointer transition-colors"
+                      title="Adjust Temperature"
+                    >
+                      Temp: {temperature.toFixed(2)}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsParametersModalOpen(true)}
+                      className="hidden sm:inline rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold cursor-pointer transition-colors"
+                      title="Adjust Context Tokens"
+                    >
+                      Ctx: {numCtx}
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSendMessage}
-                    disabled={!promptInput.trim() || isGenerating}
-                    className="flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
-                  >
-                    <span>Send</span>
-                    <IconPlayerPlay size={13} fill="currentColor" />
-                  </button>
+                  {isGenerating ? (
+                    <button
+                      type="button"
+                      onClick={handleStopGeneration}
+                      className="flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <IconPlayerStop size={13} fill="currentColor" />
+                      <span>Stop</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendMessage}
+                      disabled={!promptInput.trim()}
+                      className="flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
+                    >
+                      <span>Send</span>
+                      <IconPlayerPlay size={13} fill="currentColor" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -989,14 +1405,19 @@ void telemetryTask(void *pvParameters) {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      defaultValue="http://localhost:11434"
+                      value={endpoint}
+                      onChange={(e) => setEndpoint(e.target.value)}
                       className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-2 text-xs font-mono font-bold text-[var(--color-ink)] focus:outline-hidden"
                     />
                     <button
                       type="button"
+                      onClick={() => {
+                        localStorage.setItem('resursee_ollama_endpoint', endpoint);
+                        refreshConnection(endpoint);
+                      }}
                       className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
                     >
-                      Test Link
+                      {isCheckingConnection ? 'Connecting...' : 'Save & Refresh'}
                     </button>
                   </div>
                   <p className="text-[11px] text-[var(--color-ink-muted)]">
@@ -1007,10 +1428,18 @@ void telemetryTask(void *pvParameters) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[var(--color-rule-subtle)]">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-[var(--color-ink)]">Temperature (Creativity vs Determinism)</label>
-                    <input type="range" min="0" max="1" step="0.1" defaultValue="0.7" className="w-full accent-neutral-900 dark:accent-white cursor-pointer" />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={temperature}
+                      onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                      className="w-full accent-neutral-900 dark:accent-white cursor-pointer"
+                    />
                     <div className="flex justify-between text-[10px] font-mono text-[var(--color-ink-muted)]">
                       <span>0.0 (Strict Logic)</span>
-                      <span>0.7 (Default)</span>
+                      <span className="font-bold text-[var(--color-ink)]">{temperature.toFixed(2)}</span>
                       <span>1.0 (Creative)</span>
                     </div>
                   </div>
@@ -1018,8 +1447,9 @@ void telemetryTask(void *pvParameters) {
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-[var(--color-ink)]">Context Token Limit</label>
                     <select
-                      defaultValue="4096"
-                      className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-2 text-xs font-mono font-bold text-[var(--color-ink)] focus:outline-hidden"
+                      value={numCtx.toString()}
+                      onChange={(e) => setNumCtx(parseInt(e.target.value, 10))}
+                      className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-2 text-xs font-mono font-bold text-[var(--color-ink)] focus:outline-hidden cursor-pointer"
                     >
                       <option value="2048">2,048 Tokens (Low Memory)</option>
                       <option value="4096">4,096 Tokens (Standard)</option>
@@ -1033,7 +1463,8 @@ void telemetryTask(void *pvParameters) {
                   <label className="text-xs font-bold text-[var(--color-ink)]">Global System Prompt</label>
                   <textarea
                     rows={3}
-                    defaultValue="You are a private, offline intelligence engine integrated into Resursee. Provide concise, factual, and direct answers without unnecessary filler."
+                    value={systemPrompt}
+                    onChange={(e) => setSystemPrompt(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] focus:outline-hidden"
                   />
                 </div>
@@ -1177,6 +1608,197 @@ void telemetryTask(void *pvParameters) {
                   className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-5 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
                 >
                   Got It, Let&apos;s Continue
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 💬 Conversation Sessions Drawer Modal (Phase 2) */}
+      <AnimatePresence>
+        {isSessionDrawerOpen && (
+          <div
+            onClick={() => setIsSessionDrawerOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+                <div className="flex items-center gap-2">
+                  <IconHistory size={18} className="text-[var(--color-ink)]" />
+                  <h3 className="text-sm font-extrabold text-[var(--color-ink)]">Saved Conversations</h3>
+                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 text-[10px] font-mono font-bold">
+                    {sessions.length}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSessionDrawerOpen(false)}
+                  className="p-1 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleNewChat();
+                  setIsSessionDrawerOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-2 text-xs font-bold shadow-xs hover:opacity-90 transition-all cursor-pointer"
+              >
+                <IconPlus size={15} />
+                <span>Start New Conversation</span>
+              </button>
+
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[160px]">
+                {sessions.map((sess) => (
+                  <div
+                    key={sess.id}
+                    onClick={() => handleSelectSession(sess.id)}
+                    className={cn(
+                      'group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer text-left',
+                      sess.id === currentSessionId
+                        ? 'border-neutral-900 dark:border-white bg-[var(--color-paper-surface)] shadow-2xs'
+                        : 'border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] hover:border-[var(--color-rule-strong)] hover:bg-[var(--color-paper-muted)]'
+                    )}
+                  >
+                    <div className="min-w-0 flex-1 pr-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-[var(--color-ink)] truncate">
+                          {sess.title}
+                        </span>
+                        {sess.id === currentSessionId && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--color-ink-muted)] mt-0.5">
+                        <span>{sess.model || selectedModel}</span>
+                        <span>•</span>
+                        <span>{sess.messages.length} msgs</span>
+                        <span>•</span>
+                        <span>{new Date(sess.updatedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteSession(sess.id, e)}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer"
+                      title="Delete Session"
+                    >
+                      <IconTrash size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ⚙️ Dynamic Inference Parameters Modal (Phase 2) */}
+      <AnimatePresence>
+        {isParametersModalOpen && (
+          <div
+            onClick={() => setIsParametersModalOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+                <div className="flex items-center gap-2">
+                  <IconAdjustmentsHorizontal size={18} className="text-[var(--color-ink)]" />
+                  <h3 className="text-sm font-extrabold text-[var(--color-ink)]">Inference Parameters</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsParametersModalOpen(false)}
+                  className="p-1 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-left text-xs">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-[var(--color-ink)]">Temperature (Creativity)</label>
+                    <span className="font-mono font-bold text-[var(--color-ink)]">{temperature.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={temperature}
+                    onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                    className="w-full accent-neutral-900 dark:accent-white cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] font-mono text-[var(--color-ink-muted)]">
+                    <span>0.0 (Strict / Code)</span>
+                    <span>0.7 (Balanced)</span>
+                    <span>1.0 (Creative)</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-[var(--color-ink)]">Context Token Window</label>
+                  <select
+                    value={numCtx.toString()}
+                    onChange={(e) => setNumCtx(parseInt(e.target.value, 10))}
+                    className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-2 text-xs font-mono font-bold text-[var(--color-ink)] focus:outline-hidden cursor-pointer"
+                  >
+                    <option value="2048">2,048 Tokens (Low Memory)</option>
+                    <option value="4096">4,096 Tokens (Standard)</option>
+                    <option value="8192">8,192 Tokens (Extended)</option>
+                    <option value="16384">16,384 Tokens (Max VRAM)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-[var(--color-ink)]">System Prompt</label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSystemPrompt(
+                          'You are a private, offline intelligence engine integrated into Resursee. Provide concise, factual, and direct answers without unnecessary filler.'
+                        )
+                      }
+                      className="text-[10px] font-mono text-[var(--color-ink-muted)] hover:underline cursor-pointer"
+                    >
+                      Reset Default
+                    </button>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={systemPrompt}
+                    onChange={(e) => setSystemPrompt(e.target.value)}
+                    className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] focus:outline-hidden resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setIsParametersModalOpen(false)}
+                  className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
+                >
+                  Apply & Close
                 </button>
               </div>
             </motion.div>
