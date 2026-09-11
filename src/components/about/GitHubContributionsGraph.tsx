@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GithubLogo, ArrowSquareOut, Fire, CalendarCheck, GitCommit } from '@phosphor-icons/react';
+import { GithubLogo, ArrowSquareOut } from '@phosphor-icons/react';
 import initialData from '@/data/github_contributions.json';
 
 interface ContributionDay {
@@ -130,27 +130,6 @@ export default function GitHubContributionsGraph() {
     return labels;
   }, [displayWeeks]);
 
-  // Activity stats calculation
-  const stats = useMemo(() => {
-    const activeDays = data.contributions.filter((d) => d.count > 0).length;
-    let longestStreak = 0;
-    let currentStreak = 0;
-
-    for (const day of data.contributions) {
-      if (day.count > 0) {
-        currentStreak++;
-        if (currentStreak > longestStreak) longestStreak = currentStreak;
-      } else {
-        currentStreak = 0;
-      }
-    }
-
-    return {
-      activeDays,
-      longestStreak: longestStreak || 14,
-    };
-  }, [data.contributions]);
-
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
     const d = new Date(dateStr + 'T00:00:00');
@@ -249,7 +228,7 @@ export default function GitHubContributionsGraph() {
             href="https://github.com/JohnDivina"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 font-mono text-xs font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] hover:border-[var(--color-primary)] transition-all cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 font-mono text-xs font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] hover:border-[var(--color-primary)] transition-all cursor-pointer shrink-0"
           >
             <GithubLogo size={14} weight="bold" />
             <span>@JohnDivina</span>
@@ -260,56 +239,6 @@ export default function GitHubContributionsGraph() {
 
       {/* GitHub Calendar Card */}
       <div className="relative rounded-[20px] sm:rounded-[24px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
-        {/* Quick Highlights Strip on Mobile & Tablet */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pb-4 mb-4 border-b border-[var(--color-rule-subtle)] text-xs">
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-paper-muted)] text-[var(--color-ink)]">
-              <GitCommit size={15} weight="bold" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase">Total</p>
-              <p className="text-xs font-bold text-[var(--color-ink)] truncate">
-                {data.total.lastYear.toLocaleString()} commits
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-paper-muted)] text-[var(--color-ink)]">
-              <CalendarCheck size={15} weight="bold" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase">Active Days</p>
-              <p className="text-xs font-bold text-[var(--color-ink)] truncate">
-                {stats.activeDays} days active
-              </p>
-            </div>
-          </div>
-
-          <div className="col-span-2 sm:col-span-1 flex items-center justify-between sm:justify-start gap-2 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-paper-muted)] text-[var(--color-ink)]">
-                <Fire size={15} weight="bold" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase">Cadence</p>
-                <p className="text-xs font-bold text-[var(--color-ink)] truncate">
-                  Continuous Ship
-                </p>
-              </div>
-            </div>
-            <a
-              href="https://github.com/JohnDivina"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="sm:hidden inline-flex items-center gap-1 text-[11px] font-mono font-bold text-[var(--color-primary)] hover:underline"
-            >
-              <span>GitHub</span>
-              <ArrowSquareOut size={12} />
-            </a>
-          </div>
-        </div>
-
         {/* Swipe helper pill for touch screens when scrolling is active */}
         {timeframe !== '3m' && (
           <div className="sm:hidden mb-3 flex items-center justify-center">
@@ -404,11 +333,15 @@ export default function GitHubContributionsGraph() {
           {/* Left: Summary */}
           <div className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
             <span className="font-semibold text-[var(--color-ink)]">
+              {data.total.lastYear.toLocaleString()} contributions in the last year
+            </span>
+            <span className="hidden sm:inline text-[var(--color-rule-strong)]">•</span>
+            <span className="hidden sm:inline text-[var(--color-ink-muted)]">
               {timeframe === '3m'
-                ? 'Showing recent 14 weeks of activity'
+                ? 'Recent 14 weeks'
                 : timeframe === '6m'
-                ? 'Showing past 6 months of activity'
-                : 'Showing full calendar year'}
+                ? 'Past 6 months'
+                : 'Full year'}
             </span>
           </div>
 
