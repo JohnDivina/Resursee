@@ -31,12 +31,17 @@ import {
   IconTrash,
   IconFileExport,
   IconAdjustmentsHorizontal,
+  IconInfoCircle,
+  IconAlertTriangle,
+  IconLayersLinked,
+  IconDisc,
 } from '@tabler/icons-react';
 import {
   checkOllamaConnection,
   getRunningModels,
   pullOllamaModel,
   deleteOllamaModel,
+  showOllamaModel,
   streamOllamaChat,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
@@ -293,11 +298,19 @@ export default function AIHubPage() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Model Library State
+  // Model Library Management State (Phase 3)
   const [modelCategory, setModelCategory] = useState<string>('all');
   const [modelSearch, setModelSearch] = useState<string>('');
+  const [customPullTag, setCustomPullTag] = useState<string>('');
   const [downloadingModelId, setDownloadingModelId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [downloadStatus, setDownloadStatus] = useState<string>('');
+  const [modelToDelete, setModelToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [inspectingModel, setInspectingModel] = useState<string | null>(null);
+  const [inspectData, setInspectData] = useState<any | null>(null);
+  const [isLoadingInspect, setIsLoadingInspect] = useState<boolean>(false);
+  const pullAbortControllerRef = useRef<AbortController | null>(null);
 
   // Auto-scroll messages anchor
   useEffect(() => {
@@ -652,38 +665,151 @@ export default function AIHubPage() {
     }
   };
 
-  // Live Model Pull with Real Daemon Stream (Phase 3 ready)
-  const handlePullModel = async (modelId: string) => {
-    if (downloadingModelId) return;
-    setDownloadingModelId(modelId);
+  // Cancel Active Model Pull (Phase 3)
+  const handleCancelPull = () => {
+    if (pullAbortControllerRef.current) {
+      pullAbortControllerRef.current.abort();
+      pullAbortControllerRef.current = null;
+    }
+    setDownloadingModelId(null);
     setDownloadProgress(0);
+    setDownloadStatus('');
+  };
+
+  // Live Model Pull with Real Daemon Stream (Phase 3)
+  const handlePullModel = async (modelId: string) => {
+    const cleanId = modelId.trim();
+    if (!cleanId || downloadingModelId) return;
+    setDownloadingModelId(cleanId);
+    setDownloadProgress(0);
+    setDownloadStatus('Connecting to Ollama registry...');
 
     if (connectionStatus === 'connected') {
+      const controller = new AbortController();
+      pullAbortControllerRef.current = controller;
+
       try {
-        await pullOllamaModel(endpoint, modelId, (progress) => {
-          if (progress.percent !== undefined) {
-            setDownloadProgress(progress.percent);
-          }
-        });
+        await pullOllamaModel(
+          endpoint,
+          cleanId,
+          (progress) => {
+            if (progress.status) {
+              setDownloadStatus(progress.status);
+            }
+            if (progress.percent !== undefined) {
+              setDownloadProgress(progress.percent);
+            }
+          },
+          controller.signal
+        );
+        setDownloadStatus('Pull completed successfully!');
         await refreshConnection();
+        setCustomPullTag('');
       } catch (err: any) {
-        alert(`Failed to pull model: ${err.message}`);
+        if (err.name === 'AbortError') {
+          // Cancelled by user
+        } else {
+          alert(`Failed to pull model "${cleanId}": ${err.message}`);
+        }
       } finally {
         setDownloadingModelId(null);
+        setDownloadProgress(0);
+        setDownloadStatus('');
+        pullAbortControllerRef.current = null;
       }
     } else {
+      // Offline fallback simulation
       const interval = setInterval(() => {
         setDownloadProgress((prev) => {
           if (prev >= 100) {
             clearInterval(interval);
             setDownloadingModelId(null);
+            setDownloadStatus('');
             return 100;
           }
+          setDownloadStatus(`Simulating layer download (${prev + 20}%)...`);
           return prev + 20;
         });
-      }, 250);
+      }, 300);
     }
   };
+
+  // Delete Local Model from Disk (Phase 3)
+  const handleDeleteModel = async () => {
+    if (!modelToDelete) return;
+    setIsDeleting(true);
+    try {
+      if (connectionStatus === 'connected') {
+        await deleteOllamaModel(endpoint, modelToDelete);
+        await refreshConnection();
+      }
+      setModelToDelete(null);
+    } catch (err: any) {
+      alert(`Failed to delete model: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Inspect Model Architecture & Details (Phase 3)
+  const handleInspectModel = async (modelId: string) => {
+    setInspectingModel(modelId);
+    setIsLoadingInspect(true);
+    setInspectData(null);
+
+    if (connectionStatus === 'connected') {
+      try {
+        const data = await showOllamaModel(endpoint, modelId);
+        setInspectData(data);
+      } catch (err: any) {
+        setInspectData({ error: err.message || 'Model details not available until pulled.' });
+      } finally {
+        setIsLoadingInspect(false);
+      }
+    } else {
+      // Offline fallback inspect
+      const cat = CATALOG_MODELS.find((c) => c.id === modelId);
+      if (cat) {
+        setInspectData({
+          details: {
+            format: 'gguf',
+            family: cat.category,
+            parameter_size: cat.parameters,
+            quantization_level: 'Q4_K_M',
+          },
+          modelfile: `# Ollama Modelfile for ${cat.name}\nFROM ${cat.id}\nPARAMETER temperature 0.7\nPARAMETER stop "<|im_end|>"`,
+        });
+      }
+      setIsLoadingInspect(false);
+    }
+  };
+
+  // Merge installed models with catalog (Phase 3)
+  const allDisplayModels = React.useMemo(() => {
+    const list: ModelItem[] = [...CATALOG_MODELS];
+
+    installedModels.forEach((im) => {
+      const exists = list.some(
+        (cm) => cm.id === im.name || im.name.startsWith(cm.id.split(':')[0])
+      );
+      if (!exists) {
+        list.push({
+          id: im.name,
+          name: im.name,
+          category: im.details?.family === 'vision' ? 'vision' : 'compact',
+          parameters: im.details?.parameter_size || 'Custom',
+          size: `${(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB`,
+          vram: `${((im.size / (1024 * 1024 * 1024)) * 1.4).toFixed(1)} GB`,
+          description: `Custom model pulled locally via Ollama daemon (${im.details?.quantization_level || 'GGUF'}).`,
+        });
+      }
+    });
+
+    return list;
+  }, [installedModels]);
+
+  const totalDiskBytes = installedModels.reduce((acc, m) => acc + (m.size || 0), 0);
+  const totalDiskGB = (totalDiskBytes / (1024 * 1024 * 1024)).toFixed(2);
 
   // Navigation Links for Aceternity Sidebar
   const sidebarLinks: Links[] = [
@@ -1118,16 +1244,87 @@ export default function AIHubPage() {
             </div>
           )}
 
-          {/* VIEW 2: MODEL LIBRARY & DOWNLOADER */}
+          {/* VIEW 2: MODEL LIBRARY & DOWNLOADER (Phase 3) */}
           {activeTab === 'models' && (
             <div className="max-w-6xl mx-auto space-y-6">
-              {/* Header Strip & Category Filters */}
+              {/* Header Strip & Live Machine Telemetry */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[var(--color-ink)]">Model Catalog & Downloader</h2>
+                  <h2 className="text-lg font-extrabold text-[var(--color-ink)]">Model Catalog & Disk Manager</h2>
                   <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
-                    1-click model weights downloaded straight into your local Ollama storage.
+                    Download model weights into your local Ollama storage, inspect GGUF tensor layers, or delete models to free disk space.
                   </p>
+                </div>
+
+                {/* Storage & VRAM Summary Badges */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-3 py-1 font-mono text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                    <IconDisc size={14} className="shrink-0" />
+                    <span>{installedModels.length} Installed ({totalDiskGB} GB)</span>
+                  </span>
+                  {runningModels.length > 0 && (
+                    <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-3 py-1 font-mono text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                      <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping shrink-0" />
+                      <span>VRAM: {runningModels[0]}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 📥 Custom Model Pull Input Bar */}
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 p-3 rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] shadow-xs">
+                <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink)] shrink-0 px-1">
+                  <IconDownload size={15} />
+                  <span className="font-bold">Pull Custom Model:</span>
+                </div>
+                <div className="relative flex-1 w-full">
+                  <input
+                    type="text"
+                    value={customPullTag}
+                    onChange={(e) => setCustomPullTag(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handlePullModel(customPullTag);
+                    }}
+                    placeholder="Enter any Ollama tag e.g. mistral:latest, deepseek-coder-v2:16b, starcoder2:3b, llama3.1:8b..."
+                    className="w-full rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-mono text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handlePullModel(customPullTag)}
+                  disabled={!customPullTag.trim() || !!downloadingModelId}
+                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shrink-0"
+                >
+                  <IconDownload size={13} />
+                  <span>Pull Tag</span>
+                </button>
+              </div>
+
+              {/* Filter Strip & Search */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Category Filter Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {[
+                    { id: 'all', label: 'All Models' },
+                    { id: 'compact', label: 'Fast & Compact' },
+                    { id: 'reasoning', label: 'Reasoning & Math' },
+                    { id: 'code', label: 'Code & Systems' },
+                    { id: 'vision', label: 'Vision & Multimodal' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setModelCategory(cat.id)}
+                      className={cn(
+                        'px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer',
+                        modelCategory === cat.id
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold'
+                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200'
+                      )}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Search Bar */}
@@ -1137,141 +1334,188 @@ export default function AIHubPage() {
                     type="text"
                     value={modelSearch}
                     onChange={(e) => setModelSearch(e.target.value)}
-                    placeholder="Filter models..."
+                    placeholder="Search models..."
                     className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] pl-8 pr-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
                   />
                 </div>
               </div>
 
-              {/* Category Filter Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {[
-                  { id: 'all', label: 'All Models' },
-                  { id: 'compact', label: 'Fast & Compact' },
-                  { id: 'reasoning', label: 'Reasoning & Math' },
-                  { id: 'code', label: 'Code & Systems' },
-                  { id: 'vision', label: 'Vision & Multimodal' },
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setModelCategory(cat.id)}
-                    className={cn(
-                      'px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer',
-                      modelCategory === cat.id
-                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200'
-                    )}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Models Grid */}
+              {/* Models Grid (Dynamic Catalog + Local Installed) */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {CATALOG_MODELS.filter((m) => {
-                  if (modelCategory !== 'all' && m.category !== modelCategory) return false;
-                  if (modelSearch && !m.name.toLowerCase().includes(modelSearch.toLowerCase())) return false;
-                  return true;
-                }).map((model) => (
-                  <div
-                    key={model.id}
-                    className="flex flex-col justify-between rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 shadow-2xs hover:border-[var(--color-rule-strong)] transition-all space-y-4"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="text-sm font-extrabold text-[var(--color-ink)]">{model.name}</h3>
-                          <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)]">{model.id}</span>
-                        </div>
+                {allDisplayModels
+                  .filter((m) => {
+                    if (modelCategory !== 'all' && m.category !== modelCategory) return false;
+                    if (
+                      modelSearch &&
+                      !m.name.toLowerCase().includes(modelSearch.toLowerCase()) &&
+                      !m.id.toLowerCase().includes(modelSearch.toLowerCase())
+                    )
+                      return false;
+                    return true;
+                  })
+                  .map((model) => {
+                    const isInstalled = installedModels.some(
+                      (im) => im.name === model.id || im.name.startsWith(model.id.split(':')[0])
+                    );
+                    const installedData = installedModels.find(
+                      (im) => im.name === model.id || im.name.startsWith(model.id.split(':')[0])
+                    );
+                    const isLoadedInVram = runningModels.some(
+                      (rm) => rm === model.id || rm.startsWith(model.id.split(':')[0])
+                    );
+                    const isPulling = downloadingModelId === model.id;
 
-                        {model.isDownloaded ? (
-                          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
-                            Installed
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
-                            Available
-                          </span>
+                    return (
+                      <div
+                        key={model.id}
+                        className={cn(
+                          'flex flex-col justify-between rounded-2xl border bg-[var(--color-paper-card)] p-5 shadow-2xs transition-all space-y-4',
+                          isLoadedInVram
+                            ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900/10 dark:ring-white/10'
+                            : 'border-[var(--color-rule)] hover:border-[var(--color-rule-strong)]'
                         )}
-                      </div>
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate">{model.name}</h3>
+                                {isLoadedInVram && (
+                                  <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 font-mono text-[9px] font-bold shrink-0">
+                                    IN VRAM
+                                  </span>
+                                )}
+                              </div>
+                              <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)] block truncate">{model.id}</span>
+                            </div>
 
-                      <p className="text-xs text-[var(--color-ink-muted)] mt-2 leading-snug">
-                        {model.description}
-                      </p>
-
-                      {/* Specs Row */}
-                      <div className="flex items-center gap-2 mt-4 text-[11px] font-mono text-[var(--color-ink-muted)]">
-                        <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                          {model.size}
-                        </span>
-                        <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                          VRAM: {model.vram}
-                        </span>
-                        <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                          {model.parameters}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
-                      {/* Terminal Run Pill */}
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
-                        <span className="truncate">ollama run {model.id}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(`ollama run ${model.id}`, `term-${model.id}`)}
-                          className="hover:text-[var(--color-primary)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === `term-${model.id}` ? (
-                            <IconCheck size={13} className="text-neutral-900 dark:text-white" />
-                          ) : (
-                            <IconCopy size={13} />
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Download / Active Action */}
-                      {downloadingModelId === model.id ? (
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
-                            <span>Pulling layers...</span>
-                            <span>{downloadProgress}%</span>
+                            {isInstalled ? (
+                              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                                Installed
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                                Available
+                              </span>
+                            )}
                           </div>
-                          <div className="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
-                            <div
-                              className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
-                              style={{ width: `${downloadProgress}%` }}
-                            />
+
+                          <p className="text-xs text-[var(--color-ink-muted)] mt-2 leading-snug">
+                            {model.description}
+                          </p>
+
+                          {/* Specs Row */}
+                          <div className="flex items-center gap-2 mt-4 text-[11px] font-mono text-[var(--color-ink-muted)] flex-wrap">
+                            <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                              {installedData ? `${(installedData.size / (1024 * 1024 * 1024)).toFixed(1)} GB` : model.size}
+                            </span>
+                            <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                              VRAM: {model.vram}
+                            </span>
+                            <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                              {installedData?.details?.parameter_size || model.parameters}
+                            </span>
+                            {installedData?.details?.quantization_level && (
+                              <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 font-bold">
+                                {installedData.details.quantization_level}
+                              </span>
+                            )}
                           </div>
                         </div>
-                      ) : model.isDownloaded ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedModel(model.id);
-                            setActiveTab('chat');
-                          }}
-                          className="w-full rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          <IconPlayerPlay size={13} fill="currentColor" />
-                          <span>Launch in Chat</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handlePullModel(model.id)}
-                          className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          <IconDownload size={13} />
-                          <span>Pull to Ollama</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+
+                        <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
+                          {/* Terminal Run Pill */}
+                          <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
+                            <span className="truncate">ollama run {model.id}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(`ollama run ${model.id}`, `term-${model.id}`)}
+                              className="hover:text-[var(--color-primary)] transition-colors cursor-pointer shrink-0 ml-2"
+                            >
+                              {copiedKey === `term-${model.id}` ? (
+                                <IconCheck size={13} className="text-neutral-900 dark:text-white" />
+                              ) : (
+                                <IconCopy size={13} />
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Download / Active Actions */}
+                          {isPulling ? (
+                            <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
+                              <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
+                                <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling layers...'}</span>
+                                <span className="font-bold">{downloadProgress}%</span>
+                              </div>
+                              <div className="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                                <div
+                                  className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
+                                  style={{ width: `${downloadProgress}%` }}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleCancelPull}
+                                className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
+                              >
+                                Cancel Download
+                              </button>
+                            </div>
+                          ) : isInstalled ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedModel(model.id);
+                                  setActiveTab('chat');
+                                }}
+                                className="flex-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                              >
+                                <IconPlayerPlay size={13} fill="currentColor" />
+                                <span>Launch</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleInspectModel(model.id)}
+                                className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                title="Inspect Model Architecture (GGUF tensors, Modelfile)"
+                              >
+                                <IconInfoCircle size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setModelToDelete(model.id)}
+                                className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 p-1.5 text-xs text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
+                                title="Delete from Local Disk"
+                              >
+                                <IconTrash size={15} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handlePullModel(model.id)}
+                                className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                              >
+                                <IconDownload size={13} />
+                                <span>Pull to Ollama</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleInspectModel(model.id)}
+                                className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                title="Inspect Model Architecture"
+                              >
+                                <IconInfoCircle size={15} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -1799,6 +2043,210 @@ export default function AIHubPage() {
                   className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
                 >
                   Apply & Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🗑️ Delete Model Confirmation Modal (Phase 3) */}
+      <AnimatePresence>
+        {modelToDelete && (
+          <div
+            onClick={() => setModelToDelete(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xl space-y-4 text-left"
+            >
+              <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+                <div className="flex items-center gap-2">
+                  <IconAlertTriangle size={18} className="text-neutral-800 dark:text-neutral-200" />
+                  <h3 className="text-sm font-extrabold text-[var(--color-ink)]">Delete Model from Disk</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModelToDelete(null)}
+                  className="p-1 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs text-[var(--color-ink-muted)]">
+                <p>
+                  Are you sure you want to permanently delete <strong className="text-[var(--color-ink)] font-mono">{modelToDelete}</strong> from local Ollama storage?
+                </p>
+                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3 text-[11px] text-neutral-800 dark:text-neutral-200 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <span>Local Storage Deletion</span>
+                  </div>
+                  <p>
+                    This will delete the model weights from your machine disk and free up space. You can re-download this model anytime.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setModelToDelete(null)}
+                  className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] px-4 py-1.5 text-xs font-bold text-[var(--color-ink)] cursor-pointer transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteModel}
+                  disabled={isDeleting}
+                  className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 disabled:opacity-40 cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <IconTrash size={13} />
+                  <span>{isDeleting ? 'Deleting...' : 'Confirm Delete'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🔍 Model Architecture & Quantization Inspector Modal (Phase 3) */}
+      <AnimatePresence>
+        {inspectingModel && (
+          <div
+            onClick={() => setInspectingModel(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-xl rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xl space-y-4 text-left max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-3">
+                <div className="flex items-center gap-2">
+                  <IconCpu size={18} className="text-[var(--color-ink)]" />
+                  <div>
+                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">Model Architecture & Weights</h3>
+                    <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">{inspectingModel}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInspectingModel(null)}
+                  className="p-1 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+                {isLoadingInspect ? (
+                  <div className="flex items-center justify-center py-12 text-xs font-mono text-[var(--color-ink-muted)] gap-2 animate-pulse">
+                    <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                    <span>Querying local Ollama daemon for Modelfile and GGUF parameters...</span>
+                  </div>
+                ) : inspectData?.error ? (
+                  <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 space-y-2 text-neutral-800 dark:text-neutral-200">
+                    <div className="font-bold flex items-center gap-1.5">
+                      <IconInfoCircle size={15} />
+                      <span>Model Not Yet Cached Locally</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed">
+                      Detailed GGUF tensor layers, Modelfile templates, and architecture parameters become inspectable once the model is pulled to your machine.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const tag = inspectingModel;
+                          setInspectingModel(null);
+                          handlePullModel(tag);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
+                      >
+                        <IconDownload size={13} />
+                        <span>Pull {inspectingModel} to Inspect</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Technical Matrix */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-0.5">
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase block">Format</span>
+                        <span className="font-mono font-bold text-xs text-[var(--color-ink)]">{inspectData?.details?.format || 'GGUF'}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-0.5">
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase block">Family</span>
+                        <span className="font-mono font-bold text-xs text-[var(--color-ink)]">{inspectData?.details?.family || 'Transformer'}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-0.5">
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase block">Parameters</span>
+                        <span className="font-mono font-bold text-xs text-[var(--color-ink)]">{inspectData?.details?.parameter_size || 'N/A'}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-0.5">
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase block">Quantization</span>
+                        <span className="font-mono font-bold text-xs text-[var(--color-ink)]">{inspectData?.details?.quantization_level || 'Q4_K_M'}</span>
+                      </div>
+                    </div>
+
+                    {/* Modelfile & Template Viewer */}
+                    {inspectData?.modelfile && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="font-bold text-[var(--color-ink)]">Modelfile Blueprint</label>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(inspectData.modelfile, 'inspect-modelfile')}
+                            className="text-[10px] font-mono text-[var(--color-ink-muted)] hover:underline cursor-pointer"
+                          >
+                            {copiedKey === 'inspect-modelfile' ? 'Copied' : 'Copy Modelfile'}
+                          </button>
+                        </div>
+                        <div className="rounded-xl border border-[var(--color-rule-strong)] bg-neutral-950 text-neutral-100 p-3 font-mono text-[11px] max-h-48 overflow-y-auto leading-relaxed">
+                          <pre>{inspectData.modelfile}</pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Parameters Text */}
+                    {inspectData?.parameters && (
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-[var(--color-ink)]">Inference Parameters</label>
+                        <div className="rounded-xl border border-[var(--color-rule-strong)] bg-neutral-950 text-neutral-100 p-3 font-mono text-[11px] overflow-x-auto">
+                          <pre>{inspectData.parameters}</pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* License snippet */}
+                    {inspectData?.license && (
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-[var(--color-ink)]">Model License</label>
+                        <div className="rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-2.5 text-[10.5px] font-mono text-[var(--color-ink-muted)] max-h-24 overflow-y-auto">
+                          <pre className="whitespace-pre-wrap">{inspectData.license.slice(0, 500)}...</pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setInspectingModel(null)}
+                  className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
+                >
+                  Close
                 </button>
               </div>
             </motion.div>
