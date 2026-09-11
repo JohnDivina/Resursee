@@ -17,6 +17,7 @@ import {
   Wrench,
   HouseLine,
   Globe,
+  AppWindow,
 } from '@phosphor-icons/react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import SoundToggle from '@/components/sound/SoundToggle';
@@ -56,18 +57,15 @@ function getValidCachedSession(): UserSession | null {
 export default function Header({ onOpenSearch }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<'apps' | null>(null);
   const [session, setSession] = useState<UserSession | null>(getValidCachedSession);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const appsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on route change
   useEffect(() => {
-    setOpenDropdown(null);
     setProfileDropdownOpen(false);
     setMobileMenuOpen(false);
   }, [pathname]);
@@ -173,16 +171,21 @@ export default function Header({ onOpenSearch }: HeaderProps) {
       if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setProfileDropdownOpen(false);
       }
-      if (
-        appsDropdownRef.current &&
-        !appsDropdownRef.current.contains(target)
-      ) {
-        setOpenDropdown(null);
-      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleAppsClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === '/') {
+      e.preventDefault();
+      const el = document.getElementById('apps');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        window.history.pushState(null, '', '#apps');
+      }
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -235,84 +238,19 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             Tools
           </Link>
 
-          {/* Ecosystem / Apps Dropdown */}
-          <div className="relative" ref={appsDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setOpenDropdown((prev) => (prev === 'apps' ? null : 'apps'))}
-              className={cn(
-                'px-3 py-1.5 rounded-lg tracking-wide transition-all flex items-center gap-1.5 cursor-pointer select-none',
-                openDropdown === 'apps' || pathname.startsWith('/apps')
-                  ? 'text-[var(--color-ink)] bg-[var(--color-paper-muted)] font-bold shadow-2xs'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
-              )}
-              aria-expanded={openDropdown === 'apps'}
-            >
-              <span>Apps</span>
-              <CaretDown
-                size={12}
-                className={cn(
-                  'transition-transform duration-200',
-                  openDropdown === 'apps' ? 'rotate-180 text-[var(--color-ink)]' : 'text-[var(--color-ink-muted)]'
-                )}
-              />
-            </button>
-
-            {openDropdown === 'apps' && (
-              <div className="absolute left-0 mt-2 w-80 bg-[var(--color-paper-card)] dark:bg-[#0a0a0a] border border-[var(--color-rule-strong)] dark:border-white/10 rounded-2xl p-2 shadow-2xl z-50 animate-in zoom-in-95 duration-150 space-y-1">
-                <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-[var(--color-ink-muted)] font-bold">
-                  Resursee Ecosystem
-                </div>
-
-                <Link
-                  href="/apps/plant-doctor"
-                  onClick={() => setOpenDropdown(null)}
-                  className={cn(
-                    'flex items-start gap-3 p-2.5 rounded-xl transition-all',
-                    pathname === '/apps/plant-doctor'
-                      ? 'bg-neutral-100 dark:bg-neutral-800 text-[var(--color-ink)]'
-                      : 'hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-neutral-200 dark:border-neutral-700 text-[var(--color-ink)] shrink-0 mt-0.5">
-                    <Plant size={15} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-xs text-[var(--color-ink)]">Plant Doctor AI</span>
-                      <span className="text-[9px] font-mono font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.5 rounded-full">
-                        NEW
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
-                      AI crop pathology, leaf scanner & organic treatment
-                    </p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/apps/iot-cloud"
-                  onClick={() => setOpenDropdown(null)}
-                  className={cn(
-                    'flex items-start gap-3 p-2.5 rounded-xl transition-all',
-                    pathname === '/apps/iot-cloud'
-                      ? 'bg-neutral-100 dark:bg-neutral-800 text-[var(--color-ink)]'
-                      : 'hover:bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
-                  <div className="p-2 rounded-lg bg-[var(--color-paper-surface)] dark:bg-[#141414] border border-neutral-200 dark:border-neutral-700 text-[var(--color-ink)] shrink-0 mt-0.5">
-                    <Cpu size={15} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-bold text-xs text-[var(--color-ink)]">ESP32 IoT Cloud</span>
-                    <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-snug">
-                      Real-time telemetry chart streams & GPIO controls
-                    </p>
-                  </div>
-                </Link>
-              </div>
+          {/* Apps */}
+          <Link
+            href="/#apps"
+            onClick={handleAppsClick}
+            className={cn(
+              'px-3 py-1.5 rounded-lg tracking-wide transition-all',
+              pathname === '/#apps' || pathname.startsWith('/apps')
+                ? 'text-[var(--color-ink)] bg-[var(--color-paper-muted)] font-bold shadow-2xs'
+                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
             )}
-          </div>
+          >
+            Apps
+          </Link>
 
           {/* Resources */}
           <Link
@@ -500,36 +438,20 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             </Link>
 
             <Link
-              href="/apps/plant-doctor"
-              onClick={() => setMobileMenuOpen(false)}
-              className={cn(
-                'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center justify-between',
-                pathname === '/apps/plant-doctor'
-                  ? 'text-[var(--color-ink)] bg-neutral-100 dark:bg-neutral-800 font-bold border border-neutral-200 dark:border-neutral-700'
-                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
-              )}
-            >
-              <div className="flex items-center gap-2.5">
-                <Plant size={16} weight="bold" />
-                <span>Plant Doctor AI</span>
-              </div>
-              <span className="text-[9px] font-mono font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.5 rounded-full">
-                NEW
-              </span>
-            </Link>
-
-            <Link
-              href="/apps/iot-cloud"
-              onClick={() => setMobileMenuOpen(false)}
+              href="/#apps"
+              onClick={(e) => {
+                setMobileMenuOpen(false);
+                handleAppsClick(e);
+              }}
               className={cn(
                 'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center gap-2.5',
-                pathname === '/apps/iot-cloud'
-                  ? 'text-[var(--color-ink)] bg-neutral-100 dark:bg-neutral-800 font-bold border border-neutral-200 dark:border-neutral-700'
+                pathname === '/#apps' || pathname.startsWith('/apps')
+                  ? 'text-[var(--color-ink)] bg-[var(--color-paper-muted)] font-bold'
                   : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
               )}
             >
-              <Cpu size={16} weight="bold" />
-              <span>ESP32 IoT Cloud</span>
+              <AppWindow size={16} weight="bold" />
+              <span>Apps</span>
             </Link>
 
             <Link

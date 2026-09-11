@@ -9,8 +9,23 @@ import {
 } from '@phosphor-icons/react';
 
 export default function AppsSection() {
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#apps') {
+      const timer = setTimeout(() => {
+        const el = document.getElementById('apps');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   return (
-    <section className="relative py-14 sm:py-20 border-b border-[var(--color-rule-subtle)] overflow-hidden">
+    <section
+      id="apps"
+      className="relative py-14 sm:py-20 border-b border-[var(--color-rule-subtle)] overflow-hidden scroll-mt-14 sm:scroll-mt-16"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Clean Section Header */}
         <div className="mb-8 sm:mb-10">
