@@ -293,6 +293,31 @@ export async function startOllamaDaemon(): Promise<{
 }
 
 /**
+ * Triggers stopping the local Ollama daemon via Resursee internal API.
+ */
+export async function stopOllamaDaemon(): Promise<{
+  success: boolean;
+  stopped: boolean;
+  message?: string;
+  isCloud?: boolean;
+  error?: string;
+}> {
+  try {
+    const res = await fetch('/api/ai/ollama/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      stopped: false,
+      error: err.message || 'Failed to trigger Ollama stop',
+    };
+  }
+}
+
+/**
  * Recursively splits long text into overlapping chunks respecting natural paragraph and sentence boundaries.
  */
 export function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {

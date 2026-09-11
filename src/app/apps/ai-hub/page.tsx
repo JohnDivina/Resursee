@@ -44,6 +44,7 @@ import {
   showOllamaModel,
   streamOllamaChat,
   startOllamaDaemon,
+  stopOllamaDaemon,
   chunkText,
   retrieveTopKChunks,
   getOllamaEmbedding,
@@ -492,8 +493,9 @@ export default function AIHubPage() {
   const [isLoadingInspect, setIsLoadingInspect] = useState<boolean>(false);
   const pullAbortControllerRef = useRef<AbortController | null>(null);
 
-  // 1-Click Ollama Daemon Launcher State
+  // Ollama Daemon Launcher & Controller State
   const [isStartingDaemon, setIsStartingDaemon] = useState(false);
+  const [isStoppingDaemon, setIsStoppingDaemon] = useState(false);
   const [daemonNotification, setDaemonNotification] = useState<{
     type: 'info' | 'success' | 'error';
     message: string;
@@ -869,6 +871,40 @@ export default function AIHubPage() {
       });
     } finally {
       setIsStartingDaemon(false);
+    }
+  };
+
+  // Stop Ollama Daemon Handler
+  const handleStopOllama = async () => {
+    setIsStoppingDaemon(true);
+    setDaemonNotification({ type: 'info', message: 'Stopping Ollama daemon...' });
+
+    try {
+      const res = await stopOllamaDaemon();
+      if (res.stopped) {
+        setConnectionStatus('offline');
+        setInstalledModels([]);
+        setRunningModels([]);
+        setSelectedModel('');
+        setDaemonNotification({
+          type: 'success',
+          message: res.message || 'Ollama daemon stopped.',
+        });
+        setTimeout(() => setDaemonNotification(null), 4000);
+      } else {
+        setDaemonNotification({
+          type: 'error',
+          message: res.error || 'Could not stop Ollama daemon.',
+        });
+      }
+    } catch (err: any) {
+      setDaemonNotification({
+        type: 'error',
+        message: err.message || 'Failed to stop Ollama daemon.',
+      });
+    } finally {
+      setIsStoppingDaemon(false);
+      await refreshConnection();
     }
   };
 
@@ -1589,15 +1625,14 @@ Instructions:
           </div>
 
           {/* Sidebar Footer: Engine Status & Back to Resursee */}
-          {/* Sidebar Footer: Engine Status & Back to Resursee */}
           <div className="border-t border-[var(--color-rule-subtle)] pt-3 mt-auto space-y-2">
-            {/* Ollama Status Pill & 1-Click Action */}
+            {/* Ollama Status Pill & Start/Stop Action */}
             <div
               onClick={() => {
-                if (connectionStatus === 'offline') {
-                  handleStartOllama();
+                if (connectionStatus === 'connected') {
+                  handleStopOllama();
                 } else {
-                  refreshConnection();
+                  handleStartOllama();
                 }
               }}
               className="group flex items-center justify-between p-2 rounded-xl bg-[var(--color-paper-card)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] cursor-pointer transition-all"
@@ -1608,7 +1643,7 @@ Instructions:
                     'h-1.5 w-1.5 rounded-full shrink-0',
                     connectionStatus === 'connected'
                       ? 'bg-neutral-900 dark:bg-white'
-                      : connectionStatus === 'checking' || isStartingDaemon
+                      : connectionStatus === 'checking' || isStartingDaemon || isStoppingDaemon
                       ? 'bg-amber-500 animate-ping'
                       : 'bg-neutral-400'
                   )}
@@ -1622,6 +1657,8 @@ Instructions:
                 >
                   {isStartingDaemon
                     ? 'Starting Engine...'
+                    : isStoppingDaemon
+                    ? 'Stopping Engine...'
                     : connectionStatus === 'connected'
                     ? `Ollama (${installedModels.length} models)`
                     : connectionStatus === 'checking'
@@ -1636,7 +1673,7 @@ Instructions:
                 }}
                 className="text-[10px] font-mono text-[var(--color-ink-muted)] group-hover:underline"
               >
-                {connectionStatus === 'connected' ? 'Refresh' : 'Start'}
+                {connectionStatus === 'connected' ? 'Stop' : 'Start'}
               </motion.span>
             </div>
 
@@ -1679,8 +1716,29 @@ Instructions:
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Start Ollama Button (when disconnected or on standby) */}
-            {connectionStatus !== 'connected' && (
+            {/* Start / Stop Ollama Button */}
+            {connectionStatus === 'connected' ? (
+              <button
+                type="button"
+                onClick={handleStopOllama}
+                disabled={isStoppingDaemon}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                title="Stop local Ollama background daemon"
+              >
+                {isStoppingDaemon ? (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                    <span>Stopping...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconPlayerStop size={13} />
+                    <span className="hidden sm:inline">Stop Ollama</span>
+                    <span className="sm:hidden">Stop</span>
+                  </>
+                )}
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={handleStartOllama}
@@ -3255,26 +3313,49 @@ Instructions:
                       <IconPlayerPlay size={16} />
                       <span>Already have Ollama installed?</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await handleStartOllama();
-                      }}
-                      disabled={isStartingDaemon}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shrink-0"
-                    >
-                      {isStartingDaemon ? (
-                        <>
-                          <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
-                          <span>Starting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <IconPlayerPlay size={13} />
-                          <span>Start Ollama</span>
-                        </>
-                      )}
-                    </button>
+                    {connectionStatus === 'connected' ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await handleStopOllama();
+                        }}
+                        disabled={isStoppingDaemon}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                      >
+                        {isStoppingDaemon ? (
+                          <>
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                            <span>Stopping...</span>
+                          </>
+                        ) : (
+                          <>
+                            <IconPlayerStop size={13} />
+                            <span>Stop Ollama</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await handleStartOllama();
+                        }}
+                        disabled={isStartingDaemon}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                      >
+                        {isStartingDaemon ? (
+                          <>
+                            <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                            <span>Starting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <IconPlayerPlay size={13} />
+                            <span>Start Ollama</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                   <p className="text-[11px] text-[var(--color-ink-muted)] font-sans">
                     Resursee can automatically launch your local Ollama background daemon on your machine without opening the terminal.
