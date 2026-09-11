@@ -65,7 +65,7 @@ type ActiveTab = 'chat' | 'models' | 'vision' | 'rag' | 'settings';
 interface ModelItem {
   id: string;
   name: string;
-  category: 'compact' | 'reasoning' | 'code' | 'vision';
+  category: 'compact' | 'reasoning' | 'code' | 'vision' | 'embeddings' | 'general';
   parameters: string;
   size: string;
   vram: string;
@@ -82,55 +82,282 @@ interface ChatMessage {
 }
 
 const CATALOG_MODELS: ModelItem[] = [
+  // --- Fast & Compact ---
+  {
+    id: 'qwen2.5:0.5b',
+    name: 'Qwen 2.5 (0.5B)',
+    category: 'compact',
+    parameters: '494M',
+    size: '398 MB',
+    vram: '1.0 GB',
+    description: 'Ultra-lightweight edge model. Boots instantly on any device with minimal RAM usage.',
+  },
+  {
+    id: 'qwen2.5:1.5b',
+    name: 'Qwen 2.5 (1.5B)',
+    category: 'compact',
+    parameters: '1.54B',
+    size: '986 MB',
+    vram: '2.0 GB',
+    description: 'Fast, high-density multilingual instruction model with remarkable accuracy for its compact footprint.',
+  },
+  {
+    id: 'qwen2.5:1.5b-instruct',
+    name: 'Qwen 2.5 Instruct (1.5B)',
+    category: 'compact',
+    parameters: '1.54B',
+    size: '986 MB',
+    vram: '2.0 GB',
+    description: 'Official instruction-tuned checkpoint of Qwen 2.5 (1.5B) for structured Q&A, chat, and rapid reasoning.',
+  },
   {
     id: 'llama3.2:1b',
     name: 'Llama 3.2 (1B)',
     category: 'compact',
     parameters: '1.24B',
     size: '1.3 GB',
-    vram: '2 GB',
+    vram: '2.0 GB',
     description: 'Meta’s ultra-compact model optimized for edge devices, instant responses, and low memory usage.',
-    isDownloaded: true,
   },
   {
-    id: 'llama3.2:3b',
+    id: 'llama3.2:latest',
     name: 'Llama 3.2 (3B)',
     category: 'compact',
     parameters: '3.21B',
     size: '2.0 GB',
-    vram: '4 GB',
-    description: 'High-efficiency instruction model with strong tool calling and multilingual capabilities.',
-    isDownloaded: false,
+    vram: '4.0 GB',
+    description: 'High-efficiency instruction model with strong tool calling, summarizing, and multilingual capabilities.',
+  },
+  {
+    id: 'gemma2:2b',
+    name: 'Gemma 2 (2B)',
+    category: 'compact',
+    parameters: '2.6B',
+    size: '1.6 GB',
+    vram: '3.0 GB',
+    description: 'Google DeepMind’s high-efficiency lightweight open model built on Gemini research.',
+  },
+  {
+    id: 'tinyllama:latest',
+    name: 'TinyLlama (1.1B)',
+    category: 'compact',
+    parameters: '1.1B',
+    size: '637 MB',
+    vram: '1.5 GB',
+    description: 'Pre-trained on 3 trillion tokens, ideal for low-spec devices and background summarization.',
+  },
+  {
+    id: 'granite3.1-moe:3b',
+    name: 'IBM Granite 3.1 MoE (3B)',
+    category: 'compact',
+    parameters: '3.3B MoE',
+    size: '2.1 GB',
+    vram: '3.0 GB',
+    description: 'IBM’s enterprise lightweight Mixture-of-Experts architecture optimized for fast inference on modest edge hardware.',
+  },
+  {
+    id: 'nemotron-mini:latest',
+    name: 'Nemotron Mini (4B)',
+    category: 'compact',
+    parameters: '4.0B',
+    size: '2.7 GB',
+    vram: '4.5 GB',
+    description: 'NVIDIA’s optimized small language model with high token generation efficiency on RTX and Apple Silicon.',
+  },
+  {
+    id: 'smollm2:1.7b',
+    name: 'SmolLM2 (1.7B)',
+    category: 'compact',
+    parameters: '1.71B',
+    size: '1.8 GB',
+    vram: '2.5 GB',
+    description: 'HuggingFace’s state-of-the-art small language model with high reasoning and instruction-following density.',
+  },
+  {
+    id: 'smollm2:360m',
+    name: 'SmolLM2 (360M)',
+    category: 'compact',
+    parameters: '360M',
+    size: '229 MB',
+    vram: '0.8 GB',
+    description: 'Pocket-sized text assistant for real-time edge processing and low-latency streaming.',
+  },
+
+  // --- Reasoning & Math ---
+  {
+    id: 'deepseek-r1:latest',
+    name: 'DeepSeek R1 (7B Reasoning)',
+    category: 'reasoning',
+    parameters: '7.6B',
+    size: '4.7 GB',
+    vram: '8.0 GB',
+    description: 'Frontier chain-of-thought reasoning model with self-verifying step-by-step logic for math, STEM, and programming.',
   },
   {
     id: 'deepseek-r1:1.5b',
-    name: 'DeepSeek R1 (1.5B)',
+    name: 'DeepSeek R1 (1.5B Compact)',
     category: 'reasoning',
     parameters: '1.58B',
     size: '1.1 GB',
     vram: '2.5 GB',
     description: 'Distilled reasoning powerhouse with step-by-step chain-of-thought verification for math and logic.',
-    isDownloaded: true,
   },
+  {
+    id: 'deepseek-r1:8b',
+    name: 'DeepSeek R1 (8B Llama-Distill)',
+    category: 'reasoning',
+    parameters: '8.0B',
+    size: '4.9 GB',
+    vram: '8.5 GB',
+    description: 'Llama-distilled variant combining Meta architectural stability with DeepSeek self-reflection reasoning.',
+  },
+  {
+    id: 'deepseek-r1:14b',
+    name: 'DeepSeek R1 (14B)',
+    category: 'reasoning',
+    parameters: '14.8B',
+    size: '9.0 GB',
+    vram: '14.0 GB',
+    description: 'Deep reasoning model for advanced algorithmic challenges, theorem proving, and multi-step deduction.',
+  },
+  {
+    id: 'phi4:14b',
+    name: 'Phi-4 (14B Reasoning)',
+    category: 'reasoning',
+    parameters: '14.7B',
+    size: '9.1 GB',
+    vram: '14.0 GB',
+    description: 'Microsoft’s flagship synthetic-data trained reasoning model with exceptional STEM performance.',
+  },
+  {
+    id: 'phi3.5:latest',
+    name: 'Phi-3.5 Mini (3.8B)',
+    category: 'reasoning',
+    parameters: '3.82B',
+    size: '2.2 GB',
+    vram: '4.0 GB',
+    description: 'Microsoft’s high-density reasoning model capable of 128k context windows on compact hardware.',
+  },
+
+  // --- Code & Systems ---
   {
     id: 'qwen2.5-coder:1.5b',
     name: 'Qwen 2.5 Coder (1.5B)',
     category: 'code',
     parameters: '1.54B',
-    size: '1.2 GB',
+    size: '986 MB',
     vram: '2.5 GB',
     description: 'Alibaba’s specialized code assistant with syntax mastery across TypeScript, Python, C++, and Rust.',
-    isDownloaded: false,
   },
+  {
+    id: 'qwen2.5-coder:latest',
+    name: 'Qwen 2.5 Coder (7B)',
+    category: 'code',
+    parameters: '7.6B',
+    size: '4.7 GB',
+    vram: '8.0 GB',
+    description: 'World-class code synthesis, bug repair, and multi-file refactoring on par with GPT-4o on HumanEval.',
+  },
+  {
+    id: 'qwen2.5-coder:14b',
+    name: 'Qwen 2.5 Coder (14B)',
+    category: 'code',
+    parameters: '14.7B',
+    size: '9.0 GB',
+    vram: '14.0 GB',
+    description: 'High-capacity coding model for enterprise software development and complex system architectures.',
+  },
+  {
+    id: 'qwen2.5-coder:32b',
+    name: 'Qwen 2.5 Coder (32B)',
+    category: 'code',
+    parameters: '32.5B',
+    size: '19 GB',
+    vram: '24.0 GB',
+    description: 'Flagship open-source code model rivaling GPT-4o on HumanEval, full repo editing, and multi-file codebases.',
+  },
+  {
+    id: 'deepseek-coder-v2:16b',
+    name: 'DeepSeek Coder V2 (16B MoE)',
+    category: 'code',
+    parameters: '16B MoE',
+    size: '8.9 GB',
+    vram: '12.0 GB',
+    description: 'Mixture-of-Experts coding model supporting 338 programming languages and 128k context tokens.',
+  },
+  {
+    id: 'codellama:7b',
+    name: 'Code Llama (7B)',
+    category: 'code',
+    parameters: '6.7B',
+    size: '3.8 GB',
+    vram: '7.0 GB',
+    description: 'Meta’s dedicated code completion and infilling model with Python and TypeScript specialization.',
+  },
+  {
+    id: 'codellama:13b',
+    name: 'Code Llama (13B)',
+    category: 'code',
+    parameters: '13B',
+    size: '7.4 GB',
+    vram: '12.0 GB',
+    description: 'Deep code understanding, docstring generation, and automated test suite authoring.',
+  },
+  {
+    id: 'starcoder2:3b',
+    name: 'StarCoder 2 (3B)',
+    category: 'code',
+    parameters: '3.0B',
+    size: '1.7 GB',
+    vram: '3.0 GB',
+    description: 'BigCode’s transparent, permissively trained code generation model with low GPU overhead.',
+  },
+  {
+    id: 'starcoder2:7b',
+    name: 'StarCoder 2 (7B)',
+    category: 'code',
+    parameters: '7.2B',
+    size: '4.1 GB',
+    vram: '7.5 GB',
+    description: 'Trained on 619 programming languages from Software Heritage with Git commit awareness.',
+  },
+  {
+    id: 'sqlcoder:7b',
+    name: 'SQLCoder (7B)',
+    category: 'code',
+    parameters: '7.0B',
+    size: '4.1 GB',
+    vram: '7.0 GB',
+    description: 'Defog’s purpose-built model for converting natural language queries into production-grade SQL.',
+  },
+  {
+    id: 'codegemma:7b',
+    name: 'CodeGemma (7B)',
+    category: 'code',
+    parameters: '7.0B',
+    size: '5.0 GB',
+    vram: '8.0 GB',
+    description: 'Google’s specialized Gemma model for code completion, unit test generation, and syntax analysis.',
+  },
+
+  // --- Vision & Multimodal ---
   {
     id: 'llava:7b',
     name: 'LLaVA (7B Vision)',
     category: 'vision',
     parameters: '7.0B',
     size: '4.7 GB',
-    vram: '8 GB',
+    vram: '8.0 GB',
     description: 'Multimodal vision transformer capable of visual OCR, foliar inspection, and document diagram analysis.',
-    isDownloaded: false,
+  },
+  {
+    id: 'llava:13b',
+    name: 'LLaVA (13B Vision)',
+    category: 'vision',
+    parameters: '13B',
+    size: '8.0 GB',
+    vram: '14.0 GB',
+    description: 'High-detail visual reasoning and dense multimodal document analysis for complex charts.',
   },
   {
     id: 'llama3.2-vision:11b',
@@ -138,9 +365,8 @@ const CATALOG_MODELS: ModelItem[] = [
     category: 'vision',
     parameters: '11B',
     size: '7.9 GB',
-    vram: '12 GB',
+    vram: '12.0 GB',
     description: 'Meta’s frontier multimodal model for high-resolution visual reasoning, chart understanding, and document OCR.',
-    isDownloaded: false,
   },
   {
     id: 'moondream:latest',
@@ -150,17 +376,190 @@ const CATALOG_MODELS: ModelItem[] = [
     size: '1.6 GB',
     vram: '2.5 GB',
     description: 'Tiny, ultra-fast vision model capable of running smoothly on low-resource laptops and edge hardware.',
-    isDownloaded: false,
   },
   {
-    id: 'phi3.5:latest',
-    name: 'Phi-3.5 Mini (3.8B)',
-    category: 'reasoning',
-    parameters: '3.82B',
-    size: '2.2 GB',
-    vram: '4 GB',
-    description: 'Microsoft’s high-density reasoning model capable of 128k context windows on compact hardware.',
-    isDownloaded: false,
+    id: 'minicpm-v:8b',
+    name: 'MiniCPM-V 2.6 (8B Vision)',
+    category: 'vision',
+    parameters: '8.0B',
+    size: '5.5 GB',
+    vram: '9.0 GB',
+    description: 'OpenBMB vision model with high-resolution 1.8M pixel visual comprehension and OCR.',
+  },
+  {
+    id: 'glm-ocr:latest',
+    name: 'GLM OCR Document Model',
+    category: 'vision',
+    parameters: '0.9B',
+    size: '1.8 GB',
+    vram: '3.0 GB',
+    description: 'Specialized document OCR model optimized for table recognition, receipts, invoices, and handwriting.',
+  },
+  {
+    id: 'qwen2.5vl:7b',
+    name: 'Qwen 2.5 VL (7B Vision)',
+    category: 'vision',
+    parameters: '7.6B',
+    size: '5.5 GB',
+    vram: '9.0 GB',
+    description: 'Alibaba’s frontier visual-language model with native resolution image understanding, document OCR, and video reasoning.',
+  },
+
+  // --- General & Frontier Assistants ---
+  {
+    id: 'deepseek-v3:latest',
+    name: 'DeepSeek V3 (671B MoE)',
+    category: 'general',
+    parameters: '671B MoE',
+    size: '404 GB',
+    vram: '450 GB',
+    description: 'DeepSeek’s flagship Mixture-of-Experts foundation model rivaling top closed frontier LLMs.',
+  },
+  {
+    id: 'llama3.3:70b',
+    name: 'Llama 3.3 (70B Flagship)',
+    category: 'general',
+    parameters: '70.6B',
+    size: '43 GB',
+    vram: '48.0 GB',
+    description: 'Meta’s latest flagship 70B open weight model delivering GPT-4 tier intelligence across 8 languages.',
+  },
+  {
+    id: 'llama3.1:8b',
+    name: 'Llama 3.1 (8B)',
+    category: 'general',
+    parameters: '8.03B',
+    size: '4.7 GB',
+    vram: '8.0 GB',
+    description: 'Industry standard open model with 128k context support, tool calling, and general conversational fluency.',
+  },
+  {
+    id: 'qwen2.5:latest',
+    name: 'Qwen 2.5 (7B)',
+    category: 'general',
+    parameters: '7.61B',
+    size: '4.7 GB',
+    vram: '8.0 GB',
+    description: 'Alibaba’s flagship generalist model with leading benchmark scores across knowledge, coding, and roleplay.',
+  },
+  {
+    id: 'mistral:latest',
+    name: 'Mistral (7B v0.3)',
+    category: 'general',
+    parameters: '7.25B',
+    size: '4.1 GB',
+    vram: '7.5 GB',
+    description: 'Mistral AI’s versatile flagship foundation model with function calling and strong comprehension.',
+  },
+  {
+    id: 'mistral-small:latest',
+    name: 'Mistral Small 3 (24B)',
+    category: 'general',
+    parameters: '24B',
+    size: '14 GB',
+    vram: '18.0 GB',
+    description: 'Mistral AI’s state-of-the-art enterprise model with high benchmark scores in reasoning, coding, and multilingual tasks.',
+  },
+  {
+    id: 'mistral-nemo:12b',
+    name: 'Mistral NeMo (12B)',
+    category: 'general',
+    parameters: '12.2B',
+    size: '7.1 GB',
+    vram: '11.0 GB',
+    description: 'Co-developed with NVIDIA. Features 128k context length with standard-setting general reasoning.',
+  },
+  {
+    id: 'gemma2:9b',
+    name: 'Gemma 2 (9B)',
+    category: 'general',
+    parameters: '9.24B',
+    size: '5.5 GB',
+    vram: '9.0 GB',
+    description: 'Google’s state-of-the-art 9B architecture built on sliding window attention and knowledge distillation.',
+  },
+  {
+    id: 'mixtral:8x7b',
+    name: 'Mixtral (8x7B MoE)',
+    category: 'general',
+    parameters: '46.7B MoE',
+    size: '26 GB',
+    vram: '32.0 GB',
+    description: 'Sparse Mixture-of-Experts routing 2 of 8 experts per token for fast inference with high capacity.',
+  },
+  {
+    id: 'command-r:latest',
+    name: 'Command R (35B RAG)',
+    category: 'general',
+    parameters: '35B',
+    size: '20 GB',
+    vram: '26.0 GB',
+    description: 'Cohere’s specialized enterprise model optimized for grounded Retrieval Augmented Generation (RAG) and tool use.',
+  },
+  {
+    id: 'hermes3:8b',
+    name: 'Hermes 3 (8B)',
+    category: 'general',
+    parameters: '8.0B',
+    size: '4.9 GB',
+    vram: '8.0 GB',
+    description: 'Nous Research instruction fine-tune with strong creative writing, persona following, and complex JSON output.',
+  },
+
+  // --- Embeddings & Vector RAG ---
+  {
+    id: 'nomic-embed-text:latest',
+    name: 'Nomic Embed Text (137M)',
+    category: 'embeddings',
+    parameters: '137M',
+    size: '274 MB',
+    vram: '0.5 GB',
+    description: '8192-token context embedding model optimized for technical documentation, search, and RAG retrieval.',
+  },
+  {
+    id: 'all-minilm:latest',
+    name: 'All-MiniLM L6 v2 (22M)',
+    category: 'embeddings',
+    parameters: '22.7M',
+    size: '45 MB',
+    vram: '0.2 GB',
+    description: 'Ultra-compact sentence transformer producing high-speed semantic similarity embeddings.',
+  },
+  {
+    id: 'bge-m3:latest',
+    name: 'BGE-M3 Multilingual (567M)',
+    category: 'embeddings',
+    parameters: '567M',
+    size: '1.2 GB',
+    vram: '2.0 GB',
+    description: 'BAAI multi-lingual embedding model supporting dense, sparse, and multi-vector retrieval across 100+ languages.',
+  },
+  {
+    id: 'bge-large:latest',
+    name: 'BAAI BGE Large (335M)',
+    category: 'embeddings',
+    parameters: '335M',
+    size: '670 MB',
+    vram: '1.0 GB',
+    description: 'Top-performing dense sentence embedding model for high-accuracy document ranking in vector databases.',
+  },
+  {
+    id: 'mxbai-embed-large:latest',
+    name: 'Mixedbread Embed Large (335M)',
+    category: 'embeddings',
+    parameters: '335M',
+    size: '670 MB',
+    vram: '1.0 GB',
+    description: 'Trained by Mixedbread AI for top-tier retrieval performance on the MTEB benchmark.',
+  },
+  {
+    id: 'snowflake-arctic-embed:latest',
+    name: 'Snowflake Arctic Embed (137M)',
+    category: 'embeddings',
+    parameters: '137M',
+    size: '274 MB',
+    vram: '0.5 GB',
+    description: 'Enterprise-grade text embedding model fine-tuned for high-precision vector database ranking.',
   },
 ];
 
@@ -1510,23 +1909,58 @@ Instructions:
     }
   };
 
-  // Merge installed models with catalog (Phase 3)
+  // Merge installed models with catalog
   const allDisplayModels = React.useMemo(() => {
-    const list: ModelItem[] = [...CATALOG_MODELS];
+    const list: ModelItem[] = [];
+    const addedIds = new Set<string>();
 
+    // 1. Add ALL locally installed models from user machine first
     installedModels.forEach((im) => {
-      const exists = list.some(
-        (cm) => cm.id === im.name || im.name.startsWith(cm.id.split(':')[0])
+      addedIds.add(im.name);
+      if (im.name.endsWith(':latest')) {
+        addedIds.add(im.name.replace(':latest', ''));
+      }
+
+      const catalogMatch = CATALOG_MODELS.find(
+        (cm) =>
+          cm.id === im.name ||
+          `${cm.id}:latest` === im.name ||
+          cm.id === `${im.name}:latest`
       );
-      if (!exists) {
+
+      list.push({
+        id: im.name,
+        name: catalogMatch ? catalogMatch.name : im.name,
+        category: catalogMatch
+          ? catalogMatch.category
+          : im.name.includes('embed')
+          ? 'embeddings'
+          : im.name.includes('vision') || im.name.includes('llava') || im.name.includes('moondream')
+          ? 'vision'
+          : im.name.includes('coder') || im.name.includes('code')
+          ? 'code'
+          : 'compact',
+        parameters: im.details?.parameter_size || (catalogMatch ? catalogMatch.parameters : 'Custom'),
+        size: `${(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB`,
+        vram: `${((im.size / (1024 * 1024 * 1024)) * 1.3).toFixed(1)} GB`,
+        description:
+          catalogMatch?.description ||
+          `Locally installed model weights (${im.details?.quantization_level || 'Q4_K_M'} ${im.details?.format || 'GGUF'}).`,
+        isDownloaded: true,
+      });
+    });
+
+    // 2. Add remaining catalog models not yet downloaded
+    CATALOG_MODELS.forEach((cm) => {
+      const isAlreadyAdded =
+        addedIds.has(cm.id) ||
+        addedIds.has(`${cm.id}:latest`) ||
+        (cm.id.endsWith(':latest') && addedIds.has(cm.id.replace(':latest', '')));
+
+      if (!isAlreadyAdded) {
         list.push({
-          id: im.name,
-          name: im.name,
-          category: im.details?.family === 'vision' ? 'vision' : 'compact',
-          parameters: im.details?.parameter_size || 'Custom',
-          size: `${(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB`,
-          vram: `${((im.size / (1024 * 1024 * 1024)) * 1.4).toFixed(1)} GB`,
-          description: `Custom model pulled locally via Ollama daemon (${im.details?.quantization_level || 'GGUF'}).`,
+          ...cm,
+          isDownloaded: false,
         });
       }
     });
@@ -2102,16 +2536,145 @@ Instructions:
                 </button>
               </div>
 
-              {/* Filter Strip & Search */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* 💾 Dedicated Installed Models Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <IconDisc size={16} className="text-[var(--color-ink)]" />
+                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
+                      Installed on Your Machine ({installedModels.length})
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
+                      {totalDiskGB} GB Total Storage
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => refreshConnection()}
+                      disabled={isCheckingConnection}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] px-2.5 py-1 text-[11px] font-mono font-bold text-[var(--color-ink)] transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                      title="Rescan Ollama disk models"
+                    >
+                      <IconRefresh size={12} className={cn(isCheckingConnection && 'animate-spin')} />
+                      <span>Rescan</span>
+                    </button>
+                  </div>
+                </div>
+
+                {installedModels.length === 0 ? (
+                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 text-center space-y-2">
+                    <p className="text-xs text-[var(--color-ink-muted)]">
+                      {connectionStatus === 'connected'
+                        ? 'No models currently downloaded to disk. Browse the library below or pull any model tag to begin.'
+                        : 'Ollama engine is offline. Start Ollama to detect and manage your downloaded models.'}
+                    </p>
+                    {connectionStatus !== 'connected' && (
+                      <button
+                        type="button"
+                        onClick={handleStartOllama}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+                      >
+                        <IconPlayerPlay size={13} />
+                        <span>Start Ollama</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {installedModels.map((im) => {
+                      const isVram = runningModels.includes(im.name);
+                      const isSelected = selectedModel === im.name;
+                      const sizeGB = (im.size / (1024 * 1024 * 1024)).toFixed(1);
+
+                      return (
+                        <div
+                          key={im.name}
+                          className={cn(
+                            'p-4 rounded-2xl border bg-[var(--color-paper-card)] shadow-2xs space-y-3 transition-all',
+                            isVram
+                              ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900/15 dark:ring-white/15'
+                              : 'border-[var(--color-rule-strong)]'
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-xs text-[var(--color-ink)] truncate font-mono">
+                                  {im.name}
+                                </span>
+                                {isVram && (
+                                  <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.5 font-mono text-[8.5px] font-bold">
+                                    VRAM
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block">
+                                {im.details?.family || 'Transformer'} • {im.details?.parameter_size || 'N/A'} • {im.details?.quantization_level || 'Q4_K_M'}
+                              </span>
+                            </div>
+
+                            <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                              {sizeGB} GB
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-[var(--color-rule-subtle)]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedModel(im.name);
+                                setActiveTab('chat');
+                              }}
+                              className={cn(
+                                'flex-1 rounded-xl py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs',
+                                isSelected
+                                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                                  : 'border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] text-[var(--color-ink)]'
+                              )}
+                            >
+                              <IconPlayerPlay size={12} fill={isSelected ? 'currentColor' : 'none'} />
+                              <span>{isSelected ? 'Active in Chat' : 'Chat'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleInspectModel(im.name)}
+                              className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                              title="Inspect Architecture & GGUF parameters"
+                            >
+                              <IconInfoCircle size={14} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setModelToDelete(im.name)}
+                              className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                              title="Delete model from disk"
+                            >
+                              <IconTrash size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Filter Strip & Search Across the Ollama Library */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
                 {/* Category Filter Pills */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                   {[
                     { id: 'all', label: 'All Models' },
+                    { id: 'installed', label: `Installed (${installedModels.length})` },
                     { id: 'compact', label: 'Fast & Compact' },
                     { id: 'reasoning', label: 'Reasoning & Math' },
                     { id: 'code', label: 'Code & Systems' },
                     { id: 'vision', label: 'Vision & Multimodal' },
+                    { id: 'embeddings', label: 'Embeddings & RAG' },
+                    { id: 'general', label: 'General & Frontier' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -2136,7 +2699,7 @@ Instructions:
                     type="text"
                     value={modelSearch}
                     onChange={(e) => setModelSearch(e.target.value)}
-                    placeholder="Search models..."
+                    placeholder="Search all Ollama models..."
                     className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] pl-8 pr-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
                   />
                 </div>
@@ -2146,7 +2709,9 @@ Instructions:
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {allDisplayModels
                   .filter((m) => {
-                    if (modelCategory !== 'all' && m.category !== modelCategory) return false;
+                    if (modelCategory === 'installed' && !m.isDownloaded) return false;
+                    if (modelCategory !== 'all' && modelCategory !== 'installed' && m.category !== modelCategory)
+                      return false;
                     if (
                       modelSearch &&
                       !m.name.toLowerCase().includes(modelSearch.toLowerCase()) &&
@@ -2156,14 +2721,25 @@ Instructions:
                     return true;
                   })
                   .map((model) => {
-                    const isInstalled = installedModels.some(
-                      (im) => im.name === model.id || im.name.startsWith(model.id.split(':')[0])
-                    );
+                    const isInstalled =
+                      model.isDownloaded ||
+                      installedModels.some(
+                        (im) =>
+                          im.name === model.id ||
+                          `${im.name}:latest` === model.id ||
+                          im.name === `${model.id}:latest`
+                      );
                     const installedData = installedModels.find(
-                      (im) => im.name === model.id || im.name.startsWith(model.id.split(':')[0])
+                      (im) =>
+                        im.name === model.id ||
+                        `${im.name}:latest` === model.id ||
+                        im.name === `${model.id}:latest`
                     );
                     const isLoadedInVram = runningModels.some(
-                      (rm) => rm === model.id || rm.startsWith(model.id.split(':')[0])
+                      (rm) =>
+                        rm === model.id ||
+                        `${rm}:latest` === model.id ||
+                        rm === `${model.id}:latest`
                     );
                     const isPulling = downloadingModelId === model.id;
 
