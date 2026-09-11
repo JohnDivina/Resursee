@@ -71,11 +71,14 @@ export const Sidebar = ({
   );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+export const SidebarBody = ({
+  brand,
+  ...props
+}: React.ComponentProps<typeof motion.div> & { brand?: React.ReactNode }) => {
   return (
     <>
       <DesktopSidebar {...props} />
-      <MobileSidebar {...(props as React.ComponentProps<'div'>)} />
+      <MobileSidebar brand={brand} {...(props as React.ComponentProps<'div'>)} />
     </>
   );
 };
@@ -107,8 +110,9 @@ export const DesktopSidebar = ({
 export const MobileSidebar = ({
   className,
   children,
+  brand,
   ...props
-}: React.ComponentProps<'div'>) => {
+}: React.ComponentProps<'div'> & { brand?: React.ReactNode }) => {
   const { open, setOpen } = useSidebar();
   return (
     <div
@@ -117,12 +121,14 @@ export const MobileSidebar = ({
       )}
       {...props}
     >
-      <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white font-bold text-sm">
-          🦦
+      {brand || (
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white font-bold text-sm">
+            🦦
+          </div>
+          <span className="font-extrabold text-sm text-[var(--color-ink)]">Resursee Admin</span>
         </div>
-        <span className="font-extrabold text-sm text-[var(--color-ink)]">Resursee Admin</span>
-      </div>
+      )}
 
       <div className="flex justify-end z-20">
         <button
