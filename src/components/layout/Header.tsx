@@ -349,11 +349,11 @@ export default function Header({ onOpenSearch }: HeaderProps) {
           {/* Divider */}
           <div className="hidden sm:block h-5 w-px bg-[var(--color-rule-strong)] dark:bg-white/10 mx-0.5" />
 
-          {/* 3D Spatial Sound Toggle */}
-          <SoundToggle />
-
-          {/* Theme Mode Toggle */}
-          <ThemeToggle />
+          {/* Desktop Controls (available in Mobile Drawer on small screens) */}
+          <div className="hidden sm:flex items-center gap-1.5">
+            <SoundToggle />
+            <ThemeToggle />
+          </div>
 
           {/* User Profile / Google Sign-In */}
           {session ? (

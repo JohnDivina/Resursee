@@ -365,21 +365,21 @@ function ResourcesDirectoryInner() {
               </h1>
             </div>
 
-            {/* Primary Tab Switcher */}
-            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--color-paper-muted)] border border-[var(--color-rule)] self-start sm:self-auto shrink-0 shadow-xs">
+            {/* Primary Tab Switcher (Responsive 2-Col on Mobile) */}
+            <div className="w-full sm:w-auto grid grid-cols-2 sm:flex sm:items-center gap-1.5 p-1 rounded-2xl bg-[var(--color-paper-muted)] border border-[var(--color-rule)] shadow-xs">
               <button
                 type="button"
                 onClick={() => handleTabChange('apis')}
                 data-thock="button"
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all truncate ${
                   activeTab === 'apis'
                     ? 'bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-xs border border-[var(--color-rule)]'
                     : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                 }`}
               >
-                <Globe size={16} weight={activeTab === 'apis' ? 'bold' : 'regular'} />
-                <span>Public APIs</span>
-                <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)]">
+                <Globe size={15} weight={activeTab === 'apis' ? 'bold' : 'regular'} className="shrink-0" />
+                <span className="truncate">Public APIs</span>
+                <span className="font-mono text-[10.5px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)] shrink-0">
                   {apiStats.total}
                 </span>
               </button>
@@ -388,19 +388,19 @@ function ResourcesDirectoryInner() {
                 type="button"
                 onClick={() => handleTabChange('repos')}
                 data-thock="button"
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all truncate ${
                   activeTab === 'repos'
                     ? 'bg-[var(--color-paper-card)] text-[var(--color-ink)] shadow-xs border border-[var(--color-rule)]'
                     : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                 }`}
               >
                 <Star
-                  size={16}
+                  size={15}
                   weight={activeTab === 'repos' ? 'fill' : 'regular'}
-                  className={activeTab === 'repos' ? 'text-[var(--color-ink)]' : ''}
+                  className={activeTab === 'repos' ? 'text-[var(--color-ink)] shrink-0' : 'shrink-0'}
                 />
-                <span>GitHub Repositories</span>
-                <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)]">
+                <span className="truncate">Repositories</span>
+                <span className="font-mono text-[10.5px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)] shrink-0">
                   {repoStats.total}
                 </span>
               </button>
