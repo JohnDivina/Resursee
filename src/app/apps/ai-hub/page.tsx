@@ -438,7 +438,7 @@ function FormattedMessage({
 export default function AIHubPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
-  const [selectedModel, setSelectedModel] = useState<string>('llama3.2:1b');
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -618,6 +618,18 @@ export default function AIHubPage() {
     } catch {}
   }, []);
 
+  // Synchronize selectedModel strictly with downloaded/installed models
+  useEffect(() => {
+    if (installedModels.length > 0) {
+      const exists = installedModels.some((m) => m.name === selectedModel);
+      if (!exists) {
+        setSelectedModel(installedModels[0].name);
+      }
+    } else if (connectionStatus === 'connected' && installedModels.length === 0) {
+      setSelectedModel('');
+    }
+  }, [installedModels, selectedModel, connectionStatus]);
+
   // Save active session to localStorage
   const saveCurrentSession = (updatedMessages: ChatMessage[], newTitle?: string) => {
     setSessions((prev) => {
@@ -767,19 +779,20 @@ export default function AIHubPage() {
         const running = await getRunningModels(targetEndpoint);
         setRunningModels(running);
 
-        // If current model not installed, switch to first installed model if available
+        // If current model not installed, switch strictly to first available installed model
         if (result.models.length > 0) {
-          const hasSelected = result.models.some(
-            (m) => m.name === selectedModel || m.name.startsWith(selectedModel.split(':')[0])
-          );
+          const hasSelected = result.models.some((m) => m.name === selectedModel);
           if (!hasSelected) {
             setSelectedModel(result.models[0].name);
           }
+        } else {
+          setSelectedModel('');
         }
       } else {
         setConnectionStatus('offline');
         setInstalledModels([]);
         setRunningModels([]);
+        setSelectedModel('');
         setConnectionError(result.error || 'Daemon unreachable');
       }
     } catch (err: any) {
@@ -1653,14 +1666,20 @@ Instructions:
             </h1>
 
             {/* Active Model Pill */}
-            <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-xs font-mono font-bold text-neutral-800 dark:text-neutral-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
-              <span>{selectedModel}</span>
-            </div>
+            {selectedModel ? (
+              <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-xs font-mono font-bold text-neutral-800 dark:text-neutral-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                <span>{selectedModel}</span>
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-xs font-mono text-neutral-500 dark:text-neutral-400">
+                <span>0 Models Available</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* 1-Click Start Ollama Button (when disconnected or on standby) */}
+            {/* Start Ollama Button (when disconnected or on standby) */}
             {connectionStatus !== 'connected' && (
               <button
                 type="button"
@@ -1677,36 +1696,33 @@ Instructions:
                 ) : (
                   <>
                     <IconPlayerPlay size={13} />
-                    <span className="hidden sm:inline">Start Ollama (1-Click)</span>
+                    <span className="hidden sm:inline">Start Ollama</span>
                     <span className="sm:hidden">Start</span>
                   </>
                 )}
               </button>
             )}
 
-            {/* Model Selector Dropdown (combining local installed + catalog) */}
+            {/* Model Selector Dropdown (strictly downloaded local models) */}
             <div className="relative">
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                className="appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] focus:outline-hidden cursor-pointer"
+                disabled={installedModels.length === 0}
+                className="appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] focus:outline-hidden cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                title={installedModels.length > 0 ? 'Select downloaded local model' : 'No downloaded models available'}
               >
-                {installedModels.length > 0 && (
-                  <optgroup label="Local Installed Models">
-                    {installedModels.map((im) => (
-                      <option key={im.name} value={im.name}>
-                        {im.name} ({(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB) • Local
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                <optgroup label="Catalog Models">
-                  {CATALOG_MODELS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.size})
+                {installedModels.length > 0 ? (
+                  installedModels.map((im) => (
+                    <option key={im.name} value={im.name}>
+                      {im.name} ({(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB)
                     </option>
-                  ))}
-                </optgroup>
+                  ))
+                ) : (
+                  <option value="" disabled>
+                    No downloaded models
+                  </option>
+                )}
               </select>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
                 ▼
@@ -2335,7 +2351,7 @@ Instructions:
                     ) : (
                       <>
                         <IconPlayerPlay size={13} />
-                        <span>Start Ollama Engine (1-Click)</span>
+                        <span>Start Ollama Engine</span>
                       </>
                     )}
                   </button>
@@ -2717,7 +2733,7 @@ Instructions:
                     ) : (
                       <>
                         <IconPlayerPlay size={13} />
-                        <span>Start Ollama Engine (1-Click)</span>
+                        <span>Start Ollama Engine</span>
                       </>
                     )}
                   </button>
@@ -3255,7 +3271,7 @@ Instructions:
                       ) : (
                         <>
                           <IconPlayerPlay size={13} />
-                          <span>Start Ollama (1-Click)</span>
+                          <span>Start Ollama</span>
                         </>
                       )}
                     </button>
