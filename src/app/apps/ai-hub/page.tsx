@@ -43,6 +43,7 @@ import {
   deleteOllamaModel,
   showOllamaModel,
   streamOllamaChat,
+  startOllamaDaemon,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
 import { OllamaModel, OllamaConnectionStatus, AIHubSession } from '@/types/aiHub';
@@ -121,6 +122,26 @@ const CATALOG_MODELS: ModelItem[] = [
     isDownloaded: false,
   },
   {
+    id: 'llama3.2-vision:11b',
+    name: 'Llama 3.2 Vision (11B)',
+    category: 'vision',
+    parameters: '11B',
+    size: '7.9 GB',
+    vram: '12 GB',
+    description: 'Meta’s frontier multimodal model for high-resolution visual reasoning, chart understanding, and document OCR.',
+    isDownloaded: false,
+  },
+  {
+    id: 'moondream:latest',
+    name: 'Moondream 2 (1.8B Vision)',
+    category: 'vision',
+    parameters: '1.8B',
+    size: '1.6 GB',
+    vram: '2.5 GB',
+    description: 'Tiny, ultra-fast vision model capable of running smoothly on low-resource laptops and edge hardware.',
+    isDownloaded: false,
+  },
+  {
     id: 'phi3.5:latest',
     name: 'Phi-3.5 Mini (3.8B)',
     category: 'reasoning',
@@ -131,6 +152,86 @@ const CATALOG_MODELS: ModelItem[] = [
     isDownloaded: false,
   },
 ];
+
+// Client-side HTML5 Canvas Image Resizer & Base64 Encoder
+function compressAndEncodeImage(
+  file: File,
+  maxDimension = 1280,
+  quality = 0.85
+): Promise<{ base64: string; dataUrl: string; width: number; height: number; formattedSize: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('Canvas 2D context unavailable'));
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        const base64 = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+        const sizeInKb = Math.round((base64.length * 0.75) / 1024);
+        resolve({
+          base64,
+          dataUrl,
+          width,
+          height,
+          formattedSize: sizeInKb > 1024 ? `${(sizeInKb / 1024).toFixed(1)} MB` : `${sizeInKb} KB`,
+        });
+      };
+      img.onerror = () => reject(new Error('Failed to load image into memory'));
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file from disk'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// 1-Click Interactive Sample Images for Vision Studio
+const SAMPLE_PRESETS: Record<
+  'foliar' | 'receipt' | 'schematic',
+  { title: string; badge: string; prompt: string; svg: string; filename: string }
+> = {
+  foliar: {
+    title: 'Diseased Citrus Leaf',
+    badge: 'Plant Pathology',
+    filename: 'sample_citrus_pathology.png',
+    prompt:
+      'Analyze this leaf image carefully. Identify the plant species if possible, diagnose any visible disease, chlorotic halos, or fungal lesions, and provide actionable organic treatment advice.',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300"><rect width="400" height="300" fill="#18181b"/><path d="M70,160 C120,40 280,40 330,160 C280,260 120,260 70,160 Z" fill="#365314" stroke="#4d7c0f" stroke-width="4"/><path d="M70,160 Q200,160 330,160" stroke="#65a30d" stroke-width="3" fill="none"/><path d="M140,160 Q170,120 200,100" stroke="#65a30d" stroke-width="2" fill="none"/><path d="M200,160 Q230,120 260,110" stroke="#65a30d" stroke-width="2" fill="none"/><path d="M150,160 Q180,200 210,220" stroke="#65a30d" stroke-width="2" fill="none"/><circle cx="170" cy="120" r="16" fill="#713f12" stroke="#ca8a04" stroke-width="3"/><circle cx="240" cy="180" r="22" fill="#451a03" stroke="#eab308" stroke-width="4"/><circle cx="210" cy="140" r="10" fill="#713f12" stroke="#facc15" stroke-width="2"/><circle cx="280" cy="150" r="12" fill="#78350f" stroke="#ca8a04" stroke-width="2"/><text x="200" y="280" fill="#f4f4f5" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Sample: Citrus Leaf with Concentric Necrotic Lesions</text></svg>`,
+  },
+  receipt: {
+    title: 'Commercial Coffee Receipt',
+    badge: 'Document OCR',
+    filename: 'sample_cafe_receipt.png',
+    prompt:
+      'Extract all visible text from this receipt. Transcribe the store name, date, itemized list of items with their individual prices, subtotal, sales tax, and final total in a clean Markdown table.',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" width="400" height="480"><rect width="400" height="480" fill="#18181b"/><rect x="60" y="30" width="280" height="420" rx="10" fill="#f4f4f5" stroke="#71717a" stroke-width="2"/><text x="200" y="70" fill="#09090b" font-family="monospace" font-size="16" font-weight="bold" text-anchor="middle">RESURSEE ROASTERY</text><text x="200" y="90" fill="#52525b" font-family="monospace" font-size="10" text-anchor="middle">104 Tech Boulevard, Suite 300</text><text x="200" y="105" fill="#52525b" font-family="monospace" font-size="10" text-anchor="middle">Date: 2026-09-11  Time: 09:14 AM</text><line x1="80" y1="120" x2="320" y2="120" stroke="#a1a1aa" stroke-dasharray="4,4"/><text x="80" y="150" fill="#09090b" font-family="monospace" font-size="12">1x Double Espresso</text><text x="320" y="150" fill="#09090b" font-family="monospace" font-size="12" text-anchor="end">$4.50</text><text x="80" y="180" fill="#09090b" font-family="monospace" font-size="12">1x Almond Croissant</text><text x="320" y="180" fill="#09090b" font-family="monospace" font-size="12" text-anchor="end">$5.25</text><text x="80" y="210" fill="#09090b" font-family="monospace" font-size="12">1x Cold Brew (16oz)</text><text x="320" y="210" fill="#09090b" font-family="monospace" font-size="12" text-anchor="end">$6.00</text><line x1="80" y1="240" x2="320" y2="240" stroke="#a1a1aa" stroke-dasharray="4,4"/><text x="80" y="270" fill="#3f3f46" font-family="monospace" font-size="12">Subtotal:</text><text x="320" y="270" fill="#3f3f46" font-family="monospace" font-size="12" text-anchor="end">$15.75</text><text x="80" y="295" fill="#3f3f46" font-family="monospace" font-size="12">Tax (8.25%):</text><text x="320" y="295" fill="#3f3f46" font-family="monospace" font-size="12" text-anchor="end">$1.30</text><line x1="80" y1="315" x2="320" y2="315" stroke="#09090b" stroke-width="2"/><text x="80" y="345" fill="#09090b" font-family="monospace" font-size="15" font-weight="bold">TOTAL DUE:</text><text x="320" y="345" fill="#09090b" font-family="monospace" font-size="15" font-weight="bold" text-anchor="end">$17.05</text><text x="200" y="390" fill="#52525b" font-family="monospace" font-size="10" text-anchor="middle">Payment: Apple Pay (****4912)</text><text x="200" y="420" fill="#09090b" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">THANK YOU FOR YOUR VISIT!</text></svg>`,
+  },
+  schematic: {
+    title: 'ESP32 & DHT22 Sensor Circuit',
+    badge: 'Hardware & IoT',
+    filename: 'sample_esp32_schematic.png',
+    prompt:
+      'Examine this circuit diagram. Explain how the DHT22 sensor is connected to the ESP32 microcontroller, what purpose the pull-up resistor serves on the data line, and write the sample C++ code to read humidity and temperature.',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 300" width="460" height="300"><rect width="460" height="300" fill="#18181b"/><rect x="40" y="50" width="130" height="190" rx="8" fill="#27272a" stroke="#71717a" stroke-width="2"/><text x="105" y="80" fill="#fafafa" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">ESP32-WROOM</text><text x="150" y="110" fill="#a1a1aa" font-family="monospace" font-size="11" text-anchor="end">3V3</text><text x="150" y="145" fill="#a1a1aa" font-family="monospace" font-size="11" text-anchor="end">GPIO4</text><text x="150" y="180" fill="#a1a1aa" font-family="monospace" font-size="11" text-anchor="end">GND</text><rect x="290" y="60" width="120" height="170" rx="8" fill="#27272a" stroke="#71717a" stroke-width="2"/><text x="350" y="90" fill="#fafafa" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">DHT22</text><text x="310" y="115" fill="#a1a1aa" font-family="monospace" font-size="11">Pin 1: VCC</text><text x="310" y="145" fill="#a1a1aa" font-family="monospace" font-size="11">Pin 2: DATA</text><text x="310" y="175" fill="#a1a1aa" font-family="monospace" font-size="11">Pin 3: NC</text><text x="310" y="205" fill="#a1a1aa" font-family="monospace" font-size="11">Pin 4: GND</text><line x1="150" y1="105" x2="310" y2="110" stroke="#f43f5e" stroke-width="2"/><line x1="150" y1="140" x2="310" y2="140" stroke="#eab308" stroke-width="2"/><line x1="150" y1="175" x2="310" y2="200" stroke="#71717a" stroke-width="2"/><rect x="220" y="95" width="25" height="40" rx="4" fill="#3f3f46" stroke="#f59e0b" stroke-width="1.5"/><text x="232" y="120" fill="#facc15" font-family="monospace" font-size="9" text-anchor="middle">4.7k</text><line x1="232" y1="95" x2="232" y2="108" stroke="#f43f5e" stroke-width="1.5"/><line x1="232" y1="135" x2="232" y2="140" stroke="#eab308" stroke-width="1.5"/><text x="230" y="280" fill="#d4d4d8" font-family="sans-serif" font-size="12" text-anchor="middle">ESP32 to DHT22 Telemetry Interface (GPIO4 + 4.7kΩ Pull-up)</text></svg>`,
+  },
+};
+
 
 // Helper to format inline code & bold text within markdown lines
 function parseInlineFormatting(text: string) {
@@ -311,6 +412,32 @@ export default function AIHubPage() {
   const [inspectData, setInspectData] = useState<any | null>(null);
   const [isLoadingInspect, setIsLoadingInspect] = useState<boolean>(false);
   const pullAbortControllerRef = useRef<AbortController | null>(null);
+
+  // 1-Click Ollama Daemon Launcher State
+  const [isStartingDaemon, setIsStartingDaemon] = useState(false);
+  const [daemonNotification, setDaemonNotification] = useState<{
+    type: 'info' | 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  // Vision & Multimodal Studio State (Phase 4)
+  const [visionImageBase64, setVisionImageBase64] = useState<string | null>(null);
+  const [visionImagePreview, setVisionImagePreview] = useState<string | null>(null);
+  const [visionImageMeta, setVisionImageMeta] = useState<{
+    name: string;
+    size: string;
+    dimensions?: string;
+  } | null>(null);
+  const [visionPrompt, setVisionPrompt] = useState<string>(
+    'Inspect this image and provide a thorough, structured visual analysis.'
+  );
+  const [visionSelectedModel, setVisionSelectedModel] = useState<string>('llava:7b');
+  const [isAnalyzingVision, setIsAnalyzingVision] = useState(false);
+  const [visionResult, setVisionResult] = useState<string>('');
+  const [visionError, setVisionError] = useState<string | null>(null);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const visionFileInputRef = useRef<HTMLInputElement | null>(null);
+  const visionAbortControllerRef = useRef<AbortController | null>(null);
 
   // Auto-scroll messages anchor
   useEffect(() => {
@@ -534,6 +661,218 @@ export default function AIHubPage() {
     setEndpoint(activeEp);
     refreshConnection(activeEp);
   }, []);
+
+  // 1-Click Start Ollama Daemon Handler
+  const handleStartOllama = async () => {
+    setIsStartingDaemon(true);
+    setDaemonNotification({ type: 'info', message: 'Starting Ollama background daemon...' });
+
+    try {
+      const res = await startOllamaDaemon();
+      if (res.running) {
+        setDaemonNotification({
+          type: 'success',
+          message: res.message || 'Ollama daemon connected!',
+        });
+        await refreshConnection();
+        setTimeout(() => setDaemonNotification(null), 4000);
+        return;
+      }
+
+      if (res.isCloud) {
+        setDaemonNotification({
+          type: 'info',
+          message: res.message || 'Running in cloud environment.',
+        });
+        setIsSetupModalOpen(true);
+        return;
+      }
+
+      // Poll up to 7 times (3.5s total) for connection
+      let connected = false;
+      for (let i = 0; i < 7; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        const check = await checkOllamaConnection(endpoint);
+        if (check.status) {
+          setConnectionStatus('connected');
+          setInstalledModels(check.models);
+          connected = true;
+          setDaemonNotification({
+            type: 'success',
+            message: `Ollama is ready (${check.models.length} models installed)`,
+          });
+          setTimeout(() => setDaemonNotification(null), 4000);
+          break;
+        }
+      }
+
+      if (!connected) {
+        setDaemonNotification({
+          type: 'info',
+          message: 'Ollama launch triggered. It may take a moment to initialize.',
+        });
+      }
+    } catch (err: any) {
+      setDaemonNotification({
+        type: 'error',
+        message: err.message || 'Failed to start Ollama daemon.',
+      });
+    } finally {
+      setIsStartingDaemon(false);
+    }
+  };
+
+  // Vision File Upload & Drop Handlers (Phase 4)
+  const handleProcessImageFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setVisionError('Please select a valid image file (PNG, JPG, WebP, etc.).');
+      return;
+    }
+    try {
+      setVisionError(null);
+      const { base64, dataUrl, width, height, formattedSize } = await compressAndEncodeImage(file);
+      setVisionImageBase64(base64);
+      setVisionImagePreview(dataUrl);
+      setVisionImageMeta({
+        name: file.name,
+        size: formattedSize,
+        dimensions: `${width}×${height}`,
+      });
+    } catch (err: any) {
+      setVisionError(err.message || 'Failed to process image');
+    }
+  };
+
+  const handleImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleProcessImageFile(file);
+  };
+
+  const handleImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingImage(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleProcessImageFile(file);
+  };
+
+  const handleClearImage = () => {
+    setVisionImageBase64(null);
+    setVisionImagePreview(null);
+    setVisionImageMeta(null);
+    setVisionResult('');
+    setVisionError(null);
+    if (visionFileInputRef.current) visionFileInputRef.current.value = '';
+  };
+
+  const handleLoadSample = (type: 'foliar' | 'receipt' | 'schematic') => {
+    const sample = SAMPLE_PRESETS[type];
+    if (!sample) return;
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(sample.svg)));
+      const dataUrl = `data:image/svg+xml;base64,${base64}`;
+      setVisionImageBase64(base64);
+      setVisionImagePreview(dataUrl);
+      setVisionImageMeta({
+        name: sample.filename,
+        size: '12 KB',
+        dimensions: type === 'receipt' ? '400×480' : '400×300',
+      });
+      setVisionPrompt(sample.prompt);
+      setVisionResult('');
+      setVisionError(null);
+    } catch {
+      setVisionError('Failed to load sample image');
+    }
+  };
+
+  const handleRunVisionAnalysis = async () => {
+    if (!visionImageBase64) {
+      setVisionError('Please upload an image or select a sample first.');
+      return;
+    }
+    if (connectionStatus !== 'connected') {
+      setVisionError('Ollama daemon is offline. Click "Start Ollama Engine" to connect.');
+      return;
+    }
+
+    const activeModel = visionSelectedModel || selectedModel;
+    setIsAnalyzingVision(true);
+    setVisionError(null);
+    setVisionResult('');
+    const controller = new AbortController();
+    visionAbortControllerRef.current = controller;
+
+    try {
+      const accumulated = await streamOllamaChat(
+        endpoint,
+        {
+          model: activeModel,
+          messages: [
+            {
+              role: 'user',
+              content: visionPrompt.trim() || 'Describe this image and analyze key features.',
+              images: [visionImageBase64],
+            },
+          ],
+          temperature: 0.2,
+          num_ctx: 4096,
+        },
+        (fullText) => {
+          setVisionResult(fullText);
+        },
+        controller.signal
+      );
+      setVisionResult(accumulated);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        // Stopped cleanly by user
+      } else {
+        const errMsg = err.message || 'Vision analysis failed';
+        if (
+          errMsg.toLowerCase().includes('does not support images') ||
+          errMsg.toLowerCase().includes('images') ||
+          errMsg.toLowerCase().includes('vision')
+        ) {
+          setVisionError(
+            `Model "${activeModel}" is a text-only model. Please switch to a vision model (e.g. LLaVA or Llama 3.2 Vision).`
+          );
+        } else {
+          setVisionError(errMsg);
+        }
+      }
+    } finally {
+      setIsAnalyzingVision(false);
+      visionAbortControllerRef.current = null;
+    }
+  };
+
+  const handleStopVision = () => {
+    if (visionAbortControllerRef.current) {
+      visionAbortControllerRef.current.abort();
+      visionAbortControllerRef.current = null;
+    }
+    setIsAnalyzingVision(false);
+  };
+
+  const handleExportVision = () => {
+    if (!visionResult) return;
+    let md = `# Local AI Hub - Vision Analysis Report\n\n`;
+    md += `- **Date**: ${new Date().toLocaleString()}\n`;
+    md += `- **Model**: \`${visionSelectedModel}\`\n`;
+    md += `- **Image**: ${visionImageMeta?.name || 'Uploaded Image'} (${visionImageMeta?.dimensions || ''})\n`;
+    md += `- **Prompt**: ${visionPrompt}\n\n---\n\n`;
+    md += `## Visual Reasoning & Findings\n\n${visionResult}\n`;
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `resursee-vision-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // Copy helper
   const handleCopy = (text: string, key: string) => {
@@ -899,12 +1238,13 @@ export default function AIHubPage() {
           </div>
 
           {/* Sidebar Footer: Engine Status & Back to Resursee */}
+          {/* Sidebar Footer: Engine Status & Back to Resursee */}
           <div className="border-t border-[var(--color-rule-subtle)] pt-3 mt-auto space-y-2">
-            {/* Ollama Status Pill */}
+            {/* Ollama Status Pill & 1-Click Action */}
             <div
               onClick={() => {
                 if (connectionStatus === 'offline') {
-                  setIsSetupModalOpen(true);
+                  handleStartOllama();
                 } else {
                   refreshConnection();
                 }
@@ -917,7 +1257,7 @@ export default function AIHubPage() {
                     'h-1.5 w-1.5 rounded-full shrink-0',
                     connectionStatus === 'connected'
                       ? 'bg-neutral-900 dark:bg-white'
-                      : connectionStatus === 'checking'
+                      : connectionStatus === 'checking' || isStartingDaemon
                       ? 'bg-amber-500 animate-ping'
                       : 'bg-neutral-400'
                   )}
@@ -929,7 +1269,9 @@ export default function AIHubPage() {
                   }}
                   className="text-xs font-semibold text-[var(--color-ink)] truncate"
                 >
-                  {connectionStatus === 'connected'
+                  {isStartingDaemon
+                    ? 'Starting Engine...'
+                    : connectionStatus === 'connected'
                     ? `Ollama (${installedModels.length} models)`
                     : connectionStatus === 'checking'
                     ? 'Connecting...'
@@ -943,7 +1285,7 @@ export default function AIHubPage() {
                 }}
                 className="text-[10px] font-mono text-[var(--color-ink-muted)] group-hover:underline"
               >
-                {connectionStatus === 'connected' ? 'Refresh' : 'Guide'}
+                {connectionStatus === 'connected' ? 'Refresh' : 'Start'}
               </motion.span>
             </div>
 
@@ -967,7 +1309,7 @@ export default function AIHubPage() {
             <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-[var(--color-ink)] truncate">
               {activeTab === 'chat' && 'Chat & Inference Studio'}
               {activeTab === 'models' && 'Model Library & Downloader'}
-              {activeTab === 'vision' && 'Vision & OCR Inspector'}
+              {activeTab === 'vision' && 'Vision & OCR Multimodal Studio'}
               {activeTab === 'rag' && 'RAG & Knowledge Documents'}
               {activeTab === 'settings' && 'Engine & Host Settings'}
             </h1>
@@ -980,6 +1322,30 @@ export default function AIHubPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {/* 1-Click Start Ollama Button (when disconnected or on standby) */}
+            {connectionStatus !== 'connected' && (
+              <button
+                type="button"
+                onClick={handleStartOllama}
+                disabled={isStartingDaemon}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                title="Launch local Ollama background daemon"
+              >
+                {isStartingDaemon ? (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                    <span>Starting...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconPlayerPlay size={13} />
+                    <span className="hidden sm:inline">Start Ollama (1-Click)</span>
+                    <span className="sm:hidden">Start</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Model Selector Dropdown (combining local installed + catalog) */}
             <div className="relative">
               <select
@@ -1016,13 +1382,37 @@ export default function AIHubPage() {
               className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 shadow-2xs transition-all cursor-pointer"
             >
               <IconTerminal2 size={15} />
-              <span>How to Run</span>
+              <span>Guide</span>
             </button>
 
             {/* Theme Toggle */}
             <ThemeToggle />
           </div>
         </header>
+
+        {/* Floating Daemon Notification Banner if triggered */}
+        <AnimatePresence>
+          {daemonNotification && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-4 py-2 text-xs font-mono text-neutral-800 dark:text-neutral-200 flex items-center justify-between z-10"
+            >
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                <span>{daemonNotification.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDaemonNotification(null)}
+                className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] cursor-pointer"
+              >
+                <IconX size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Studio View Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0">
@@ -1520,63 +1910,410 @@ export default function AIHubPage() {
             </div>
           )}
 
-          {/* VIEW 3: VISION & MULTIMODAL */}
+          {/* VIEW 3: VISION & MULTIMODAL STUDIO (Phase 4) */}
           {activeTab === 'vision' && (
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div>
-                <h2 className="text-lg font-extrabold text-[var(--color-ink)]">Vision & OCR Inspection Studio</h2>
-                <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
-                  Inspect images, analyze foliar plant symptoms, or extract structured document data using local vision models.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Upload / Image Dropzone */}
-                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-8 text-center space-y-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-neutral-700">
-                    <IconUpload size={22} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[var(--color-ink)]">Drag and drop an image here</p>
-                    <p className="text-[11px] text-[var(--color-ink-muted)]">PNG, JPG, or WebP up to 10MB</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
-                  >
-                    Select Photo
-                  </button>
+            <div className="max-w-5xl mx-auto space-y-6">
+              {/* Header & Vision Model Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--color-rule-subtle)] pb-4">
+                <div>
+                  <h2 className="text-lg font-extrabold text-[var(--color-ink)]">
+                    Vision & OCR Multimodal Studio
+                  </h2>
+                  <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
+                    Inspect images, analyze foliar plant symptoms, transcribe receipts & tables, or explain schematics using local Ollama vision models.
+                  </p>
                 </div>
 
-                {/* Inspection Console */}
-                <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 space-y-4">
-                  <h3 className="text-xs font-bold font-mono text-[var(--color-ink-muted)] uppercase tracking-wider">
-                    Visual Prompt & Parameters
-                  </h3>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-[var(--color-ink)]">Active Vision Model</label>
-                    <div className="mt-1 flex items-center justify-between rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs font-mono font-bold">
-                      <span>llava:7b</span>
-                      <span className="text-[10px] text-[var(--color-ink-muted)]">Multimodal 4.7 GB</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Active Vision Model Selector */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-mono text-[var(--color-ink-muted)] shrink-0">
+                      Model:
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={visionSelectedModel}
+                        onChange={(e) => setVisionSelectedModel(e.target.value)}
+                        className="appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                      >
+                        {installedModels.length > 0 && (
+                          <optgroup label="Installed Local Models">
+                            {installedModels.map((im) => (
+                              <option key={im.name} value={im.name}>
+                                {im.name} • Local
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="Recommended Vision Models">
+                          <option value="llava:7b">llava:7b (4.7 GB)</option>
+                          <option value="llama3.2-vision:11b">llama3.2-vision:11b (7.9 GB)</option>
+                          <option value="moondream:latest">moondream:latest (1.6 GB Compact)</option>
+                        </optgroup>
+                      </select>
+                      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
+                        ▼
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold text-[var(--color-ink)]">Inspection Task</label>
-                    <textarea
-                      rows={3}
-                      defaultValue="Inspect this image and identify any visible plant disease, leaf necrosis, or structural defects."
-                      className="mt-1 w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-2.5 text-xs text-[var(--color-ink)] focus:outline-hidden"
-                    />
-                  </div>
+                  {/* 1-Click Pull LLaVA button if no vision model is installed */}
+                  {!installedModels.some(
+                    (m) =>
+                      m.name.includes('llava') ||
+                      m.name.includes('vision') ||
+                      m.name.includes('moondream')
+                  ) && (
+                    <button
+                      type="button"
+                      onClick={() => handlePullModel('llava:7b')}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <IconDownload size={13} />
+                      <span>Pull LLaVA (7B)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
 
+              {/* Daemon Offline Notice if applicable */}
+              {connectionStatus !== 'connected' && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200">
+                  <div className="flex items-center gap-2.5 text-xs font-semibold">
+                    <IconAlertCircle size={16} className="shrink-0" />
+                    <span>Ollama daemon is currently offline. Start the engine to run local vision inference.</span>
+                  </div>
                   <button
                     type="button"
-                    className="w-full rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
+                    onClick={handleStartOllama}
+                    disabled={isStartingDaemon}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shrink-0 shadow-2xs"
                   >
-                    Run Local Vision Analysis
+                    {isStartingDaemon ? (
+                      <>
+                        <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                        <span>Starting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <IconPlayerPlay size={13} />
+                        <span>Start Ollama Engine (1-Click)</span>
+                      </>
+                    )}
                   </button>
+                </div>
+              )}
+
+              {/* Main 2-Column Studio Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Left Column (5 cols): Image Input & Presets */}
+                <div className="lg:col-span-5 space-y-4">
+                  {/* Drag & Drop Zone / Image Preview */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDraggingImage(true);
+                    }}
+                    onDragLeave={() => setIsDraggingImage(false)}
+                    onDrop={handleImageDrop}
+                    className={cn(
+                      'relative rounded-2xl border-2 transition-all p-4 text-center flex flex-col items-center justify-center min-h-[260px] bg-[var(--color-paper-card)]',
+                      isDraggingImage
+                        ? 'border-neutral-900 dark:border-white bg-[var(--color-paper-surface)]'
+                        : 'border-dashed border-[var(--color-rule-strong)]'
+                    )}
+                  >
+                    <input
+                      ref={visionFileInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp, image/gif, image/bmp"
+                      className="hidden"
+                      onChange={handleImageInputChange}
+                    />
+
+                    {visionImagePreview ? (
+                      <div className="w-full space-y-3">
+                        <div className="relative rounded-xl overflow-hidden border border-[var(--color-rule-subtle)] bg-neutral-950 flex items-center justify-center max-h-64">
+                          <img
+                            src={visionImagePreview}
+                            alt="Upload Preview"
+                            className="max-h-64 w-auto object-contain"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleClearImage}
+                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-900 text-white backdrop-blur-md cursor-pointer transition-all"
+                            title="Remove image"
+                          >
+                            <IconX size={15} />
+                          </button>
+                        </div>
+
+                        {visionImageMeta && (
+                          <div className="flex items-center justify-between text-[11px] font-mono text-[var(--color-ink-muted)] px-1">
+                            <span className="truncate max-w-[180px] font-semibold text-[var(--color-ink)]">
+                              {visionImageMeta.name}
+                            </span>
+                            <span>
+                              {visionImageMeta.dimensions && `${visionImageMeta.dimensions} • `}
+                              {visionImageMeta.size}
+                            </span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => visionFileInputRef.current?.click()}
+                          className="w-full py-1.5 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] text-xs font-semibold text-[var(--color-ink)] transition-all cursor-pointer"
+                        >
+                          Replace Image
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 py-6">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-neutral-700">
+                          <IconUpload size={22} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-[var(--color-ink)]">
+                            Drag and drop an image here
+                          </p>
+                          <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5">
+                            PNG, JPG, or WebP (auto-scaled client-side)
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => visionFileInputRef.current?.click()}
+                          className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+                        >
+                          Select Photo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 1-Click Sample Image Loaders */}
+                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                        Or Try a 1-Click Sample
+                      </span>
+                      <span className="text-[10px] text-[var(--color-ink-muted)]">Instant Preview</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleLoadSample('foliar')}
+                        className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
+                      >
+                        <span className="text-base block mb-1">🌿</span>
+                        <span className="text-[11px] font-bold text-[var(--color-ink)] block leading-tight">
+                          Citrus Leaf
+                        </span>
+                        <span className="text-[9px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
+                          Pathology
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleLoadSample('receipt')}
+                        className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
+                      >
+                        <span className="text-base block mb-1">📄</span>
+                        <span className="text-[11px] font-bold text-[var(--color-ink)] block leading-tight">
+                          Receipt
+                        </span>
+                        <span className="text-[9px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
+                          Table OCR
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleLoadSample('schematic')}
+                        className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
+                      >
+                        <span className="text-base block mb-1">🔌</span>
+                        <span className="text-[11px] font-bold text-[var(--color-ink)] block leading-tight">
+                          ESP32 Circuit
+                        </span>
+                        <span className="text-[9px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
+                          Schematic
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column (7 cols): Prompt, Presets, and Streaming Analysis Output */}
+                <div className="lg:col-span-7 space-y-4">
+                  {/* Prompt Configuration Card */}
+                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 space-y-3.5">
+                    {/* Preset Buttons */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[var(--color-ink)] block">
+                        Quick Inspection Presets:
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          {
+                            label: '🌿 Leaf Pathology',
+                            prompt:
+                              'Analyze this leaf image carefully. Identify the plant species if possible, diagnose any visible disease, chlorotic halos, or fungal lesions, and provide actionable organic treatment advice.',
+                          },
+                          {
+                            label: '📄 Document OCR',
+                            prompt:
+                              'Extract all visible text from this document image. Preserve table structures, headings, line items, and transcribe them into clean GitHub-flavored Markdown.',
+                          },
+                          {
+                            label: '🔌 Circuit Schematic',
+                            prompt:
+                              'Examine this circuit diagram. Explain the wiring between components, verify pinout connections, and highlight any potential design issues.',
+                          },
+                          {
+                            label: '🔍 Detailed VQA',
+                            prompt:
+                              'Provide a comprehensive visual description of this image, detailing key subjects, spatial arrangements, lighting, and anomalies.',
+                          },
+                        ].map((p, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setVisionPrompt(p.prompt)}
+                            className="rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-2.5 py-1 text-[11px] font-medium text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Prompt Textarea */}
+                    <div>
+                      <label className="text-[11px] font-bold text-[var(--color-ink)] block mb-1">
+                        Visual Question / Instructions
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={visionPrompt}
+                        onChange={(e) => setVisionPrompt(e.target.value)}
+                        placeholder="Ask anything about the uploaded image..."
+                        className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] p-3 text-xs text-[var(--color-ink)] focus:outline-hidden leading-relaxed"
+                      />
+                    </div>
+
+                    {/* Action Trigger */}
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                      <div className="text-[11px] font-mono text-[var(--color-ink-muted)]">
+                        {visionImageBase64 ? 'Ready to analyze' : 'Upload an image to start'}
+                      </div>
+
+                      {isAnalyzingVision ? (
+                        <button
+                          type="button"
+                          onClick={handleStopVision}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+                        >
+                          <IconPlayerStop size={14} />
+                          <span>Stop Generation</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleRunVisionAnalysis}
+                          disabled={!visionImageBase64}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 shadow-2xs"
+                        >
+                          <IconPlayerPlay size={14} />
+                          <span>Run Local Vision Analysis</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Vision Error Notice if any */}
+                    {visionError && (
+                      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3 text-xs text-neutral-800 dark:text-neutral-200 flex items-start gap-2">
+                        <IconAlertCircle size={16} className="shrink-0 mt-0.5" />
+                        <div className="flex-1 space-y-1">
+                          <p className="font-semibold">{visionError}</p>
+                          {visionError.includes('text-only') && (
+                            <button
+                              type="button"
+                              onClick={() => handlePullModel('llava:7b')}
+                              className="inline-flex items-center gap-1 text-[11px] font-bold underline cursor-pointer"
+                            >
+                              Click to pull LLaVA 7B Vision Model &rarr;
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Vision Analysis Streaming Output Console */}
+                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 space-y-3 min-h-[240px] flex flex-col justify-between">
+                    <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[var(--color-ink)]">
+                          Local Visual Reasoning Output
+                        </span>
+                        {isAnalyzingVision && (
+                          <span className="flex items-center gap-1 text-[10px] font-mono text-[var(--color-ink-muted)] animate-pulse">
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                            <span>Streaming tokens...</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {visionResult && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(visionResult, 'vision-result')}
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                          >
+                            {copiedKey === 'vision-result' ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                            <span>{copiedKey === 'vision-result' ? 'Copied' : 'Copy'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleExportVision}
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                          >
+                            <IconFileExport size={12} />
+                            <span>Export .md</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto text-xs text-[var(--color-ink)] leading-relaxed space-y-2">
+                      {visionResult ? (
+                        <FormattedMessage
+                          content={visionResult}
+                          messageId="vision-active-result"
+                          copiedKey={copiedKey}
+                          onCopy={handleCopy}
+                        />
+                      ) : isAnalyzingVision ? (
+                        <div className="flex items-center justify-center py-12 text-xs font-mono text-[var(--color-ink-muted)] gap-2">
+                          <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                          <span>Processing image tensors and generating visual explanation...</span>
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 text-xs font-mono text-[var(--color-ink-muted)] space-y-1">
+                          <p>No analysis run yet.</p>
+                          <p className="text-[11px]">
+                            Select an image or sample, configure your prompt, and click &quot;Run Local Vision Analysis&quot;.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1759,6 +2496,39 @@ export default function AIHubPage() {
 
               {/* Instructions List */}
               <div className="space-y-3 font-mono text-xs">
+                {/* 1-Click Fast Start Card */}
+                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 space-y-2 text-neutral-800 dark:text-neutral-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 font-bold text-xs">
+                      <IconPlayerPlay size={16} />
+                      <span>Already have Ollama installed?</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleStartOllama();
+                      }}
+                      disabled={isStartingDaemon}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                    >
+                      {isStartingDaemon ? (
+                        <>
+                          <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                          <span>Starting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <IconPlayerPlay size={13} />
+                          <span>Start Ollama (1-Click)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-ink-muted)] font-sans">
+                    Resursee can automatically launch your local Ollama background daemon on your machine without opening the terminal.
+                  </p>
+                </div>
+
                 {/* Step 1 */}
                 <div className="rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3.5 space-y-2">
                   <div className="flex items-center justify-between">

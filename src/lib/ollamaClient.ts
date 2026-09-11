@@ -263,3 +263,30 @@ export async function streamOllamaChat(
 
   return fullAccumulated;
 }
+
+/**
+ * Triggers the 1-click start of local Ollama daemon via Resursee internal API.
+ */
+export async function startOllamaDaemon(): Promise<{
+  success: boolean;
+  running: boolean;
+  modelsCount?: number;
+  message?: string;
+  isCloud?: boolean;
+  error?: string;
+}> {
+  try {
+    const res = await fetch('/api/ai/ollama/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      running: false,
+      error: err.message || 'Failed to trigger Ollama start',
+    };
+  }
+}
+
