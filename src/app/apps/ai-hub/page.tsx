@@ -26,6 +26,15 @@ import {
   IconAlertCircle,
   IconX,
 } from '@tabler/icons-react';
+import {
+  checkOllamaConnection,
+  getRunningModels,
+  pullOllamaModel,
+  deleteOllamaModel,
+  streamOllamaChat,
+  DEFAULT_OLLAMA_ENDPOINT,
+} from '@/lib/ollamaClient';
+import { OllamaModel, OllamaConnectionStatus } from '@/types/aiHub';
 
 // --- Types ---
 type ActiveTab = 'chat' | 'models' | 'vision' | 'rag' | 'settings';
@@ -119,6 +128,21 @@ export default function AIHubPage() {
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // Live Ollama Bridge State (Phase 1)
+  const [endpoint, setEndpoint] = useState<string>(DEFAULT_OLLAMA_ENDPOINT);
+  const [connectionStatus, setConnectionStatus] = useState<OllamaConnectionStatus>('checking');
+  const [installedModels, setInstalledModels] = useState<OllamaModel[]>([]);
+  const [runningModels, setRunningModels] = useState<string[]>([]);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState<boolean>(false);
+
+  // Dynamic Inference Parameters
+  const [temperature, setTemperature] = useState<number>(0.7);
+  const [numCtx, setNumCtx] = useState<number>(4096);
+  const [systemPrompt, setSystemPrompt] = useState<string>(
+    'You are a private, offline intelligence engine integrated into Resursee. Provide concise, factual, and direct answers without unnecessary filler.'
+  );
+
   // Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -138,6 +162,53 @@ export default function AIHubPage() {
   const [downloadingModelId, setDownloadingModelId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
+  // Connection Bridge Check
+  const refreshConnection = async (targetEndpoint: string = endpoint) => {
+    setIsCheckingConnection(true);
+    setConnectionStatus('checking');
+    try {
+      const result = await checkOllamaConnection(targetEndpoint, 2500);
+      if (result.status) {
+        setConnectionStatus('connected');
+        setInstalledModels(result.models);
+        setConnectionError(null);
+
+        // Check running models in VRAM
+        const running = await getRunningModels(targetEndpoint);
+        setRunningModels(running);
+
+        // If current model not installed, switch to first installed model if available
+        if (result.models.length > 0) {
+          const hasSelected = result.models.some(
+            (m) => m.name === selectedModel || m.name.startsWith(selectedModel.split(':')[0])
+          );
+          if (!hasSelected) {
+            setSelectedModel(result.models[0].name);
+          }
+        }
+      } else {
+        setConnectionStatus('offline');
+        setInstalledModels([]);
+        setRunningModels([]);
+        setConnectionError(result.error || 'Daemon unreachable');
+      }
+    } catch (err: any) {
+      setConnectionStatus('offline');
+      setInstalledModels([]);
+      setRunningModels([]);
+      setConnectionError(err.message || 'Connection failed');
+    } finally {
+      setIsCheckingConnection(false);
+    }
+  };
+
+  useEffect(() => {
+    const savedEndpoint = typeof window !== 'undefined' ? localStorage.getItem('resursee_ollama_endpoint') : null;
+    const activeEp = savedEndpoint || DEFAULT_OLLAMA_ENDPOINT;
+    setEndpoint(activeEp);
+    refreshConnection(activeEp);
+  }, []);
+
   // Copy helper
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -145,8 +216,8 @@ export default function AIHubPage() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Simulated Chat Generation
-  const handleSendMessage = () => {
+  // Live Chat Generation (Phase 2 with Real Ollama Stream & Offline Fallback)
+  const handleSendMessage = async () => {
     if (!promptInput.trim() || isGenerating) return;
 
     const userMsg: ChatMessage = {
@@ -156,18 +227,70 @@ export default function AIHubPage() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     const inquiry = promptInput.trim();
     setPromptInput('');
     setIsGenerating(true);
 
-    setTimeout(() => {
-      let replyContent = '';
-      let code = '';
+    if (connectionStatus === 'connected') {
+      const assistantId = `reply-${Date.now()}`;
+      const assistantMsg: ChatMessage = {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
 
-      if (inquiry.toLowerCase().includes('esp32') || inquiry.toLowerCase().includes('iot')) {
-        replyContent = `Here is a lightweight FreeRTOS sensor telemetry task for the ESP32 connecting to Resursee's IoT Cloud ingestion API:`;
-        code = `#include <WiFi.h>
+      try {
+        const ollamaHistory = [
+          { role: 'system' as const, content: systemPrompt },
+          ...newMessages
+            .filter((m) => m.id !== 'welcome')
+            .map((m) => ({
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+            })),
+        ];
+
+        await streamOllamaChat(
+          endpoint,
+          {
+            model: selectedModel,
+            messages: ollamaHistory,
+            temperature,
+            num_ctx: numCtx,
+          },
+          (fullText) => {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullText } : msg))
+            );
+          }
+        );
+      } catch (err: any) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId
+              ? {
+                  ...msg,
+                  content: `⚠️ Failed to stream from Ollama (${err.message}). Ensure model "${selectedModel}" is pulled locally.`,
+                }
+              : msg
+          )
+        );
+      } finally {
+        setIsGenerating(false);
+      }
+    } else {
+      // Offline fallback simulation
+      setTimeout(() => {
+        let replyContent = '';
+        let code = '';
+
+        if (inquiry.toLowerCase().includes('esp32') || inquiry.toLowerCase().includes('iot')) {
+          replyContent = `Here is a lightweight FreeRTOS sensor telemetry task for the ESP32 connecting to Resursee's IoT Cloud ingestion API:`;
+          code = `#include <WiFi.h>
 #include <HTTPClient.h>
 
 void telemetryTask(void *pvParameters) {
@@ -183,41 +306,57 @@ void telemetryTask(void *pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(5000));
   }
 }`;
-      } else if (inquiry.toLowerCase().includes('quant') || inquiry.toLowerCase().includes('gguf')) {
-        replyContent = `**Quantization Comparison: Q4_K_M vs Q8_0**\n\n- **Q4_K_M (4-bit)**: Compresses weights down to ~4.5 bits/weight. Ideal for consumer laptops (fits in 8GB–16GB RAM) with minimal perplexity degradation (< 0.15 PPL loss).\n- **Q8_0 (8-bit)**: Near-lossless precision matching original FP16 checkpoints, but requires double the VRAM.\n\nFor local execution on edge hardware, **Q4_K_M** delivers the optimal speed-to-accuracy ratio.`;
-      } else {
-        replyContent = `Processed query via local **${selectedModel}** engine.\n\nAll computations completed on local GPU/CPU hardware. Tokens streamed with strict data sovereignty. You can inspect the engine configuration or download larger models in the **Model Library** tab.`;
-      }
+        } else if (inquiry.toLowerCase().includes('quant') || inquiry.toLowerCase().includes('gguf')) {
+          replyContent = `**Quantization Comparison: Q4_K_M vs Q8_0**\n\n- **Q4_K_M (4-bit)**: Compresses weights down to ~4.5 bits/weight. Ideal for consumer laptops (fits in 8GB–16GB RAM) with minimal perplexity degradation (< 0.15 PPL loss).\n- **Q8_0 (8-bit)**: Near-lossless precision matching original FP16 checkpoints, but requires double the VRAM.\n\nFor local execution on edge hardware, **Q4_K_M** delivers the optimal speed-to-accuracy ratio.`;
+        } else {
+          replyContent = `Processed query via local **${selectedModel}** engine.\n\n*Running in demo simulation mode*. Connect local Ollama at \`${endpoint}\` to stream live tokens from GPU/CPU weights.`;
+        }
 
-      const assistantMsg: ChatMessage = {
-        id: `reply-${Date.now()}`,
-        role: 'assistant',
-        content: replyContent,
-        codeSnippet: code || undefined,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
+        const assistantMsg: ChatMessage = {
+          id: `reply-${Date.now()}`,
+          role: 'assistant',
+          content: replyContent,
+          codeSnippet: code || undefined,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
 
-      setMessages((prev) => [...prev, assistantMsg]);
-      setIsGenerating(false);
-    }, 900);
+        setMessages((prev) => [...prev, assistantMsg]);
+        setIsGenerating(false);
+      }, 700);
+    }
   };
 
-  // Simulated Model Pull
-  const handlePullModel = (modelId: string) => {
+  // Live Model Pull with Real Daemon Stream (Phase 3 ready)
+  const handlePullModel = async (modelId: string) => {
     if (downloadingModelId) return;
     setDownloadingModelId(modelId);
     setDownloadProgress(0);
 
-    const interval = setInterval(() => {
-      setDownloadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setDownloadingModelId(null);
-          return 100;
-        }
-        return prev + 15;
-      });
-    }, 250);
+    if (connectionStatus === 'connected') {
+      try {
+        await pullOllamaModel(endpoint, modelId, (progress) => {
+          if (progress.percent !== undefined) {
+            setDownloadProgress(progress.percent);
+          }
+        });
+        await refreshConnection();
+      } catch (err: any) {
+        alert(`Failed to pull model: ${err.message}`);
+      } finally {
+        setDownloadingModelId(null);
+      }
+    } else {
+      const interval = setInterval(() => {
+        setDownloadProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setDownloadingModelId(null);
+            return 100;
+          }
+          return prev + 20;
+        });
+      }, 250);
+    }
   };
 
   // Navigation Links for Aceternity Sidebar
@@ -311,11 +450,26 @@ void telemetryTask(void *pvParameters) {
           <div className="border-t border-[var(--color-rule-subtle)] pt-3 mt-auto space-y-2">
             {/* Ollama Status Pill */}
             <div
-              onClick={() => setIsSetupModalOpen(true)}
+              onClick={() => {
+                if (connectionStatus === 'offline') {
+                  setIsSetupModalOpen(true);
+                } else {
+                  refreshConnection();
+                }
+              }}
               className="group flex items-center justify-between p-2 rounded-xl bg-[var(--color-paper-card)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] cursor-pointer transition-all"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                <span
+                  className={cn(
+                    'h-1.5 w-1.5 rounded-full shrink-0',
+                    connectionStatus === 'connected'
+                      ? 'bg-neutral-900 dark:bg-white'
+                      : connectionStatus === 'checking'
+                      ? 'bg-amber-500 animate-ping'
+                      : 'bg-neutral-400'
+                  )}
+                />
                 <motion.span
                   animate={{
                     display: sidebarOpen ? 'inline-block' : 'none',
@@ -323,7 +477,11 @@ void telemetryTask(void *pvParameters) {
                   }}
                   className="text-xs font-semibold text-[var(--color-ink)] truncate"
                 >
-                  Ollama Ready (11434)
+                  {connectionStatus === 'connected'
+                    ? `Ollama (${installedModels.length} models)`
+                    : connectionStatus === 'checking'
+                    ? 'Connecting...'
+                    : 'Ollama Standby'}
                 </motion.span>
               </div>
               <motion.span
@@ -333,7 +491,7 @@ void telemetryTask(void *pvParameters) {
                 }}
                 className="text-[10px] font-mono text-[var(--color-ink-muted)] group-hover:underline"
               >
-                Guide
+                {connectionStatus === 'connected' ? 'Refresh' : 'Guide'}
               </motion.span>
             </div>
 
@@ -370,18 +528,29 @@ void telemetryTask(void *pvParameters) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Model Selector Dropdown */}
+            {/* Model Selector Dropdown (combining local installed + catalog) */}
             <div className="relative">
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
                 className="appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] focus:outline-hidden cursor-pointer"
               >
-                {CATALOG_MODELS.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} ({m.size})
-                  </option>
-                ))}
+                {installedModels.length > 0 && (
+                  <optgroup label="Local Installed Models">
+                    {installedModels.map((im) => (
+                      <option key={im.name} value={im.name}>
+                        {im.name} ({(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB) • Local
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Catalog Models">
+                  {CATALOG_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.size})
+                    </option>
+                  ))}
+                </optgroup>
               </select>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
                 ▼
