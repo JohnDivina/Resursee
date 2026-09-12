@@ -445,11 +445,90 @@ export async function retrieveTopKChunks(
 ): Promise<RetrievalResult[]> {
   if (chunks.length === 0 || !query.trim()) return [];
 
-  const topK = options.topK ?? 3;
+  const topK = options.topK ?? 5;
   const cleanQuery = query.toLowerCase().trim();
-  const queryTokens = cleanQuery.split(/[^a-z0-9_]+/).filter((t) => t.length > 2);
 
-  // 1. Try Dense Vector Embedding via Ollama if requested & model is active
+  // Stop words to ignore when extracting content keywords
+  const STOP_WORDS = new Set([
+    'the', 'is', 'at', 'which', 'on', 'and', 'a', 'an', 'in', 'to', 'for', 'of',
+    'or', 'by', 'with', 'from', 'as', 'that', 'it', 'this', 'these', 'those',
+    'then', 'so', 'can', 'will', 'just', 'should', 'now', 'any', 'my', 'your',
+    'you', 'me', 'we', 'our', 'us', 'him', 'her', 'them', 'who', 'whom',
+    'what', 'why', 'how', 'when', 'where', 'there', 'here', 'please', 'could',
+    'would', 'tell', 'give', 'show', 'find', 'get', 'doc', 'document', 'file',
+    'files', 'page', 'pages', 'read', 'look', 'check'
+  ]);
+
+  // Check if this is an overview or summarization query
+  const isOverviewQuery =
+    /\b(summariz|summary|overview|tldr|takeaway|takeaways|about|explain|describe|tell me about|what is this|what does this|outline|points|key points|findings|brief|synopsis|contents)\b/i.test(
+      cleanQuery
+    ) ||
+    /^(summarize|summary|overview|explain|outline|describe|tell me|what is this|what does this)/i.test(
+      cleanQuery
+    );
+
+  // 1. Overview & Summarization Strategy:
+  // Return key structural chunks (beginning/intro, middle, and conclusion) across active documents
+  if (isOverviewQuery) {
+    const docMap = new Map<string, DocumentChunk[]>();
+    chunks.forEach((c) => {
+      const existing = docMap.get(c.documentId) || [];
+      existing.push(c);
+      docMap.set(c.documentId, existing);
+    });
+
+    const overviewResults: RetrievalResult[] = [];
+    docMap.forEach((docChunks) => {
+      const sorted = [...docChunks].sort((a, b) => a.chunkIndex - b.chunkIndex);
+
+      if (sorted.length <= topK) {
+        sorted.forEach((c, idx) => {
+          overviewResults.push({
+            chunk: c,
+            score: Math.max(0.95 - idx * 0.05, 0.65),
+            matchedTerms: ['overview_section'],
+          });
+        });
+      } else {
+        const selectedIndices = new Set<number>();
+        // Head chunks: Document title, executive summary, objectives
+        selectedIndices.add(0);
+        if (sorted.length > 1) selectedIndices.add(1);
+        if (sorted.length > 2) selectedIndices.add(2);
+
+        // Representative middle chunks
+        const midIdx = Math.floor(sorted.length / 2);
+        selectedIndices.add(midIdx);
+        if (sorted.length > 6) selectedIndices.add(Math.floor(sorted.length * 0.75));
+
+        // Conclusion / tail chunk
+        if (sorted.length > 3) selectedIndices.add(sorted.length - 1);
+
+        Array.from(selectedIndices)
+          .sort((a, b) => a - b)
+          .slice(0, topK)
+          .forEach((idx, order) => {
+            overviewResults.push({
+              chunk: sorted[idx],
+              score: Math.max(0.95 - order * 0.05, 0.7),
+              matchedTerms: ['overview_section'],
+            });
+          });
+      }
+    });
+
+    if (overviewResults.length > 0) {
+      return overviewResults.slice(0, topK);
+    }
+  }
+
+  // Extract content tokens (falling back to raw tokens if all were stop words)
+  const rawTokens = cleanQuery.split(/[^a-z0-9_]+/).filter((t) => t.length > 1);
+  const contentTokens = rawTokens.filter((t) => !STOP_WORDS.has(t));
+  const queryTokens = contentTokens.length > 0 ? contentTokens : rawTokens;
+
+  // 2. Try Dense Vector Embedding via Ollama if requested & model is active
   if (options.useDenseVectors && options.embeddingModel) {
     try {
       const queryVec = await getOllamaEmbedding(
@@ -458,38 +537,38 @@ export async function retrieveTopKChunks(
         query
       );
 
-      // Score chunks with vector similarity
       const scored = chunks
         .map((chunk) => {
           const score = chunk.embedding ? cosineSimilarity(queryVec, chunk.embedding) : 0;
           return { chunk, score };
         })
-        .filter((r) => r.score > 0)
+        .filter((r) => r.score > 0.2)
         .sort((a, b) => b.score - a.score);
 
       if (scored.length > 0) {
         return scored.slice(0, topK);
       }
     } catch {
-      // Fallback cleanly to high-performance client-side TF-IDF vector space
+      // Fallback cleanly to high-precision TF-IDF vector space
     }
   }
 
-  // 2. High-Precision Client-Side TF-IDF Cosine Vector Space Retriever
+  // 3. High-Precision Client-Side TF-IDF Cosine Vector Space Retriever
   const docFreq: Record<string, number> = {};
   const chunkTokenized = chunks.map((chunk) => {
-    const tokens = chunk.text.toLowerCase().split(/[^a-z0-9_]+/).filter((t) => t.length > 2);
-    const unique = new Set(tokens);
+    const textTokens = chunk.text.toLowerCase().split(/[^a-z0-9_]+/).filter((t) => t.length > 1);
+    const docNameTokens = (chunk.documentName || '').toLowerCase().split(/[^a-z0-9_]+/).filter((t) => t.length > 1);
+    const combined = [...textTokens, ...docNameTokens];
+    const unique = new Set(combined);
     unique.forEach((t) => {
       docFreq[t] = (docFreq[t] || 0) + 1;
     });
-    return { chunk, tokens };
+    return { chunk, tokens: textTokens, docNameTokens };
   });
 
   const totalDocs = chunks.length;
 
-  // Score each chunk
-  const results: RetrievalResult[] = chunkTokenized.map(({ chunk, tokens }) => {
+  const results: RetrievalResult[] = chunkTokenized.map(({ chunk, tokens, docNameTokens }) => {
     const tf: Record<string, number> = {};
     tokens.forEach((t) => {
       tf[t] = (tf[t] || 0) + 1;
@@ -506,15 +585,25 @@ export async function retrieveTopKChunks(
         score += tfWeight * idf;
         matchedTerms.push(qToken);
       } else {
-        const subMatch = tokens.some((t) => t.includes(qToken) || qToken.includes(t));
+        const subMatch = tokens.some((t) => t.includes(qToken) || (qToken.length >= 4 && qToken.includes(t)));
         if (subMatch) {
-          score += 0.35;
+          score += 0.5;
           matchedTerms.push(qToken);
         }
       }
+
+      // Boost if document name matches query keyword (e.g. "rooftop", "garden", "proposal")
+      if (docNameTokens.includes(qToken) || docNameTokens.some((d) => d.includes(qToken))) {
+        score += 1.2;
+        if (!matchedTerms.includes(qToken)) matchedTerms.push(qToken);
+      }
     });
 
-    const normalized = Math.min(0.98, Math.max(0.05, score / (queryTokens.length * 2.8 + 1)));
+    // Slight positional bonus for introductory chunks
+    if (chunk.chunkIndex === 1 && score > 0) score *= 1.25;
+    if (chunk.chunkIndex === 2 && score > 0) score *= 1.15;
+
+    const normalized = Math.min(0.98, Math.max(0.05, score / (queryTokens.length * 2.5 + 1)));
 
     return {
       chunk,
@@ -523,10 +612,21 @@ export async function retrieveTopKChunks(
     };
   });
 
-  return results
-    .filter((r) => r.score > 0.1)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topK);
+  const filtered = results
+    .filter((r) => r.score > 0.08)
+    .sort((a, b) => b.score - a.score);
+
+  if (filtered.length > 0) {
+    return filtered.slice(0, topK);
+  }
+
+  // 4. Safe Context Fallback:
+  // If the query had no direct keyword match, return the introductory chunks of the active documents!
+  return chunks.slice(0, topK).map((chunk, idx) => ({
+    chunk,
+    score: Math.max(0.7 - idx * 0.05, 0.45),
+    matchedTerms: ['document_context'],
+  }));
 }
 
 

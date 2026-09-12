@@ -1998,10 +1998,11 @@ export default function AIHubPage() {
           ? indexedDocs.filter((d) => selectedDocIds.includes(d.id))
           : indexedDocs;
       const allChunks = targetDocs.flatMap((d) => d.chunks);
+      const isSummary = /\b(summariz|summary|overview|tldr|takeaway|about|explain|tell me|what is this)\b/i.test(queryText);
       const results = await retrieveTopKChunks(queryText, allChunks, {
         endpoint,
         embeddingModel: ragEmbeddingModel || 'nomic-embed-text',
-        topK: 4,
+        topK: isSummary ? 6 : 5,
         useDenseVectors: ragEmbeddingEngine !== 'tfidf',
       });
       setRagRetrievalResults(results);
@@ -2038,6 +2039,16 @@ export default function AIHubPage() {
     ragAbortControllerRef.current = controller;
 
     try {
+      const targetDocs =
+        selectedDocIds.length > 0
+          ? indexedDocs.filter((d) => selectedDocIds.includes(d.id))
+          : indexedDocs;
+
+      const isSummaryIntent =
+        /\b(summariz|summary|overview|tldr|takeaway|takeaways|about|explain|tell me|what is this|what does this|outline|points|key points|findings|brief|synopsis|contents)\b/i.test(
+          q
+        );
+
       const retrieved = await handleExecuteRetrieval(q);
 
       let contextText = '';
@@ -2045,34 +2056,47 @@ export default function AIHubPage() {
         contextText = retrieved
           .map(
             (r, i) =>
-              `[Source ${i + 1}: ${r.chunk.documentName} | Chunk #${r.chunk.chunkIndex} | Match Relevance: ${(
+              `[Source ${i + 1}: ${r.chunk.documentName} | Chunk #${r.chunk.chunkIndex} | Relevance: ${(
                 r.score * 100
-              ).toFixed(1)}%]\n${r.chunk.text}`
+              ).toFixed(0)}%]\n${r.chunk.text}`
           )
           .join('\n\n');
       } else {
-        contextText = 'No direct matches found in indexed knowledge base.';
+        const fallbackChunks = targetDocs.flatMap((d) => d.chunks).slice(0, 6);
+        contextText = fallbackChunks
+          .map((c, i) => `[Source ${i + 1}: ${c.documentName} | Chunk #${c.chunkIndex}]\n${c.text}`)
+          .join('\n\n');
       }
 
-      const groundedPrompt = `You are a private, offline intelligence engine for Resursee. Use the following verified excerpts from the user's indexed document knowledge base to answer the inquiry accurately and factually.
+      const docNames = targetDocs.map((d) => d.name).join(', ');
 
---- VERIFIED LOCAL KNOWLEDGE EXCERPTS ---
+      const groundedPrompt = `You are an expert AI intelligence assistant for Resursee.
+Use the following verified document excerpts from the user's selected file(s) (${docNames}) to fulfill the user's request.
+
+--- VERIFIED DOCUMENT EXCERPTS (${docNames}) ---
 ${contextText}
 --- END EXCERPTS ---
 
 User Inquiry: ${q}
 
 Instructions:
-1. Provide a direct, highly accurate, and structured answer.
-2. Cite the source document name (e.g. "[esp32_iot_datasheet.md]") when stating facts from the context.
-3. If the context does not contain the answer, state that clearly and provide the best known factual answer.`;
+${
+  isSummaryIntent
+    ? `1. Provide a comprehensive, structured, and accurate executive summary of the document based on the excerpts provided above.
+2. Outline the core proposal/purpose, key sections, methodology or specifications, and main conclusions.
+3. Use clear Markdown headers and bullet points.
+4. Reference facts and specifics directly from the document.`
+    : `1. Answer the user's inquiry directly, accurately, and factually using the verified excerpts above.
+2. Structure your response clearly with Markdown bullet points or numbered sections where helpful.
+3. Cite the document name (${docNames}) when stating key facts.`
+}`;
 
       const accumulated = await streamOllamaChat(
         endpoint,
         {
           model: selectedModel,
           messages: [{ role: 'user', content: groundedPrompt }],
-          temperature: 0.2,
+          temperature: isSummaryIntent ? 0.3 : 0.2,
           num_ctx: 4096,
         },
         (fullText) => {
