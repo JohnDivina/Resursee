@@ -429,10 +429,11 @@ export async function stopOllamaDaemon(): Promise<{
   if (isTauriDesktop()) {
     try {
       const msg = await tauriStopOllama();
+      const isListening = await tauriCheckOllamaStatus();
       return {
         success: true,
-        stopped: true,
-        message: msg,
+        stopped: !isListening,
+        message: !isListening ? (msg || 'Ollama daemon stopped') : 'Stop signal sent to Ollama',
       };
     } catch (err: any) {
       return {

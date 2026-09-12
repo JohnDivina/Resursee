@@ -1278,6 +1278,7 @@ export default function AIHubPage() {
   const [isParametersModalOpen, setIsParametersModalOpen] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const userStoppedDaemonRef = useRef<boolean>(false);
 
   // Model Library Management State (Phase 3)
   const [modelSourceTab, setModelSourceTab] = useState<'ollama' | 'huggingface'>('ollama');
@@ -1589,6 +1590,7 @@ export default function AIHubPage() {
     try {
       const result = await checkOllamaConnection(targetEndpoint, 1200);
       if (result.status) {
+        userStoppedDaemonRef.current = false;
         setConnectionStatus('connected');
         setInstalledModels(result.models);
         setConnectionError(null);
@@ -1669,6 +1671,7 @@ export default function AIHubPage() {
 
     // Auto-reconnect heartbeat: poll every 4s when disconnected to automatically detect local Ollama
     const heartbeatTimer = setInterval(() => {
+      if (userStoppedDaemonRef.current) return;
       setConnectionStatus((currentStatus) => {
         if (currentStatus !== 'connected') {
           refreshConnection(activeEp);
@@ -1682,6 +1685,7 @@ export default function AIHubPage() {
 
   // 1-Click Start Ollama Daemon Handler
   const handleStartOllama = async () => {
+    userStoppedDaemonRef.current = false;
     setIsStartingDaemon(true);
     setDaemonNotification({ type: 'info', message: 'Starting Ollama background daemon...' });
 
@@ -1780,6 +1784,7 @@ export default function AIHubPage() {
   // Stop Ollama Daemon Handler
   const handleStopOllama = async () => {
     setIsStoppingDaemon(true);
+    userStoppedDaemonRef.current = true;
     setDaemonNotification({ type: 'info', message: 'Stopping Ollama daemon...' });
 
     try {
@@ -1795,19 +1800,20 @@ export default function AIHubPage() {
         });
         setTimeout(() => setDaemonNotification(null), 4000);
       } else {
+        userStoppedDaemonRef.current = false;
         setDaemonNotification({
           type: 'error',
           message: res.error || 'Could not stop Ollama daemon.',
         });
       }
     } catch (err: any) {
+      userStoppedDaemonRef.current = false;
       setDaemonNotification({
         type: 'error',
         message: err.message || 'Failed to stop Ollama daemon.',
       });
     } finally {
       setIsStoppingDaemon(false);
-      await refreshConnection();
     }
   };
 

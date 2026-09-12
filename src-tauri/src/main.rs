@@ -107,38 +107,49 @@ fn start_ollama_daemon() -> Result<String, String> {
 /// Natively terminates the Ollama daemon across macOS, Windows, and Linux
 #[tauri::command]
 fn stop_ollama_daemon() -> Result<String, String> {
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[cfg(target_os = "macos")]
     {
-        let res = Command::new("pkill")
-            .args(&["-f", "ollama"])
-            .output()
-            .map_err(|e| format!("Failed to execute pkill: {}", e))?;
+        // 1. Terminate the macOS GUI menu-bar app (watchdog) and standalone CLI daemon
+        let _ = Command::new("killall").args(&["-9", "Ollama"]).output();
+        let _ = Command::new("killall").args(&["-9", "ollama"]).output();
+        let _ = Command::new("pkill").args(&["-9", "-i", "-f", "ollama"]).output();
+    }
 
-        if res.status.success() {
-            Ok("Ollama process stopped successfully".to_string())
-        } else {
-            Ok("No running Ollama process found to terminate".to_string())
-        }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = Command::new("systemctl").args(&["--user", "stop", "ollama"]).output();
+        let _ = Command::new("systemctl").args(&["stop", "ollama"]).output();
+        let _ = Command::new("pkill").args(&["-9", "-f", "ollama"]).output();
     }
 
     #[cfg(target_os = "windows")]
     {
-        let res = Command::new("taskkill")
+        let _ = Command::new("taskkill")
             .args(&["/F", "/IM", "ollama.exe", "/T"])
-            .output()
-            .map_err(|e| format!("Failed to execute taskkill: {}", e))?;
-
-        if res.status.success() {
-            Ok("Ollama process terminated via taskkill".to_string())
-        } else {
-            Ok("No running Ollama process found on Windows".to_string())
-        }
+            .output();
+        let _ = Command::new("taskkill")
+            .args(&["/F", "/IM", "ollama app.exe", "/T"])
+            .output();
     }
 
     #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     {
-        Err("Unsupported operating system for native process termination".to_string())
+        return Err("Unsupported operating system for native process termination".to_string());
     }
+
+    // Actively verify that port 11434 is closed (poll up to 15 times with 100ms interval)
+    let addr: SocketAddr = "127.0.0.1:11434"
+        .parse()
+        .map_err(|e| format!("Invalid socket address: {}", e))?;
+
+    for _ in 0..15 {
+        std::thread::sleep(Duration::from_millis(100));
+        if TcpStream::connect_timeout(&addr, Duration::from_millis(100)).is_err() {
+            return Ok("Ollama daemon stopped successfully".to_string());
+        }
+    }
+
+    Ok("Ollama termination signal sent".to_string())
 }
 
 /// Reads host system telemetry (RAM, CPU, OS) to suggest optimal model sizes
