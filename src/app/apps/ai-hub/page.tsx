@@ -62,6 +62,7 @@ import {
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
 import { isLocalEnvironment } from '@/lib/envDetector';
+import { parseAnyDocumentFile } from '@/lib/documentParsers';
 import {
   OllamaModel,
   OllamaConnectionStatus,
@@ -1423,6 +1424,8 @@ export default function AIHubPage() {
   const [newDocContent, setNewDocContent] = useState<string>('');
   const ragAbortControllerRef = useRef<AbortController | null>(null);
   const docFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isParsingDoc, setIsParsingDoc] = useState<boolean>(false);
+  const [parseStatusText, setParseStatusText] = useState<string>('');
 
   // Auto-scroll messages anchor
   useEffect(() => {
@@ -2005,19 +2008,33 @@ export default function AIHubPage() {
     setIsAddDocModalOpen(false);
   };
 
-  const handleDocFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        handleIndexDocument(file.name, text);
+    setIsParsingDoc(true);
+    setParseStatusText(`Reading ${file.name}...`);
+    try {
+      const result = await parseAnyDocumentFile(file);
+      if (result.text && result.text.trim()) {
+        let displayTitle = file.name;
+        if (result.pageCount) {
+          const unit = result.format === 'pptx' ? 'slides' : 'pages';
+          displayTitle = `${file.name} (${result.pageCount} ${unit})`;
+        }
+        handleIndexDocument(displayTitle, result.text);
+        setIsAddDocModalOpen(false);
+      } else {
+        alert(`No readable text could be extracted from "${file.name}".`);
       }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+    } catch (err: any) {
+      console.error('Document parsing error:', err);
+      alert(`Failed to extract text from ${file.name}: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setIsParsingDoc(false);
+      setParseStatusText('');
+      e.target.value = '';
+    }
   };
 
   const handleLoadSampleDoc = (key: 'esp32' | 'pathology' | 'resursee') => {
@@ -5176,16 +5193,17 @@ Instructions:
                         <input
                           ref={docFileInputRef}
                           type="file"
-                          accept=".txt,.md,.markdown,.json,.ts,.js,.py,.csv"
+                          accept=".pdf,.docx,.pptx,.txt,.md,.markdown,.json,.csv,.py,.ts,.tsx,.js,.cpp,.h,.log"
                           className="hidden"
                           onChange={handleDocFileUpload}
                         />
                         <button
                           type="button"
+                          disabled={isParsingDoc}
                           onClick={() => docFileInputRef.current?.click()}
-                          className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] cursor-pointer"
+                          className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] cursor-pointer disabled:opacity-50"
                         >
-                          Upload File
+                          {isParsingDoc ? (parseStatusText || 'Parsing...') : 'Upload File'}
                         </button>
                         {indexedDocs.length > 0 && (
                           <button
@@ -5215,9 +5233,26 @@ Instructions:
                             <div className="flex items-center gap-2.5 min-w-0">
                               <IconFileText size={16} className="text-[var(--color-ink-muted)] shrink-0" />
                               <div className="min-w-0">
-                                <span className="font-semibold text-[var(--color-ink)] block truncate">
-                                  {doc.name}
-                                </span>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="font-semibold text-[var(--color-ink)] block truncate">
+                                    {doc.name}
+                                  </span>
+                                  {doc.name.toLowerCase().includes('.pdf') && (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                      PDF
+                                    </span>
+                                  )}
+                                  {doc.name.toLowerCase().includes('.docx') && (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                      DOCX
+                                    </span>
+                                  )}
+                                  {doc.name.toLowerCase().includes('.pptx') && (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                      PPTX
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
                                   {doc.chunks.length} chunks • {(doc.size / 1024).toFixed(1)} KB
                                 </span>
@@ -6254,30 +6289,50 @@ Instructions:
               {/* Body */}
               <div className="flex-1 overflow-y-auto space-y-4 text-xs pr-1">
                 {/* File Upload Trigger */}
-                <div className="p-4 rounded-xl border border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] transition-all text-center space-y-2">
+                <div className="p-4 rounded-xl border border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] transition-all text-center space-y-2.5">
                   <input
                     ref={docFileInputRef}
                     type="file"
-                    accept=".txt,.md,.json,.csv,.py,.ts,.tsx,.js,.cpp,.h,.log"
+                    accept=".pdf,.docx,.pptx,.txt,.md,.markdown,.json,.csv,.py,.ts,.tsx,.js,.cpp,.h,.log"
                     onChange={handleDocFileUpload}
                     className="hidden"
                   />
                   <div className="flex justify-center">
                     <div className="p-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
-                      <IconUpload size={20} />
+                      <IconUpload size={20} className={isParsingDoc ? 'animate-pulse' : ''} />
                     </div>
                   </div>
                   <div>
                     <button
                       type="button"
+                      disabled={isParsingDoc}
                       onClick={() => docFileInputRef.current?.click()}
-                      className="font-bold text-xs text-[var(--color-ink)] hover:underline cursor-pointer"
+                      className="font-bold text-xs text-[var(--color-ink)] hover:underline cursor-pointer disabled:opacity-50"
                     >
-                      Choose file to index
+                      {isParsingDoc ? (parseStatusText || 'Extracting text...') : 'Choose file to index'}
                     </button>
                     <p className="text-[10.5px] font-mono text-[var(--color-ink-muted)] mt-0.5">
-                      Supports .md, .txt, .json, .csv, and source code files
+                      Extracts text directly in your browser. Zero cloud upload.
                     </p>
+                  </div>
+
+                  {/* Format badges */}
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                      PDF (.pdf)
+                    </span>
+                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                      Word (.docx)
+                    </span>
+                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                      PowerPoint (.pptx)
+                    </span>
+                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                      Markdown (.md)
+                    </span>
+                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                      Code &amp; TXT
+                    </span>
                   </div>
                 </div>
 
