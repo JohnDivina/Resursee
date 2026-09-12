@@ -11,13 +11,10 @@ import {
   IconBrandUbuntu,
   IconDownload,
   IconDeviceDesktop,
-  IconShieldCheck,
   IconTerminal2,
   IconCheck,
   IconCopy,
-  IconExternalLink,
   IconHelpCircle,
-  IconCpu,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
@@ -105,14 +102,7 @@ export default function DownloadPage() {
                       <span>{copiedBrew ? 'Copied!' : 'Copy Command'}</span>
                     </button>
                   </div>
-                  <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500">
-                    <span className="flex items-center gap-1">
-                      <IconCheck size={12} className="text-neutral-700 dark:text-neutral-300" />
-                      <span>Zero Gatekeeper warnings</span>
-                    </span>
-                    <span>•</span>
-                    <span>Auto-updates via brew</span>
-                    <span>•</span>
+                  <div className="flex items-center justify-center text-[11px] text-neutral-500">
                     <a href={downloadLinks.macos} className="underline hover:text-neutral-900 dark:hover:text-white">
                       Download .dmg instead
                     </a>
@@ -221,7 +211,6 @@ export default function DownloadPage() {
                         <span className="flex h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
                         <span>Recommended: Install via Homebrew Cask</span>
                       </div>
-                      <span className="text-[10px] font-mono text-neutral-500">Zero warnings • Standard Mac Developer Workflow</span>
                     </div>
 
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
@@ -367,38 +356,7 @@ sudo dpkg -i resursee_0.1.0_amd64.deb
             </div>
           </div>
 
-          {/* Key Advantages Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
-            <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 space-y-2">
-              <div className="flex items-center gap-2 text-neutral-900 dark:text-white font-bold text-sm">
-                <IconShieldCheck size={18} />
-                <span>100% Offline Privacy</span>
-              </div>
-              <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                Local AI inference, PDF processing, and image optimization run directly on your hardware without transmitting data to cloud servers.
-              </p>
-            </div>
 
-            <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 space-y-2">
-              <div className="flex items-center gap-2 text-neutral-900 dark:text-white font-bold text-sm">
-                <IconCpu size={18} />
-                <span>Apple Silicon & GPU Native</span>
-              </div>
-              <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                Direct native bindings to system hardware, unified memory telemetry, and automated Ollama daemon control.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 space-y-2">
-              <div className="flex items-center gap-2 text-neutral-900 dark:text-white font-bold text-sm">
-                <IconDeviceDesktop size={18} />
-                <span>Ultra-Lightweight</span>
-              </div>
-              <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                Powered by Tauri 2.0 with native OS web engines, keeping memory usage tiny and download size down to just 2.1 MB.
-              </p>
-            </div>
-          </div>
         </div>
       </main>
 

@@ -138,7 +138,7 @@ export default function DesktopDownloadSection() {
 
               <div className="flex items-center justify-between text-[11px] px-0.5">
                 <span className={cn(userOS === 'macos' ? "text-neutral-300 dark:text-neutral-600" : "text-[var(--color-ink-muted)]")}>
-                  Zero warnings via Homebrew
+                  Apple Silicon • macOS 11.0+
                 </span>
                 <Link
                   href="/download"
