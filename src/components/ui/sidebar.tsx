@@ -73,11 +73,12 @@ export const Sidebar = ({
 
 export const SidebarBody = ({
   brand,
+  collapseDelay = 2000,
   ...props
-}: React.ComponentProps<typeof motion.div> & { brand?: React.ReactNode }) => {
+}: React.ComponentProps<typeof motion.div> & { brand?: React.ReactNode; collapseDelay?: number }) => {
   return (
     <>
-      <DesktopSidebar {...props} />
+      <DesktopSidebar collapseDelay={collapseDelay} {...props} />
       <MobileSidebar brand={brand} {...(props as React.ComponentProps<'div'>)} />
     </>
   );
@@ -86,9 +87,38 @@ export const SidebarBody = ({
 export const DesktopSidebar = ({
   className,
   children,
+  collapseDelay = 2000,
   ...props
-}: React.ComponentProps<typeof motion.div>) => {
+}: React.ComponentProps<typeof motion.div> & { collapseDelay?: number }) => {
   const { open, setOpen, animate } = useSidebar();
+  const leaveTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    setOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+    }
+    leaveTimerRef.current = setTimeout(() => {
+      setOpen(false);
+      leaveTimerRef.current = null;
+    }, collapseDelay);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (leaveTimerRef.current) {
+        clearTimeout(leaveTimerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <motion.div
       className={cn(
@@ -98,8 +128,12 @@ export const DesktopSidebar = ({
       animate={{
         width: animate ? (open ? '260px' : '72px') : '260px',
       }}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      transition={{
+        duration: 0.25,
+        ease: 'easeInOut',
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       {...props}
     >
       {children}
