@@ -16,6 +16,7 @@ export interface OllamaModel {
   size: number;
   digest: string;
   details?: OllamaModelDetails;
+  capabilities?: string[];
 }
 
 export interface OllamaTagResponse {

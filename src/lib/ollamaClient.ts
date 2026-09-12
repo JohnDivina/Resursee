@@ -198,6 +198,35 @@ export async function showOllamaModel(
 }
 
 /**
+ * Checks whether a model is an embedding-only model (not capable of text chat/completion).
+ */
+export function isEmbeddingModel(modelName: string, modelDetails?: OllamaModel): boolean {
+  if (!modelName) return false;
+  const lower = modelName.toLowerCase();
+  if (
+    lower.includes('embed') ||
+    lower.includes('minilm') ||
+    lower.includes('bge-') ||
+    lower.includes('arctic-embed')
+  ) {
+    return true;
+  }
+  if (modelDetails) {
+    if (modelDetails.details?.family === 'bert' || modelDetails.details?.family === 'nomic-bert') {
+      return true;
+    }
+    if (
+      modelDetails.capabilities?.includes('embedding') &&
+      !modelDetails.capabilities?.includes('completion') &&
+      !modelDetails.capabilities?.includes('tools')
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Streams chat tokens from Ollama's /api/chat endpoint.
  */
 export async function streamOllamaChat(
@@ -211,6 +240,12 @@ export async function streamOllamaChat(
   onToken: (fullText: string, newToken: string) => void,
   signal?: AbortSignal
 ): Promise<string> {
+  if (isEmbeddingModel(options.model)) {
+    throw new Error(
+      `Model "${options.model}" is an embedding model and does not support chat/text generation. Please select a generative LLM (such as Llama 3.2 or Qwen 2.5) for synthesis.`
+    );
+  }
+
   const cleanEndpoint = endpoint.replace(/\/+$/, '');
   const res = await fetch(`${cleanEndpoint}/api/chat`, {
     method: 'POST',
@@ -228,7 +263,12 @@ export async function streamOllamaChat(
   });
 
   if (!res.ok) {
-    throw new Error(`Inference failed: HTTP ${res.status} ${res.statusText}`);
+    let detail = '';
+    try {
+      const errData = await res.json();
+      if (errData?.error) detail = `: ${errData.error}`;
+    } catch {}
+    throw new Error(`Inference failed: HTTP ${res.status} ${res.statusText}${detail}`);
   }
 
   if (!res.body) {

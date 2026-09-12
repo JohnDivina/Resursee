@@ -59,6 +59,7 @@ import {
   chunkText,
   retrieveTopKChunks,
   getOllamaEmbedding,
+  isEmbeddingModel,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
 import { isLocalEnvironment } from '@/lib/envDetector';
@@ -1350,6 +1351,7 @@ export default function AIHubPage() {
   const [isGeneratingRagAnswer, setIsGeneratingRagAnswer] = useState<boolean>(false);
   const [ragEmbeddingEngine, setRagEmbeddingEngine] = useState<string>('hybrid');
   const [ragEmbeddingModel, setRagEmbeddingModel] = useState<string>('nomic-embed-text');
+  const [ragSynthesisModel, setRagSynthesisModel] = useState<string>('llama3.2:latest');
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [ragViewMode, setRagViewMode] = useState<'answer' | 'chunks'>('answer');
   const [isAddDocModalOpen, setIsAddDocModalOpen] = useState<boolean>(false);
@@ -1426,17 +1428,25 @@ export default function AIHubPage() {
     setSelectedDocIds([]);
   }, []);
 
-  // Synchronize selectedModel strictly with downloaded/installed models
+  // Synchronize selectedModel and ragSynthesisModel strictly with downloaded generative models (excluding embedding-only models)
   useEffect(() => {
-    if (installedModels.length > 0) {
-      const exists = installedModels.some((m) => m.name === selectedModel);
-      if (!exists) {
-        setSelectedModel(installedModels[0].name);
+    const generative = installedModels.filter((m) => !isEmbeddingModel(m.name, m));
+    if (generative.length > 0) {
+      const exists = generative.some((m) => m.name === selectedModel);
+      if (!exists || isEmbeddingModel(selectedModel)) {
+        const preferred = generative.find((m) => m.name.includes('llama') || m.name.includes('qwen'));
+        setSelectedModel(preferred ? preferred.name : generative[0].name);
+      }
+
+      const existsRagSynth = generative.some((m) => m.name === ragSynthesisModel);
+      if (!existsRagSynth || isEmbeddingModel(ragSynthesisModel)) {
+        const preferred = generative.find((m) => m.name.includes('llama') || m.name.includes('qwen'));
+        setRagSynthesisModel(preferred ? preferred.name : generative[0].name);
       }
     } else if (connectionStatus === 'connected' && installedModels.length === 0) {
       setSelectedModel('');
     }
-  }, [installedModels, selectedModel, connectionStatus]);
+  }, [installedModels, selectedModel, ragSynthesisModel, connectionStatus]);
 
   // Save active session to localStorage
   const saveCurrentSession = (updatedMessages: ChatMessage[], newTitle?: string) => {
@@ -1587,11 +1597,19 @@ export default function AIHubPage() {
         const running = await getRunningModels(targetEndpoint);
         setRunningModels(running);
 
-        // If current model not installed, switch strictly to first available installed model
-        if (result.models.length > 0) {
-          const hasSelected = result.models.some((m) => m.name === selectedModel);
-          if (!hasSelected) {
-            setSelectedModel(result.models[0].name);
+        // If current model not installed or is an embedding model, switch strictly to first available installed generative model
+        const generative = result.models.filter((m) => !isEmbeddingModel(m.name, m));
+        if (generative.length > 0) {
+          const hasSelected = generative.some((m) => m.name === selectedModel);
+          if (!hasSelected || isEmbeddingModel(selectedModel)) {
+            const preferred = generative.find((m) => m.name.includes('llama') || m.name.includes('qwen'));
+            setSelectedModel(preferred ? preferred.name : generative[0].name);
+          }
+
+          const hasRagSynth = generative.some((m) => m.name === ragSynthesisModel);
+          if (!hasRagSynth || isEmbeddingModel(ragSynthesisModel)) {
+            const preferred = generative.find((m) => m.name.includes('llama') || m.name.includes('qwen'));
+            setRagSynthesisModel(preferred ? preferred.name : generative[0].name);
           }
         } else {
           setSelectedModel('');
@@ -2091,10 +2109,30 @@ ${
 3. Cite the document name (${docNames}) when stating key facts.`
 }`;
 
+      // Guarantee synthesis model is a valid generative LLM (never an embedding model)
+      let synthModel = ragSynthesisModel || selectedModel;
+      if (isEmbeddingModel(synthModel)) {
+        const safeGen = installedModels.find((m) => !isEmbeddingModel(m.name, m));
+        synthModel = safeGen ? safeGen.name : 'llama3.2:latest';
+        setRagSynthesisModel(synthModel);
+      }
+
+      // If selected synthesis model is not installed on disk, fallback safely to an installed generative LLM
+      const isInstalled = installedModels.some(
+        (m) => m.name === synthModel || m.name.startsWith(synthModel.split(':')[0])
+      );
+      if (!isInstalled) {
+        const safeGen = installedModels.find((m) => !isEmbeddingModel(m.name, m));
+        if (safeGen) {
+          synthModel = safeGen.name;
+          setRagSynthesisModel(synthModel);
+        }
+      }
+
       const accumulated = await streamOllamaChat(
         endpoint,
         {
-          model: selectedModel,
+          model: synthModel,
           messages: [{ role: 'user', content: groundedPrompt }],
           temperature: isSummaryIntent ? 0.3 : 0.2,
           num_ctx: 4096,
@@ -2127,7 +2165,8 @@ ${
     if (!ragAnswer) return;
     let md = `# Local AI Hub - Grounded Knowledge Report\n\n`;
     md += `- **Date**: ${new Date().toLocaleString()}\n`;
-    md += `- **Model**: \`${selectedModel}\`\n`;
+    md += `- **Synthesis Model**: \`${ragSynthesisModel || selectedModel}\`\n`;
+    md += `- **Embedding Model**: \`${ragEmbeddingModel}\`\n`;
     md += `- **Inquiry**: ${ragQuery}\n`;
     md += `- **Indexed Documents**: ${indexedDocs.length} documents\n\n---\n\n`;
     md += `## Grounded Answer\n\n${ragAnswer}\n\n---\n\n`;
@@ -2827,15 +2866,17 @@ ${
                 className="appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] focus:outline-hidden cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 title={installedModels.length > 0 ? 'Select downloaded local model' : 'No downloaded models available'}
               >
-                {installedModels.length > 0 ? (
-                  installedModels.map((im) => (
-                    <option key={im.name} value={im.name}>
-                      {im.name} ({(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB)
-                    </option>
-                  ))
+                {installedModels.filter((im) => !isEmbeddingModel(im.name, im)).length > 0 ? (
+                  installedModels
+                    .filter((im) => !isEmbeddingModel(im.name, im))
+                    .map((im) => (
+                      <option key={im.name} value={im.name}>
+                        {im.name} ({(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB)
+                      </option>
+                    ))
                 ) : (
                   <option value="" disabled>
-                    No downloaded models
+                    No generative models installed
                   </option>
                 )}
               </select>
@@ -4751,9 +4792,9 @@ ${
                         onChange={(e) => setVisionSelectedModel(e.target.value)}
                         className="appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
                       >
-                        {installedModels.length > 0 && (
+                        {installedModels.filter(im => !isEmbeddingModel(im.name, im)).length > 0 && (
                           <optgroup label="Installed Local Models">
-                            {installedModels.map((im) => (
+                            {installedModels.filter(im => !isEmbeddingModel(im.name, im)).map((im) => (
                               <option key={im.name} value={im.name}>
                                 {im.name} • Local
                               </option>
@@ -5279,32 +5320,59 @@ ${
                         Local Reasoning Engine
                       </span>
                     </div>
-                    <div className="relative">
-                      <select
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="w-full appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
-                      >
-                        {installedModels.filter(m => !m.name.includes('embed') && !m.name.includes('minilm')).length > 0 && (
-                          <optgroup label="Installed Local LLMs">
-                            {installedModels.filter(m => !m.name.includes('embed') && !m.name.includes('minilm')).map((im) => (
-                              <option key={im.name} value={im.name}>
-                                {im.name} • Local
-                              </option>
-                            ))}
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <select
+                          value={ragSynthesisModel}
+                          onChange={(e) => {
+                            setRagSynthesisModel(e.target.value);
+                            setSelectedModel(e.target.value);
+                          }}
+                          className="w-full appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                        >
+                          {installedModels.filter(m => !isEmbeddingModel(m.name, m)).length > 0 && (
+                            <optgroup label="Installed Local LLMs">
+                              {installedModels.filter(m => !isEmbeddingModel(m.name, m)).map((im) => (
+                                <option key={im.name} value={im.name}>
+                                  {im.name} • Local
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          <optgroup label="Recommended Synthesis by RAM">
+                            <option value="llama3.2:1b">llama3.2:1b (1.3 GB • Rec. 4GB RAM)</option>
+                            <option value="llama3.2:3b">llama3.2:3b (2.0 GB • Rec. 4-8GB RAM)</option>
+                            <option value="qwen2.5:7b">qwen2.5:7b (4.7 GB • Rec. 8GB RAM)</option>
+                            <option value="llama3.1:8b">llama3.1:8b (4.9 GB • Rec. 8-16GB RAM)</option>
+                            <option value="qwen2.5:14b">qwen2.5:14b (9.0 GB • Rec. 16GB+ RAM)</option>
                           </optgroup>
-                        )}
-                        <optgroup label="Recommended Synthesis by RAM">
-                          <option value="llama3.2:1b">llama3.2:1b (1.3 GB • Rec. 4GB RAM)</option>
-                          <option value="llama3.2:3b">llama3.2:3b (2.0 GB • Rec. 4-8GB RAM)</option>
-                          <option value="qwen2.5:7b">qwen2.5:7b (4.7 GB • Rec. 8GB RAM)</option>
-                          <option value="llama3.1:8b">llama3.1:8b (4.9 GB • Rec. 8-16GB RAM)</option>
-                          <option value="qwen2.5:14b">qwen2.5:14b (9.0 GB • Rec. 16GB+ RAM)</option>
-                        </optgroup>
-                      </select>
-                      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
-                        ▼
+                        </select>
+                        <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
+                          ▼
+                        </div>
                       </div>
+
+                      {/* Pull button if selected synthesis model is not installed yet */}
+                      {!installedModels.some(m => m.name === ragSynthesisModel || m.name.startsWith(ragSynthesisModel.split(':')[0])) && (
+                        <button
+                          type="button"
+                          disabled={downloadingModelId === ragSynthesisModel}
+                          onClick={() => handlePullModel(ragSynthesisModel)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-50"
+                        >
+                          {downloadingModelId === ragSynthesisModel ? (
+                            <>
+                              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                              <span>Downloading {downloadProgress > 0 ? `${downloadProgress}%` : ''}</span>
+                            </>
+                          ) : (
+                            <>
+                              <IconDownload size={13} />
+                              <span>Pull {ragSynthesisModel.split(':')[0]}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -5499,7 +5567,7 @@ ${
                       <div className="flex items-center justify-between pt-1">
                         <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--color-ink-muted)]">
                           <span>
-                            Model: <strong className="text-[var(--color-ink)]">{selectedModel}</strong>
+                            Synthesis Model: <strong className="text-[var(--color-ink)]">{ragSynthesisModel}</strong>
                           </span>
                         </div>
 
