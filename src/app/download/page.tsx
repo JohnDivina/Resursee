@@ -24,6 +24,7 @@ export default function DownloadPage() {
   const [activeTab, setActiveTab] = useState<'macos' | 'windows' | 'linux'>('macos');
   const [copiedBrew, setCopiedBrew] = useState(false);
   const [copiedCurl, setCopiedCurl] = useState(false);
+  const [copiedPs1, setCopiedPs1] = useState(false);
 
   const handleCopyBrew = () => {
     navigator.clipboard.writeText('brew install --cask johndivina/tap/resursee');
@@ -35,6 +36,12 @@ export default function DownloadPage() {
     navigator.clipboard.writeText('curl -fsSL https://resursee.vercel.app/install.sh | bash');
     setCopiedCurl(true);
     setTimeout(() => setCopiedCurl(false), 2000);
+  };
+
+  const handleCopyPs1 = () => {
+    navigator.clipboard.writeText('irm https://resursee.vercel.app/install.ps1 | iex');
+    setCopiedPs1(true);
+    setTimeout(() => setCopiedPs1(false), 2000);
   };
 
   useEffect(() => {
@@ -108,6 +115,28 @@ export default function DownloadPage() {
                     </a>
                   </div>
                 </div>
+              ) : userOS === 'windows' ? (
+                <div className="w-full max-w-xl mx-auto space-y-2">
+                  <div className="flex items-center justify-between rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 p-2 sm:p-2.5 shadow-sm">
+                    <div className="flex items-center gap-2 pl-3 font-mono text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 overflow-x-auto select-all">
+                      <span className="text-neutral-400 select-none">&gt;</span>
+                      <span>irm https://resursee.vercel.app/install.ps1 | iex</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyPs1}
+                      className="flex items-center gap-1.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-4 py-2 text-xs font-bold transition-all hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95 cursor-pointer shrink-0 shadow-xs"
+                    >
+                      {copiedPs1 ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                      <span>{copiedPs1 ? 'Copied!' : 'Copy Command'}</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-center text-[11px] text-neutral-500">
+                    <a href={downloadLinks.windows} target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-900 dark:hover:text-white">
+                      Download .exe / .msi instead
+                    </a>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <a
@@ -115,10 +144,7 @@ export default function DownloadPage() {
                     className="inline-flex items-center justify-center gap-2.5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-8 py-3.5 text-sm font-bold shadow-md hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all active:scale-95 cursor-pointer"
                   >
                     <IconDownload size={18} />
-                    <span>
-                      {userOS === 'windows' && 'Download for Windows (64-bit .exe)'}
-                      {userOS === 'linux' && 'Download for Linux (.AppImage)'}
-                    </span>
+                    <span>Download for Linux (.AppImage)</span>
                   </a>
                 </div>
               )}
@@ -279,23 +305,57 @@ export default function DownloadPage() {
                       href={downloadLinks.windows}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-6 py-2.5 text-xs font-bold shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 px-4 py-2 text-xs font-bold shadow-2xs hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer"
                     >
-                      <IconDownload size={15} />
-                      <span>Download .exe / .msi</span>
+                      <IconDownload size={14} />
+                      <span>Direct .exe / .msi</span>
                     </a>
                   </div>
 
-                  <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-4 sm:p-5 space-y-3 text-xs">
-                    <div className="flex items-center gap-2 font-bold text-neutral-900 dark:text-white">
-                      <IconHelpCircle size={16} />
-                      <span>Installation on Windows</span>
+                  {/* Primary Method: 1-Line PowerShell Install */}
+                  <div className="rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
+                        <span className="flex h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
+                        <span>Recommended: 1-Line PowerShell Install</span>
+                      </div>
                     </div>
 
-                    <ol className="list-decimal list-inside space-y-1.5 text-neutral-700 dark:text-neutral-300">
-                      <li>Download <code className="font-mono font-bold">Resursee_0.1.0_x64-setup.exe</code> or <code className="font-mono font-bold">.msi</code>.</li>
-                      <li>Double-click the installer and follow the standard setup prompts.</li>
-                      <li>If Windows SmartScreen prompts on first launch, click <span className="font-semibold text-neutral-900 dark:text-white">&quot;More info&quot;</span> then <span className="font-semibold text-neutral-900 dark:text-white">&quot;Run anyway&quot;</span>.</li>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      Open PowerShell and paste this command to automatically download, install, and launch Resursee without manual setup prompts.
+                    </p>
+
+                    <div className="flex items-center justify-between rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-200/70 dark:bg-neutral-800 p-2 sm:p-2.5">
+                      <div className="flex items-center gap-2 pl-2 font-mono text-xs sm:text-sm text-neutral-900 dark:text-neutral-100 overflow-x-auto select-all">
+                        <span className="text-neutral-400 select-none">&gt;</span>
+                        <span>irm https://resursee.vercel.app/install.ps1 | iex</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyPs1}
+                        className="flex items-center gap-1.5 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold transition-all hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95 cursor-pointer shrink-0 shadow-xs"
+                      >
+                        {copiedPs1 ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        <span>{copiedPs1 ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Secondary: Manual Installation & SmartScreen Instructions */}
+                  <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-4 sm:p-5 space-y-3 text-xs">
+                    <div className="flex items-center gap-2 font-bold text-neutral-900 dark:text-white">
+                      <IconHelpCircle size={16} />
+                      <span>Manual Installation & Windows SmartScreen Instructions</span>
+                    </div>
+
+                    <ol className="list-decimal list-inside space-y-2 text-neutral-700 dark:text-neutral-300">
+                      <li>
+                        Click <a href={downloadLinks.windows} target="_blank" rel="noopener noreferrer" className="font-bold underline text-neutral-900 dark:text-white">Direct .exe / .msi</a> above to get the latest release installer.
+                      </li>
+                      <li>Double-click the downloaded installer and follow the quick setup wizard.</li>
+                      <li>
+                        If <strong>Windows SmartScreen</strong> appears (<em>&quot;Windows protected your PC&quot;</em>), click <span className="font-semibold text-neutral-900 dark:text-white">&quot;More info&quot;</span> then <span className="font-semibold text-neutral-900 dark:text-white">&quot;Run anyway&quot;</span>.
+                      </li>
                     </ol>
                   </div>
                 </div>
