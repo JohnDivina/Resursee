@@ -23,9 +23,15 @@ const securityHeaders = [
   },
 ];
 
+const isDesktopBuild =
+  process.env.BUILD_TARGET === "desktop" ||
+  process.env.TAURI_ENV_PLATFORM !== undefined;
+
 const nextConfig: NextConfig = {
+  output: isDesktopBuild ? "export" : undefined,
   poweredByHeader: false,
   images: {
+    unoptimized: isDesktopBuild ? true : undefined,
     remotePatterns: [
       {
         protocol: "https",
@@ -38,6 +44,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    if (isDesktopBuild) return [];
     return [
       {
         source: "/(.*)",
