@@ -3405,27 +3405,6 @@ Instructions:
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick Starter Suggestions */}
-              {messages.length <= 1 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2">
-                  {[
-                    'Explain Quantization (Q4_K_M vs Q8_0) in GGUF',
-                    'Write an ESP32 FreeRTOS telemetry task in C++',
-                    'Audit Python script for concurrency deadlocks',
-                    'Analyze foliar leaf blight symptoms',
-                  ].map((starter, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setPromptInput(starter)}
-                      className="p-2.5 rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] hover:bg-[var(--color-paper-muted)] hover:border-[var(--color-rule-strong)] text-left text-xs font-medium text-[var(--color-ink)] transition-all cursor-pointer shadow-2xs"
-                    >
-                      💡 {starter}
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {/* Floating Bottom Input Bar */}
               <div className="relative rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-2 shadow-lg">
                 <textarea
