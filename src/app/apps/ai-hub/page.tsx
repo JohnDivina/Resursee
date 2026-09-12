@@ -4921,10 +4921,7 @@ ${
                           <span>Downloading {downloadProgress > 0 ? `${downloadProgress}%` : ''}</span>
                         </>
                       ) : (
-                        <>
-                          <IconDownload size={13} />
-                          <span>Pull {visionSelectedModel}</span>
-                        </>
+                        <span>Pull {visionSelectedModel}</span>
                       )}
                     </button>
                   )}
@@ -4934,8 +4931,7 @@ ${
               {/* Daemon Offline Notice if applicable */}
               {connectionStatus !== 'connected' && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200">
-                  <div className="flex items-center gap-2.5 text-xs font-semibold">
-                    <IconAlertCircle size={16} className="shrink-0" />
+                  <div className="text-xs font-semibold">
                     <span>Ollama daemon is currently offline. Start the engine to run local vision inference.</span>
                   </div>
                   <button
@@ -4950,10 +4946,7 @@ ${
                         <span>Starting...</span>
                       </>
                     ) : (
-                      <>
-                        <IconPlayerPlay size={13} />
-                        <span>Start Ollama Engine</span>
-                      </>
+                      <span>Start Ollama Engine</span>
                     )}
                   </button>
                 </div>
@@ -4997,10 +4990,10 @@ ${
                           <button
                             type="button"
                             onClick={handleClearImage}
-                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-900 text-white backdrop-blur-md cursor-pointer transition-all"
+                            className="absolute top-2 right-2 px-2.5 py-1 text-xs font-semibold rounded-lg bg-neutral-900/80 hover:bg-neutral-900 text-white backdrop-blur-md cursor-pointer transition-all"
                             title="Remove image"
                           >
-                            <IconX size={15} />
+                            Remove
                           </button>
                         </div>
 
@@ -5025,10 +5018,7 @@ ${
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-3 py-6">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-neutral-700">
-                          <IconUpload size={22} />
-                        </div>
+                      <div className="space-y-3 py-8">
                         <div>
                           <p className="text-xs font-bold text-[var(--color-ink)]">
                             Drag and drop an image here
@@ -5061,13 +5051,12 @@ ${
                       <button
                         type="button"
                         onClick={() => handleLoadSample('foliar')}
-                        className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
+                        className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
                       >
-                        <span className="text-base block mb-1">🌿</span>
-                        <span className="text-[11px] font-bold text-[var(--color-ink)] block leading-tight">
+                        <span className="text-xs font-bold text-[var(--color-ink)] block leading-tight">
                           Citrus Leaf
                         </span>
-                        <span className="text-[9px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block mt-1">
                           Pathology
                         </span>
                       </button>
@@ -5075,13 +5064,12 @@ ${
                       <button
                         type="button"
                         onClick={() => handleLoadSample('receipt')}
-                        className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
+                        className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
                       >
-                        <span className="text-base block mb-1">📄</span>
-                        <span className="text-[11px] font-bold text-[var(--color-ink)] block leading-tight">
+                        <span className="text-xs font-bold text-[var(--color-ink)] block leading-tight">
                           Receipt
                         </span>
-                        <span className="text-[9px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block mt-1">
                           Table OCR
                         </span>
                       </button>
@@ -5089,13 +5077,12 @@ ${
                       <button
                         type="button"
                         onClick={() => handleLoadSample('schematic')}
-                        className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
+                        className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer group"
                       >
-                        <span className="text-base block mb-1">🔌</span>
-                        <span className="text-[11px] font-bold text-[var(--color-ink)] block leading-tight">
+                        <span className="text-xs font-bold text-[var(--color-ink)] block leading-tight">
                           ESP32 Circuit
                         </span>
-                        <span className="text-[9px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block mt-1">
                           Schematic
                         </span>
                       </button>
@@ -5115,22 +5102,22 @@ ${
                       <div className="flex flex-wrap gap-1.5">
                         {[
                           {
-                            label: '🌿 Leaf Pathology',
+                            label: 'Leaf Pathology',
                             prompt:
                               'Analyze this leaf image carefully. Identify the plant species if possible, diagnose any visible disease, chlorotic halos, or fungal lesions, and provide actionable organic treatment advice.',
                           },
                           {
-                            label: '📄 Document OCR',
+                            label: 'Document OCR',
                             prompt:
                               'Extract all visible text from this document image. Preserve table structures, headings, line items, and transcribe them into clean GitHub-flavored Markdown.',
                           },
                           {
-                            label: '🔌 Circuit Schematic',
+                            label: 'Circuit Schematic',
                             prompt:
                               'Examine this circuit diagram. Explain the wiring between components, verify pinout connections, and highlight any potential design issues.',
                           },
                           {
-                            label: '🔍 Detailed VQA',
+                            label: 'Detailed VQA',
                             prompt:
                               'Provide a comprehensive visual description of this image, detailing key subjects, spatial arrangements, lighting, and anomalies.',
                           },
@@ -5171,9 +5158,8 @@ ${
                         <button
                           type="button"
                           onClick={handleStopVision}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+                          className="inline-flex items-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
                         >
-                          <IconPlayerStop size={14} />
                           <span>Stop Generation</span>
                         </button>
                       ) : (
@@ -5181,9 +5167,8 @@ ${
                           type="button"
                           onClick={handleRunVisionAnalysis}
                           disabled={!visionImageBase64}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 shadow-2xs"
+                          className="inline-flex items-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 shadow-2xs"
                         >
-                          <IconPlayerPlay size={14} />
                           <span>Run Local Vision Analysis</span>
                         </button>
                       )}
@@ -5191,9 +5176,8 @@ ${
 
                     {/* Vision Error Notice if any */}
                     {visionError && (
-                      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3 text-xs text-neutral-800 dark:text-neutral-200 flex items-start gap-2">
-                        <IconAlertCircle size={16} className="shrink-0 mt-0.5" />
-                        <div className="flex-1 space-y-1">
+                      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-3 text-xs text-neutral-800 dark:text-neutral-200">
+                        <div className="space-y-1">
                           <p className="font-semibold">{visionError}</p>
                           {visionError.includes('text-only') && (
                             <button
@@ -5229,17 +5213,15 @@ ${
                           <button
                             type="button"
                             onClick={() => handleCopy(visionResult, 'vision-result')}
-                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                            className="inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
                           >
-                            {copiedKey === 'vision-result' ? <IconCheck size={12} /> : <IconCopy size={12} />}
                             <span>{copiedKey === 'vision-result' ? 'Copied' : 'Copy'}</span>
                           </button>
                           <button
                             type="button"
                             onClick={handleExportVision}
-                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                            className="inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
                           >
-                            <IconFileExport size={12} />
                             <span>Export .md</span>
                           </button>
                         </div>
