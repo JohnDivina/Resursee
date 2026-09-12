@@ -2090,7 +2090,7 @@ Instructions:
                   </span>
                 </div>
                 <span className="text-[10.5px] font-mono text-[var(--color-ink-muted)]">
-                  Ollama & WebLLM Engine
+                  Local LLM & WebLLM Engine
                 </span>
               </motion.div>
             </div>
@@ -2478,9 +2478,6 @@ Instructions:
                           </span>
                           <span>Install via Terminal / CMD</span>
                         </div>
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
-                          1-line command
-                        </span>
                       </div>
 
                       <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
@@ -2562,8 +2559,7 @@ Instructions:
                       </div>
                     </div>
 
-                    <div className="pt-3 border-t border-[var(--color-rule-subtle)] flex items-center justify-between text-[11px] text-[var(--color-ink-muted)]">
-                      <span>Runs as background service</span>
+                    <div className="pt-3 border-t border-[var(--color-rule-subtle)] flex items-center justify-end text-[11px] text-[var(--color-ink-muted)]">
                       <button
                         type="button"
                         onClick={handleStartOllama}
@@ -2584,9 +2580,6 @@ Instructions:
                           </span>
                           <span>Download in Resursee Model Library</span>
                         </div>
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
-                          1-click UI download
-                        </span>
                       </div>
 
                       <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
@@ -2657,26 +2650,26 @@ Instructions:
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                   <div className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-1">
                     <span className="font-bold text-xs text-[var(--color-ink)] block">
-                      ⚡ 0.5B – 3B Models
+                      0.5B – 3B Models
                     </span>
                     <p className="text-[11px] text-[var(--color-ink-muted)] leading-snug">
-                      Requires 2GB–4GB RAM. Runs smoothly on any standard laptop, MacBook Air, or mini PC with instant response times.
+                      Requires 2GB–4GB RAM. Fast, lightweight inference for laptops.
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-1">
                     <span className="font-bold text-xs text-[var(--color-ink)] block">
-                      🧠 7B – 8B Models
+                      7B – 8B Models
                     </span>
                     <p className="text-[11px] text-[var(--color-ink-muted)] leading-snug">
-                      Requires 8GB–16GB RAM / Unified Memory. Exceptional reasoning, coding, and roleplay on Apple Silicon or RTX 3060+.
+                      Requires 8GB–16GB RAM. High-quality reasoning and coding performance.
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-1">
                     <span className="font-bold text-xs text-[var(--color-ink)] block">
-                      🔒 Zero Cloud Egress
+                      Zero Cloud Egress
                     </span>
                     <p className="text-[11px] text-[var(--color-ink-muted)] leading-snug">
-                      Your chats, documents, images, and model weights never leave your physical device. 100% private and air-gapped.
+                      100% private. All weights and prompts stay on your physical device.
                     </p>
                   </div>
                 </div>
@@ -3115,7 +3108,7 @@ Instructions:
               {/* Filter Strip & Search Across the Ollama Library */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
                 {/* Category Filter Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1 min-w-0">
                   {[
                     { id: 'all', label: 'All Models' },
                     { id: 'installed', label: `Installed (${installedModels.length})` },
@@ -3124,7 +3117,6 @@ Instructions:
                     { id: 'code', label: 'Code & Systems' },
                     { id: 'vision', label: 'Vision & Multimodal' },
                     { id: 'embeddings', label: 'Embeddings & RAG' },
-                    { id: 'general', label: 'General & Frontier' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -3134,7 +3126,7 @@ Instructions:
                         'px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer',
                         modelCategory === cat.id
                           ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold'
-                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200'
+                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 hover:text-neutral-900 dark:hover:bg-neutral-700 dark:hover:text-white'
                       )}
                     >
                       {cat.label}
