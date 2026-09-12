@@ -1104,75 +1104,6 @@ const SAMPLE_PRESETS: Record<
   },
 };
 
-// 1-Click Interactive Sample Documents for RAG Knowledge Studio (Phase 5)
-const SAMPLE_KNOWLEDGE_DOCS: Record<
-  'esp32' | 'pathology' | 'resursee',
-  { title: string; filename: string; content: string }
-> = {
-  esp32: {
-    title: 'ESP32 IoT & Sensor Hardware Datasheet',
-    filename: 'esp32_iot_datasheet.md',
-    content: `# ESP32-WROOM-32 Hardware Architecture & Sensor Interfaces
-
-## 1. Core System & Electrical Ratings
-The ESP32-WROOM-32 is a dual-core 32-bit MCU running at up to 240 MHz (Tensilica Xtensa LX6).
-- Operating Voltage: 3.0V to 3.6V (Standard 3.3V VCC).
-- Operating Current: 80mA average during WiFi active transmission; 10µA during Deep Sleep mode.
-- Internal Flash: 4MB SPI Flash; 520 KB internal SRAM.
-- ADC: Two 12-bit SAR ADCs (ADC1: GPIO32–39; ADC2: GPIO0, 2, 4, 12–15, 25–27).
-
-## 2. GPIO4 to DHT22 Telemetry Interface
-- DHT22 (AM2302) is a single-bus digital relative humidity and temperature sensor.
-- Pinout: Pin 1 = VCC (3.3V), Pin 2 = DATA (Connected to ESP32 GPIO4), Pin 3 = NC (No Connection), Pin 4 = GND.
-- Pull-Up Resistor: A 4.7kΩ to 10kΩ resistor must be wired between Pin 2 (DATA) and Pin 1 (3V3). The pull-up holds the bus HIGH when idle and ensures sharp square-wave rise times. Without this pull-up resistor, the line floats, resulting in DHT22 checksum timeouts and reading errors.
-- Sampling Cadence: The minimum polling interval is 2000ms (0.5 Hz). Polling faster than 2 seconds causes internal sensor heating and corrupts humidity telemetry.
-
-## 3. Deep Sleep & RTC Power Management
-- Entering Deep Sleep: \`esp_deep_sleep_start();\` shuts down both CPUs and high-speed peripherals.
-- Wakeup Sources: Timer wakeup (\`esp_sleep_enable_timer_wakeup(60 * 1000000ULL);\`) or external GPIO pin interrupt (\`esp_sleep_enable_ext0_wakeup(GPIO_NUM_33, 0);\`).`,
-  },
-  pathology: {
-    title: 'Agricultural Foliar Pathology & Integrated Pest Management',
-    filename: 'foliar_pathology_handbook.md',
-    content: `# Clinical Plant Pathology Field Guide
-
-## 1. Tomato Early Blight (Alternaria solani)
-- Symptoms: Dark brown to black circular lesions displaying prominent concentric target-board rings. Surrounded by bright chlorotic yellow halos. Typically initiates on lower mature leaves and progresses upward.
-- Pathology: Soil-borne fungal spores splashing onto foliage during rain or overhead sprinkler irrigation. Optimal spore germination occurs at 24°C–29°C with relative humidity above 85%.
-- Cultural Treatment: Sterilize shears in 70% isopropyl alcohol. Prune lower canopy foliage touching the ground. Apply a 2-inch straw mulch barrier to prevent soil rain-splash.
-- Organic Treatment: Spray foliar mixture of 1 tbsp baking soda + 1 tsp horticultural oil + 1/2 tsp mild Castile soap per gallon of water, or apply organic liquid copper octanoate every 7 days.
-
-## 2. Citrus Leafminer (Phyllocnistis citrella)
-- Symptoms: Silvery, translucent, serpentine tunnels coiled across the leaf blade. Foliage curls upward along the margins and becomes brittle.
-- Biological Cycle: Microscopic moths deposit eggs on tender young shoot flushes. Larvae pupate inside curled leaf edges.
-- Organic Control: Cold-pressed neem oil foliar spray (2 tbsp cold-pressed neem + 1 tsp Castile soap per gallon lukewarm water) applied at dusk every 7–10 days during flush periods.
-
-## 3. Corn Common Rust (Puccinia sorghi)
-- Symptoms: Elongated, powdery, cinnamon-brown to golden-brown pustules (uredinia) on both upper and lower leaf surfaces. Spores rub off readily on fingers.
-- Control: Preventive bio-fungicide foliar applications using Bacillus subtilis (Serenade ASO) to colonize leaf surface stomata.`,
-  },
-  resursee: {
-    title: 'Resursee Architecture & Security Standards',
-    filename: 'resursee_developer_guide.md',
-    content: `# Resursee Platform Architecture & Standards
-
-## 1. Zero Cloud Egress & Local AI Workstation
-Resursee's AI Hub Studio runs directly against local hardware using the local Ollama daemon (http://localhost:11434).
-- 100% Data Sovereignty: User chat messages, uploaded photos, and document embeddings never touch external cloud servers or analytics telemetry.
-- Direct Browser Streaming: Uses native ReadableStream and TextDecoder to stream tokens directly into the React canvas.
-- 1-Click Daemon Launcher: An internal API route (/api/ai/ollama/start) allows launching Ollama in the background on macOS, Windows, and Linux without touching the terminal.
-
-## 2. Anti-Slop UI & Design Directives
-- Strict Monochrome Hierarchy: Elimination of translucent pastel color washes (no bg-emerald-500/10, no neon cyan/purple glows).
-- Solid Neutral Grey Bubbles: Badges and indicators use solid neutral surfaces (bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700).
-- High Contrast Focus: High contrast solid blacks and whites (bg-neutral-900 text-white dark:bg-white dark:text-neutral-900) for active states.
-
-## 3. Mandatory Security Hardening Directives
-- 100% Row Level Security (RLS) enabled on all PostgreSQL database tables.
-- Sliding-window rate limiting on all API endpoints.
-- IDOR Prevention: Never perform lookup, update, or deletion operations using client-supplied IDs alone. Always scope to authenticated sessions.`,
-  },
-};
 
 // Helper to format inline code & bold text within markdown lines
 function parseInlineFormatting(text: string) {
@@ -1418,6 +1349,8 @@ export default function AIHubPage() {
   const [isSearchingRag, setIsSearchingRag] = useState<boolean>(false);
   const [isGeneratingRagAnswer, setIsGeneratingRagAnswer] = useState<boolean>(false);
   const [ragEmbeddingEngine, setRagEmbeddingEngine] = useState<string>('hybrid');
+  const [ragEmbeddingModel, setRagEmbeddingModel] = useState<string>('nomic-embed-text');
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [ragViewMode, setRagViewMode] = useState<'answer' | 'chunks'>('answer');
   const [isAddDocModalOpen, setIsAddDocModalOpen] = useState<boolean>(false);
   const [newDocTitle, setNewDocTitle] = useState<string>('');
@@ -1474,42 +1407,23 @@ export default function AIHubPage() {
       const rawDocs = localStorage.getItem('resursee_ai_hub_documents');
       if (rawDocs) {
         const parsed: IndexedDocument[] = JSON.parse(rawDocs);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setIndexedDocs(parsed);
+        if (Array.isArray(parsed)) {
+          const userDocs = parsed.filter(
+            (d) =>
+              !d.id.startsWith('doc-esp32') &&
+              !d.id.startsWith('doc-pathology') &&
+              !d.id.startsWith('doc-resursee')
+          );
+          setIndexedDocs(userDocs);
+          setSelectedDocIds(userDocs.map((d) => d.id));
           return;
         }
       }
     } catch (e) {
       console.error('Failed to parse documents:', e);
     }
-
-    // Seed default sample knowledge documents for instant testing
-    const initialDocs: IndexedDocument[] = Object.entries(SAMPLE_KNOWLEDGE_DOCS).map(
-      ([key, doc], idx) => {
-        const docId = `doc-${key}-${Date.now() + idx}`;
-        const rawChunks = chunkText(doc.content, 450, 45);
-        const chunks: DocumentChunk[] = rawChunks.map((c, cIdx) => ({
-          id: `chunk-${docId}-${cIdx}`,
-          documentId: docId,
-          documentName: doc.filename,
-          chunkIndex: cIdx + 1,
-          text: c,
-          tokenCount: Math.round(c.length / 4),
-        }));
-        return {
-          id: docId,
-          name: doc.filename,
-          size: doc.content.length,
-          characterCount: doc.content.length,
-          chunks,
-          createdAt: new Date().toISOString(),
-        };
-      }
-    );
-    setIndexedDocs(initialDocs);
-    try {
-      localStorage.setItem('resursee_ai_hub_documents', JSON.stringify(initialDocs));
-    } catch {}
+    setIndexedDocs([]);
+    setSelectedDocIds([]);
   }, []);
 
   // Synchronize selectedModel strictly with downloaded/installed models
@@ -1998,6 +1912,7 @@ export default function AIHubPage() {
 
     const updated = [newDoc, ...indexedDocs];
     setIndexedDocs(updated);
+    setSelectedDocIds((prev) => [newDoc.id, ...prev]);
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('resursee_ai_hub_documents', JSON.stringify(updated));
@@ -2037,15 +1952,24 @@ export default function AIHubPage() {
     }
   };
 
-  const handleLoadSampleDoc = (key: 'esp32' | 'pathology' | 'resursee') => {
-    const sample = SAMPLE_KNOWLEDGE_DOCS[key];
-    if (!sample) return;
-    handleIndexDocument(sample.filename, sample.content);
+  const handleToggleDocSelection = (id: string) => {
+    setSelectedDocIds((prev) =>
+      prev.includes(id) ? prev.filter((dId) => dId !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleAllDocs = () => {
+    if (selectedDocIds.length === indexedDocs.length) {
+      setSelectedDocIds([]);
+    } else {
+      setSelectedDocIds(indexedDocs.map((d) => d.id));
+    }
   };
 
   const handleDeleteDoc = (docId: string) => {
     const updated = indexedDocs.filter((d) => d.id !== docId);
     setIndexedDocs(updated);
+    setSelectedDocIds((prev) => prev.filter((id) => id !== docId));
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('resursee_ai_hub_documents', JSON.stringify(updated));
@@ -2057,6 +1981,7 @@ export default function AIHubPage() {
 
   const handleClearAllDocs = () => {
     setIndexedDocs([]);
+    setSelectedDocIds([]);
     setRagRetrievalResults([]);
     setRagAnswer('');
     if (typeof window !== 'undefined') {
@@ -2068,10 +1993,14 @@ export default function AIHubPage() {
     if (!queryText.trim()) return [];
     setIsSearchingRag(true);
     try {
-      const allChunks = indexedDocs.flatMap((d) => d.chunks);
+      const targetDocs =
+        selectedDocIds.length > 0
+          ? indexedDocs.filter((d) => selectedDocIds.includes(d.id))
+          : indexedDocs;
+      const allChunks = targetDocs.flatMap((d) => d.chunks);
       const results = await retrieveTopKChunks(queryText, allChunks, {
         endpoint,
-        embeddingModel: 'nomic-embed-text',
+        embeddingModel: ragEmbeddingModel || 'nomic-embed-text',
         topK: 4,
         useDenseVectors: ragEmbeddingEngine !== 'tfidf',
       });
@@ -2087,6 +2016,16 @@ export default function AIHubPage() {
     if (!q) return;
     if (connectionStatus !== 'connected') {
       setRagAnswer('Ollama daemon is offline. Click "Start Ollama Engine" to connect and ask questions.');
+      setRagViewMode('answer');
+      return;
+    }
+    if (indexedDocs.length === 0) {
+      setRagAnswer('No documents have been uploaded yet. Please click "Add Document" to upload a PDF, Word (.docx), PowerPoint (.pptx), or text file.');
+      setRagViewMode('answer');
+      return;
+    }
+    if (selectedDocIds.length === 0) {
+      setRagAnswer('No documents are currently selected. Please check at least one document in the selection list on the left to ground the retrieval.');
       setRagViewMode('answer');
       return;
     }
@@ -2374,18 +2313,38 @@ Instructions:
       }
     } else {
       // Offline fallback simulation
+      let currentPercent = 0;
       const interval = setInterval(() => {
-        setDownloadProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            setDownloadingModelId(null);
-            setDownloadStatus('');
-            return 100;
-          }
-          setDownloadStatus(`Simulating layer download (${prev + 20}%)...`);
-          return prev + 20;
-        });
-      }, 300);
+        currentPercent += 20;
+        if (currentPercent >= 100) {
+          clearInterval(interval);
+          setDownloadProgress(100);
+          setDownloadStatus('Download complete!');
+          const simulatedModel: OllamaModel = {
+            name: cleanId,
+            model: cleanId,
+            modified_at: new Date().toISOString(),
+            size: cleanId.includes('embed') ? 274 * 1024 * 1024 : 4.5 * 1024 * 1024 * 1024,
+            digest: 'sha256:simulated',
+            details: {
+              format: 'gguf',
+              family: cleanId.includes('embed') ? 'bert' : 'llama',
+              parameter_size: cleanId.includes('embed') ? '137M' : '7B',
+              quantization_level: 'Q4_K_M',
+            },
+          };
+          setInstalledModels((prev) => [
+            ...prev.filter((m) => m.name !== cleanId),
+            simulatedModel,
+          ]);
+          setDownloadingModelId(null);
+          setDownloadProgress(0);
+          setDownloadStatus('');
+        } else {
+          setDownloadProgress(currentPercent);
+          setDownloadStatus(`Simulating layer download (${currentPercent}%)...`);
+        }
+      }, 350);
     }
   };
 
@@ -3516,7 +3475,7 @@ Instructions:
                   <div className="flex items-center gap-2">
                     <IconDisc size={16} className="text-[var(--color-ink)]" />
                     <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
-                      Installed on Your Machine ({installedModels.length})
+                      Installed on Your Machine ({installedModels.length + (downloadingModelId && !installedModels.some(m => m.name === downloadingModelId) ? 1 : 0)})
                     </h3>
                   </div>
                   <div className="flex items-center gap-3">
@@ -3536,7 +3495,7 @@ Instructions:
                   </div>
                 </div>
 
-                {installedModels.length === 0 ? (
+                {installedModels.length === 0 && !downloadingModelId ? (
                   <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-5 text-center space-y-2">
                     <p className="text-xs text-[var(--color-ink-muted)]">
                       {connectionStatus === 'connected'
@@ -3556,6 +3515,49 @@ Instructions:
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {/* Active Downloading Model Card */}
+                    {downloadingModelId && !installedModels.some((m) => m.name === downloadingModelId) && (
+                      <div className="p-4 rounded-2xl border border-dashed border-neutral-400 dark:border-neutral-600 bg-[var(--color-paper-card)] shadow-2xs space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs text-[var(--color-ink)] truncate font-mono">
+                                {downloadingModelId}
+                              </span>
+                              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold inline-flex items-center gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                                Downloading
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
+                              {downloadStatus || 'Downloading layers to disk...'}
+                            </span>
+                          </div>
+                          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                            {downloadProgress}%
+                          </span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="bg-neutral-900 dark:bg-white h-full transition-all duration-300"
+                            style={{ width: `${Math.max(downloadProgress, 5)}%` }}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink-muted)] pt-1 border-t border-[var(--color-rule-subtle)]">
+                          <span>Pulling to local Ollama library</span>
+                          <button
+                            type="button"
+                            onClick={handleCancelPull}
+                            className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {installedModels.map((im) => {
                       const isVram = runningModels.includes(im.name);
                       const isSelected = selectedModel === im.name;
@@ -4746,20 +4748,29 @@ Instructions:
                     </div>
                   </div>
 
-                  {/* 1-Click Pull LLaVA button if no vision model is installed */}
+                  {/* Pull button if selected vision model is not installed yet */}
                   {!installedModels.some(
                     (m) =>
-                      m.name.includes('llava') ||
-                      m.name.includes('vision') ||
-                      m.name.includes('moondream')
+                      m.name === visionSelectedModel ||
+                      m.name.startsWith(visionSelectedModel.split(':')[0])
                   ) && (
                     <button
                       type="button"
-                      onClick={() => handlePullModel('llava:7b')}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
+                      disabled={downloadingModelId === visionSelectedModel}
+                      onClick={() => handlePullModel(visionSelectedModel)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
                     >
-                      <IconDownload size={13} />
-                      <span>Pull LLaVA (7B)</span>
+                      {downloadingModelId === visionSelectedModel ? (
+                        <>
+                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                          <span>Downloading {downloadProgress > 0 ? `${downloadProgress}%` : ''}</span>
+                        </>
+                      ) : (
+                        <>
+                          <IconDownload size={13} />
+                          <span>Pull {visionSelectedModel}</span>
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -5131,19 +5142,6 @@ Instructions:
                     <IconPlus size={14} />
                     <span>Add Document</span>
                   </button>
-
-                  {!installedModels.some(
-                    (m) => m.name.includes('nomic-embed') || m.name.includes('embed')
-                  ) && (
-                    <button
-                      type="button"
-                      onClick={() => handlePullModel('nomic-embed-text')}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
-                    >
-                      <IconDownload size={13} />
-                      <span>Pull nomic-embed (274 MB)</span>
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -5175,17 +5173,143 @@ Instructions:
                 </div>
               )}
 
+              {/* RAG Model Configuration & Hardware Recommendations */}
+              <div className="p-4 rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] space-y-3.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Embedding Model Selector */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[var(--color-ink)] flex items-center gap-1.5">
+                        <IconLayersLinked size={15} className="text-[var(--color-ink-muted)]" />
+                        <span>Embedding Model (Semantic Vectors)</span>
+                      </label>
+                      <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                        Local Dense Retrieval
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <select
+                          value={ragEmbeddingModel}
+                          onChange={(e) => setRagEmbeddingModel(e.target.value)}
+                          className="w-full appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                        >
+                          {installedModels.filter(m => m.name.includes('embed') || m.name.includes('minilm') || m.name.includes('bge')).length > 0 && (
+                            <optgroup label="Installed Local Embedders">
+                              {installedModels.filter(m => m.name.includes('embed') || m.name.includes('minilm') || m.name.includes('bge')).map(im => (
+                                <option key={im.name} value={im.name}>
+                                  {im.name} • Local
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          <optgroup label="4 GB RAM Budget (Fast & Lightweight)">
+                            <option value="nomic-embed-text">nomic-embed-text (274 MB • 8k ctx • Rec. 4GB)</option>
+                            <option value="all-minilm">all-minilm (45 MB • Ultra Light)</option>
+                          </optgroup>
+                          <optgroup label="8 GB RAM Budget (Balanced & Multilingual)">
+                            <option value="bge-m3">bge-m3 (1.2 GB • 8k Multilingual • Rec. 8GB)</option>
+                            <option value="mxbai-embed-large">mxbai-embed-large (670 MB • Search Optimized)</option>
+                          </optgroup>
+                          <optgroup label="16 GB+ RAM Budget (Frontier Precision)">
+                            <option value="snowflake-arctic-embed2">snowflake-arctic-embed2 (1.2 GB • Rec. 16GB)</option>
+                          </optgroup>
+                        </select>
+                        <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
+                          ▼
+                        </div>
+                      </div>
+
+                      {/* Pull Button for Selected Embedding Model */}
+                      {!installedModels.some(m => m.name === ragEmbeddingModel || m.name.startsWith(ragEmbeddingModel.split(':')[0])) && (
+                        <button
+                          type="button"
+                          disabled={downloadingModelId === ragEmbeddingModel}
+                          onClick={() => handlePullModel(ragEmbeddingModel)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-50"
+                        >
+                          {downloadingModelId === ragEmbeddingModel ? (
+                            <>
+                              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                              <span>Downloading {downloadProgress > 0 ? `${downloadProgress}%` : ''}</span>
+                            </>
+                          ) : (
+                            <>
+                              <IconDownload size={13} />
+                              <span>Pull {ragEmbeddingModel.split(':')[0]}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Synthesis LLM Selector */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[var(--color-ink)] flex items-center gap-1.5">
+                        <IconCpu size={15} className="text-[var(--color-ink-muted)]" />
+                        <span>Synthesis LLM (Grounded Answer)</span>
+                      </label>
+                      <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                        Local Reasoning Engine
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="w-full appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                      >
+                        {installedModels.filter(m => !m.name.includes('embed') && !m.name.includes('minilm')).length > 0 && (
+                          <optgroup label="Installed Local LLMs">
+                            {installedModels.filter(m => !m.name.includes('embed') && !m.name.includes('minilm')).map((im) => (
+                              <option key={im.name} value={im.name}>
+                                {im.name} • Local
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="Recommended Synthesis by RAM">
+                          <option value="llama3.2:1b">llama3.2:1b (1.3 GB • Rec. 4GB RAM)</option>
+                          <option value="llama3.2:3b">llama3.2:3b (2.0 GB • Rec. 4-8GB RAM)</option>
+                          <option value="qwen2.5:7b">qwen2.5:7b (4.7 GB • Rec. 8GB RAM)</option>
+                          <option value="llama3.1:8b">llama3.1:8b (4.9 GB • Rec. 8-16GB RAM)</option>
+                          <option value="qwen2.5:14b">qwen2.5:14b (9.0 GB • Rec. 16GB+ RAM)</option>
+                        </optgroup>
+                      </select>
+                      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
+                        ▼
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Specs Budget Recommendations Guide Pills */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--color-rule-subtle)] text-[10.5px]">
+                  <span className="font-mono font-bold text-[var(--color-ink-muted)]">Specs Guide:</span>
+                  <span className="px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 font-mono">
+                    4GB RAM: nomic-embed + llama3.2:1b
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 font-mono">
+                    8GB RAM: bge-m3 + qwen2.5:7b
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 font-mono">
+                    16GB+ RAM: bge-m3 / arctic + qwen2.5:14b
+                  </span>
+                </div>
+              </div>
+
               {/* Main 2-Column Workspace */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Column (5 cols): Knowledge Index & Document Sources */}
+                {/* Left Column (5 cols): Uploaded Documents & Active Selection */}
                 <div className="lg:col-span-5 space-y-4">
-                  {/* Documents List Card */}
                   <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <IconDatabase size={16} className="text-[var(--color-ink)]" />
                         <h3 className="text-xs font-bold text-[var(--color-ink)]">
-                          Indexed Documents ({indexedDocs.length})
+                          Document Sources ({selectedDocIds.length}/{indexedDocs.length} Selected)
                         </h3>
                       </div>
 
@@ -5203,142 +5327,117 @@ Instructions:
                           onClick={() => docFileInputRef.current?.click()}
                           className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] cursor-pointer disabled:opacity-50"
                         >
-                          {isParsingDoc ? (parseStatusText || 'Parsing...') : 'Upload File'}
+                          {isParsingDoc ? (parseStatusText || 'Parsing...') : 'Upload'}
                         </button>
                         {indexedDocs.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleClearAllDocs}
-                            className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 cursor-pointer ml-1"
-                          >
-                            Clear
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleToggleAllDocs}
+                              className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] cursor-pointer ml-1"
+                            >
+                              {selectedDocIds.length === indexedDocs.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleClearAllDocs}
+                              className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 cursor-pointer ml-1"
+                            >
+                              Clear
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
 
-                    {/* Document Items List */}
-                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {/* Document Selection List */}
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                       {indexedDocs.length === 0 ? (
-                        <div className="text-center py-8 text-xs font-mono text-[var(--color-ink-muted)] space-y-2">
-                          <p>No documents indexed yet.</p>
-                          <p className="text-[11px]">Add custom notes or click a sample below.</p>
+                        <div className="p-5 rounded-xl border border-dashed border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-center space-y-3">
+                          <div className="flex justify-center">
+                            <div className="p-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
+                              <IconUpload size={20} />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-bold text-xs text-[var(--color-ink)]">No documents uploaded yet</p>
+                            <p className="text-[10.5px] font-mono text-[var(--color-ink-muted)] mt-1">
+                              Upload PDF, Word (.docx), PowerPoint (.pptx), or text files to select and query with local RAG.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => docFileInputRef.current?.click()}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+                          >
+                            <IconPlus size={13} />
+                            <span>Upload Document</span>
+                          </button>
                         </div>
                       ) : (
-                        indexedDocs.map((doc) => (
-                          <div
-                            key={doc.id}
-                            className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] text-xs group hover:border-[var(--color-rule-strong)] transition-all"
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <IconFileText size={16} className="text-[var(--color-ink-muted)] shrink-0" />
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="font-semibold text-[var(--color-ink)] block truncate">
-                                    {doc.name}
-                                  </span>
-                                  {doc.name.toLowerCase().includes('.pdf') && (
-                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
-                                      PDF
-                                    </span>
-                                  )}
-                                  {doc.name.toLowerCase().includes('.docx') && (
-                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
-                                      DOCX
-                                    </span>
-                                  )}
-                                  {doc.name.toLowerCase().includes('.pptx') && (
-                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
-                                      PPTX
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
-                                  {doc.chunks.length} chunks • {(doc.size / 1024).toFixed(1)} KB
-                                </span>
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteDoc(doc.id)}
-                              className="p-1 rounded-md text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                              title="Delete document"
+                        indexedDocs.map((doc) => {
+                          const isSelected = selectedDocIds.includes(doc.id);
+                          return (
+                            <div
+                              key={doc.id}
+                              onClick={() => handleToggleDocSelection(doc.id)}
+                              className={cn(
+                                'flex items-center justify-between p-2.5 rounded-xl border text-xs group transition-all cursor-pointer select-none',
+                                isSelected
+                                  ? 'bg-[var(--color-paper-surface)] border-neutral-900 dark:border-white ring-1 ring-neutral-900/10 dark:ring-white/10'
+                                  : 'bg-[var(--color-paper-surface)]/60 border-[var(--color-rule-subtle)] opacity-60 hover:opacity-100'
+                              )}
                             >
-                              <IconTrash size={14} />
-                            </button>
-                          </div>
-                        ))
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleDocSelection(doc.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="rounded accent-neutral-900 dark:accent-white shrink-0 cursor-pointer"
+                                />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className={cn('font-semibold block truncate', isSelected ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-muted)]')}>
+                                      {doc.name}
+                                    </span>
+                                    {doc.name.toLowerCase().includes('.pdf') && (
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                        PDF
+                                      </span>
+                                    )}
+                                    {doc.name.toLowerCase().includes('.docx') && (
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                        DOCX
+                                      </span>
+                                    )}
+                                    {doc.name.toLowerCase().includes('.pptx') && (
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                        PPTX
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+                                    {doc.chunks.length} chunks • {(doc.size / 1024).toFixed(1)} KB • {isSelected ? 'Active' : 'Excluded'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteDoc(doc.id);
+                                }}
+                                className="p-1 rounded-md text-[var(--color-ink-muted)] hover:text-red-500 hover:bg-[var(--color-paper-muted)] opacity-0 group-hover:opacity-100 transition-all cursor-pointer shrink-0"
+                                title="Delete document"
+                              >
+                                <IconTrash size={14} />
+                              </button>
+                            </div>
+                          );
+                        })
                       )}
-                    </div>
-                  </div>
-
-                  {/* 1-Click Sample Technical Documents */}
-                  <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                        Load Sample Knowledge Docs
-                      </span>
-                      <span className="text-[10px] text-[var(--color-ink-muted)]">1-Click Index</span>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleLoadSampleDoc('esp32')}
-                        className="w-full flex items-center justify-between p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">🔌</span>
-                          <div>
-                            <span className="text-xs font-bold text-[var(--color-ink)] block">
-                              ESP32 Hardware Datasheet
-                            </span>
-                            <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
-                              GPIO4, DHT22 pull-up, Deep Sleep
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">+ Add</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleLoadSampleDoc('pathology')}
-                        className="w-full flex items-center justify-between p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">🌿</span>
-                          <div>
-                            <span className="text-xs font-bold text-[var(--color-ink)] block">
-                              Foliar Pathology Field Guide
-                            </span>
-                            <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
-                              Early blight, leafminer, rust remedies
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">+ Add</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleLoadSampleDoc('resursee')}
-                        className="w-full flex items-center justify-between p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] hover:border-[var(--color-rule-strong)] text-left transition-all cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">📜</span>
-                          <div>
-                            <span className="text-xs font-bold text-[var(--color-ink)] block">
-                              Resursee Architecture & Security
-                            </span>
-                            <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
-                              Zero cloud egress, RLS, anti-slop UI
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">+ Add</span>
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -5347,33 +5446,6 @@ Instructions:
                 <div className="lg:col-span-7 space-y-4">
                   {/* Query Input Card */}
                   <div className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-4 sm:p-5 space-y-3.5">
-                    {/* Prompt Starters */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-[var(--color-ink)] block">
-                        Quick Knowledge Questions:
-                      </label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {[
-                          'What is the pull-up resistor on GPIO4 for ESP32?',
-                          'How do you treat Alternaria early blight on tomatoes?',
-                          'What is the minimum sampling interval for DHT22?',
-                          'How does Resursee guarantee zero cloud data egress?',
-                        ].map((starter, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setRagQuery(starter);
-                              handleAskRag(starter);
-                            }}
-                            className="rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-2.5 py-1 text-[11px] font-medium text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
-                          >
-                            {starter}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
                     {/* Query Input Bar */}
                     <div className="space-y-2">
                       <div className="relative">
