@@ -2449,332 +2449,205 @@ Instructions:
                 </div>
               </div>
 
-              {/* Multi-OS Step-by-Step Instructions */}
-              {guideOS === 'macos' && (
-                <div className="space-y-4">
+              {/* Straightforward 2-Step Workflow */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <IconBrandApple size={18} className="text-[var(--color-ink)]" />
+                    {guideOS === 'macos' && <IconBrandApple size={18} className="text-[var(--color-ink)]" />}
+                    {guideOS === 'windows' && <IconBrandWindows size={18} className="text-[var(--color-ink)]" />}
+                    {guideOS === 'linux' && <IconBrandUbuntu size={18} className="text-[var(--color-ink)]" />}
                     <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
-                      Installing Ollama on macOS (Apple Silicon & Intel)
+                      {guideOS === 'macos' && 'macOS Quick Setup (2 Steps)'}
+                      {guideOS === 'windows' && 'Windows Quick Setup (2 Steps)'}
+                      {guideOS === 'linux' && 'Linux Quick Setup (2 Steps)'}
                     </h3>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Step 1: Download */}
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 1
-                        </span>
-                        <span>Download Ollama App</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Download the official universal macOS binary package (.zip) or install via Homebrew package manager.
-                      </p>
-                      <div className="space-y-2 pt-1">
-                        <a
-                          href="https://ollama.com/download/Ollama-darwin.zip"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-2 text-xs font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer"
-                        >
-                          <IconDownload size={14} />
-                          <span>Download Ollama for macOS (.zip)</span>
-                        </a>
-
-                        <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                          <span>brew install ollama</span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy('brew install ollama', 'guide-brew')}
-                            className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                          >
-                            {copiedKey === 'guide-brew' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Step 2: Install & Run */}
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 2
-                        </span>
-                        <span>Move to Applications & Launch</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Unzip the archive and drag <strong>Ollama.app</strong> into your macOS <code className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 font-mono text-[11px] text-[var(--color-ink)]">/Applications</code> folder.
-                      </p>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Launch Ollama from Spotlight or Applications. When launched, Ollama automatically sets up background Metal acceleration on Apple Silicon (M1/M2/M3/M4).
-                      </p>
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                        <span>open -a Ollama</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('open -a Ollama', 'guide-open-app')}
-                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === 'guide-open-app' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Step 3: Verify Daemon */}
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 3
-                        </span>
-                        <span>Verify Terminal CLI</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Open your macOS Terminal to verify that the CLI command is in your path and check the active version.
-                      </p>
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                        <span>ollama --version</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('ollama --version', 'guide-version')}
-                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === 'guide-version' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Step 4: Pull Your First Model */}
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 4
-                        </span>
-                        <span>Pull Your First Model</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Pull Meta’s compact Llama 3.2 (3B) or Alibaba’s Qwen 2.5 (1.5B). Once downloaded, it will appear in Resursee immediately:
-                      </p>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                          <span>ollama run llama3.2:latest</span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy('ollama run llama3.2:latest', 'guide-llama')}
-                            className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                          >
-                            {copiedKey === 'guide-llama' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                          <span>ollama run qwen2.5:1.5b</span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy('ollama run qwen2.5:1.5b', 'guide-qwen')}
-                            className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                          >
-                            {copiedKey === 'guide-qwen' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
+                    No complex configuration required
+                  </span>
                 </div>
-              )}
 
-              {guideOS === 'windows' && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <IconBrandWindows size={18} className="text-[var(--color-ink)]" />
-                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
-                      Installing Ollama on Windows (10 & 11, x64 / ARM64)
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 1
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* STEP 1: Terminal / CMD Installation */}
+                  <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xs space-y-4 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                          <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                            STEP 1
+                          </span>
+                          <span>Install via Terminal / CMD</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                          1-line command
                         </span>
-                        <span>Download Windows Installer</span>
                       </div>
+
                       <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Download the official Ollama Windows installer executable (.exe) built for modern Windows 10 & 11 systems.
+                        {guideOS === 'macos' &&
+                          'Open macOS Terminal and run this Homebrew command to install Ollama with Apple Silicon Metal acceleration:'}
+                        {guideOS === 'windows' &&
+                          'Open PowerShell or Command Prompt and run this winget command to install Ollama with automatic GPU support:'}
+                        {guideOS === 'linux' &&
+                          'Open your Linux shell and run the official 1-line installation script to configure the background daemon:'}
                       </p>
-                      <a
-                        href="https://ollama.com/download/OllamaSetup.exe"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-2 text-xs font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer"
+
+                      {/* Terminal Command Box with 1-Click Copy */}
+                      <div className="flex items-center justify-between rounded-xl bg-neutral-950 text-neutral-100 p-3 font-mono text-xs shadow-xs border border-neutral-800">
+                        <code className="text-neutral-200 select-all truncate pr-2">
+                          {guideOS === 'macos' && 'brew install ollama'}
+                          {guideOS === 'windows' && 'winget install Ollama.Ollama'}
+                          {guideOS === 'linux' && 'curl -fsSL https://ollama.com/install.sh | sh'}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cmd =
+                              guideOS === 'macos'
+                                ? 'brew install ollama'
+                                : guideOS === 'windows'
+                                ? 'winget install Ollama.Ollama'
+                                : 'curl -fsSL https://ollama.com/install.sh | sh';
+                            handleCopy(cmd, 'step-1-cmd');
+                          }}
+                          className="flex items-center gap-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 px-2.5 py-1 text-[11px] font-mono text-white transition-all cursor-pointer shrink-0 border border-neutral-700"
+                        >
+                          {copiedKey === 'step-1-cmd' ? (
+                            <>
+                              <IconCheck size={12} className="text-white" />
+                              <span>Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <IconCopy size={12} />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Direct Installer Fallback Links */}
+                      <div className="text-[11px] text-[var(--color-ink-muted)] pt-1">
+                        {guideOS === 'macos' && (
+                          <span>
+                            Don&apos;t have Homebrew?{' '}
+                            <a
+                              href="https://ollama.com/download/Ollama-darwin.zip"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline hover:text-[var(--color-ink)] font-semibold inline-flex items-center gap-0.5"
+                            >
+                              Download the macOS .zip installer <IconExternalLink size={11} />
+                            </a>
+                          </span>
+                        )}
+                        {guideOS === 'windows' && (
+                          <span>
+                            Prefer an installer wizard?{' '}
+                            <a
+                              href="https://ollama.com/download/OllamaSetup.exe"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline hover:text-[var(--color-ink)] font-semibold inline-flex items-center gap-0.5"
+                            >
+                              Download OllamaSetup.exe <IconExternalLink size={11} />
+                            </a>
+                          </span>
+                        )}
+                        {guideOS === 'linux' && (
+                          <span>
+                            Requires standard sudo permissions to configure the systemd background service.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-[var(--color-rule-subtle)] flex items-center justify-between text-[11px] text-[var(--color-ink-muted)]">
+                      <span>Runs as background service</span>
+                      <button
+                        type="button"
+                        onClick={handleStartOllama}
+                        className="font-bold underline hover:text-[var(--color-ink)] cursor-pointer"
                       >
-                        <IconDownload size={14} />
-                        <span>Download Ollama for Windows (.exe)</span>
-                      </a>
+                        Start Engine from Web
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* STEP 2: Pick & Pull in Resursee Model Library */}
+                  <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xs space-y-4 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                          <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                            STEP 2
+                          </span>
+                          <span>Download in Resursee Model Library</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                          1-click UI download
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        No terminal commands needed to download models! Browse Resursee’s built-in <strong>Model Library</strong> with 45+ official models and real-time progress bars.
+                      </p>
+
+                      {/* Quick 1-Click Recommended Models */}
+                      <div className="space-y-2 pt-1">
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] text-xs">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-[var(--color-ink)] font-mono">Llama 3.2 (3B)</span>
+                              <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[9px] font-bold">2.0 GB</span>
+                            </div>
+                            <span className="text-[10.5px] text-[var(--color-ink-muted)] block">Fast, smart, lightweight general assistant</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('models');
+                              handlePullModel('llama3.2:latest');
+                            }}
+                            className="rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2.5 py-1 text-[11px] font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer shrink-0"
+                          >
+                            Pull Model
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] text-xs">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-[var(--color-ink)] font-mono">Qwen 2.5 (1.5B)</span>
+                              <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[9px] font-bold">986 MB</span>
+                            </div>
+                            <span className="text-[10.5px] text-[var(--color-ink-muted)] block">Ultra-fast edge model with sharp reasoning</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('models');
+                              handlePullModel('qwen2.5:1.5b');
+                            }}
+                            className="rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2.5 py-1 text-[11px] font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer shrink-0"
+                          >
+                            Pull Model
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 2
-                        </span>
-                        <span>Run Setup & Automatic GPU Config</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Double-click <strong>OllamaSetup.exe</strong>. The installer automatically detects your NVIDIA CUDA or AMD ROCm GPUs to enable hardware acceleration.
-                      </p>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Once completed, a small llama icon will appear in your Windows system tray at the bottom right.
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 3
-                        </span>
-                        <span>Verify in PowerShell / CMD</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Open PowerShell or Windows Terminal and test connection:
-                      </p>
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                        <span>ollama --version</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('ollama --version', 'guide-win-ver')}
-                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === 'guide-win-ver' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 4
-                        </span>
-                        <span>Pull First Model on Windows</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Run this in PowerShell to download model weights:
-                      </p>
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                        <span>ollama run llama3.2:latest</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('ollama run llama3.2:latest', 'guide-win-llama')}
-                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === 'guide-win-llama' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        </button>
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('models')}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-2.5 text-xs font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer"
+                    >
+                      <IconCpu size={14} />
+                      <span>Open Model Library (45+ Available) →</span>
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {guideOS === 'linux' && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <IconBrandUbuntu size={18} className="text-[var(--color-ink)]" />
-                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
-                      Installing Ollama on Linux (Ubuntu, Debian, Fedora, Arch)
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 1
-                        </span>
-                        <span>One-Line Shell Script</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Run the official curl script in your terminal. It installs the binary and configures the systemd background service.
-                      </p>
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                        <span className="truncate">curl -fsSL https://ollama.com/install.sh | sh</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('curl -fsSL https://ollama.com/install.sh | sh', 'guide-linux-curl')}
-                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === 'guide-linux-curl' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 2
-                        </span>
-                        <span>Verify Systemd Daemon</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Ollama runs as a background service automatically on Linux. Confirm it is active:
-                      </p>
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                        <span>systemctl status ollama</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('systemctl status ollama', 'guide-linux-status')}
-                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === 'guide-linux-status' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 3
-                        </span>
-                        <span>Pull Model via Terminal</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        Download your preferred model into Linux disk storage:
-                      </p>
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                        <span>ollama run llama3.2:latest</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('ollama run llama3.2:latest', 'guide-linux-llama')}
-                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === 'guide-linux-llama' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
-                          STEP 4
-                        </span>
-                        <span>Configure Remote Host (Optional)</span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        If running Ollama on a remote server or separate machine on your local network:
-                      </p>
-                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
-                        <span className="truncate">OLLAMA_HOST=0.0.0.0 ollama serve</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('OLLAMA_HOST=0.0.0.0 ollama serve', 'guide-linux-host')}
-                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
-                        >
-                          {copiedKey === 'guide-linux-host' ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              </div>
 
               {/* Hardware & FAQ Card */}
               <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xs space-y-3">
