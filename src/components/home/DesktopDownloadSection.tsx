@@ -18,12 +18,12 @@ import { cn } from '@/lib/utils';
 
 export default function DesktopDownloadSection() {
   const [userOS, setUserOS] = useState<'macos' | 'windows' | 'linux'>('macos');
-  const [copiedBrew, setCopiedBrew] = useState(false);
+  const [copiedCmd, setCopiedCmd] = useState(false);
 
-  const handleCopyBrew = () => {
-    navigator.clipboard.writeText('brew install --cask johndivina/tap/resursee');
-    setCopiedBrew(true);
-    setTimeout(() => setCopiedBrew(false), 2000);
+  const handleCopyCmd = () => {
+    navigator.clipboard.writeText('curl -fsSL https://resursee.vercel.app/install.sh | bash');
+    setCopiedCmd(true);
+    setTimeout(() => setCopiedCmd(false), 2000);
   };
 
   useEffect(() => {
@@ -119,11 +119,11 @@ export default function DesktopDownloadSection() {
             <div className="mt-6 pt-4 border-t border-current/10 space-y-2.5">
               <div className="flex items-center justify-between rounded-xl border border-current/20 bg-current/5 p-2">
                 <div className="font-mono text-[11px] select-all overflow-x-auto truncate mr-2 pl-1">
-                  brew install --cask johndivina/tap/resursee
+                  curl -fsSL https://resursee.vercel.app/install.sh | bash
                 </div>
                 <button
                   type="button"
-                  onClick={handleCopyBrew}
+                  onClick={handleCopyCmd}
                   className={cn(
                     "flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all shrink-0 cursor-pointer shadow-2xs",
                     userOS === 'macos'
@@ -131,8 +131,8 @@ export default function DesktopDownloadSection() {
                       : "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
                   )}
                 >
-                  {copiedBrew ? <IconCheck size={12} /> : <IconCopy size={12} />}
-                  <span>{copiedBrew ? 'Copied' : 'Copy'}</span>
+                  {copiedCmd ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                  <span>{copiedCmd ? 'Copied' : 'Copy'}</span>
                 </button>
               </div>
 

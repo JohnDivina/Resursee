@@ -91,15 +91,15 @@ export default function DownloadPage() {
                   <div className="flex items-center justify-between rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 p-2 sm:p-2.5 shadow-sm">
                     <div className="flex items-center gap-2 pl-3 font-mono text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 overflow-x-auto select-all">
                       <span className="text-neutral-400 select-none">$</span>
-                      <span>brew install --cask johndivina/tap/resursee</span>
+                      <span>curl -fsSL https://resursee.vercel.app/install.sh | bash</span>
                     </div>
                     <button
                       type="button"
-                      onClick={handleCopyBrew}
+                      onClick={handleCopyCurl}
                       className="flex items-center gap-1.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-4 py-2 text-xs font-bold transition-all hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95 cursor-pointer shrink-0 shadow-xs"
                     >
-                      {copiedBrew ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                      <span>{copiedBrew ? 'Copied!' : 'Copy Command'}</span>
+                      {copiedCurl ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                      <span>{copiedCurl ? 'Copied!' : 'Copy Command'}</span>
                     </button>
                   </div>
                   <div className="flex items-center justify-center text-[11px] text-neutral-500">
@@ -187,7 +187,7 @@ export default function DownloadPage() {
                       </div>
                       <div>
                         <h3 className="text-base font-bold text-[var(--color-ink)]">
-                          Resursee for macOS (Homebrew Cask)
+                          Resursee for macOS (Apple Silicon)
                         </h3>
                         <p className="text-xs text-[var(--color-ink-muted)]">
                           Version 0.1.0 • Apple Silicon (M1, M2, M3, M4) • macOS 11.0+
@@ -204,58 +204,54 @@ export default function DownloadPage() {
                     </a>
                   </div>
 
-                  {/* Primary Method: Homebrew Cask */}
+                  {/* Primary Method: 1-Line Direct Install */}
                   <div className="rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 p-5 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
                         <span className="flex h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
-                        <span>Recommended: Install via Homebrew Cask</span>
+                        <span>Recommended: 1-Line Terminal Install</span>
                       </div>
                     </div>
 
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Homebrew installs directly into <code className="font-mono">/Applications/Resursee.app</code>, automatically bypasses Gatekeeper quarantine, and supports 1-command updates.
+                      Downloads the application directly, installs to <code className="font-mono">/Applications/Resursee.app</code>, configures macOS security authorization, and launches immediately.
                     </p>
 
                     <div className="flex items-center justify-between rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-200/70 dark:bg-neutral-800 p-2 sm:p-2.5">
                       <div className="flex items-center gap-2 pl-2 font-mono text-xs sm:text-sm text-neutral-900 dark:text-neutral-100 overflow-x-auto select-all">
                         <span className="text-neutral-400 select-none">$</span>
-                        <span>brew install --cask johndivina/tap/resursee</span>
+                        <span>curl -fsSL https://resursee.vercel.app/install.sh | bash</span>
                       </div>
                       <button
                         type="button"
-                        onClick={handleCopyBrew}
+                        onClick={handleCopyCurl}
                         className="flex items-center gap-1.5 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold transition-all hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95 cursor-pointer shrink-0 shadow-xs"
                       >
-                        {copiedBrew ? <IconCheck size={13} /> : <IconCopy size={13} />}
-                        <span>{copiedBrew ? 'Copied' : 'Copy'}</span>
+                        {copiedCurl ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        <span>{copiedCurl ? 'Copied' : 'Copy'}</span>
                       </button>
                     </div>
-
-                    <p className="text-[11px] font-mono text-neutral-500 pt-1">
-                      To update later: <code className="text-neutral-800 dark:text-neutral-200">brew upgrade --cask resursee</code>
-                    </p>
                   </div>
 
-                  {/* Secondary Terminal Method: Curl Script */}
+                  {/* Secondary Method: Homebrew Cask */}
                   <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-4 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[11px] text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
                         <IconTerminal2 size={14} />
-                        <span>No Homebrew? 1-Line Direct Terminal Install</span>
+                        <span>Developer Option: Homebrew Cask</span>
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-200/50 dark:bg-neutral-800/80 p-2">
                       <div className="font-mono text-[11px] text-neutral-900 dark:text-neutral-100 select-all overflow-x-auto">
-                        curl -fsSL https://resursee.vercel.app/install.sh | bash
+                        brew install --cask johndivina/tap/resursee
                       </div>
                       <button
                         type="button"
-                        onClick={handleCopyCurl}
+                        onClick={handleCopyBrew}
                         className="text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white px-2 cursor-pointer"
                       >
-                        {copiedCurl ? 'Copied!' : 'Copy'}
+                        {copiedBrew ? 'Copied!' : 'Copy'}
                       </button>
                     </div>
                   </div>
