@@ -15,7 +15,7 @@ export const DEFAULT_OLLAMA_ENDPOINT = 'http://localhost:11434';
  */
 export async function checkOllamaConnection(
   endpoint: string = DEFAULT_OLLAMA_ENDPOINT,
-  timeoutMs: number = 2500
+  timeoutMs: number = 1500
 ): Promise<{ status: boolean; models: OllamaModel[]; error?: string }> {
   const tryEndpoint = async (url: string) => {
     const controller = new AbortController();

@@ -1587,7 +1587,7 @@ export default function AIHubPage() {
     setIsCheckingConnection(true);
     setConnectionStatus('checking');
     try {
-      const result = await checkOllamaConnection(targetEndpoint, 2500);
+      const result = await checkOllamaConnection(targetEndpoint, 1200);
       if (result.status) {
         setConnectionStatus('connected');
         setInstalledModels(result.models);
@@ -1596,7 +1596,7 @@ export default function AIHubPage() {
         setIsLocalHost(true);
 
         // Check running models in VRAM
-        const running = await getRunningModels(targetEndpoint);
+        const running = await getRunningModels(targetEndpoint, 1200);
         setRunningModels(running);
 
         // If current model not installed or is an embedding model, switch strictly to first available installed generative model
@@ -1659,7 +1659,7 @@ export default function AIHubPage() {
 
     refreshConnection(activeEp);
 
-    // Auto-reconnect heartbeat: poll every 3.5s when disconnected to automatically detect local Ollama
+    // Auto-reconnect heartbeat: poll every 4s when disconnected to automatically detect local Ollama
     const heartbeatTimer = setInterval(() => {
       setConnectionStatus((currentStatus) => {
         if (currentStatus !== 'connected') {
@@ -1667,7 +1667,7 @@ export default function AIHubPage() {
         }
         return currentStatus;
       });
-    }, 3500);
+    }, 4000);
 
     return () => clearInterval(heartbeatTimer);
   }, []);
@@ -1696,13 +1696,13 @@ export default function AIHubPage() {
 
         setDaemonNotification({
           type: 'info',
-          message: 'Launching Ollama engine... waiting for models to load',
+          message: 'Launching Ollama engine... checking connection',
         });
 
         let connected = false;
-        for (let i = 1; i <= 20; i++) {
+        for (let i = 1; i <= 5; i++) {
           await new Promise((r) => setTimeout(r, 600));
-          const check = await checkOllamaConnection(endpoint);
+          const check = await checkOllamaConnection(endpoint, 600);
           if (check.status) {
             setConnectionStatus('connected');
             setInstalledModels(check.models);
@@ -1721,18 +1721,22 @@ export default function AIHubPage() {
 
         if (connected) return;
 
+        const isHttpsHost = typeof window !== 'undefined' && window.location.protocol === 'https:';
         setDaemonNotification({
           type: 'info',
-          message: 'Ollama is starting up in the background. It will automatically connect once initialized.',
+          message: isHttpsHost
+            ? 'Ollama launch signal sent. Browser security blocks remote https:// from accessing local http://localhost:11434. To stream from your models, run Resursee locally (http://localhost:3000).'
+            : 'Ollama is starting up. It will connect automatically once loaded.',
         });
+        setTimeout(() => setDaemonNotification(null), 6000);
         return;
       }
 
-      // Poll up to 7 times (3.5s total) for connection
+      // Poll up to 5 times for local daemon connection
       let connected = false;
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 5; i++) {
         await new Promise((r) => setTimeout(r, 500));
-        const check = await checkOllamaConnection(endpoint);
+        const check = await checkOllamaConnection(endpoint, 600);
         if (check.status) {
           setConnectionStatus('connected');
           setInstalledModels(check.models);
@@ -1751,12 +1755,14 @@ export default function AIHubPage() {
           type: 'info',
           message: 'Ollama launch triggered. It may take a moment to initialize.',
         });
+        setTimeout(() => setDaemonNotification(null), 5000);
       }
     } catch (err: any) {
       setDaemonNotification({
         type: 'error',
         message: err.message || 'Failed to start Ollama daemon.',
       });
+      setTimeout(() => setDaemonNotification(null), 5000);
     } finally {
       setIsStartingDaemon(false);
     }
@@ -2770,8 +2776,8 @@ ${
                     connectionStatus === 'connected'
                       ? 'bg-neutral-900 dark:bg-white'
                       : connectionStatus === 'checking' || isStartingDaemon || isStoppingDaemon
-                      ? 'bg-amber-500 animate-ping'
-                      : 'bg-neutral-400'
+                      ? 'bg-neutral-500 dark:bg-neutral-400 animate-pulse'
+                      : 'bg-neutral-400 dark:bg-neutral-600'
                   )}
                 />
                 <motion.span
@@ -2867,7 +2873,7 @@ ${
               >
                 {isStoppingDaemon ? (
                   <>
-                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                     <span>Stopping...</span>
                   </>
                 ) : (
@@ -2888,7 +2894,7 @@ ${
               >
                 {isStartingDaemon ? (
                   <>
-                    <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-pulse" />
                     <span>Starting...</span>
                   </>
                 ) : (
@@ -2959,7 +2965,7 @@ ${
               className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-4 py-2 text-xs font-mono text-neutral-800 dark:text-neutral-200 flex items-center justify-between z-10"
             >
               <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                 <span>{daemonNotification.message}</span>
               </div>
               <button
@@ -3507,7 +3513,7 @@ ${
 
                 {isGenerating && (
                   <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink-muted)] p-3 rounded-xl bg-[var(--color-paper-card)] border border-[var(--color-rule-subtle)] w-max animate-pulse">
-                    <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                    <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                     <span>Streaming local inference from {selectedModel}...</span>
                   </div>
                 )}
@@ -3596,7 +3602,7 @@ ${
                   </span>
                   {runningModels.length > 0 && (
                     <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-3 py-1 font-mono text-xs font-bold flex items-center gap-1.5 shadow-2xs">
-                      <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping shrink-0" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse shrink-0" />
                       <span>VRAM: {runningModels[0]}</span>
                     </span>
                   )}
@@ -3659,7 +3665,7 @@ ${
                                 {downloadingModelId}
                               </span>
                               <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold inline-flex items-center gap-1">
-                                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                                 Downloading
                               </span>
                             </div>
@@ -4896,7 +4902,7 @@ ${
                     >
                       {downloadingModelId === visionSelectedModel ? (
                         <>
-                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                           <span>Downloading {downloadProgress > 0 ? `${downloadProgress}%` : ''}</span>
                         </>
                       ) : (
@@ -4925,7 +4931,7 @@ ${
                   >
                     {isStartingDaemon ? (
                       <>
-                        <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-pulse" />
                         <span>Starting...</span>
                       </>
                     ) : (
@@ -5197,7 +5203,7 @@ ${
                         </span>
                         {isAnalyzingVision && (
                           <span className="flex items-center gap-1 text-[10px] font-mono text-[var(--color-ink-muted)] animate-pulse">
-                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                             <span>Streaming tokens...</span>
                           </span>
                         )}
@@ -5235,7 +5241,7 @@ ${
                         />
                       ) : isAnalyzingVision ? (
                         <div className="flex items-center justify-center py-12 text-xs font-mono text-[var(--color-ink-muted)] gap-2">
-                          <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                          <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                           <span>Processing image tensors and generating visual explanation...</span>
                         </div>
                       ) : (
@@ -5294,7 +5300,7 @@ ${
                   >
                     {isStartingDaemon ? (
                       <>
-                        <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-pulse" />
                         <span>Starting...</span>
                       </>
                     ) : (
@@ -5364,7 +5370,7 @@ ${
                         >
                           {downloadingModelId === ragEmbeddingModel ? (
                             <>
-                              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                               <span>Downloading {downloadProgress > 0 ? `${downloadProgress}%` : ''}</span>
                             </>
                           ) : (
@@ -5431,7 +5437,7 @@ ${
                         >
                           {downloadingModelId === ragSynthesisModel ? (
                             <>
-                              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                               <span>Downloading {downloadProgress > 0 ? `${downloadProgress}%` : ''}</span>
                             </>
                           ) : (
@@ -5717,7 +5723,7 @@ ${
 
                         {isGeneratingRagAnswer && (
                           <span className="flex items-center gap-1 text-[10px] font-mono text-[var(--color-ink-muted)] animate-pulse">
-                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                             <span>Synthesizing...</span>
                           </span>
                         )}
@@ -5756,7 +5762,7 @@ ${
                           />
                         ) : isGeneratingRagAnswer ? (
                           <div className="flex items-center justify-center py-12 text-xs font-mono text-[var(--color-ink-muted)] gap-2">
-                            <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                            <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                             <span>Retrieving vector context and generating grounded answer...</span>
                           </div>
                         ) : (
@@ -5952,7 +5958,7 @@ ${
                       >
                         {isStoppingDaemon ? (
                           <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                             <span>Stopping...</span>
                           </>
                         ) : (
@@ -5973,7 +5979,7 @@ ${
                       >
                         {isStartingDaemon ? (
                           <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-ping" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-pulse" />
                             <span>Starting...</span>
                           </>
                         ) : (
@@ -6380,7 +6386,7 @@ ${
               <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
                 {isLoadingInspect ? (
                   <div className="flex items-center justify-center py-12 text-xs font-mono text-[var(--color-ink-muted)] gap-2 animate-pulse">
-                    <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
+                    <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                     <span>Querying local Ollama daemon for Modelfile and GGUF parameters...</span>
                   </div>
                 ) : inspectData?.error ? (
