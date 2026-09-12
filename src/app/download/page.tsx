@@ -190,16 +190,30 @@ export default function DownloadPage() {
                       <li>Launch Resursee from Launchpad or Spotlight.</li>
                     </ol>
 
+                    {/* 1-Line Zero-Warning Terminal Install */}
+                    <div className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-200/60 dark:bg-neutral-800/80 p-3 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[11px] text-neutral-900 dark:text-white flex items-center gap-1.5">
+                          <IconTerminal2 size={13} />
+                          <span>1-Line Direct Terminal Install (Zero Warnings)</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-neutral-500">Bypasses Gatekeeper</span>
+                      </div>
+                      <pre className="rounded-lg bg-neutral-900 text-neutral-100 p-2.5 font-mono text-[11px] overflow-x-auto select-all">
+curl -fsSL https://resursee.vercel.app/install.sh | bash
+                      </pre>
+                    </div>
+
                     <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 text-[11px] text-neutral-600 dark:text-neutral-400 space-y-1">
                       <p className="font-semibold text-neutral-900 dark:text-neutral-200">
                         🛡️ If macOS shows &quot;Resursee is damaged and can&apos;t be opened&quot;:
                       </p>
                       <p>
-                        This is macOS Gatekeeper for open-source apps downloaded from the web. To allow it, go to <span className="font-semibold text-neutral-900 dark:text-white">System Settings → Privacy & Security</span>, scroll to Security, and click <span className="font-semibold text-neutral-900 dark:text-white">&quot;Open Anyway&quot;</span>.
+                        This is macOS Gatekeeper for open-source apps downloaded from the web. To unlock in 1 second, run in Terminal:
                       </p>
-                      <p className="font-mono text-[10px] text-neutral-500 pt-1">
-                        Terminal shortcut: xattr -cr /Applications/Resursee.app
-                      </p>
+                      <pre className="rounded-lg bg-neutral-900 text-neutral-100 p-2 font-mono text-[10.5px] select-all">
+xattr -cr /Applications/Resursee.app
+                      </pre>
                     </div>
                   </div>
                 </div>
