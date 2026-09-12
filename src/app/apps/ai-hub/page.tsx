@@ -35,6 +35,13 @@ import {
   IconAlertTriangle,
   IconLayersLinked,
   IconDisc,
+  IconBook,
+  IconBrandApple,
+  IconBrandWindows,
+  IconBrandUbuntu,
+  IconExternalLink,
+  IconCompass,
+  IconShieldCheck,
 } from '@tabler/icons-react';
 import {
   checkOllamaConnection,
@@ -50,6 +57,7 @@ import {
   getOllamaEmbedding,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
+import { isLocalEnvironment } from '@/lib/envDetector';
 import {
   OllamaModel,
   OllamaConnectionStatus,
@@ -60,7 +68,7 @@ import {
 } from '@/types/aiHub';
 
 // --- Types ---
-type ActiveTab = 'chat' | 'models' | 'vision' | 'rag' | 'settings';
+type ActiveTab = 'guide' | 'chat' | 'models' | 'vision' | 'rag' | 'settings';
 
 interface ModelItem {
   id: string;
@@ -842,6 +850,13 @@ export default function AIHubPage() {
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // Setup Guide & Environment State
+  const [guideOS, setGuideOS] = useState<'macos' | 'windows' | 'linux'>('macos');
+  const [isLocalHost, setIsLocalHost] = useState<boolean | null>(null);
+  const [showRemoteNoticeModal, setShowRemoteNoticeModal] = useState<boolean>(false);
+  const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
+  const [dontShowAgainSession, setDontShowAgainSession] = useState<boolean>(false);
+
   // Live Ollama Bridge State (Phase 1)
   const [endpoint, setEndpoint] = useState<string>(DEFAULT_OLLAMA_ENDPOINT);
   const [connectionStatus, setConnectionStatus] = useState<OllamaConnectionStatus>('checking');
@@ -1210,6 +1225,26 @@ export default function AIHubPage() {
     const savedEndpoint = typeof window !== 'undefined' ? localStorage.getItem('resursee_ollama_endpoint') : null;
     const activeEp = savedEndpoint || DEFAULT_OLLAMA_ENDPOINT;
     setEndpoint(activeEp);
+
+    // Environment detection (Phase 2)
+    const local = isLocalEnvironment();
+    setIsLocalHost(local);
+    if (!local) {
+      setIsPreviewMode(true);
+      const dismissed = typeof window !== 'undefined' ? sessionStorage.getItem('resursee_ai_hub_preview_dismissed') : null;
+      if (!dismissed) {
+        setShowRemoteNoticeModal(true);
+      }
+    }
+
+    // Detect user OS for guide tab default
+    if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent.toLowerCase();
+      if (ua.includes('win')) setGuideOS('windows');
+      else if (ua.includes('linux')) setGuideOS('linux');
+      else setGuideOS('macos');
+    }
+
     refreshConnection(activeEp);
   }, []);
 
@@ -1750,7 +1785,9 @@ Instructions:
               msg.id === assistantId
                 ? {
                     ...msg,
-                    content: `⚠️ Failed to stream from Ollama (${err.message}). Ensure model "${selectedModel}" is pulled locally.`,
+                    content: isPreviewMode
+                      ? `ℹ️ **Cloud Web Preview Mode**: The browser cannot reach a local daemon from a remote website. Run Resursee locally or check the **Setup Guide** to stream real tokens directly from local GPU/CPU weights.`
+                      : `⚠️ Failed to stream from Ollama (${err.message}). Ensure model "${selectedModel}" is pulled locally.`,
                   }
                 : msg
             )
@@ -1771,7 +1808,9 @@ Instructions:
         } else if (inquiry.toLowerCase().includes('quant') || inquiry.toLowerCase().includes('gguf')) {
           replyContent = `**Quantization Comparison: Q4_K_M vs Q8_0**\n\n- **Q4_K_M (4-bit)**: Compresses weights down to ~4.5 bits/weight. Ideal for consumer laptops (fits in 8GB–16GB RAM) with minimal perplexity degradation (< 0.15 PPL loss).\n- **Q8_0 (8-bit)**: Near-lossless precision matching original FP16 checkpoints, but requires double the VRAM.\n\nFor local execution on edge hardware, **Q4_K_M** delivers the optimal speed-to-accuracy ratio.`;
         } else {
-          replyContent = `Processed query via local **${selectedModel}** engine.\n\n*Running in demo simulation mode*. Connect local Ollama at \`${endpoint}\` to stream live tokens from GPU/CPU weights.`;
+          replyContent = isPreviewMode
+            ? `*Running in Cloud Web Preview Mode*. Simulated response from **${selectedModel || 'Llama 3.2'}**.\n\nTo stream real tokens directly from your machine's GPU/CPU with 100% private offline compute, install Ollama and run Resursee locally!`
+            : `Processed query via local **${selectedModel || 'Ollama'}** engine.\n\n*Running in demo simulation mode*. Connect local Ollama at \`${endpoint}\` to stream live tokens from GPU/CPU weights.`;
         }
 
         const assistantMsg: ChatMessage = {
@@ -1974,6 +2013,12 @@ Instructions:
   // Navigation Links for Aceternity Sidebar
   const sidebarLinks: Links[] = [
     {
+      label: 'Setup Guide',
+      onClick: () => setActiveTab('guide'),
+      icon: <IconBook size={18} className="shrink-0" />,
+      isActive: activeTab === 'guide',
+    },
+    {
       label: 'Chat & Inference',
       onClick: () => setActiveTab('chat'),
       icon: <IconMessageChatbot size={18} className="shrink-0" />,
@@ -1984,7 +2029,7 @@ Instructions:
       onClick: () => setActiveTab('models'),
       icon: <IconCpu size={18} className="shrink-0" />,
       isActive: activeTab === 'models',
-      badge: '8',
+      badge: installedModels.length > 0 ? `${installedModels.length}` : undefined,
     },
     {
       label: 'Vision & OCR',
@@ -2129,6 +2174,7 @@ Instructions:
         <header className="h-14 shrink-0 px-4 sm:px-6 border-b border-[var(--color-rule-subtle)] flex items-center justify-between gap-3 bg-[var(--color-paper-card)]/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-[var(--color-ink)] truncate">
+              {activeTab === 'guide' && 'Ollama Setup & Installation Guide'}
               {activeTab === 'chat' && 'Chat & Inference Studio'}
               {activeTab === 'models' && 'Model Library & Downloader'}
               {activeTab === 'vision' && 'Vision & OCR Multimodal Studio'}
@@ -2146,6 +2192,19 @@ Instructions:
               <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-xs font-mono text-neutral-500 dark:text-neutral-400">
                 <span>0 Models Available</span>
               </div>
+            )}
+
+            {/* Preview Mode Pill if running on remote cloud host */}
+            {isPreviewMode && (
+              <button
+                type="button"
+                onClick={() => setShowRemoteNoticeModal(true)}
+                className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-2.5 py-1 text-[11px] font-mono font-bold text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer shadow-2xs"
+                title="Running in cloud web preview mode. Click for local setup details."
+              >
+                <IconCompass size={13} />
+                <span>Preview Mode (Cloud Web)</span>
+              </button>
             )}
           </div>
 
@@ -2221,13 +2280,18 @@ Instructions:
               </div>
             </div>
 
-            {/* How to Run Locally Button */}
+            {/* Setup Guide Button in Header */}
             <button
               type="button"
-              onClick={() => setIsSetupModalOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 shadow-2xs transition-all cursor-pointer"
+              onClick={() => setActiveTab('guide')}
+              className={cn(
+                'hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 px-3 py-1.5 text-xs font-bold shadow-2xs transition-all cursor-pointer',
+                activeTab === 'guide'
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                  : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200'
+              )}
             >
-              <IconTerminal2 size={15} />
+              <IconBook size={15} />
               <span>Guide</span>
             </button>
 
@@ -2262,6 +2326,519 @@ Instructions:
 
         {/* Studio View Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0">
+          {/* VIEW 0: SETUP & INSTALLATION GUIDE */}
+          {activeTab === 'guide' && (
+            <div className="max-w-4xl mx-auto space-y-6 pb-12">
+              {/* Header Hero */}
+              <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-2xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold">
+                      <IconBook size={20} />
+                    </div>
+                    <div>
+                      <h2 className="text-base sm:text-lg font-extrabold text-[var(--color-ink)]">
+                        Ollama Installation & Engine Setup
+                      </h2>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        AI Hub Studio runs directly on local hardware via Ollama (<code className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 font-mono text-[11px] text-[var(--color-ink)]">http://localhost:11434</code>) for 100% data sovereignty, zero cloud egress, and complete privacy.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* OS Selector Tabs */}
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0">
+                    {[
+                      { id: 'macos', label: 'macOS', icon: <IconBrandApple size={14} /> },
+                      { id: 'windows', label: 'Windows', icon: <IconBrandWindows size={14} /> },
+                      { id: 'linux', label: 'Linux', icon: <IconBrandUbuntu size={14} /> },
+                    ].map((os) => (
+                      <button
+                        key={os.id}
+                        type="button"
+                        onClick={() => setGuideOS(os.id as any)}
+                        className={cn(
+                          'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                          guideOS === os.id
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                        )}
+                      >
+                        {os.icon}
+                        <span>{os.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Engine Status Banner */}
+              <div
+                className={cn(
+                  'rounded-2xl border p-5 shadow-2xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4',
+                  connectionStatus === 'connected'
+                    ? 'border-neutral-900 dark:border-white bg-[var(--color-paper-card)]'
+                    : 'border-[var(--color-rule-strong)] bg-[var(--color-paper-card)]'
+                )}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold',
+                      connectionStatus === 'connected'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700'
+                    )}
+                  >
+                    {connectionStatus === 'connected' ? <IconCheck size={18} /> : <IconAlertCircle size={18} />}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-[var(--color-ink)]">
+                        {connectionStatus === 'connected'
+                          ? 'Ollama Engine is Active & Connected'
+                          : 'Ollama Engine is Not Running'}
+                      </h3>
+                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
+                        {connectionStatus === 'connected'
+                          ? `${installedModels.length} models installed on disk`
+                          : 'Port 11434 unreachable'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
+                      {connectionStatus === 'connected'
+                        ? `Local daemon responding at ${endpoint}. Hardware weights loaded directly into RAM/VRAM.`
+                        : 'Follow the steps below to install Ollama or start the local background daemon.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {connectionStatus === 'connected' ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('chat')}
+                      className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer"
+                    >
+                      <span>Proceed to Chat</span>
+                      <span>→</span>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleStartOllama}
+                        disabled={isStartingDaemon}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                      >
+                        <IconPlayerPlay size={13} />
+                        <span>Start Ollama</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => refreshConnection()}
+                        disabled={isCheckingConnection}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                        title="Probe port 11434 again"
+                      >
+                        <IconRefresh size={13} className={cn(isCheckingConnection && 'animate-spin')} />
+                        <span>Rescan</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Multi-OS Step-by-Step Instructions */}
+              {guideOS === 'macos' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <IconBrandApple size={18} className="text-[var(--color-ink)]" />
+                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
+                      Installing Ollama on macOS (Apple Silicon & Intel)
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Step 1: Download */}
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 1
+                        </span>
+                        <span>Download Ollama App</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Download the official universal macOS binary package (.zip) or install via Homebrew package manager.
+                      </p>
+                      <div className="space-y-2 pt-1">
+                        <a
+                          href="https://ollama.com/download/Ollama-darwin.zip"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-2 text-xs font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer"
+                        >
+                          <IconDownload size={14} />
+                          <span>Download Ollama for macOS (.zip)</span>
+                        </a>
+
+                        <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                          <span>brew install ollama</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy('brew install ollama', 'guide-brew')}
+                            className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                          >
+                            {copiedKey === 'guide-brew' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 2: Install & Run */}
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 2
+                        </span>
+                        <span>Move to Applications & Launch</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Unzip the archive and drag <strong>Ollama.app</strong> into your macOS <code className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 font-mono text-[11px] text-[var(--color-ink)]">/Applications</code> folder.
+                      </p>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Launch Ollama from Spotlight or Applications. When launched, Ollama automatically sets up background Metal acceleration on Apple Silicon (M1/M2/M3/M4).
+                      </p>
+                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                        <span>open -a Ollama</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy('open -a Ollama', 'guide-open-app')}
+                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          {copiedKey === 'guide-open-app' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Step 3: Verify Daemon */}
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 3
+                        </span>
+                        <span>Verify Terminal CLI</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Open your macOS Terminal to verify that the CLI command is in your path and check the active version.
+                      </p>
+                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                        <span>ollama --version</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy('ollama --version', 'guide-version')}
+                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          {copiedKey === 'guide-version' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Step 4: Pull Your First Model */}
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 4
+                        </span>
+                        <span>Pull Your First Model</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Pull Meta’s compact Llama 3.2 (3B) or Alibaba’s Qwen 2.5 (1.5B). Once downloaded, it will appear in Resursee immediately:
+                      </p>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                          <span>ollama run llama3.2:latest</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy('ollama run llama3.2:latest', 'guide-llama')}
+                            className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                          >
+                            {copiedKey === 'guide-llama' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                          <span>ollama run qwen2.5:1.5b</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy('ollama run qwen2.5:1.5b', 'guide-qwen')}
+                            className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                          >
+                            {copiedKey === 'guide-qwen' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {guideOS === 'windows' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <IconBrandWindows size={18} className="text-[var(--color-ink)]" />
+                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
+                      Installing Ollama on Windows (10 & 11, x64 / ARM64)
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 1
+                        </span>
+                        <span>Download Windows Installer</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Download the official Ollama Windows installer executable (.exe) built for modern Windows 10 & 11 systems.
+                      </p>
+                      <a
+                        href="https://ollama.com/download/OllamaSetup.exe"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-2 text-xs font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer"
+                      >
+                        <IconDownload size={14} />
+                        <span>Download Ollama for Windows (.exe)</span>
+                      </a>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 2
+                        </span>
+                        <span>Run Setup & Automatic GPU Config</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Double-click <strong>OllamaSetup.exe</strong>. The installer automatically detects your NVIDIA CUDA or AMD ROCm GPUs to enable hardware acceleration.
+                      </p>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Once completed, a small llama icon will appear in your Windows system tray at the bottom right.
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 3
+                        </span>
+                        <span>Verify in PowerShell / CMD</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Open PowerShell or Windows Terminal and test connection:
+                      </p>
+                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                        <span>ollama --version</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy('ollama --version', 'guide-win-ver')}
+                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          {copiedKey === 'guide-win-ver' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 4
+                        </span>
+                        <span>Pull First Model on Windows</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Run this in PowerShell to download model weights:
+                      </p>
+                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                        <span>ollama run llama3.2:latest</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy('ollama run llama3.2:latest', 'guide-win-llama')}
+                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          {copiedKey === 'guide-win-llama' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {guideOS === 'linux' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <IconBrandUbuntu size={18} className="text-[var(--color-ink)]" />
+                    <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
+                      Installing Ollama on Linux (Ubuntu, Debian, Fedora, Arch)
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 1
+                        </span>
+                        <span>One-Line Shell Script</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Run the official curl script in your terminal. It installs the binary and configures the systemd background service.
+                      </p>
+                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                        <span className="truncate">curl -fsSL https://ollama.com/install.sh | sh</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy('curl -fsSL https://ollama.com/install.sh | sh', 'guide-linux-curl')}
+                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          {copiedKey === 'guide-linux-curl' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 2
+                        </span>
+                        <span>Verify Systemd Daemon</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Ollama runs as a background service automatically on Linux. Confirm it is active:
+                      </p>
+                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                        <span>systemctl status ollama</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy('systemctl status ollama', 'guide-linux-status')}
+                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          {copiedKey === 'guide-linux-status' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 3
+                        </span>
+                        <span>Pull Model via Terminal</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        Download your preferred model into Linux disk storage:
+                      </p>
+                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                        <span>ollama run llama3.2:latest</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy('ollama run llama3.2:latest', 'guide-linux-llama')}
+                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          {copiedKey === 'guide-linux-llama' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          STEP 4
+                        </span>
+                        <span>Configure Remote Host (Optional)</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                        If running Ollama on a remote server or separate machine on your local network:
+                      </p>
+                      <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-xs font-mono text-[var(--color-ink)]">
+                        <span className="truncate">OLLAMA_HOST=0.0.0.0 ollama serve</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy('OLLAMA_HOST=0.0.0.0 ollama serve', 'guide-linux-host')}
+                          className="hover:text-[var(--color-ink-strong)] transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          {copiedKey === 'guide-linux-host' ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Hardware & FAQ Card */}
+              <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xs space-y-3">
+                <h3 className="text-sm font-extrabold text-[var(--color-ink)]">
+                  Frequently Asked Questions & Sizing Advice
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                  <div className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-1">
+                    <span className="font-bold text-xs text-[var(--color-ink)] block">
+                      ⚡ 0.5B – 3B Models
+                    </span>
+                    <p className="text-[11px] text-[var(--color-ink-muted)] leading-snug">
+                      Requires 2GB–4GB RAM. Runs smoothly on any standard laptop, MacBook Air, or mini PC with instant response times.
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-1">
+                    <span className="font-bold text-xs text-[var(--color-ink)] block">
+                      🧠 7B – 8B Models
+                    </span>
+                    <p className="text-[11px] text-[var(--color-ink-muted)] leading-snug">
+                      Requires 8GB–16GB RAM / Unified Memory. Exceptional reasoning, coding, and roleplay on Apple Silicon or RTX 3060+.
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-1">
+                    <span className="font-bold text-xs text-[var(--color-ink)] block">
+                      🔒 Zero Cloud Egress
+                    </span>
+                    <p className="text-[11px] text-[var(--color-ink-muted)] leading-snug">
+                      Your chats, documents, images, and model weights never leave your physical device. 100% private and air-gapped.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Next Step Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] shadow-xs">
+                <div>
+                  <h4 className="text-xs font-bold text-[var(--color-ink)]">
+                    Ready to start chatting?
+                  </h4>
+                  <p className="text-[11px] text-[var(--color-ink-muted)]">
+                    Once Ollama is running, jump into Chat & Inference or explore the full Model Library.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('models')}
+                    className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] px-3.5 py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer shadow-2xs"
+                  >
+                    Model Library (45+)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('chat')}
+                    className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+                  >
+                    Go to Chat & Inference →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* VIEW 1: CHAT & INFERENCE */}
           {activeTab === 'chat' && (
             <div className="max-w-4xl mx-auto h-full flex flex-col justify-between gap-4">
@@ -4559,6 +5136,118 @@ Instructions:
                 >
                   <IconPlus size={13} />
                   <span>Index Document</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🌐 Remote Cloud Environment Notice Modal (Phase 2) */}
+      <AnimatePresence>
+        {showRemoteNoticeModal && (
+          <div
+            onClick={() => setShowRemoteNoticeModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-6 shadow-2xl space-y-5 text-left"
+            >
+              {/* Modal Header */}
+              <div className="flex items-start justify-between gap-3 border-b border-[var(--color-rule-subtle)] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold">
+                    <IconCompass size={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-[var(--color-ink)]">
+                      Local-Only AI Engine Notice
+                    </h3>
+                    <p className="text-xs text-[var(--color-ink-muted)]">
+                      Zero cloud egress • 100% private offline compute
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRemoteNoticeModal(false)}
+                  className="p-1 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] cursor-pointer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              {/* Explanatory Body */}
+              <div className="space-y-3 text-xs text-[var(--color-ink-muted)] leading-relaxed">
+                <p>
+                  You are accessing Resursee via a <strong className="text-[var(--color-ink)]">remote web host</strong>. The <strong>AI Hub Studio</strong> is designed to run models directly on your physical hardware via Ollama (<code className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[11px] text-[var(--color-ink)]">http://localhost:11434</code>) to guarantee complete data privacy with zero cloud subscription fees.
+                </p>
+                <p>
+                  Modern web browsers restrict remote websites from making silent requests to a visitor’s local computer. To experience real GPU/CPU inference, run Resursee locally or install Ollama on your machine.
+                </p>
+              </div>
+
+              {/* What You Can Do Card */}
+              <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-xs text-neutral-800 dark:text-neutral-200">
+                  <IconShieldCheck size={16} />
+                  <span>Your Options:</span>
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-[11.5px] text-neutral-700 dark:text-neutral-300">
+                  <li>
+                    <strong className="text-neutral-900 dark:text-neutral-100">Explore in Preview Mode</strong>: Browse the studio interface, 45+ model library, and sample RAG documents with interactive simulated responses.
+                  </li>
+                  <li>
+                    <strong className="text-neutral-900 dark:text-neutral-100">Setup Guide</strong>: Follow quick step-by-step instructions to install Ollama on macOS, Windows, or Linux.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Dismiss for session checkbox */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="dontShowAgain"
+                  checked={dontShowAgainSession}
+                  onChange={(e) => setDontShowAgainSession(e.target.checked)}
+                  className="rounded border-[var(--color-rule-strong)] text-neutral-900 dark:text-white cursor-pointer"
+                />
+                <label htmlFor="dontShowAgain" className="text-xs text-[var(--color-ink-muted)] cursor-pointer select-none">
+                  Don&apos;t show this notice again for this session
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-2 pt-2 border-t border-[var(--color-rule-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (dontShowAgainSession && typeof window !== 'undefined') {
+                      sessionStorage.setItem('resursee_ai_hub_preview_dismissed', 'true');
+                    }
+                    setShowRemoteNoticeModal(false);
+                    setIsPreviewMode(true);
+                  }}
+                  className="w-full sm:flex-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-2 text-xs font-bold transition-all cursor-pointer text-center shadow-2xs hover:opacity-90"
+                >
+                  Explore in Preview Mode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (dontShowAgainSession && typeof window !== 'undefined') {
+                      sessionStorage.setItem('resursee_ai_hub_preview_dismissed', 'true');
+                    }
+                    setShowRemoteNoticeModal(false);
+                    setActiveTab('guide');
+                  }}
+                  className="w-full sm:flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-2 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer text-center shadow-2xs"
+                >
+                  View Setup Guide
                 </button>
               </div>
             </motion.div>
