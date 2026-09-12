@@ -41,3 +41,11 @@ export function isLocalEnvironment(): boolean {
   // Otherwise, it's running on a remote cloud deployment (e.g. Netlify, Vercel, public domain)
   return false;
 }
+
+/**
+ * Specifically checks if the current runtime is inside the native Tauri desktop app container.
+ */
+export function isTauriDesktop(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Boolean((window as any).__TAURI_INTERNALS__) || Boolean((window as any).__TAURI__);
+}

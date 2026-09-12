@@ -1,0 +1,70 @@
+name: Release Desktop App (macOS, Windows, Linux)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target universal-apple-darwin'
+          - platform: 'windows-latest'
+            args: ''
+          - platform: 'ubuntu-22.04'
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev libayatana-appindicator3-dev
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build Next.js
+        run: npm run build
+
+      - name: Build and Package Desktop App via Tauri Action
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Resursee Desktop App ${{ github.ref_name }}'
+          releaseBody: |
+            ## Resursee AI Hub - Native Desktop Release
+            
+            100% offline, zero-cloud-egress AI Hub Studio & Client-Side Media Tools.
+            
+            ### Downloads:
+            - **macOS (Universal M1/M2/M3/M4 & Intel)**: `.dmg`
+            - **Windows (x64)**: `.msi` / `.exe`
+            - **Linux**: `.AppImage` / `.deb`
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
