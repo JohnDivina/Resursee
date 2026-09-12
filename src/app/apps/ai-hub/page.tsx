@@ -1592,6 +1592,8 @@ export default function AIHubPage() {
         setConnectionStatus('connected');
         setInstalledModels(result.models);
         setConnectionError(null);
+        setIsPreviewMode(false);
+        setIsLocalHost(true);
 
         // Check running models in VRAM
         const running = await getRunningModels(targetEndpoint);
@@ -1676,9 +1678,34 @@ export default function AIHubPage() {
       }
 
       if (res.isCloud) {
+        try {
+          window.location.href = 'ollama://';
+        } catch {}
+
+        let connected = false;
+        for (let i = 0; i < 8; i++) {
+          await new Promise((r) => setTimeout(r, 600));
+          const check = await checkOllamaConnection(endpoint);
+          if (check.status) {
+            setConnectionStatus('connected');
+            setInstalledModels(check.models);
+            setIsPreviewMode(false);
+            setIsLocalHost(true);
+            connected = true;
+            setDaemonNotification({
+              type: 'success',
+              message: `Ollama is ready (${check.models.length} models installed)`,
+            });
+            setTimeout(() => setDaemonNotification(null), 4000);
+            break;
+          }
+        }
+
+        if (connected) return;
+
         setDaemonNotification({
           type: 'info',
-          message: res.message || 'Running in cloud environment.',
+          message: 'Connecting to Ollama... Please ensure the Ollama app is open or run "ollama serve" in your terminal.',
         });
         setIsSetupModalOpen(true);
         return;

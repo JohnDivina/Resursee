@@ -23,6 +23,16 @@ cp -R "$MOUNT_DIR/Resursee.app" /Applications/
 echo "==> Authorizing local execution..."
 xattr -cr /Applications/Resursee.app 2>/dev/null || true
 
+echo "==> Configuring Ollama integration..."
+launchctl setenv OLLAMA_ORIGINS "*" 2>/dev/null || true
+if [ -d "/Applications/Ollama.app" ]; then
+  pkill -9 -f Ollama 2>/dev/null || true
+  open -a Ollama 2>/dev/null || true
+elif command -v ollama >/dev/null 2>&1; then
+  pkill -9 -f ollama 2>/dev/null || true
+  OLLAMA_ORIGINS="*" nohup ollama serve >/dev/null 2>&1 &
+fi
+
 echo "==> Resursee installed successfully!"
 echo "==> Launching Resursee..."
 open /Applications/Resursee.app
