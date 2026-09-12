@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlantDiagnosisResult, PlantChatMessage } from '@/types/plantDoctor';
 import { PaperPlaneRight, Sparkle, User, Robot } from '@phosphor-icons/react';
+import { streamOllamaChat, checkOllamaConnection, DEFAULT_OLLAMA_ENDPOINT } from '@/lib/ollamaClient';
 
 interface FollowUpChatProps {
   diagnosis: PlantDiagnosisResult;
@@ -19,8 +20,27 @@ export default function FollowUpChat({ diagnosis }: FollowUpChatProps) {
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [localModel, setLocalModel] = useState<string | null>(null);
 
-  const handleSend = (e?: React.FormEvent) => {
+  useEffect(() => {
+    async function checkLocal() {
+      try {
+        const res = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 2000);
+        if (res.status && res.models.length > 0) {
+          // Prefer vision model or lightweight assistant
+          const pick =
+            res.models.find((m) => m.name.includes('vision') || m.name.includes('llava')) ||
+            res.models[0];
+          setLocalModel(pick.name);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    checkLocal();
+  }, []);
+
+  const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputText.trim()) return;
 
@@ -31,14 +51,69 @@ export default function FollowUpChat({ diagnosis }: FollowUpChatProps) {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    const query = inputText.trim();
     setInputText('');
     setIsTyping(true);
 
-    // Simulate specialized botanical AI response based on diagnosis context
+    // 1. If local Ollama is available, stream answer using local LLM
+    if (localModel) {
+      const botMsgId = `bot-${Date.now()}`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: botMsgId,
+          sender: 'bot',
+          text: '',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+
+      try {
+        const systemPrompt = `You are Dr. Flora, an expert botanical pathologist and agronomy advisor. The user is asking questions about their plant:
+- Plant: ${diagnosis.plantName} (${diagnosis.scientificName})
+- Diagnosis: ${diagnosis.primaryDiagnosis}
+- Pathogen: ${diagnosis.pathogenType}
+- Severity: ${diagnosis.severity}
+- Summary: ${diagnosis.summary}
+- Organic Treatments: ${diagnosis.organicTreatments?.map((t) => t.title).join(', ') || 'N/A'}
+- Chemical Treatments: ${diagnosis.chemicalTreatments?.map((t) => t.title).join(', ') || 'N/A'}
+
+Provide direct, actionable, practical advice in 2-4 concise sentences. Emphasize organic protection, safety, and proper cultural practices.`;
+
+        const ollamaHistory = [
+          { role: 'system' as const, content: systemPrompt },
+          ...newMessages.map((m) => ({
+            role: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
+            content: m.text,
+          })),
+        ];
+
+        await streamOllamaChat(
+          DEFAULT_OLLAMA_ENDPOINT,
+          {
+            model: localModel,
+            messages: ollamaHistory,
+            temperature: 0.3,
+          },
+          (fullText) => {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === botMsgId ? { ...msg, text: fullText } : msg))
+            );
+          }
+        );
+        setIsTyping(false);
+        return;
+      } catch (err) {
+        console.warn('Local Ollama chat failed, falling back to rule engine:', err);
+      }
+    }
+
+    // 2. Fallback rule-based botanical AI response
     setTimeout(() => {
       let reply = '';
-      const lower = userMsg.text.toLowerCase();
+      const lower = query.toLowerCase();
 
       if (lower.includes('spread') || lower.includes('neighbor') || lower.includes('contagious')) {
         reply = `Yes, ${diagnosis.primaryDiagnosis} can spread rapidly if moisture or wind carries fungal spores or pests to neighboring plants in the same family. It is strongly recommended to isolate or prune infected foliage and avoid overhead watering to prevent splashing.`;
@@ -52,16 +127,19 @@ export default function FollowUpChat({ diagnosis }: FollowUpChatProps) {
         reply = `Great question! For ${diagnosis.primaryDiagnosis} on ${diagnosis.plantName}, consistency is key. Ensure proper air circulation, avoid nitrogen-heavy fertilizers while the plant is recovering, and apply the recommended treatments once every 7 days.`;
       }
 
-      const botMsg: PlantChatMessage = {
-        id: `bot-${Date.now()}`,
-        sender: 'bot',
-        text: reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages((prev) => [...prev, botMsg]);
+      setMessages((prev) => {
+        // If botMsg was already added, update it, else append
+        const hasExisting = prev.some((m) => m.id.startsWith('bot-'));
+        const botMsg: PlantChatMessage = {
+          id: `bot-${Date.now()}`,
+          sender: 'bot',
+          text: reply,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        return [...prev.filter((m) => m.text !== ''), botMsg];
+      });
       setIsTyping(false);
-    }, 700);
+    }, 500);
   };
 
   const quickQuestions = [

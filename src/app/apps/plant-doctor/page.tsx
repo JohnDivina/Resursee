@@ -13,6 +13,12 @@ import ScanHistory from '@/components/plant-doctor/ScanHistory';
 import { PlantDiagnosisResult } from '@/types/plantDoctor';
 import { QuotaStatus } from '@/lib/quotaManager';
 import { LoaderFive } from '@/components/ui/loader';
+import { cn } from '@/lib/utils';
+import {
+  detectLocalVisionModel,
+  diagnosePlantOfflineLocal,
+  LocalVisionDetectionResult,
+} from '@/lib/plantVisionLocal';
 import {
   Plant,
   Camera,
@@ -40,7 +46,13 @@ export default function PlantDoctorPage() {
   const [isGuestExceeded, setIsGuestExceeded] = useState(false);
   const [cachedPayload, setCachedPayload] = useState<{ imageBase64?: string; mimeType?: string } | null>(null);
 
-  // Load Session & Scan History
+  // Local Vision Engine & Offline Fallback State (Phase 3)
+  const [localEngine, setLocalEngine] = useState<LocalVisionDetectionResult | null>(null);
+  const [isCheckingLocalEngine, setIsCheckingLocalEngine] = useState<boolean>(true);
+  const [enginePreference, setEnginePreference] = useState<'auto' | 'local' | 'cloud'>('auto');
+  const [selectedLocalModel, setSelectedLocalModel] = useState<string>('');
+
+  // Load Session, Quota & Local Vision Engine
   useEffect(() => {
     async function loadSessionAndQuota() {
       try {
@@ -56,6 +68,27 @@ export default function PlantDoctorPage() {
       }
     }
     loadSessionAndQuota();
+
+    async function probeLocalVision() {
+      setIsCheckingLocalEngine(true);
+      try {
+        const res = await detectLocalVisionModel();
+        setLocalEngine(res);
+        if (res.preferredModel) {
+          setSelectedLocalModel(res.preferredModel);
+        }
+      } catch (err) {
+        console.error('Local vision detection failed:', err);
+      } finally {
+        setIsCheckingLocalEngine(false);
+      }
+    }
+    probeLocalVision();
+
+    const savedPref = localStorage.getItem('resursee_plant_engine_pref');
+    if (savedPref === 'auto' || savedPref === 'local' || savedPref === 'cloud') {
+      setEnginePreference(savedPref);
+    }
 
     try {
       const saved = localStorage.getItem('resursee-plant-doctor-history');
@@ -169,11 +202,37 @@ export default function PlantDoctorPage() {
         setCachedPayload(payload);
       }
 
+      // Phase 3: Check if User explicitly selected Local Engine OR if offline with local vision ready
+      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+      const shouldUseLocalDirectly =
+        enginePreference === 'local' || (!isOnline && localEngine?.hasVisionModel);
+
+      if (shouldUseLocalDirectly && localEngine?.preferredModel && payload.imageBase64) {
+        const activeModel = selectedLocalModel || localEngine.preferredModel;
+        setScanStepText(`Connecting to Local Vision Engine (${activeModel})...`);
+        const localResult = await diagnosePlantOfflineLocal({
+          model: activeModel,
+          imageBase64: payload.imageBase64,
+          onStepChange: (step) => setScanStepText(step),
+        });
+
+        const result: PlantDiagnosisResult = {
+          ...localResult,
+          imageUrl: currentImagePreview || undefined,
+        };
+
+        setDiagnosisResult(result);
+        saveToHistory(result);
+        setCachedPayload(null);
+        return;
+      }
+
       // Execute with automatic retry on cold-start / timeout
       let response: Response | null = null;
       let data: any = null;
       let attempt = 1;
       const maxAttempts = 2;
+      let cloudError: Error | null = null;
 
       while (attempt <= maxAttempts) {
         try {
@@ -186,7 +245,7 @@ export default function PlantDoctorPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(60000), // 60 seconds timeout
+            signal: AbortSignal.timeout(45000), // 45 seconds timeout
           });
 
           if (!response.ok && (response.status >= 500 || response.status === 429) && attempt < maxAttempts) {
@@ -196,23 +255,57 @@ export default function PlantDoctorPage() {
 
           data = await response.json();
           break;
-        } catch (fetchErr: unknown) {
+        } catch (fetchErr: any) {
+          cloudError = fetchErr;
           if (attempt < maxAttempts) {
             attempt++;
             continue;
           }
-          throw fetchErr;
+          break;
         }
       }
 
+      // If cloud failed (network down, timeout, 502/503/504, or 429 quota reached)
+      // Check if we can fallback to local Ollama vision!
       if (!response || !response.ok) {
+        const isQuotaExceeded = data?.isGuestQuotaExceeded || response?.status === 429;
+
+        // Auto Fallback: If local vision model is available in Ollama, rescue the diagnosis!
+        if (
+          enginePreference !== 'cloud' &&
+          localEngine?.hasVisionModel &&
+          localEngine.preferredModel &&
+          payload.imageBase64
+        ) {
+          const activeModel = selectedLocalModel || localEngine.preferredModel;
+          setScanStepText(
+            `Cloud unavailable (${isQuotaExceeded ? 'quota limit reached' : 'offline/timeout'}). Routing to Local Vision Engine (${activeModel})...`
+          );
+
+          const localResult = await diagnosePlantOfflineLocal({
+            model: activeModel,
+            imageBase64: payload.imageBase64,
+            onStepChange: (step) => setScanStepText(step),
+          });
+
+          const result: PlantDiagnosisResult = {
+            ...localResult,
+            imageUrl: currentImagePreview || undefined,
+          };
+
+          setDiagnosisResult(result);
+          saveToHistory(result);
+          setCachedPayload(null);
+          return;
+        }
+
         if (data?.quota) {
           setQuota(data.quota);
         }
         if (data?.isGuestQuotaExceeded) {
           setIsGuestExceeded(true);
         }
-        throw new Error(data?.error || 'Failed to complete leaf diagnosis.');
+        throw new Error(data?.error || cloudError?.message || 'Failed to complete leaf diagnosis.');
       }
 
       if (data?.quota) {
@@ -276,27 +369,74 @@ export default function PlantDoctorPage() {
               <span className="font-semibold text-[var(--color-ink)]">Plant Vision</span>
             </nav>
 
-            {/* Quota Indicator */}
-            {quota && (
-              <div className="flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3.5 py-1 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
-                <span>
-                  {quota.maxQuota > 100
-                    ? 'Admin Access: Unlimited Scans'
-                    : quota.isGuest
-                    ? `Guest Preview: ${quota.remaining} / ${quota.maxQuota} scans left`
-                    : `Daily AI Scans: ${quota.remaining} / ${quota.maxQuota} remaining`}
-                </span>
-                {quota.isGuest && (
-                  <a
-                    href="/api/auth/google?returnTo=/apps/plant-doctor"
-                    className="ml-1 text-[11px] text-[var(--color-primary)] hover:underline"
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Engine Mode / Offline Status Pill */}
+              <div className="flex items-center gap-1.5 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3 py-1 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs">
+                <span
+                  className={cn(
+                    'h-1.5 w-1.5 rounded-full shrink-0',
+                    localEngine?.hasVisionModel
+                      ? 'bg-neutral-900 dark:bg-white'
+                      : 'bg-neutral-400 dark:bg-neutral-600'
+                  )}
+                />
+                <span className="text-[11px] text-[var(--color-ink-muted)]">Engine:</span>
+                <select
+                  value={enginePreference}
+                  onChange={(e) => {
+                    const val = e.target.value as 'auto' | 'local' | 'cloud';
+                    setEnginePreference(val);
+                    localStorage.setItem('resursee_plant_engine_pref', val);
+                  }}
+                  className="bg-transparent text-xs font-mono font-bold text-[var(--color-ink)] focus:outline-hidden cursor-pointer"
+                >
+                  <option value="auto">
+                    Auto Fallback {localEngine?.hasVisionModel ? `(Local ${localEngine.preferredModel})` : '(Cloud Primary)'}
+                  </option>
+                  {localEngine?.hasVisionModel && (
+                    <option value="local">
+                      100% Offline ({selectedLocalModel || localEngine.preferredModel})
+                    </option>
+                  )}
+                  <option value="cloud">Cloud Only (Gemini 2.5)</option>
+                </select>
+                {localEngine?.hasVisionModel ? (
+                  <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[9px] px-1.5 py-0.2 font-mono text-neutral-700 dark:text-neutral-300">
+                    Offline Ready
+                  </span>
+                ) : (
+                  <Link
+                    href="/apps/ai-hub"
+                    className="text-[10px] text-[var(--color-ink-muted)] hover:underline ml-0.5"
+                    title="Visit AI Hub to pull a local vision model"
                   >
-                    (Sign in for 10)
-                  </a>
+                    (Get Vision Model)
+                  </Link>
                 )}
               </div>
-            )}
+
+              {/* Quota Indicator */}
+              {quota && (
+                <div className="flex items-center gap-2 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper-card)] px-3.5 py-1 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
+                  <span>
+                    {quota.maxQuota > 100
+                      ? 'Admin Access: Unlimited Scans'
+                      : quota.isGuest
+                      ? `Guest Preview: ${quota.remaining} / ${quota.maxQuota} scans left`
+                      : `Daily AI Scans: ${quota.remaining} / ${quota.maxQuota} remaining`}
+                  </span>
+                  {quota.isGuest && (
+                    <a
+                      href="/api/auth/google?returnTo=/apps/plant-doctor"
+                      className="ml-1 text-[11px] text-[var(--color-primary)] hover:underline"
+                    >
+                      (Sign in for 10)
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 2. Platform Heading Header */}
@@ -306,7 +446,7 @@ export default function PlantDoctorPage() {
                 Plant Vision
               </h1>
               <p className="mt-1.5 text-xs text-[var(--color-ink-muted)] sm:text-sm leading-relaxed max-w-2xl">
-                AI-powered crop diagnostics. Upload or snap a leaf photo to instantly detect plant diseases, assess foliar health, and receive actionable treatment plans.
+                AI-powered crop diagnostics. Upload or snap a leaf photo to instantly detect plant diseases, assess foliar health, and receive actionable treatment plans. Supports automatic offline fallback via local Ollama vision models.
               </p>
             </div>
 
@@ -330,10 +470,10 @@ export default function PlantDoctorPage() {
                   Guest Preview Limit Reached
                 </h3>
                 <p className="mt-1 max-w-md mx-auto text-xs text-[var(--color-ink-muted)]">
-                  You&apos;ve used your 2 free guest preview scans. Sign in with your Google account to get **10 free AI vision scans every single day**!
+                  You&apos;ve used your 2 free guest preview scans. Sign in with your Google account to get **10 free AI vision scans every single day**, or switch Engine to **100% Offline** via local Ollama!
                 </p>
               </div>
-              <div>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
                 <a
                   href="/api/auth/google?returnTo=/apps/plant-doctor"
                   className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all"
@@ -341,15 +481,38 @@ export default function PlantDoctorPage() {
                   <GoogleLogo size={16} weight="bold" />
                   <span>Sign in with Google (10 Daily Scans)</span>
                 </a>
+                {localEngine?.hasVisionModel && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEnginePreference('local');
+                      localStorage.setItem('resursee_plant_engine_pref', 'local');
+                      setIsGuestExceeded(false);
+                      if (cachedPayload) {
+                        runDiagnosis({ retryPayload: cachedPayload });
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-6 py-3 text-xs font-bold shadow-md hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <span>Switch to Offline Vision ({localEngine.preferredModel})</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
 
-          {/* 4. Error Alert with 1-Click Retry */}
+          {/* 4. Error Alert with 1-Click Retry & Offline Tip */}
           {errorMessage && !isGuestExceeded && (
-            <div className="rounded-[20px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 text-xs font-medium text-[var(--color-ink)] flex flex-wrap items-center justify-between gap-3">
-              <span>{errorMessage}</span>
-              <div className="flex items-center gap-3 shrink-0">
+            <div className="rounded-[20px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 text-xs font-medium text-[var(--color-ink)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span>{errorMessage}</span>
+                {!localEngine?.hasVisionModel && (
+                  <p className="text-[11px] text-[var(--color-ink-muted)]">
+                    💡 Tip: For 100% offline crop diagnostics when internet is down, install a vision model in local Ollama (e.g. <code className="bg-neutral-200 dark:bg-neutral-700 px-1 py-0.5 rounded font-mono">ollama run qwen2.5vl:7b</code> or <code className="bg-neutral-200 dark:bg-neutral-700 px-1 py-0.5 rounded font-mono">ollama run llava:7b</code>) or visit the <Link href="/apps/ai-hub" className="underline font-bold">AI Hub Model Library</Link>.
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
                 {cachedPayload && (
                   <button
                     type="button"
