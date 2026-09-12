@@ -18,6 +18,7 @@ import {
   HouseLine,
   Globe,
   AppWindow,
+  Desktop,
 } from '@phosphor-icons/react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import SoundToggle from '@/components/sound/SoundToggle';
@@ -252,6 +253,19 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             Apps
           </Link>
 
+          {/* Download Desktop App */}
+          <Link
+            href="/download"
+            className={cn(
+              'px-3 py-1.5 rounded-lg tracking-wide transition-all',
+              pathname === '/download'
+                ? 'text-[var(--color-ink)] bg-[var(--color-paper-muted)] font-bold shadow-2xs'
+                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
+            )}
+          >
+            Download
+          </Link>
+
           {/* Resources */}
           <Link
             href="/resources"
@@ -461,6 +475,20 @@ export default function Header({ onOpenSearch }: HeaderProps) {
             >
               <AppWindow size={16} weight="bold" />
               <span>Apps</span>
+            </Link>
+
+            <Link
+              href="/download"
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all flex items-center gap-2.5',
+                pathname === '/download'
+                  ? 'text-[var(--color-ink)] bg-[var(--color-paper-muted)] font-bold'
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]/60'
+              )}
+            >
+              <Desktop size={16} weight="bold" />
+              <span>Download Desktop App</span>
             </Link>
 
             <Link

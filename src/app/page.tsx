@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import HeroSection from '@/components/home/HeroSection';
 import AppsSection from '@/components/home/AppsSection';
+import DesktopDownloadSection from '@/components/home/DesktopDownloadSection';
 import ToolsPreview from '@/components/home/ToolsPreview';
 import CommandPalette from '@/components/search/CommandPalette';
 import { CheckCircle } from '@phosphor-icons/react';
@@ -31,7 +32,10 @@ export default function HomePage() {
         {/* 3. Integrated Full-Stack & AI Applications Suite */}
         <AppsSection />
 
-        {/* 4. Resursee Client-Side Productivity Toolbox (Aceternity Bento Grid) */}
+        {/* 4. Native Desktop App Download Section (macOS, Windows, Linux) */}
+        <DesktopDownloadSection />
+
+        {/* 5. Resursee Client-Side Productivity Toolbox (Aceternity Bento Grid) */}
         <ToolsPreview />
       </main>
 

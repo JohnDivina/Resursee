@@ -3054,128 +3054,29 @@ ${
                 </div>
               </div>
 
-              {/* Native Desktop Application Download Card (Tauri 2.0) */}
-              <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 sm:p-6 shadow-2xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold">
-                      <IconCube size={18} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-sm font-bold text-[var(--color-ink)]">
-                          Resursee Desktop App (Native Standalone)
-                        </h3>
-                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
-                          Tauri 2.0 • Ultra-Lightweight (~20 MB)
-                        </span>
-                      </div>
-                      <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
-                        Run AI Hub Studio and all Media/PDF Tools 100% offline with zero browser overhead, native menu bar tray control, and global hotkeys.
-                      </p>
-                    </div>
+              {/* Native Desktop Application Notice (Moved to Main Landing Page & /download) */}
+              <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold">
+                    <IconCube size={16} />
                   </div>
-
-                  <a
-                    href="https://github.com/JohnDivina/Resursee/releases/latest"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
-                  >
-                    <span>View All Releases</span>
-                    <IconExternalLink size={13} />
-                  </a>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--color-ink)]">
+                      Want to run AI Hub offline as a Standalone Desktop App?
+                    </h3>
+                    <p className="text-[11px] text-[var(--color-ink-muted)]">
+                      Available natively for macOS (Apple Silicon), Windows, and Linux with zero browser overhead and native hardware acceleration.
+                    </p>
+                  </div>
                 </div>
 
-                {/* 3 OS Download Actions */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-[var(--color-rule-subtle)]">
-                  {/* macOS */}
-                  <a
-                    href="https://github.com/JohnDivina/Resursee/releases/latest"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group",
-                      guideOS === 'macos'
-                        ? "border-neutral-900 dark:border-white bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
-                        : "border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <IconBrandApple size={18} />
-                      <div className="text-left">
-                        <div className="text-xs font-bold">macOS Installer</div>
-                        <div className={cn("text-[10px] font-mono", guideOS === 'macos' ? "text-neutral-300 dark:text-neutral-600" : "text-[var(--color-ink-muted)]")}>
-                          Universal .dmg (M1-M4 & Intel)
-                        </div>
-                      </div>
-                    </div>
-                    <IconDownload size={15} className="group-hover:translate-y-0.5 transition-transform" />
-                  </a>
-
-                  {/* Windows */}
-                  <a
-                    href="https://github.com/JohnDivina/Resursee/releases/latest"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group",
-                      guideOS === 'windows'
-                        ? "border-neutral-900 dark:border-white bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
-                        : "border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <IconBrandWindows size={18} />
-                      <div className="text-left">
-                        <div className="text-xs font-bold">Windows Installer</div>
-                        <div className={cn("text-[10px] font-mono", guideOS === 'windows' ? "text-neutral-300 dark:text-neutral-600" : "text-[var(--color-ink-muted)]")}>
-                          64-bit .msi & .exe
-                        </div>
-                      </div>
-                    </div>
-                    <IconDownload size={15} className="group-hover:translate-y-0.5 transition-transform" />
-                  </a>
-
-                  {/* Linux */}
-                  <a
-                    href="https://github.com/JohnDivina/Resursee/releases/latest"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group",
-                      guideOS === 'linux'
-                        ? "border-neutral-900 dark:border-white bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
-                        : "border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <IconBrandUbuntu size={18} />
-                      <div className="text-left">
-                        <div className="text-xs font-bold">Linux Package</div>
-                        <div className={cn("text-[10px] font-mono", guideOS === 'linux' ? "text-neutral-300 dark:text-neutral-600" : "text-[var(--color-ink-muted)]")}>
-                          .AppImage & .deb
-                        </div>
-                      </div>
-                    </div>
-                    <IconDownload size={15} className="group-hover:translate-y-0.5 transition-transform" />
-                  </a>
-                </div>
-
-                {/* Feature Tags (Solid Grey Bubbles) */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 text-[11px] font-mono font-semibold">
-                    <IconShieldCheck size={13} />
-                    <span>100% Zero-Cloud Egress</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 text-[11px] font-mono font-semibold">
-                    <IconTerminal2 size={13} />
-                    <span>Native Ollama Process Lifecycle</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 text-[11px] font-mono font-semibold">
-                    <span>⚡ Global Hotkey (Option+Space)</span>
-                  </span>
-                </div>
+                <Link
+                  href="/download"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3.5 py-2 text-xs font-bold transition-all hover:bg-neutral-800 dark:hover:bg-neutral-100 cursor-pointer shrink-0 shadow-xs"
+                >
+                  <span>Download Desktop App</span>
+                  <IconExternalLink size={13} />
+                </Link>
               </div>
 
               {/* Straightforward 2-Step Workflow */}
