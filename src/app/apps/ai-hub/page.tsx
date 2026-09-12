@@ -43,6 +43,9 @@ import {
   IconCompass,
   IconShieldCheck,
   IconCube,
+  IconHeart,
+  IconTrendingUp,
+  IconWorld,
 } from '@tabler/icons-react';
 import {
   checkOllamaConnection,
@@ -575,7 +578,46 @@ const CATALOG_MODELS: ModelItem[] = [
   },
 ];
 
+const CURATED_OLLAMA_TAGS = new Set([
+  'llama3.2:1b',
+  'llama3.2:latest',
+  'llama3.2:3b',
+  'llama3.1:8b',
+  'deepseek-r1:1.5b',
+  'deepseek-r1:7b',
+  'deepseek-r1:8b',
+  'deepseek-r1:latest',
+  'qwen2.5-coder:1.5b',
+  'qwen2.5-coder:7b',
+  'qwen2.5-coder:latest',
+  'qwen2.5:0.5b',
+  'gemma2:2b',
+  'gemma2:9b',
+  'gemma2:latest',
+  'mistral:7b',
+  'mistral:latest',
+  'phi3.5:3.8b',
+  'phi3:latest',
+  'llava:7b',
+  'llava:latest',
+  'granite3.1-dense:8b',
+  'nomic-embed-text:latest',
+]);
+
 const HUGGINGFACE_MODELS: ModelItem[] = [
+  // Fast & Compact
+  {
+    id: 'hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M',
+    name: 'Llama 3.2 (1B) Instruct',
+    category: 'compact',
+    parameters: '1.24B',
+    size: '808 MB',
+    vram: '1.8 GB',
+    description: 'Meta’s ultra-compact model quantized by Bartowski. Boots in milliseconds with high efficiency.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
   {
     id: 'hf.co/bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M',
     name: 'Llama 3.2 (3B) Instruct',
@@ -589,17 +631,103 @@ const HUGGINGFACE_MODELS: ModelItem[] = [
     source: 'huggingface',
   },
   {
-    id: 'hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M',
-    name: 'Qwen 2.5 Coder (7B) Instruct',
-    category: 'code',
-    parameters: '7.61B',
-    size: '4.68 GB',
-    vram: '6.5 GB',
-    description: 'Premier open code model with 128k context support, excels at code generation, debugging, and refactoring.',
+    id: 'hf.co/bartowski/SmolLM2-1.7B-Instruct-GGUF:Q4_K_M',
+    name: 'SmolLM2 (1.7B) Instruct',
+    category: 'compact',
+    parameters: '1.71B',
+    size: '1.06 GB',
+    vram: '2.2 GB',
+    description: 'Hugging Face official compact model family with strong conversational benchmarks for on-device applications.',
+    author: 'HuggingFaceTB',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/SmolLM2-360M-Instruct-GGUF:Q4_K_M',
+    name: 'SmolLM2 (360M) Instruct',
+    category: 'compact',
+    parameters: '360M',
+    size: '260 MB',
+    vram: '0.8 GB',
+    description: 'Sub-billion lightweight model by Hugging Face TB. Perfect for embedded micro-tasks and low-spec laptops.',
+    author: 'HuggingFaceTB',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen 2.5 (0.5B) Instruct',
+    category: 'compact',
+    parameters: '494M',
+    size: '398 MB',
+    vram: '1.0 GB',
+    description: 'Ultra-portable 0.5B checkpoint by Alibaba, ideal for background categorization and instant completions.',
     author: 'bartowski',
     quantization: 'Q4_K_M',
     source: 'huggingface',
   },
+  {
+    id: 'hf.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen 2.5 (1.5B) Instruct',
+    category: 'compact',
+    parameters: '1.54B',
+    size: '1.02 GB',
+    vram: '2.2 GB',
+    description: 'Dense multilingual compact model excelling in mathematics, structured JSON extraction, and chat.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Qwen2.5-3B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen 2.5 (3B) Instruct',
+    category: 'compact',
+    parameters: '3.4B',
+    size: '2.18 GB',
+    vram: '3.9 GB',
+    description: 'Balanced 3B model rivaling previous generation 7B checkpoints on instruction following and multilingual tasks.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/gemma-2-2b-it-GGUF:Q4_K_M',
+    name: 'Gemma 2 (2B) Instruct',
+    category: 'compact',
+    parameters: '2.61B',
+    size: '1.63 GB',
+    vram: '3.2 GB',
+    description: 'Google DeepMind’s ultra-compact instruction tuned model, great for quick summaries and chat tasks.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Phi-3.5-mini-instruct-GGUF:Q4_K_M',
+    name: 'Phi-3.5 Mini Instruct (3.8B)',
+    category: 'compact',
+    parameters: '3.82B',
+    size: '2.39 GB',
+    vram: '4.2 GB',
+    description: 'Microsoft’s multilingual instruction model with 128k context window and high reasoning benchmarks.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF:Q4_K_M',
+    name: 'TinyLlama (1.1B) Chat',
+    category: 'compact',
+    parameters: '1.10B',
+    size: '668 MB',
+    vram: '1.8 GB',
+    description: 'Compact 1.1B chat model quantized by TheBloke, boots in milliseconds and uses almost zero RAM.',
+    author: 'TheBloke',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+
+  // Reasoning & Math
   {
     id: 'hf.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF:Q4_K_M',
     name: 'DeepSeek R1 Distill Qwen (1.5B)',
@@ -625,41 +753,141 @@ const HUGGINGFACE_MODELS: ModelItem[] = [
     source: 'huggingface',
   },
   {
-    id: 'hf.co/bartowski/Phi-3.5-mini-instruct-GGUF:Q4_K_M',
-    name: 'Phi-3.5 Mini Instruct (3.8B)',
-    category: 'compact',
-    parameters: '3.82B',
-    size: '2.39 GB',
-    vram: '4.2 GB',
-    description: 'Microsoft’s multilingual instruction model with 128k context window and high reasoning benchmarks.',
+    id: 'hf.co/bartowski/DeepSeek-R1-Distill-Llama-8B-GGUF:Q4_K_M',
+    name: 'DeepSeek R1 Distill Llama (8B)',
+    category: 'reasoning',
+    parameters: '8.03B',
+    size: '4.92 GB',
+    vram: '7.2 GB',
+    description: 'DeepSeek-R1 chain-of-thought reasoning capabilities distilled into Meta Llama 3.1 8B architecture.',
     author: 'bartowski',
     quantization: 'Q4_K_M',
     source: 'huggingface',
   },
   {
-    id: 'hf.co/bartowski/gemma-2-2b-it-GGUF:Q4_K_M',
-    name: 'Gemma 2 (2B) Instruct',
-    category: 'compact',
-    parameters: '2.61B',
-    size: '1.63 GB',
-    vram: '3.2 GB',
-    description: 'Google DeepMind’s ultra-compact instruction tuned model, great for quick summaries and chat tasks.',
+    id: 'hf.co/bartowski/DeepSeek-R1-Distill-Qwen-14B-GGUF:Q4_K_M',
+    name: 'DeepSeek R1 Distill Qwen (14B)',
+    category: 'reasoning',
+    parameters: '14.8B',
+    size: '8.98 GB',
+    vram: '11.5 GB',
+    description: 'High-power 14B reasoning model rivaling OpenAI o1-mini on competitive math and programming benchmarks.',
     author: 'bartowski',
     quantization: 'Q4_K_M',
     source: 'huggingface',
   },
   {
-    id: 'hf.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF:Q4_K_M',
-    name: 'TinyLlama (1.1B) Chat',
-    category: 'compact',
-    parameters: '1.10B',
-    size: '668 MB',
-    vram: '1.8 GB',
-    description: 'Compact 1.1B chat model quantized by TheBloke, boots in milliseconds and uses almost zero RAM.',
+    id: 'hf.co/bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF:Q4_K_M',
+    name: 'DeepSeek R1 Distill Qwen (32B)',
+    category: 'reasoning',
+    parameters: '32.5B',
+    size: '19.8 GB',
+    vram: '24.0 GB',
+    description: 'Near-frontier reasoning powerhouse distilled from DeepSeek-R1 with state-of-the-art math and code synthesis.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Marco-o1-GGUF:Q4_K_M',
+    name: 'Marco-o1 Reasoning (7B)',
+    category: 'reasoning',
+    parameters: '7.61B',
+    size: '4.68 GB',
+    vram: '6.5 GB',
+    description: 'Open reasoning model by Alibaba utilizing Monte Carlo Tree Search (MCTS) reflection for complex problem solving.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+
+  // Code & Systems
+  {
+    id: 'hf.co/bartowski/Qwen2.5-Coder-1.5B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen 2.5 Coder (1.5B) Instruct',
+    category: 'code',
+    parameters: '1.54B',
+    size: '1.02 GB',
+    vram: '2.2 GB',
+    description: 'Ultra-fast code companion for inline autocompletion, regex generation, and quick syntax debugging.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen 2.5 Coder (7B) Instruct',
+    category: 'code',
+    parameters: '7.61B',
+    size: '4.68 GB',
+    vram: '6.5 GB',
+    description: 'Premier open code model with 128k context support, excels at code generation, debugging, and refactoring.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Qwen2.5-Coder-14B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen 2.5 Coder (14B) Instruct',
+    category: 'code',
+    parameters: '14.8B',
+    size: '8.98 GB',
+    vram: '11.5 GB',
+    description: 'Full-stack software engineering model with deep understanding of distributed architectures and multi-file projects.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Qwen2.5-Coder-32B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen 2.5 Coder (32B) Instruct',
+    category: 'code',
+    parameters: '32.5B',
+    size: '19.8 GB',
+    vram: '24.0 GB',
+    description: 'Enterprise grade code intelligence with state-of-the-art SWE-bench scores and large repository refactoring.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/granite-3.1-8b-instruct-GGUF:Q4_K_M',
+    name: 'IBM Granite 3.1 (8B) Instruct',
+    category: 'code',
+    parameters: '8.18B',
+    size: '4.92 GB',
+    vram: '7.0 GB',
+    description: 'IBM’s enterprise-grade model trained on enterprise code, SQL workflows, and tool calling protocols.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/starcoder2-3b-GGUF:Q4_K_M',
+    name: 'StarCoder2 (3B)',
+    category: 'code',
+    parameters: '3.04B',
+    size: '1.92 GB',
+    vram: '3.5 GB',
+    description: 'BigCode initiative code generation model trained on 600+ programming languages with Git commit histories.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/TheBloke/CodeLlama-7B-Instruct-GGUF:Q4_K_M',
+    name: 'Code Llama (7B) Instruct',
+    category: 'code',
+    parameters: '6.85B',
+    size: '4.08 GB',
+    vram: '6.0 GB',
+    description: 'Meta’s specialized coding model quantized by TheBloke. Battle-tested for Python, TypeScript, and C++.',
     author: 'TheBloke',
     quantization: 'Q4_K_M',
     source: 'huggingface',
   },
+
+  // Vision & Multimodal
   {
     id: 'hf.co/city96/Llama-3.2-11B-Vision-Instruct-GGUF:Q4_K_M',
     name: 'Llama 3.2 Vision (11B) Instruct',
@@ -669,6 +897,80 @@ const HUGGINGFACE_MODELS: ModelItem[] = [
     vram: '9.8 GB',
     description: 'Multimodal vision and text model by Meta, quantized by city96 for visual question answering and image inspection.',
     author: 'city96',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Qwen2-VL-7B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen2-VL (7B) Instruct',
+    category: 'vision',
+    parameters: '7.61B',
+    size: '4.88 GB',
+    vram: '7.2 GB',
+    description: 'Leading vision-language model with native dynamic resolution reading documents, charts, UI, and video frames.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen2-VL (2B) Instruct',
+    category: 'vision',
+    parameters: '2.21B',
+    size: '1.54 GB',
+    vram: '3.0 GB',
+    description: 'Compact vision-language model capable of recognizing text in images and diagnosing visual errors on laptops.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/mys/ggml_llava-v1.5-7b:Q4_K_M',
+    name: 'LLaVA 1.5 (7B) GGUF',
+    category: 'vision',
+    parameters: '7.06B',
+    size: '4.15 GB',
+    vram: '6.2 GB',
+    description: 'Classic open multimodal visual reasoning model with CLIP visual encoder and vicuna text backbone.',
+    author: 'mys',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+
+  // General & Frontier
+  {
+    id: 'hf.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF:Q4_K_M',
+    name: 'Meta Llama 3.1 (8B) Instruct',
+    category: 'general',
+    parameters: '8.03B',
+    size: '4.92 GB',
+    vram: '7.0 GB',
+    description: 'Meta’s open flagship 8B model with 128k context length, top-tier tool calling, and general intelligence.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Llama-3.3-70B-Instruct-GGUF:Q4_K_M',
+    name: 'Llama 3.3 (70B) Instruct',
+    category: 'general',
+    parameters: '70.6B',
+    size: '42.5 GB',
+    vram: '48.0 GB',
+    description: 'Meta’s flagship frontier-tier 70B model delivering near-Llama-3.1-405B benchmark performance.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF:Q4_K_M',
+    name: 'Mistral (7B) Instruct v0.3',
+    category: 'general',
+    parameters: '7.25B',
+    size: '4.37 GB',
+    vram: '6.5 GB',
+    description: 'Mistral AI’s updated 7B checkpoint featuring function calling and 32k context window.',
+    author: 'bartowski',
     quantization: 'Q4_K_M',
     source: 'huggingface',
   },
@@ -685,14 +987,38 @@ const HUGGINGFACE_MODELS: ModelItem[] = [
     source: 'huggingface',
   },
   {
-    id: 'hf.co/bartowski/SmolLM2-1.7B-Instruct-GGUF:Q4_K_M',
-    name: 'SmolLM2 (1.7B) Instruct',
-    category: 'compact',
-    parameters: '1.71B',
-    size: '1.06 GB',
-    vram: '2.2 GB',
-    description: 'Hugging Face official compact model family with strong conversational benchmarks for on-device applications.',
-    author: 'HuggingFaceTB',
+    id: 'hf.co/bartowski/gemma-2-9b-it-GGUF:Q4_K_M',
+    name: 'Gemma 2 (9B) Instruct',
+    category: 'general',
+    parameters: '9.24B',
+    size: '5.85 GB',
+    vram: '8.2 GB',
+    description: 'Google DeepMind’s 9B model using alternating sliding window attention and logit capping for precision.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Hermes-3-Llama-3.1-8B-GGUF:Q4_K_M',
+    name: 'Hermes 3 Llama 3.1 (8B)',
+    category: 'general',
+    parameters: '8.03B',
+    size: '4.92 GB',
+    vram: '7.0 GB',
+    description: 'Nous Research’s uncensored general-purpose reasoning model with advanced roleplaying and complex agentic control.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/bge-m3-GGUF:Q4_K_M',
+    name: 'BGE-M3 Multilingual Embedding',
+    category: 'embeddings',
+    parameters: '567M',
+    size: '640 MB',
+    vram: '1.2 GB',
+    description: 'BAAI’s high-density embedding model supporting dense, sparse, and multi-vector search in 100+ languages.',
+    author: 'bartowski',
     quantization: 'Q4_K_M',
     source: 'huggingface',
   },
@@ -1022,6 +1348,26 @@ export default function AIHubPage() {
 
   // Model Library Management State (Phase 3)
   const [modelSourceTab, setModelSourceTab] = useState<'ollama' | 'huggingface'>('ollama');
+  const [ollamaViewMode, setOllamaViewMode] = useState<'curated' | 'full'>('curated');
+  const [hfViewMode, setHfViewMode] = useState<'curated' | 'full'>('curated');
+  const [hfLiveQuery, setHfLiveQuery] = useState<string>('');
+  const [hfLiveSort, setHfLiveSort] = useState<'downloads' | 'trending' | 'likes'>('downloads');
+  const [hfLiveResults, setHfLiveResults] = useState<
+    Array<{
+      id: string;
+      author: string;
+      name: string;
+      downloads: number;
+      likes: number;
+      updatedAt: string;
+      ollamaTag: string;
+      tags: string[];
+      quantization?: string;
+    }>
+  >([]);
+  const [isHfSearching, setIsHfSearching] = useState<boolean>(false);
+  const [hfSearchError, setHfSearchError] = useState<string | null>(null);
+  const [hasSearchedHf, setHasSearchedHf] = useState<boolean>(false);
   const [modelCategory, setModelCategory] = useState<string>('all');
   const [modelSearch, setModelSearch] = useState<string>('');
   const [hfSearch, setHfSearch] = useState<string>('');
@@ -2198,6 +2544,35 @@ Instructions:
     handlePullModel(trimmed);
   };
 
+  const fetchHfLiveModels = React.useCallback(
+    async (
+      query: string = hfLiveQuery,
+      sort: 'downloads' | 'trending' | 'likes' = hfLiveSort
+    ) => {
+      setIsHfSearching(true);
+      setHfSearchError(null);
+      setHasSearchedHf(true);
+      try {
+        const params = new URLSearchParams({
+          q: query.trim(),
+          sort,
+          limit: '36',
+        });
+        const res = await fetch(`/api/ai/huggingface/search?${params.toString()}`);
+        if (!res.ok) {
+          throw new Error(`Hugging Face Hub search returned status ${res.status}`);
+        }
+        const data = await res.json();
+        setHfLiveResults(data.models || []);
+      } catch (err: any) {
+        setHfSearchError(err.message || 'Error querying Hugging Face Hub');
+      } finally {
+        setIsHfSearching(false);
+      }
+    },
+    [hfLiveQuery, hfLiveSort]
+  );
+
   const totalDiskBytes = installedModels.reduce((acc, m) => acc + (m.size || 0), 0);
   const totalDiskGB = (totalDiskBytes / (1024 * 1024 * 1024)).toFixed(2);
 
@@ -3315,14 +3690,65 @@ Instructions:
 
                 <div className="text-xs text-[var(--color-ink-muted)] font-mono">
                   {modelSourceTab === 'ollama'
-                    ? 'Curated models from ollama.com/library'
-                    : 'GGUF models executed locally via Ollama hf.co/ runtime'}
+                    ? 'Curated & Full library from ollama.com'
+                    : 'GGUF models with Curated Showcase & Live Hugging Face Hub Search'}
                 </div>
               </div>
 
               {/* TAB 1: OLLAMA LIBRARY */}
               {modelSourceTab === 'ollama' && (
                 <div className="space-y-4">
+                  {/* Subtab Switcher: Curated Selection vs Full Catalog */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 rounded-2xl bg-[var(--color-paper-card)] border border-[var(--color-rule-strong)]">
+                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setOllamaViewMode('curated')}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                          ollamaViewMode === 'curated'
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                        )}
+                      >
+                        <IconSparkles size={13} />
+                        <span>Curated Selection</span>
+                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                          {
+                            allDisplayModels.filter(
+                              (m) =>
+                                m.isDownloaded ||
+                                CURATED_OLLAMA_TAGS.has(m.id) ||
+                                CURATED_OLLAMA_TAGS.has(m.id.replace(':latest', ''))
+                            ).length
+                          }
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOllamaViewMode('full')}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                          ollamaViewMode === 'full'
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                        )}
+                      >
+                        <IconWorld size={13} />
+                        <span>Full Catalog</span>
+                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                          {allDisplayModels.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-[var(--color-ink-muted)] font-mono">
+                      {ollamaViewMode === 'curated'
+                        ? 'Hand-picked flagship recommendations for fast local onboarding'
+                        : 'Complete Ollama library with category filters and instant pull'}
+                    </div>
+                  </div>
+
                   {/* 📥 Custom Ollama Model Pull Input Bar */}
                   <div className="flex flex-col sm:flex-row items-center gap-2.5 p-3 rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] shadow-xs">
                     <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink)] shrink-0 px-1">
@@ -3357,7 +3783,7 @@ Instructions:
                     {/* Category Filter Pills */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1 min-w-0">
                       {[
-                        { id: 'all', label: 'All Models' },
+                        { id: 'all', label: ollamaViewMode === 'curated' ? 'All Curated' : 'All Models' },
                         { id: 'installed', label: `Installed (${installedModels.filter((im) => !im.name.startsWith('hf.co/')).length})` },
                         { id: 'compact', label: 'Fast & Compact' },
                         { id: 'reasoning', label: 'Reasoning & Math' },
@@ -3388,7 +3814,7 @@ Instructions:
                         type="text"
                         value={modelSearch}
                         onChange={(e) => setModelSearch(e.target.value)}
-                        placeholder="Search all Ollama models..."
+                        placeholder="Search Ollama models..."
                         className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] pl-8 pr-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
                       />
                     </div>
@@ -3398,6 +3824,14 @@ Instructions:
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {allDisplayModels
                       .filter((m) => {
+                        if (
+                          ollamaViewMode === 'curated' &&
+                          !m.isDownloaded &&
+                          !CURATED_OLLAMA_TAGS.has(m.id) &&
+                          !CURATED_OLLAMA_TAGS.has(m.id.replace(':latest', ''))
+                        ) {
+                          return false;
+                        }
                         if (modelCategory === 'installed' && !m.isDownloaded) return false;
                         if (modelCategory !== 'all' && modelCategory !== 'installed' && m.category !== modelCategory)
                           return false;
@@ -3448,12 +3882,14 @@ Instructions:
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate">{model.name}</h3>
                                     {isLoadedInVram && (
-                                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 font-mono text-[9px] font-bold shrink-0">
-                                        IN VRAM
+                                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                                        ACTIVE IN VRAM
                                       </span>
                                     )}
                                   </div>
-                                  <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)] block truncate">{model.id}</span>
+                                  <span className="font-mono text-[10px] text-[var(--color-ink-muted)] block truncate mt-0.5">
+                                    {model.id}
+                                  </span>
                                 </div>
 
                                 {isInstalled ? (
@@ -3463,7 +3899,7 @@ Instructions:
                                   </span>
                                 ) : (
                                   <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
-                                    Available
+                                    Catalog
                                   </span>
                                 )}
                               </div>
@@ -3481,13 +3917,8 @@ Instructions:
                                   VRAM: {model.vram}
                                 </span>
                                 <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                                  {installedData?.details?.parameter_size || model.parameters}
+                                  {model.parameters}
                                 </span>
-                                {installedData?.details?.quantization_level && (
-                                  <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 font-bold">
-                                    {installedData.details.quantization_level}
-                                  </span>
-                                )}
                               </div>
                             </div>
 
@@ -3546,7 +3977,7 @@ Instructions:
                                     type="button"
                                     onClick={() => handleInspectModel(model.id)}
                                     className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
-                                    title="Inspect Model Architecture (GGUF tensors, Modelfile)"
+                                    title="Inspect Model Architecture"
                                   >
                                     <IconInfoCircle size={15} />
                                   </button>
@@ -3567,7 +3998,7 @@ Instructions:
                                     className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
                                   >
                                     <IconDownload size={13} />
-                                    <span>Pull to Ollama</span>
+                                    <span>Pull Model</span>
                                   </button>
                                   <button
                                     type="button"
@@ -3590,277 +4021,667 @@ Instructions:
               {/* TAB 2: HUGGING FACE MODELS */}
               {modelSourceTab === 'huggingface' && (
                 <div className="space-y-4">
-                  {/* 📥 Custom Hugging Face GGUF Pull Card */}
-                  <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-xs space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                        <IconCube size={16} />
-                        <span>Pull Any Hugging Face GGUF Model:</span>
-                      </div>
-                      <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
-                        Runs directly on local hardware via Ollama
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-center gap-2">
-                      <div className="relative flex-1 w-full">
-                        <input
-                          type="text"
-                          value={customHfTag}
-                          onChange={(e) => setCustomHfTag(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handlePullHfModel(customHfTag);
-                          }}
-                          placeholder="Enter Hugging Face repo e.g. bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M"
-                          className="w-full rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] px-3 py-2 text-xs font-mono text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
-                        />
-                      </div>
+                  {/* Subtab Switcher: Curated Showcase vs Full Catalog (Live Hub Search) */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 rounded-2xl bg-[var(--color-paper-card)] border border-[var(--color-rule-strong)]">
+                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0">
                       <button
                         type="button"
-                        onClick={() => handlePullHfModel(customHfTag)}
-                        disabled={!customHfTag.trim() || !!downloadingModelId}
-                        className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shrink-0"
+                        onClick={() => setHfViewMode('curated')}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                          hfViewMode === 'curated'
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                        )}
                       >
-                        <IconDownload size={13} />
-                        <span>Pull from Hugging Face</span>
+                        <IconSparkles size={13} />
+                        <span>Curated Showcase</span>
+                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                          {allDisplayHfModels.length}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHfViewMode('full');
+                          if (!hasSearchedHf) {
+                            fetchHfLiveModels('deepseek', 'downloads');
+                          }
+                        }}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                          hfViewMode === 'full'
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                        )}
+                      >
+                        <IconWorld size={13} />
+                        <span>Full Catalog</span>
+                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                          Live Hub Search
+                        </span>
                       </button>
                     </div>
 
-                    {/* Quick Example Chips */}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px] text-[var(--color-ink-muted)]">
-                      <span className="font-mono text-[10.5px]">Quick repos:</span>
-                      {[
-                        { label: 'Llama 3.2 3B', tag: 'bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M' },
-                        { label: 'DeepSeek R1 1.5B', tag: 'unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF:Q4_K_M' },
-                        { label: 'Qwen 2.5 Coder 7B', tag: 'bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M' },
-                        { label: 'Phi-3.5 Mini', tag: 'bartowski/Phi-3.5-mini-instruct-GGUF:Q4_K_M' },
-                        { label: 'Gemma 2 2B', tag: 'bartowski/gemma-2-2b-it-GGUF:Q4_K_M' },
-                      ].map((chip) => (
-                        <button
-                          key={chip.tag}
-                          type="button"
-                          onClick={() => setCustomHfTag(chip.tag)}
-                          className="rounded-lg bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] border border-[var(--color-rule-subtle)] px-2 py-0.5 text-[10.5px] font-mono text-[var(--color-ink)] transition-colors cursor-pointer"
-                        >
-                          {chip.label}
-                        </button>
-                      ))}
+                    <div className="text-xs text-[var(--color-ink-muted)] font-mono">
+                      {hfViewMode === 'curated'
+                        ? '34 hand-verified community GGUF models ready for local execution'
+                        : 'Live search across tens of thousands of GGUF models on Hugging Face Hub'}
                     </div>
                   </div>
 
-                  {/* Hugging Face Search Bar */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                    <div className="flex items-center gap-2 text-xs font-extrabold text-[var(--color-ink)]">
-                      <span>Curated GGUF Checkpoints</span>
-                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
-                        {allDisplayHfModels.length} Models
-                      </span>
-                    </div>
+                  {/* Curated Showcase View */}
+                  {hfViewMode === 'curated' && (
+                    <>
+                      {/* 📥 Custom Hugging Face GGUF Pull Card */}
+                      <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-xs space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                            <IconCube size={16} />
+                            <span>Pull Any Hugging Face GGUF Model:</span>
+                          </div>
+                          <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
+                            Runs directly on local hardware via Ollama
+                          </span>
+                        </div>
 
-                    <div className="relative w-full sm:w-64">
-                      <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
-                      <input
-                        type="text"
-                        value={hfSearch}
-                        onChange={(e) => setHfSearch(e.target.value)}
-                        placeholder="Search Hugging Face models..."
-                        className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] pl-8 pr-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Hugging Face Models Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {allDisplayHfModels
-                      .filter((m) => {
-                        if (
-                          hfSearch &&
-                          !m.name.toLowerCase().includes(hfSearch.toLowerCase()) &&
-                          !m.id.toLowerCase().includes(hfSearch.toLowerCase()) &&
-                          !(m.author && m.author.toLowerCase().includes(hfSearch.toLowerCase()))
-                        )
-                          return false;
-                        return true;
-                      })
-                      .map((model) => {
-                        const isInstalled =
-                          model.isDownloaded ||
-                          installedModels.some(
-                            (im) =>
-                              im.name === model.id ||
-                              `${im.name}:latest` === model.id ||
-                              im.name === `${model.id}:latest`
-                          );
-                        const installedData = installedModels.find(
-                          (im) =>
-                            im.name === model.id ||
-                            `${im.name}:latest` === model.id ||
-                            im.name === `${model.id}:latest`
-                        );
-                        const isLoadedInVram = runningModels.some(
-                          (rm) =>
-                            rm === model.id ||
-                            `${rm}:latest` === model.id ||
-                            rm === `${model.id}:latest`
-                        );
-                        const isPulling = downloadingModelId === model.id;
-
-                        return (
-                          <div
-                            key={model.id}
-                            className={cn(
-                              'flex flex-col justify-between rounded-2xl border bg-[var(--color-paper-card)] p-5 shadow-2xs transition-all space-y-4',
-                              isLoadedInVram
-                                ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900/10 dark:ring-white/10'
-                                : 'border-[var(--color-rule)] hover:border-[var(--color-rule-strong)]'
-                            )}
+                        <div className="flex flex-col sm:flex-row items-center gap-2">
+                          <div className="relative flex-1 w-full">
+                            <input
+                              type="text"
+                              value={customHfTag}
+                              onChange={(e) => setCustomHfTag(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handlePullHfModel(customHfTag);
+                              }}
+                              placeholder="Enter Hugging Face repo e.g. bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M"
+                              className="w-full rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] px-3 py-2 text-xs font-mono text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handlePullHfModel(customHfTag)}
+                            disabled={!customHfTag.trim() || !!downloadingModelId}
+                            className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shrink-0"
                           >
-                            <div>
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate">
-                                      {model.name}
-                                    </h3>
-                                    {model.quantization && (
-                                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.2 font-mono text-[9px] font-bold shrink-0">
-                                        {model.quantization}
+                            <IconDownload size={13} />
+                            <span>Pull from Hugging Face</span>
+                          </button>
+                        </div>
+
+                        {/* Quick Example Chips */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px] text-[var(--color-ink-muted)]">
+                          <span className="font-mono text-[10.5px]">Quick repos:</span>
+                          {[
+                            { label: 'Llama 3.2 3B', tag: 'bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M' },
+                            { label: 'DeepSeek R1 1.5B', tag: 'unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF:Q4_K_M' },
+                            { label: 'DeepSeek R1 7B', tag: 'bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF:Q4_K_M' },
+                            { label: 'Qwen 2.5 Coder 7B', tag: 'bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M' },
+                            { label: 'Phi-3.5 Mini', tag: 'bartowski/Phi-3.5-mini-instruct-GGUF:Q4_K_M' },
+                            { label: 'Gemma 2 2B', tag: 'bartowski/gemma-2-2b-it-GGUF:Q4_K_M' },
+                            { label: 'SmolLM2 1.7B', tag: 'bartowski/SmolLM2-1.7B-Instruct-GGUF:Q4_K_M' },
+                            { label: 'Granite 3.1 8B', tag: 'bartowski/granite-3.1-8b-instruct-GGUF:Q4_K_M' },
+                          ].map((chip) => (
+                            <button
+                              key={chip.tag}
+                              type="button"
+                              onClick={() => setCustomHfTag(chip.tag)}
+                              className="rounded-lg bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] border border-[var(--color-rule-subtle)] px-2 py-0.5 text-[10.5px] font-mono text-[var(--color-ink)] transition-colors cursor-pointer"
+                            >
+                              {chip.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Hugging Face Search Bar */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                        <div className="flex items-center gap-2 text-xs font-extrabold text-[var(--color-ink)]">
+                          <span>Curated GGUF Checkpoints</span>
+                          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
+                            {allDisplayHfModels.length} Models
+                          </span>
+                        </div>
+
+                        <div className="relative w-full sm:w-64">
+                          <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
+                          <input
+                            type="text"
+                            value={hfSearch}
+                            onChange={(e) => setHfSearch(e.target.value)}
+                            placeholder="Filter curated models..."
+                            className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] pl-8 pr-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Hugging Face Models Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {allDisplayHfModels
+                          .filter((m) => {
+                            if (
+                              hfSearch &&
+                              !m.name.toLowerCase().includes(hfSearch.toLowerCase()) &&
+                              !m.id.toLowerCase().includes(hfSearch.toLowerCase()) &&
+                              !(m.author && m.author.toLowerCase().includes(hfSearch.toLowerCase()))
+                            )
+                              return false;
+                            return true;
+                          })
+                          .map((model) => {
+                            const isInstalled =
+                              model.isDownloaded ||
+                              installedModels.some(
+                                (im) =>
+                                  im.name === model.id ||
+                                  `${im.name}:latest` === model.id ||
+                                  im.name === `${model.id}:latest`
+                              );
+                            const installedData = installedModels.find(
+                              (im) =>
+                                im.name === model.id ||
+                                `${im.name}:latest` === model.id ||
+                                im.name === `${model.id}:latest`
+                            );
+                            const isLoadedInVram = runningModels.some(
+                              (rm) =>
+                                rm === model.id ||
+                                `${rm}:latest` === model.id ||
+                                rm === `${model.id}:latest`
+                            );
+                            const isPulling = downloadingModelId === model.id;
+
+                            return (
+                              <div
+                                key={model.id}
+                                className={cn(
+                                  'flex flex-col justify-between rounded-2xl border bg-[var(--color-paper-card)] p-5 shadow-2xs transition-all space-y-4',
+                                  isLoadedInVram
+                                    ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900/10 dark:ring-white/10'
+                                    : 'border-[var(--color-rule)] hover:border-[var(--color-rule-strong)]'
+                                )}
+                              >
+                                <div>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate">
+                                          {model.name}
+                                        </h3>
+                                        {model.quantization && (
+                                          <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.2 font-mono text-[9px] font-bold shrink-0">
+                                            {model.quantization}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="font-mono text-[10px] text-[var(--color-ink-muted)] block truncate mt-0.5">
+                                        {model.id}
+                                      </span>
+                                    </div>
+
+                                    {isInstalled ? (
+                                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                                        Installed
+                                      </span>
+                                    ) : (
+                                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                                        GGUF
                                       </span>
                                     )}
                                   </div>
-                                  <span className="font-mono text-[10px] text-[var(--color-ink-muted)] block truncate mt-0.5">
-                                    {model.id}
-                                  </span>
+
+                                  <p className="text-xs text-[var(--color-ink-muted)] mt-2 leading-snug">
+                                    {model.description}
+                                  </p>
+
+                                  {/* Specs Row */}
+                                  <div className="flex items-center gap-2 mt-4 text-[11px] font-mono text-[var(--color-ink-muted)] flex-wrap">
+                                    <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                      {installedData ? `${(installedData.size / (1024 * 1024 * 1024)).toFixed(1)} GB` : model.size}
+                                    </span>
+                                    <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                      VRAM: {model.vram}
+                                    </span>
+                                    <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                      {model.parameters}
+                                    </span>
+                                    {model.author && (
+                                      <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 font-bold">
+                                        by {model.author}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
-                                {isInstalled ? (
-                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
-                                    Installed
-                                  </span>
-                                ) : (
-                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
-                                    GGUF
-                                  </span>
-                                )}
-                              </div>
+                                <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
+                                  {/* Terminal Run Pill */}
+                                  <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
+                                    <span className="truncate">ollama run {model.id}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopy(`ollama run ${model.id}`, `term-${model.id}`)}
+                                      className="hover:text-[var(--color-ink)] transition-colors cursor-pointer shrink-0 ml-2"
+                                    >
+                                      {copiedKey === `term-${model.id}` ? (
+                                        <IconCheck size={13} className="text-neutral-900 dark:text-white" />
+                                      ) : (
+                                        <IconCopy size={13} />
+                                      )}
+                                    </button>
+                                  </div>
 
-                              <p className="text-xs text-[var(--color-ink-muted)] mt-2 leading-snug">
-                                {model.description}
-                              </p>
-
-                              {/* Specs Row */}
-                              <div className="flex items-center gap-2 mt-4 text-[11px] font-mono text-[var(--color-ink-muted)] flex-wrap">
-                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                                  {installedData ? `${(installedData.size / (1024 * 1024 * 1024)).toFixed(1)} GB` : model.size}
-                                </span>
-                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                                  VRAM: {model.vram}
-                                </span>
-                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                                  {model.parameters}
-                                </span>
-                                {model.author && (
-                                  <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 font-bold">
-                                    by {model.author}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
-                              {/* Terminal Run Pill */}
-                              <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
-                                <span className="truncate">ollama run {model.id}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopy(`ollama run ${model.id}`, `term-${model.id}`)}
-                                  className="hover:text-[var(--color-ink)] transition-colors cursor-pointer shrink-0 ml-2"
-                                >
-                                  {copiedKey === `term-${model.id}` ? (
-                                    <IconCheck size={13} className="text-neutral-900 dark:text-white" />
+                                  {/* Download / Active Actions */}
+                                  {isPulling ? (
+                                    <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
+                                      <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
+                                        <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling GGUF layers...'}</span>
+                                        <span className="font-bold">{downloadProgress}%</span>
+                                      </div>
+                                      <div className="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                                        <div
+                                          className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
+                                          style={{ width: `${downloadProgress}%` }}
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={handleCancelPull}
+                                        className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
+                                      >
+                                        Cancel Download
+                                      </button>
+                                    </div>
+                                  ) : isInstalled ? (
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedModel(model.id);
+                                          setActiveTab('chat');
+                                        }}
+                                        className="flex-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                      >
+                                        <IconPlayerPlay size={13} fill="currentColor" />
+                                        <span>Launch</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleInspectModel(model.id)}
+                                        className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                        title="Inspect Model Architecture"
+                                      >
+                                        <IconInfoCircle size={15} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setModelToDelete(model.id)}
+                                        className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 p-1.5 text-xs text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
+                                        title="Delete from Local Disk"
+                                      >
+                                        <IconTrash size={15} />
+                                      </button>
+                                    </div>
                                   ) : (
-                                    <IconCopy size={13} />
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePullModel(model.id)}
+                                        className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                      >
+                                        <IconDownload size={13} />
+                                        <span>Pull to Ollama</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleInspectModel(model.id)}
+                                        className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                        title="Inspect Model Architecture"
+                                      >
+                                        <IconInfoCircle size={15} />
+                                      </button>
+                                    </div>
                                   )}
-                                </button>
+                                </div>
                               </div>
+                            );
+                          })}
+                      </div>
+                    </>
+                  )}
 
-                              {/* Download / Active Actions */}
-                              {isPulling ? (
-                                <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
-                                  <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
-                                    <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling GGUF layers...'}</span>
-                                    <span className="font-bold">{downloadProgress}%</span>
-                                  </div>
-                                  <div className="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
-                                    <div
-                                      className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
-                                      style={{ width: `${downloadProgress}%` }}
-                                    />
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={handleCancelPull}
-                                    className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
-                                  >
-                                    Cancel Download
-                                  </button>
-                                </div>
-                              ) : isInstalled ? (
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedModel(model.id);
-                                      setActiveTab('chat');
-                                    }}
-                                    className="flex-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                                  >
-                                    <IconPlayerPlay size={13} fill="currentColor" />
-                                    <span>Launch</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleInspectModel(model.id)}
-                                    className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
-                                    title="Inspect Model Architecture"
-                                  >
-                                    <IconInfoCircle size={15} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setModelToDelete(model.id)}
-                                    className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 p-1.5 text-xs text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
-                                    title="Delete from Local Disk"
-                                  >
-                                    <IconTrash size={15} />
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handlePullModel(model.id)}
-                                    className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                                  >
-                                    <IconDownload size={13} />
-                                    <span>Pull to Ollama</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleInspectModel(model.id)}
-                                    className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
-                                    title="Inspect Model Architecture"
-                                  >
-                                    <IconInfoCircle size={15} />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                  {/* FULL CATALOG VIEW (Dynamic Live Hub Search) */}
+                  {hfViewMode === 'full' && (
+                    <div className="space-y-4">
+                      {/* Search Bar + Controls */}
+                      <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-xs space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                            <IconWorld size={16} />
+                            <span>Live Hugging Face Hub Dynamic Search</span>
                           </div>
-                        );
-                      })}
-                  </div>
+                          <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
+                            Filtered for GGUF quantization format
+                          </span>
+                        </div>
+
+                        {/* Search Input Row */}
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            fetchHfLiveModels(hfLiveQuery, hfLiveSort);
+                          }}
+                          className="flex flex-col sm:flex-row items-center gap-2"
+                        >
+                          <div className="relative flex-1 w-full">
+                            <IconSearch size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
+                            <input
+                              type="text"
+                              value={hfLiveQuery}
+                              onChange={(e) => setHfLiveQuery(e.target.value)}
+                              placeholder="Search any model name or architecture e.g. deepseek, qwen, llama, mistral..."
+                              className="w-full rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] pl-9 pr-3 py-2 text-xs font-mono text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
+                            />
+                            {hfLiveQuery && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setHfLiveQuery('');
+                                  fetchHfLiveModels('', hfLiveSort);
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] cursor-pointer"
+                              >
+                                <IconX size={14} />
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={isHfSearching}
+                            className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-5 py-2 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer shrink-0"
+                          >
+                            {isHfSearching ? (
+                              <IconRefresh size={14} className="animate-spin" />
+                            ) : (
+                              <IconSearch size={14} />
+                            )}
+                            <span>Search Hub</span>
+                          </button>
+                        </form>
+
+                        {/* Sort Strip & Quick Tags */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1 border-t border-[var(--color-rule-subtle)]">
+                          {/* Quick Trending Tags */}
+                          <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[var(--color-ink-muted)]">
+                            <span className="font-mono text-[10.5px]">Trending topics:</span>
+                            {[
+                              { label: 'DeepSeek R1', q: 'deepseek-r1' },
+                              { label: 'Llama 3.3', q: 'llama-3.3' },
+                              { label: 'Qwen 2.5', q: 'qwen2.5' },
+                              { label: 'Mistral', q: 'mistral' },
+                              { label: 'Gemma 2', q: 'gemma-2' },
+                              { label: 'Phi 3.5', q: 'phi-3.5' },
+                              { label: 'SmolLM2', q: 'smollm2' },
+                            ].map((tag) => (
+                              <button
+                                key={tag.q}
+                                type="button"
+                                onClick={() => {
+                                  setHfLiveQuery(tag.q);
+                                  fetchHfLiveModels(tag.q, hfLiveSort);
+                                }}
+                                className="rounded-lg bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] border border-[var(--color-rule-subtle)] px-2 py-0.5 text-[10.5px] font-mono text-[var(--color-ink)] transition-colors cursor-pointer"
+                              >
+                                {tag.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Sort Options */}
+                          <div className="flex items-center gap-1 self-start md:self-auto p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0">
+                            {[
+                              { id: 'downloads', label: 'Most Downloads', icon: IconDownload },
+                              { id: 'trending', label: 'Trending', icon: IconTrendingUp },
+                              { id: 'likes', label: 'Most Likes', icon: IconHeart },
+                            ].map((s) => {
+                              const IconComponent = s.icon;
+                              return (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const nextSort = s.id as 'downloads' | 'trending' | 'likes';
+                                    setHfLiveSort(nextSort);
+                                    fetchHfLiveModels(hfLiveQuery, nextSort);
+                                  }}
+                                  className={cn(
+                                    'flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer',
+                                    hfLiveSort === s.id
+                                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-2xs'
+                                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                                  )}
+                                >
+                                  <IconComponent size={12} />
+                                  <span>{s.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Error notification */}
+                      {hfSearchError && (
+                        <div className="rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-4 flex items-center justify-between gap-3 text-xs text-neutral-800 dark:text-neutral-200">
+                          <div className="flex items-center gap-2">
+                            <IconAlertCircle size={16} />
+                            <span>{hfSearchError}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => fetchHfLiveModels(hfLiveQuery, hfLiveSort)}
+                            className="px-3 py-1 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-bold cursor-pointer"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Loading State */}
+                      {isHfSearching && (
+                        <div className="p-12 text-center rounded-2xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] space-y-3">
+                          <IconRefresh size={28} className="animate-spin mx-auto text-[var(--color-ink-muted)]" />
+                          <p className="text-xs font-mono text-[var(--color-ink-muted)]">
+                            Searching Hugging Face Hub for GGUF model repositories...
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Results Grid */}
+                      {!isHfSearching && hfLiveResults.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs font-mono text-[var(--color-ink-muted)] px-1">
+                            <span>Showing {hfLiveResults.length} GGUF repositories</span>
+                            <span>Sorted by {hfLiveSort}</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {hfLiveResults.map((model) => {
+                              const isInstalled = installedModels.some(
+                                (im) =>
+                                  im.name === model.ollamaTag ||
+                                  `${im.name}:latest` === model.ollamaTag ||
+                                  im.name === `${model.ollamaTag}:latest`
+                              );
+                              const isPulling = downloadingModelId === model.ollamaTag;
+
+                              return (
+                                <div
+                                  key={model.id}
+                                  className="flex flex-col justify-between rounded-2xl border border-[var(--color-rule)] hover:border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-5 shadow-2xs transition-all space-y-4"
+                                >
+                                  <div>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate" title={model.name}>
+                                          {model.name}
+                                        </h3>
+                                        <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)] block truncate mt-0.5">
+                                          by {model.author}
+                                        </span>
+                                      </div>
+
+                                      {isInstalled ? (
+                                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                                          Installed
+                                        </span>
+                                      ) : (
+                                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                                          GGUF
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Stats Row */}
+                                    <div className="flex items-center gap-2 mt-3 text-[11px] font-mono text-[var(--color-ink-muted)] flex-wrap">
+                                      <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 flex items-center gap-1">
+                                        <IconDownload size={11} />
+                                        {(model.downloads || 0) >= 1000
+                                          ? `${((model.downloads || 0) / 1000).toFixed(1)}k`
+                                          : model.downloads || 0}
+                                      </span>
+                                      <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 flex items-center gap-1">
+                                        <IconHeart size={11} />
+                                        {(model.likes || 0) >= 1000
+                                          ? `${((model.likes || 0) / 1000).toFixed(1)}k`
+                                          : model.likes || 0}
+                                      </span>
+                                      {model.updatedAt && (
+                                        <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                          {new Date(model.updatedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Tags row */}
+                                    {model.tags && model.tags.length > 0 && (
+                                      <div className="flex items-center gap-1 mt-2.5 flex-wrap">
+                                        {model.tags.slice(0, 3).map((t: string) => (
+                                          <span
+                                            key={t}
+                                            className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-1.5 py-0.5 text-[9.5px] font-mono text-[var(--color-ink-muted)]"
+                                          >
+                                            {t}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
+                                    {/* Terminal Run Pill */}
+                                    <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
+                                      <span className="truncate">ollama run {model.ollamaTag}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopy(`ollama run ${model.ollamaTag}`, `term-${model.id}`)}
+                                        className="hover:text-[var(--color-ink)] transition-colors cursor-pointer shrink-0 ml-2"
+                                      >
+                                        {copiedKey === `term-${model.id}` ? (
+                                          <IconCheck size={13} className="text-neutral-900 dark:text-white" />
+                                        ) : (
+                                          <IconCopy size={13} />
+                                        )}
+                                      </button>
+                                    </div>
+
+                                    {/* Download / Active Actions */}
+                                    {isPulling ? (
+                                      <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
+                                        <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
+                                          <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling GGUF layers...'}</span>
+                                          <span className="font-bold">{downloadProgress}%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                                          <div
+                                            className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
+                                            style={{ width: `${downloadProgress}%` }}
+                                          />
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={handleCancelPull}
+                                          className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
+                                        >
+                                          Cancel Download
+                                        </button>
+                                      </div>
+                                    ) : isInstalled ? (
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedModel(model.ollamaTag);
+                                            setActiveTab('chat');
+                                          }}
+                                          className="flex-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                        >
+                                          <IconPlayerPlay size={13} fill="currentColor" />
+                                          <span>Launch</span>
+                                        </button>
+                                        <a
+                                          href={`https://huggingface.co/${model.id}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                          title="View on Hugging Face"
+                                        >
+                                          <IconExternalLink size={15} />
+                                        </a>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => handlePullModel(model.ollamaTag)}
+                                          className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                        >
+                                          <IconDownload size={13} />
+                                          <span>Pull to Ollama</span>
+                                        </button>
+                                        <a
+                                          href={`https://huggingface.co/${model.id}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                          title="View on Hugging Face"
+                                        >
+                                          <IconExternalLink size={15} />
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Empty State */}
+                      {!isHfSearching && hasSearchedHf && hfLiveResults.length === 0 && !hfSearchError && (
+                        <div className="p-12 text-center rounded-2xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] space-y-3">
+                          <IconCube size={28} className="mx-auto text-[var(--color-ink-muted)]" />
+                          <h4 className="text-sm font-bold text-[var(--color-ink)]">No GGUF Models Found</h4>
+                          <p className="text-xs text-[var(--color-ink-muted)] max-w-sm mx-auto">
+                            Try searching for common model families like `llama`, `deepseek`, `mistral`, or `qwen`.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
