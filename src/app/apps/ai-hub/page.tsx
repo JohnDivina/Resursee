@@ -1658,6 +1658,18 @@ export default function AIHubPage() {
     }
 
     refreshConnection(activeEp);
+
+    // Auto-reconnect heartbeat: poll every 3.5s when disconnected to automatically detect local Ollama
+    const heartbeatTimer = setInterval(() => {
+      setConnectionStatus((currentStatus) => {
+        if (currentStatus !== 'connected') {
+          refreshConnection(activeEp);
+        }
+        return currentStatus;
+      });
+    }, 3500);
+
+    return () => clearInterval(heartbeatTimer);
   }, []);
 
   // 1-Click Start Ollama Daemon Handler
@@ -1682,8 +1694,13 @@ export default function AIHubPage() {
           window.location.href = 'ollama://';
         } catch {}
 
+        setDaemonNotification({
+          type: 'info',
+          message: 'Launching Ollama engine... waiting for models to load',
+        });
+
         let connected = false;
-        for (let i = 0; i < 8; i++) {
+        for (let i = 1; i <= 20; i++) {
           await new Promise((r) => setTimeout(r, 600));
           const check = await checkOllamaConnection(endpoint);
           if (check.status) {
@@ -1691,6 +1708,7 @@ export default function AIHubPage() {
             setInstalledModels(check.models);
             setIsPreviewMode(false);
             setIsLocalHost(true);
+            setIsSetupModalOpen(false);
             connected = true;
             setDaemonNotification({
               type: 'success',
@@ -1705,9 +1723,8 @@ export default function AIHubPage() {
 
         setDaemonNotification({
           type: 'info',
-          message: 'Connecting to Ollama... Please ensure the Ollama app is open or run "ollama serve" in your terminal.',
+          message: 'Ollama is starting up in the background. It will automatically connect once initialized.',
         });
-        setIsSetupModalOpen(true);
         return;
       }
 

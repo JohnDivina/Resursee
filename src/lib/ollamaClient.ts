@@ -17,36 +17,50 @@ export async function checkOllamaConnection(
   endpoint: string = DEFAULT_OLLAMA_ENDPOINT,
   timeoutMs: number = 2500
 ): Promise<{ status: boolean; models: OllamaModel[]; error?: string }> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const tryEndpoint = async (url: string) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const cleanEndpoint = endpoint.replace(/\/+$/, '');
-    const res = await fetch(`${cleanEndpoint}/api/tags`, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-      signal: controller.signal,
-    });
+    try {
+      const cleanEndpoint = url.replace(/\/+$/, '');
+      const res = await fetch(`${cleanEndpoint}/api/tags`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
 
-    clearTimeout(timer);
+      clearTimeout(timer);
 
-    if (!res.ok) {
-      return { status: false, models: [], error: `HTTP ${res.status}: ${res.statusText}` };
+      if (!res.ok) {
+        return { status: false, models: [], error: `HTTP ${res.status}: ${res.statusText}` };
+      }
+
+      const data: OllamaTagResponse = await res.json();
+      return {
+        status: true,
+        models: data.models || [],
+      };
+    } catch (err: any) {
+      clearTimeout(timer);
+      return {
+        status: false,
+        models: [],
+        error: err.name === 'AbortError' ? 'Connection timed out' : (err.message || 'Daemon unreachable'),
+      };
     }
+  };
 
-    const data: OllamaTagResponse = await res.json();
-    return {
-      status: true,
-      models: data.models || [],
-    };
-  } catch (err: any) {
-    clearTimeout(timer);
-    return {
-      status: false,
-      models: [],
-      error: err.name === 'AbortError' ? 'Connection timed out' : (err.message || 'Daemon unreachable'),
-    };
+  const firstAttempt = await tryEndpoint(endpoint);
+  if (firstAttempt.status) return firstAttempt;
+
+  // Fallback: If 'localhost' was used, also attempt '127.0.0.1' (handles IPv6/IPv4 WebKit loopback quirks)
+  if (endpoint.includes('localhost')) {
+    const ipv4Endpoint = endpoint.replace('localhost', '127.0.0.1');
+    const fallbackAttempt = await tryEndpoint(ipv4Endpoint);
+    if (fallbackAttempt.status) return fallbackAttempt;
   }
+
+  return firstAttempt;
 }
 
 /**
