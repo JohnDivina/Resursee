@@ -62,7 +62,7 @@ import {
   isEmbeddingModel,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
-import { isLocalEnvironment } from '@/lib/envDetector';
+import { isLocalEnvironment, isTauriDesktop } from '@/lib/envDetector';
 import { parseAnyDocumentFile } from '@/lib/documentParsers';
 import {
   OllamaModel,
@@ -1635,11 +1635,16 @@ export default function AIHubPage() {
 
   useEffect(() => {
     const savedEndpoint = typeof window !== 'undefined' ? localStorage.getItem('resursee_ollama_endpoint') : null;
-    const activeEp = savedEndpoint || DEFAULT_OLLAMA_ENDPOINT;
+    const isInvalid = !savedEndpoint || savedEndpoint.includes(':3000') || savedEndpoint.trim() === '';
+    const activeEp = isInvalid ? DEFAULT_OLLAMA_ENDPOINT : savedEndpoint;
+    if (isInvalid && typeof window !== 'undefined') {
+      localStorage.setItem('resursee_ollama_endpoint', DEFAULT_OLLAMA_ENDPOINT);
+    }
     setEndpoint(activeEp);
 
     // Environment detection (Phase 2)
-    const local = isLocalEnvironment();
+    const isDesktop = isTauriDesktop();
+    const local = isLocalEnvironment() || isDesktop;
     setIsLocalHost(local);
     if (!local) {
       setIsPreviewMode(true);
@@ -1647,6 +1652,9 @@ export default function AIHubPage() {
       if (!dismissed) {
         setShowRemoteNoticeModal(true);
       }
+    } else {
+      setIsPreviewMode(false);
+      setShowRemoteNoticeModal(false);
     }
 
     // Detect user OS for guide tab default
@@ -1678,8 +1686,9 @@ export default function AIHubPage() {
     setDaemonNotification({ type: 'info', message: 'Starting Ollama background daemon...' });
 
     try {
+      const isDesktop = isTauriDesktop();
       const res = await startOllamaDaemon();
-      if (res.running) {
+      if (res.running || (isDesktop && res.success)) {
         setDaemonNotification({
           type: 'success',
           message: res.message || 'Ollama daemon connected!',
@@ -1689,7 +1698,7 @@ export default function AIHubPage() {
         return;
       }
 
-      if (res.isCloud) {
+      if (res.isCloud && !isDesktop) {
         try {
           window.location.href = 'ollama://';
         } catch {}

@@ -7,6 +7,16 @@ import {
   DocumentChunk,
   RetrievalResult,
 } from '@/types/aiHub';
+import { isTauriDesktop } from '@/lib/envDetector';
+import {
+  tauriCheckOllamaStatus,
+  tauriStartOllama,
+  tauriStopOllama,
+  tauriQueryOllamaTags,
+  tauriQueryOllamaPs,
+  tauriStreamOllamaChat,
+  tauriOllamaProxyRequest,
+} from '@/lib/tauriBridge';
 
 export const DEFAULT_OLLAMA_ENDPOINT = 'http://localhost:11434';
 
@@ -17,6 +27,19 @@ export async function checkOllamaConnection(
   endpoint: string = DEFAULT_OLLAMA_ENDPOINT,
   timeoutMs: number = 1500
 ): Promise<{ status: boolean; models: OllamaModel[]; error?: string }> {
+  // If running in Tauri desktop, bypass WebKit mixed content and query via native Rust IPC
+  if (isTauriDesktop()) {
+    try {
+      const isListening = await tauriCheckOllamaStatus();
+      if (!isListening) {
+        return { status: false, models: [], error: 'Ollama daemon is not running' };
+      }
+      return await tauriQueryOllamaTags();
+    } catch (err: any) {
+      return { status: false, models: [], error: err?.message || 'Native IPC error' };
+    }
+  }
+
   const tryEndpoint = async (url: string) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -70,6 +93,10 @@ export async function getRunningModels(
   endpoint: string = DEFAULT_OLLAMA_ENDPOINT,
   timeoutMs: number = 2000
 ): Promise<string[]> {
+  if (isTauriDesktop()) {
+    return await tauriQueryOllamaPs();
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -178,6 +205,11 @@ export async function deleteOllamaModel(
   endpoint: string = DEFAULT_OLLAMA_ENDPOINT,
   modelName: string
 ): Promise<void> {
+  if (isTauriDesktop()) {
+    await tauriOllamaProxyRequest('DELETE', '/api/delete', { name: modelName });
+    return;
+  }
+
   const cleanEndpoint = endpoint.replace(/\/+$/, '');
   const res = await fetch(`${cleanEndpoint}/api/delete`, {
     method: 'DELETE',
@@ -197,6 +229,10 @@ export async function showOllamaModel(
   endpoint: string = DEFAULT_OLLAMA_ENDPOINT,
   modelName: string
 ): Promise<any> {
+  if (isTauriDesktop()) {
+    return await tauriOllamaProxyRequest('POST', '/api/show', { name: modelName });
+  }
+
   const cleanEndpoint = endpoint.replace(/\/+$/, '');
   const res = await fetch(`${cleanEndpoint}/api/show`, {
     method: 'POST',
@@ -258,6 +294,10 @@ export async function streamOllamaChat(
     throw new Error(
       `Model "${options.model}" is an embedding model and does not support chat/text generation. Please select a generative LLM (such as Llama 3.2 or Qwen 2.5) for synthesis.`
     );
+  }
+
+  if (isTauriDesktop()) {
+    return await tauriStreamOllamaChat(options, onToken);
   }
 
   const cleanEndpoint = endpoint.replace(/\/+$/, '');
@@ -331,6 +371,36 @@ export async function startOllamaDaemon(): Promise<{
   isCloud?: boolean;
   error?: string;
 }> {
+  if (isTauriDesktop()) {
+    try {
+      const msg = await tauriStartOllama();
+      // Poll briefly for local daemon to initialize
+      for (let i = 0; i < 6; i++) {
+        await new Promise((r) => setTimeout(r, 400));
+        const check = await tauriQueryOllamaTags();
+        if (check.status) {
+          return {
+            success: true,
+            running: true,
+            modelsCount: check.models.length,
+            message: msg || 'Ollama daemon connected',
+          };
+        }
+      }
+      return {
+        success: true,
+        running: false,
+        message: 'Ollama launch requested. Initializing...',
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        running: false,
+        error: err?.message || 'Failed to start Ollama via native IPC',
+      };
+    }
+  }
+
   try {
     const res = await fetch('/api/ai/ollama/start', {
       method: 'POST',
@@ -356,6 +426,23 @@ export async function stopOllamaDaemon(): Promise<{
   isCloud?: boolean;
   error?: string;
 }> {
+  if (isTauriDesktop()) {
+    try {
+      const msg = await tauriStopOllama();
+      return {
+        success: true,
+        stopped: true,
+        message: msg,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        stopped: false,
+        error: err?.message || 'Failed to stop Ollama via native IPC',
+      };
+    }
+  }
+
   try {
     const res = await fetch('/api/ai/ollama/stop', {
       method: 'POST',
@@ -444,6 +531,22 @@ export async function getOllamaEmbedding(
   model: string = 'nomic-embed-text',
   prompt: string
 ): Promise<number[]> {
+  if (isTauriDesktop()) {
+    try {
+      const embedData = await tauriOllamaProxyRequest('POST', '/api/embed', { model, input: prompt });
+      if (Array.isArray(embedData?.embeddings) && embedData.embeddings[0]) {
+        return embedData.embeddings[0];
+      }
+    } catch {
+      // Fallback to legacy
+    }
+    const legacyData = await tauriOllamaProxyRequest('POST', '/api/embeddings', { model, prompt });
+    if (Array.isArray(legacyData?.embedding)) {
+      return legacyData.embedding;
+    }
+    throw new Error('Failed to compute embedding via native IPC');
+  }
+
   const cleanEndpoint = endpoint.replace(/\/+$/, '');
 
   // Try modern /api/embed first

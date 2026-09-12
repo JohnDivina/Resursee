@@ -10,6 +10,7 @@
     "frontendDist": "https://resursee.vercel.app"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Resursee AI Hub",

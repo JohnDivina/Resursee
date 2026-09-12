@@ -3,6 +3,13 @@
   "identifier": "default",
   "description": "Default capabilities for Resursee desktop windows",
   "windows": ["main"],
+  "remote": {
+    "urls": [
+      "https://resursee.vercel.app/*",
+      "https://*.vercel.app/*",
+      "http://localhost:3000/*"
+    ]
+  },
   "permissions": [
     "core:default"
   ]

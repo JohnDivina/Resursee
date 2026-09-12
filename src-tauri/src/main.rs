@@ -35,19 +35,29 @@ fn check_ollama_status() -> Result<bool, String> {
 fn start_ollama_daemon() -> Result<String, String> {
     #[cfg(target_os = "macos")]
     {
-        // Try opening the macOS Ollama app first
-        let open_res = Command::new("open").arg("-a").arg("Ollama").output();
-        if let Ok(output) = open_res {
+        // 1. Try opening the macOS Ollama app first
+        if let Ok(output) = Command::new("open").arg("-a").arg("Ollama").output() {
             if output.status.success() {
                 return Ok("Ollama launched via macOS Application bundle".to_string());
             }
         }
-        // Fallback to spawning background CLI daemon
-        Command::new("ollama")
-            .arg("serve")
-            .spawn()
-            .map_err(|e| format!("Failed to spawn ollama serve: {}", e))?;
-        Ok("Ollama daemon spawned in background".to_string())
+        if let Ok(output) = Command::new("open").arg("/Applications/Ollama.app").output() {
+            if output.status.success() {
+                return Ok("Ollama launched via /Applications/Ollama.app".to_string());
+            }
+        }
+        // 2. Fallback to known CLI binary locations
+        let candidate_paths = [
+            "/usr/local/bin/ollama",
+            "/opt/homebrew/bin/ollama",
+            "ollama",
+        ];
+        for path in candidate_paths {
+            if let Ok(_) = Command::new(path).arg("serve").spawn() {
+                return Ok(format!("Ollama daemon spawned via {}", path));
+            }
+        }
+        Err("Failed to start Ollama. Ensure Ollama is installed in /Applications or in your PATH.".to_string())
     }
 
     #[cfg(target_os = "windows")]
@@ -158,13 +168,115 @@ fn get_system_telemetry() -> SystemTelemetry {
     }
 }
 
+/// Queries Ollama /api/tags for installed models natively
+#[tauri::command]
+fn query_ollama_tags() -> Result<serde_json::Value, String> {
+    let response = ureq::get("http://127.0.0.1:11434/api/tags")
+        .timeout(Duration::from_millis(2500))
+        .call()
+        .map_err(|e| format!("Failed to connect to Ollama: {}", e))?;
+
+    let json: serde_json::Value = response
+        .into_json()
+        .map_err(|e| format!("Failed to parse Ollama response: {}", e))?;
+
+    Ok(json)
+}
+
+/// Queries Ollama /api/ps for currently running models in VRAM
+#[tauri::command]
+fn query_ollama_ps() -> Result<serde_json::Value, String> {
+    let response = ureq::get("http://127.0.0.1:11434/api/ps")
+        .timeout(Duration::from_millis(2500))
+        .call()
+        .map_err(|e| format!("Failed to connect to Ollama ps: {}", e))?;
+
+    let json: serde_json::Value = response
+        .into_json()
+        .map_err(|e| format!("Failed to parse Ollama response: {}", e))?;
+
+    Ok(json)
+}
+
+/// Streams chat tokens from Ollama /api/chat via Tauri Channel
+#[tauri::command]
+fn stream_ollama_chat(
+    options: serde_json::Value,
+    on_chunk: tauri::ipc::Channel<String>,
+) -> Result<String, String> {
+    use std::io::BufRead;
+
+    let response = ureq::post("http://127.0.0.1:11434/api/chat")
+        .send_json(options)
+        .map_err(|e| format!("Inference error: {}", e))?;
+
+    let reader = std::io::BufReader::new(response.into_reader());
+    let mut full_accumulated = String::new();
+
+    for line in reader.lines() {
+        let l = line.map_err(|e| format!("Stream read error: {}", e))?;
+        if !l.trim().is_empty() {
+            let _ = on_chunk.send(l.clone());
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&l) {
+                if let Some(content) = v.get("message").and_then(|m| m.get("content")).and_then(|c| c.as_str()) {
+                    full_accumulated.push_str(content);
+                }
+            }
+        }
+    }
+
+    Ok(full_accumulated)
+}
+
+/// Generic proxy for any Ollama JSON endpoint (e.g. /api/show, /api/delete, /api/embeddings)
+#[tauri::command]
+fn ollama_proxy_request(
+    method: String,
+    path: String,
+    body: Option<serde_json::Value>,
+) -> Result<serde_json::Value, String> {
+    let clean_path = path.trim_start_matches('/');
+    let url = format!("http://127.0.0.1:11434/{}", clean_path);
+
+    let res = match method.to_uppercase().as_str() {
+        "POST" => {
+            let req = ureq::post(&url).timeout(Duration::from_millis(30000));
+            if let Some(b) = body {
+                req.send_json(b)
+            } else {
+                req.call()
+            }
+        }
+        "DELETE" => {
+            let req = ureq::delete(&url).timeout(Duration::from_millis(15000));
+            if let Some(b) = body {
+                req.send_json(b)
+            } else {
+                req.call()
+            }
+        }
+        _ => ureq::get(&url).timeout(Duration::from_millis(15000)).call(),
+    };
+
+    let response = res.map_err(|e| format!("Ollama request error: {}", e))?;
+    let json: serde_json::Value = response
+        .into_json()
+        .map_err(|e| format!("Failed to parse Ollama response: {}", e))?;
+
+    Ok(json)
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             check_ollama_status,
             start_ollama_daemon,
             stop_ollama_daemon,
-            get_system_telemetry
+            get_system_telemetry,
+            query_ollama_tags,
+            query_ollama_ps,
+            stream_ollama_chat,
+            ollama_proxy_request
         ])
         .run(tauri::generate_context!())
         .expect("error while running Resursee desktop application");
