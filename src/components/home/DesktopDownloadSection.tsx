@@ -12,11 +12,19 @@ import {
   IconShieldCheck,
   IconArrowRight,
   IconCheck,
+  IconCopy,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
 export default function DesktopDownloadSection() {
   const [userOS, setUserOS] = useState<'macos' | 'windows' | 'linux'>('macos');
+  const [copiedBrew, setCopiedBrew] = useState(false);
+
+  const handleCopyBrew = () => {
+    navigator.clipboard.writeText('brew install --cask johndivina/tap/resursee');
+    setCopiedBrew(true);
+    setTimeout(() => setCopiedBrew(false), 2000);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -108,19 +116,37 @@ export default function DesktopDownloadSection() {
               </div>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-current/10">
-              <a
-                href={downloadLinks.macos}
-                className={cn(
-                  "flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-xs",
-                  userOS === 'macos'
-                    ? "bg-white text-neutral-900 hover:bg-neutral-100 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
-                    : "bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
-                )}
-              >
-                <IconDownload size={16} />
-                <span>Download .dmg (2.1 MB)</span>
-              </a>
+            <div className="mt-6 pt-4 border-t border-current/10 space-y-2.5">
+              <div className="flex items-center justify-between rounded-xl border border-current/20 bg-current/5 p-2">
+                <div className="font-mono text-[11px] select-all overflow-x-auto truncate mr-2 pl-1">
+                  brew install --cask johndivina/tap/resursee
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyBrew}
+                  className={cn(
+                    "flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all shrink-0 cursor-pointer shadow-2xs",
+                    userOS === 'macos'
+                      ? "bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white"
+                      : "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+                  )}
+                >
+                  {copiedBrew ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                  <span>{copiedBrew ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] px-0.5">
+                <span className={cn(userOS === 'macos' ? "text-neutral-300 dark:text-neutral-600" : "text-[var(--color-ink-muted)]")}>
+                  Zero warnings via Homebrew
+                </span>
+                <Link
+                  href="/download"
+                  className="font-bold underline hover:opacity-80"
+                >
+                  View Details & .dmg →
+                </Link>
+              </div>
             </div>
           </div>
 

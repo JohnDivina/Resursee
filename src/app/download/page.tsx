@@ -14,6 +14,7 @@ import {
   IconShieldCheck,
   IconTerminal2,
   IconCheck,
+  IconCopy,
   IconExternalLink,
   IconHelpCircle,
   IconCpu,
@@ -24,6 +25,20 @@ export default function DownloadPage() {
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const [userOS, setUserOS] = useState<'macos' | 'windows' | 'linux'>('macos');
   const [activeTab, setActiveTab] = useState<'macos' | 'windows' | 'linux'>('macos');
+  const [copiedBrew, setCopiedBrew] = useState(false);
+  const [copiedCurl, setCopiedCurl] = useState(false);
+
+  const handleCopyBrew = () => {
+    navigator.clipboard.writeText('brew install --cask johndivina/tap/resursee');
+    setCopiedBrew(true);
+    setTimeout(() => setCopiedBrew(false), 2000);
+  };
+
+  const handleCopyCurl = () => {
+    navigator.clipboard.writeText('curl -fsSL https://resursee.vercel.app/install.sh | bash');
+    setCopiedCurl(true);
+    setTimeout(() => setCopiedCurl(false), 2000);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -72,29 +87,51 @@ export default function DownloadPage() {
               Standalone native application built with Tauri 2.0. Run AI Studio, PDF tools, and media converters 100% offline with zero cloud data egress and Apple Silicon hardware acceleration.
             </p>
 
-            {/* Primary Detected OS 1-Click Action */}
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href={downloadLinks[userOS]}
-                className="inline-flex items-center justify-center gap-2.5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-8 py-3.5 text-sm font-bold shadow-md hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all active:scale-95 cursor-pointer"
-              >
-                <IconDownload size={18} />
-                <span>
-                  {userOS === 'macos' && 'Download for Mac (Apple Silicon .dmg • 2.1 MB)'}
-                  {userOS === 'windows' && 'Download for Windows (64-bit .exe)'}
-                  {userOS === 'linux' && 'Download for Linux (.AppImage)'}
-                </span>
-              </a>
-
-              <a
-                href="https://github.com/JohnDivina/Resursee/releases/latest"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-5 py-3.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer shadow-2xs"
-              >
-                <span>GitHub Releases</span>
-                <IconExternalLink size={13} />
-              </a>
+            {/* Primary Detected OS Action */}
+            <div className="pt-4 flex flex-col items-center justify-center gap-3">
+              {userOS === 'macos' ? (
+                <div className="w-full max-w-xl mx-auto space-y-2">
+                  <div className="flex items-center justify-between rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 p-2 sm:p-2.5 shadow-sm">
+                    <div className="flex items-center gap-2 pl-3 font-mono text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 overflow-x-auto select-all">
+                      <span className="text-neutral-400 select-none">$</span>
+                      <span>brew install --cask johndivina/tap/resursee</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyBrew}
+                      className="flex items-center gap-1.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-4 py-2 text-xs font-bold transition-all hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95 cursor-pointer shrink-0 shadow-xs"
+                    >
+                      {copiedBrew ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                      <span>{copiedBrew ? 'Copied!' : 'Copy Command'}</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500">
+                    <span className="flex items-center gap-1">
+                      <IconCheck size={12} className="text-neutral-700 dark:text-neutral-300" />
+                      <span>Zero Gatekeeper warnings</span>
+                    </span>
+                    <span>•</span>
+                    <span>Auto-updates via brew</span>
+                    <span>•</span>
+                    <a href={downloadLinks.macos} className="underline hover:text-neutral-900 dark:hover:text-white">
+                      Download .dmg instead
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <a
+                    href={downloadLinks[userOS]}
+                    className="inline-flex items-center justify-center gap-2.5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-8 py-3.5 text-sm font-bold shadow-md hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <IconDownload size={18} />
+                    <span>
+                      {userOS === 'windows' && 'Download for Windows (64-bit .exe)'}
+                      {userOS === 'linux' && 'Download for Linux (.AppImage)'}
+                    </span>
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 
@@ -160,60 +197,77 @@ export default function DownloadPage() {
                       </div>
                       <div>
                         <h3 className="text-base font-bold text-[var(--color-ink)]">
-                          Resursee for macOS (Apple Silicon)
+                          Resursee for macOS (Homebrew Cask)
                         </h3>
                         <p className="text-xs text-[var(--color-ink-muted)]">
-                          Version 0.1.0 • macOS 11.0 Big Sur or later • Apple M1, M2, M3, M4
+                          Version 0.1.0 • Apple Silicon (M1, M2, M3, M4) • macOS 11.0+
                         </p>
                       </div>
                     </div>
 
                     <a
                       href={downloadLinks.macos}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-6 py-2.5 text-xs font-bold shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 px-4 py-2 text-xs font-bold shadow-2xs hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer"
                     >
-                      <IconDownload size={15} />
-                      <span>Download .dmg (2.1 MB)</span>
+                      <IconDownload size={14} />
+                      <span>Direct .dmg (2.1 MB)</span>
                     </a>
                   </div>
 
-                  {/* macOS Setup Instructions & Gatekeeper Notice */}
-                  <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 p-4 sm:p-5 space-y-3 text-xs">
-                    <div className="flex items-center gap-2 font-bold text-neutral-900 dark:text-white">
-                      <IconHelpCircle size={16} />
-                      <span>Installation & First Launch on macOS</span>
-                    </div>
-
-                    <ol className="list-decimal list-inside space-y-1.5 text-neutral-700 dark:text-neutral-300">
-                      <li>Download and double-click <code className="font-mono font-bold">Resursee_0.1.0_aarch64.dmg</code>.</li>
-                      <li>Drag the <code className="font-mono font-bold">Resursee.app</code> icon into your <code className="font-mono font-bold">/Applications</code> folder.</li>
-                      <li>Launch Resursee from Launchpad or Spotlight.</li>
-                    </ol>
-
-                    {/* 1-Line Zero-Warning Terminal Install */}
-                    <div className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-200/60 dark:bg-neutral-800/80 p-3 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-[11px] text-neutral-900 dark:text-white flex items-center gap-1.5">
-                          <IconTerminal2 size={13} />
-                          <span>1-Line Direct Terminal Install (Zero Warnings)</span>
-                        </span>
-                        <span className="text-[10px] font-mono text-neutral-500">Bypasses Gatekeeper</span>
+                  {/* Primary Method: Homebrew Cask */}
+                  <div className="rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
+                        <span className="flex h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
+                        <span>Recommended: Install via Homebrew Cask</span>
                       </div>
-                      <pre className="rounded-lg bg-neutral-900 text-neutral-100 p-2.5 font-mono text-[11px] overflow-x-auto select-all">
-curl -fsSL https://resursee.vercel.app/install.sh | bash
-                      </pre>
+                      <span className="text-[10px] font-mono text-neutral-500">Zero warnings • Standard Mac Developer Workflow</span>
                     </div>
 
-                    <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 text-[11px] text-neutral-600 dark:text-neutral-400 space-y-1">
-                      <p className="font-semibold text-neutral-900 dark:text-neutral-200">
-                        🛡️ If macOS shows &quot;Resursee is damaged and can&apos;t be opened&quot;:
-                      </p>
-                      <p>
-                        This is macOS Gatekeeper for open-source apps downloaded from the web. To unlock in 1 second, run in Terminal:
-                      </p>
-                      <pre className="rounded-lg bg-neutral-900 text-neutral-100 p-2 font-mono text-[10.5px] select-all">
-xattr -cr /Applications/Resursee.app
-                      </pre>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      Homebrew installs directly into <code className="font-mono">/Applications/Resursee.app</code>, automatically bypasses Gatekeeper quarantine, and supports 1-command updates.
+                    </p>
+
+                    <div className="flex items-center justify-between rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-200/70 dark:bg-neutral-800 p-2 sm:p-2.5">
+                      <div className="flex items-center gap-2 pl-2 font-mono text-xs sm:text-sm text-neutral-900 dark:text-neutral-100 overflow-x-auto select-all">
+                        <span className="text-neutral-400 select-none">$</span>
+                        <span>brew install --cask johndivina/tap/resursee</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyBrew}
+                        className="flex items-center gap-1.5 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-3.5 py-1.5 text-xs font-bold transition-all hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95 cursor-pointer shrink-0 shadow-xs"
+                      >
+                        {copiedBrew ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                        <span>{copiedBrew ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] font-mono text-neutral-500 pt-1">
+                      To update later: <code className="text-neutral-800 dark:text-neutral-200">brew upgrade --cask resursee</code>
+                    </p>
+                  </div>
+
+                  {/* Secondary Terminal Method: Curl Script */}
+                  <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-4 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[11px] text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                        <IconTerminal2 size={14} />
+                        <span>No Homebrew? 1-Line Direct Terminal Install</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-200/50 dark:bg-neutral-800/80 p-2">
+                      <div className="font-mono text-[11px] text-neutral-900 dark:text-neutral-100 select-all overflow-x-auto">
+                        curl -fsSL https://resursee.vercel.app/install.sh | bash
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyCurl}
+                        className="text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white px-2 cursor-pointer"
+                      >
+                        {copiedCurl ? 'Copied!' : 'Copy'}
+                      </button>
                     </div>
                   </div>
                 </div>
