@@ -56,3 +56,7 @@ gemini.md
 design.md
 DESIGN.md
 
+# Tauri desktop build outputs
+src-tauri/target/
+src-tauri/gen/
+
