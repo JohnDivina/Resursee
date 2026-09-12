@@ -1371,7 +1371,6 @@ export default function AIHubPage() {
   const [modelCategory, setModelCategory] = useState<string>('all');
   const [modelSearch, setModelSearch] = useState<string>('');
   const [hfSearch, setHfSearch] = useState<string>('');
-  const [customPullTag, setCustomPullTag] = useState<string>('');
   const [customHfTag, setCustomHfTag] = useState<string>('');
   const [downloadingModelId, setDownloadingModelId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
@@ -2344,7 +2343,6 @@ Instructions:
         );
         setDownloadStatus('Pull completed successfully!');
         await refreshConnection();
-        setCustomPullTag('');
       } catch (err: any) {
         if (err.name === 'AbortError') {
           // Cancelled by user
@@ -3651,8 +3649,9 @@ Instructions:
                 )}
               </div>
 
-              {/* Dual Catalog Tabs Switcher: Ollama Library vs Hugging Face Models */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[var(--color-rule-subtle)]">
+              {/* Dual Catalog Tabs Switcher: Ollama Library vs Hugging Face Models on left + Curated vs Full on other end */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
+                {/* Left: Engine Selection */}
                 <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0">
                   <button
                     type="button"
@@ -3666,7 +3665,14 @@ Instructions:
                   >
                     <IconCpu size={14} />
                     <span>Ollama Library</span>
-                    <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                    <span
+                      className={cn(
+                        'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                        modelSourceTab === 'ollama'
+                          ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
+                          : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                      )}
+                    >
                       {CATALOG_MODELS.length}
                     </span>
                   </button>
@@ -3682,25 +3688,23 @@ Instructions:
                   >
                     <IconCube size={14} />
                     <span>Hugging Face Models</span>
-                    <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                    <span
+                      className={cn(
+                        'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                        modelSourceTab === 'huggingface'
+                          ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
+                          : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                      )}
+                    >
                       GGUF
                     </span>
                   </button>
                 </div>
 
-                <div className="text-xs text-[var(--color-ink-muted)] font-mono">
-                  {modelSourceTab === 'ollama'
-                    ? 'Curated & Full library from ollama.com'
-                    : 'GGUF models with Curated Showcase & Live Hugging Face Hub Search'}
-                </div>
-              </div>
-
-              {/* TAB 1: OLLAMA LIBRARY */}
-              {modelSourceTab === 'ollama' && (
-                <div className="space-y-4">
-                  {/* Subtab Switcher: Curated Selection vs Full Catalog */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 rounded-2xl bg-[var(--color-paper-card)] border border-[var(--color-rule-strong)]">
-                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0">
+                {/* Right: Curated vs Full Catalog Selection (Same lane, other end) */}
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0 self-start md:self-auto">
+                  {modelSourceTab === 'ollama' ? (
+                    <>
                       <button
                         type="button"
                         onClick={() => setOllamaViewMode('curated')}
@@ -3713,7 +3717,14 @@ Instructions:
                       >
                         <IconSparkles size={13} />
                         <span>Curated Selection</span>
-                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                        <span
+                          className={cn(
+                            'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                            ollamaViewMode === 'curated'
+                              ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
+                              : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                          )}
+                        >
                           {
                             allDisplayModels.filter(
                               (m) =>
@@ -3736,48 +3747,79 @@ Instructions:
                       >
                         <IconWorld size={13} />
                         <span>Full Catalog</span>
-                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                        <span
+                          className={cn(
+                            'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                            ollamaViewMode === 'full'
+                              ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
+                              : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                          )}
+                        >
                           {allDisplayModels.length}
                         </span>
                       </button>
-                    </div>
-
-                    <div className="text-xs text-[var(--color-ink-muted)] font-mono">
-                      {ollamaViewMode === 'curated'
-                        ? 'Hand-picked flagship recommendations for fast local onboarding'
-                        : 'Complete Ollama library with category filters and instant pull'}
-                    </div>
-                  </div>
-
-                  {/* 📥 Custom Ollama Model Pull Input Bar */}
-                  <div className="flex flex-col sm:flex-row items-center gap-2.5 p-3 rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] shadow-xs">
-                    <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink)] shrink-0 px-1">
-                      <IconDownload size={15} />
-                      <span className="font-bold">Pull Custom Ollama Tag:</span>
-                    </div>
-                    <div className="relative flex-1 w-full">
-                      <input
-                        type="text"
-                        value={customPullTag}
-                        onChange={(e) => setCustomPullTag(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handlePullModel(customPullTag);
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setHfViewMode('curated')}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                          hfViewMode === 'curated'
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                        )}
+                      >
+                        <IconSparkles size={13} />
+                        <span>Curated Showcase</span>
+                        <span
+                          className={cn(
+                            'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                            hfViewMode === 'curated'
+                              ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
+                              : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                          )}
+                        >
+                          {allDisplayHfModels.length}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHfViewMode('full');
+                          if (!hasSearchedHf) {
+                            fetchHfLiveModels('deepseek', 'downloads');
+                          }
                         }}
-                        placeholder="Enter any Ollama tag e.g. mistral:latest, deepseek-coder-v2:16b, starcoder2:3b..."
-                        className="w-full rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-mono text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handlePullModel(customPullTag)}
-                      disabled={!customPullTag.trim() || !!downloadingModelId}
-                      className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shrink-0"
-                    >
-                      <IconDownload size={13} />
-                      <span>Pull Tag</span>
-                    </button>
-                  </div>
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                          hfViewMode === 'full'
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                        )}
+                      >
+                        <IconWorld size={13} />
+                        <span>Full Catalog</span>
+                        <span
+                          className={cn(
+                            'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                            hfViewMode === 'full'
+                              ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
+                              : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                          )}
+                        >
+                          Live Hub
+                        </span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
 
+              {/* TAB 1: OLLAMA LIBRARY */}
+              {modelSourceTab === 'ollama' && (
+                <div className="space-y-4">
                   {/* Filter Strip & Search Across the Ollama Library */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                     {/* Category Filter Pills */}
@@ -3822,8 +3864,8 @@ Instructions:
 
                   {/* Models Grid (Dynamic Catalog + Local Installed) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {allDisplayModels
-                      .filter((m) => {
+                    {(() => {
+                      const filteredList = allDisplayModels.filter((m) => {
                         if (
                           ollamaViewMode === 'curated' &&
                           !m.isDownloaded &&
@@ -3842,8 +3884,36 @@ Instructions:
                         )
                           return false;
                         return true;
-                      })
-                      .map((model) => {
+                      });
+
+                      if (filteredList.length === 0) {
+                        return (
+                          <div className="col-span-full p-10 text-center rounded-2xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] space-y-3">
+                            <IconSearch size={26} className="mx-auto text-[var(--color-ink-muted)]" />
+                            <h4 className="text-sm font-bold text-[var(--color-ink)]">
+                              {modelSearch ? `No catalog models matching "${modelSearch}"` : 'No models found in this category'}
+                            </h4>
+                            {modelSearch.trim() && (
+                              <div className="space-y-2 pt-1">
+                                <p className="text-xs text-[var(--color-ink-muted)] max-w-md mx-auto">
+                                  You can pull &ldquo;{modelSearch.trim()}&rdquo; directly from the official Ollama registry to your local machine:
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => handlePullModel(modelSearch.trim())}
+                                  disabled={!!downloadingModelId}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer"
+                                >
+                                  <IconDownload size={13} />
+                                  <span>Pull &ldquo;{modelSearch.trim()}&rdquo; to Local Ollama</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return filteredList.map((model) => {
                         const isInstalled =
                           model.isDownloaded ||
                           installedModels.some(
@@ -3887,9 +3957,6 @@ Instructions:
                                       </span>
                                     )}
                                   </div>
-                                  <span className="font-mono text-[10px] text-[var(--color-ink-muted)] block truncate mt-0.5">
-                                    {model.id}
-                                  </span>
                                 </div>
 
                                 {isInstalled ? (
@@ -3929,7 +3996,7 @@ Instructions:
                                 <button
                                   type="button"
                                   onClick={() => handleCopy(`ollama run ${model.id}`, `term-${model.id}`)}
-                                  className="hover:text-[var(--color-primary)] transition-colors cursor-pointer shrink-0 ml-2"
+                                  className="hover:text-[var(--color-ink)] transition-colors cursor-pointer shrink-0 ml-2"
                                 >
                                   {copiedKey === `term-${model.id}` ? (
                                     <IconCheck size={13} className="text-neutral-900 dark:text-white" />
@@ -4013,7 +4080,8 @@ Instructions:
                             </div>
                           </div>
                         );
-                      })}
+                      });
+                    })()}
                   </div>
                 </div>
               )}
@@ -4021,55 +4089,6 @@ Instructions:
               {/* TAB 2: HUGGING FACE MODELS */}
               {modelSourceTab === 'huggingface' && (
                 <div className="space-y-4">
-                  {/* Subtab Switcher: Curated Showcase vs Full Catalog (Live Hub Search) */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 rounded-2xl bg-[var(--color-paper-card)] border border-[var(--color-rule-strong)]">
-                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setHfViewMode('curated')}
-                        className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
-                          hfViewMode === 'curated'
-                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
-                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-                        )}
-                      >
-                        <IconSparkles size={13} />
-                        <span>Curated Showcase</span>
-                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
-                          {allDisplayHfModels.length}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setHfViewMode('full');
-                          if (!hasSearchedHf) {
-                            fetchHfLiveModels('deepseek', 'downloads');
-                          }
-                        }}
-                        className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
-                          hfViewMode === 'full'
-                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
-                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
-                        )}
-                      >
-                        <IconWorld size={13} />
-                        <span>Full Catalog</span>
-                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
-                          Live Hub Search
-                        </span>
-                      </button>
-                    </div>
-
-                    <div className="text-xs text-[var(--color-ink-muted)] font-mono">
-                      {hfViewMode === 'curated'
-                        ? '34 hand-verified community GGUF models ready for local execution'
-                        : 'Live search across tens of thousands of GGUF models on Hugging Face Hub'}
-                    </div>
-                  </div>
-
                   {/* Curated Showcase View */}
                   {hfViewMode === 'curated' && (
                     <>
@@ -4214,9 +4233,6 @@ Instructions:
                                           </span>
                                         )}
                                       </div>
-                                      <span className="font-mono text-[10px] text-[var(--color-ink-muted)] block truncate mt-0.5">
-                                        {model.id}
-                                      </span>
                                     </div>
 
                                     {isInstalled ? (
