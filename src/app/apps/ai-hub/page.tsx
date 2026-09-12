@@ -42,6 +42,7 @@ import {
   IconExternalLink,
   IconCompass,
   IconShieldCheck,
+  IconCube,
 } from '@tabler/icons-react';
 import {
   checkOllamaConnection,
@@ -79,6 +80,9 @@ interface ModelItem {
   vram: string;
   description: string;
   isDownloaded?: boolean;
+  author?: string;
+  quantization?: string;
+  source?: 'ollama' | 'huggingface';
 }
 
 interface ChatMessage {
@@ -571,6 +575,129 @@ const CATALOG_MODELS: ModelItem[] = [
   },
 ];
 
+const HUGGINGFACE_MODELS: ModelItem[] = [
+  {
+    id: 'hf.co/bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M',
+    name: 'Llama 3.2 (3B) Instruct',
+    category: 'compact',
+    parameters: '3.21B',
+    size: '2.02 GB',
+    vram: '3.8 GB',
+    description: 'Meta’s official instruction model quantized to Q4_K_M by Bartowski with high perplexity preservation.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M',
+    name: 'Qwen 2.5 Coder (7B) Instruct',
+    category: 'code',
+    parameters: '7.61B',
+    size: '4.68 GB',
+    vram: '6.5 GB',
+    description: 'Premier open code model with 128k context support, excels at code generation, debugging, and refactoring.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF:Q4_K_M',
+    name: 'DeepSeek R1 Distill Qwen (1.5B)',
+    category: 'reasoning',
+    parameters: '1.78B',
+    size: '1.12 GB',
+    vram: '2.2 GB',
+    description: 'Chain-of-thought reasoning model distilled from DeepSeek-R1 by Unsloth, running smoothly on modest hardware.',
+    author: 'unsloth',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF:Q4_K_M',
+    name: 'DeepSeek R1 Distill Qwen (7B)',
+    category: 'reasoning',
+    parameters: '7.61B',
+    size: '4.68 GB',
+    vram: '6.5 GB',
+    description: 'Mathematical and logical step-by-step reasoning distilled from DeepSeek-R1 into Qwen 2.5 7B.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Phi-3.5-mini-instruct-GGUF:Q4_K_M',
+    name: 'Phi-3.5 Mini Instruct (3.8B)',
+    category: 'compact',
+    parameters: '3.82B',
+    size: '2.39 GB',
+    vram: '4.2 GB',
+    description: 'Microsoft’s multilingual instruction model with 128k context window and high reasoning benchmarks.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/gemma-2-2b-it-GGUF:Q4_K_M',
+    name: 'Gemma 2 (2B) Instruct',
+    category: 'compact',
+    parameters: '2.61B',
+    size: '1.63 GB',
+    vram: '3.2 GB',
+    description: 'Google DeepMind’s ultra-compact instruction tuned model, great for quick summaries and chat tasks.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF:Q4_K_M',
+    name: 'TinyLlama (1.1B) Chat',
+    category: 'compact',
+    parameters: '1.10B',
+    size: '668 MB',
+    vram: '1.8 GB',
+    description: 'Compact 1.1B chat model quantized by TheBloke, boots in milliseconds and uses almost zero RAM.',
+    author: 'TheBloke',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/city96/Llama-3.2-11B-Vision-Instruct-GGUF:Q4_K_M',
+    name: 'Llama 3.2 Vision (11B) Instruct',
+    category: 'vision',
+    parameters: '10.6B',
+    size: '7.18 GB',
+    vram: '9.8 GB',
+    description: 'Multimodal vision and text model by Meta, quantized by city96 for visual question answering and image inspection.',
+    author: 'city96',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/Mistral-Small-24B-Instruct-2501-GGUF:Q4_K_M',
+    name: 'Mistral Small (24B) Instruct 2501',
+    category: 'general',
+    parameters: '23.6B',
+    size: '14.3 GB',
+    vram: '18.0 GB',
+    description: 'Mistral AI’s newest 24B instruction model, offering near-frontier coding and multilingual performance.',
+    author: 'bartowski',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+  {
+    id: 'hf.co/bartowski/SmolLM2-1.7B-Instruct-GGUF:Q4_K_M',
+    name: 'SmolLM2 (1.7B) Instruct',
+    category: 'compact',
+    parameters: '1.71B',
+    size: '1.06 GB',
+    vram: '2.2 GB',
+    description: 'Hugging Face official compact model family with strong conversational benchmarks for on-device applications.',
+    author: 'HuggingFaceTB',
+    quantization: 'Q4_K_M',
+    source: 'huggingface',
+  },
+];
+
 // Client-side HTML5 Canvas Image Resizer & Base64 Encoder
 function compressAndEncodeImage(
   file: File,
@@ -894,9 +1021,12 @@ export default function AIHubPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Model Library Management State (Phase 3)
+  const [modelSourceTab, setModelSourceTab] = useState<'ollama' | 'huggingface'>('ollama');
   const [modelCategory, setModelCategory] = useState<string>('all');
   const [modelSearch, setModelSearch] = useState<string>('');
+  const [hfSearch, setHfSearch] = useState<string>('');
   const [customPullTag, setCustomPullTag] = useState<string>('');
+  const [customHfTag, setCustomHfTag] = useState<string>('');
   const [downloadingModelId, setDownloadingModelId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [downloadStatus, setDownloadStatus] = useState<string>('');
@@ -2007,6 +2137,67 @@ Instructions:
     return list;
   }, [installedModels]);
 
+  // Merge installed HF models with Hugging Face catalog
+  const allDisplayHfModels = React.useMemo(() => {
+    const list: ModelItem[] = [];
+    const addedIds = new Set<string>();
+
+    // 1. Locally installed HF models
+    installedModels
+      .filter((im) => im.name.startsWith('hf.co/') || im.name.includes('hf.co'))
+      .forEach((im) => {
+        addedIds.add(im.name);
+        const match = HUGGINGFACE_MODELS.find(
+          (hm) => hm.id === im.name || `${hm.id}:latest` === im.name || hm.id === `${im.name}:latest`
+        );
+
+        list.push({
+          id: im.name,
+          name: match ? match.name : im.name.replace('hf.co/', ''),
+          category: match ? match.category : 'compact',
+          parameters: im.details?.parameter_size || (match ? match.parameters : 'GGUF'),
+          size: `${(im.size / (1024 * 1024 * 1024)).toFixed(1)} GB`,
+          vram: `${((im.size / (1024 * 1024 * 1024)) * 1.3).toFixed(1)} GB`,
+          description:
+            match?.description ||
+            `Hugging Face GGUF model (${im.details?.quantization_level || 'Q4_K_M'}) installed in local Ollama storage.`,
+          isDownloaded: true,
+          author: match?.author || im.name.split('/')[1] || 'Community',
+          quantization: match?.quantization || im.details?.quantization_level || 'Q4_K_M',
+          source: 'huggingface',
+        });
+      });
+
+    // 2. Curated HF catalog models not yet downloaded
+    HUGGINGFACE_MODELS.forEach((hm) => {
+      const isAlreadyAdded =
+        addedIds.has(hm.id) ||
+        addedIds.has(`${hm.id}:latest`) ||
+        (hm.id.endsWith(':latest') && addedIds.has(hm.id.replace(':latest', '')));
+
+      if (!isAlreadyAdded) {
+        list.push({
+          ...hm,
+          isDownloaded: false,
+        });
+      }
+    });
+
+    return list;
+  }, [installedModels]);
+
+  const handlePullHfModel = (input: string) => {
+    let trimmed = input.trim();
+    if (!trimmed || !!downloadingModelId) return;
+    if (trimmed.startsWith('https://huggingface.co/')) {
+      trimmed = trimmed.replace('https://huggingface.co/', '');
+    }
+    if (!trimmed.startsWith('hf.co/')) {
+      trimmed = `hf.co/${trimmed}`;
+    }
+    handlePullModel(trimmed);
+  };
+
   const totalDiskBytes = installedModels.reduce((acc, m) => acc + (m.size || 0), 0);
   const totalDiskGB = (totalDiskBytes / (1024 * 1024 * 1024)).toFixed(2);
 
@@ -2950,35 +3141,6 @@ Instructions:
                 </div>
               </div>
 
-              {/* 📥 Custom Model Pull Input Bar */}
-              <div className="flex flex-col sm:flex-row items-center gap-2.5 p-3 rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] shadow-xs">
-                <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink)] shrink-0 px-1">
-                  <IconDownload size={15} />
-                  <span className="font-bold">Pull Custom Model:</span>
-                </div>
-                <div className="relative flex-1 w-full">
-                  <input
-                    type="text"
-                    value={customPullTag}
-                    onChange={(e) => setCustomPullTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handlePullModel(customPullTag);
-                    }}
-                    placeholder="Enter any Ollama tag e.g. mistral:latest, deepseek-coder-v2:16b, starcoder2:3b, llama3.1:8b..."
-                    className="w-full rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-mono text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handlePullModel(customPullTag)}
-                  disabled={!customPullTag.trim() || !!downloadingModelId}
-                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shrink-0"
-                >
-                  <IconDownload size={13} />
-                  <span>Pull Tag</span>
-                </button>
-              </div>
-
               {/* 💾 Dedicated Installed Models Section */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between border-b border-[var(--color-rule-subtle)] pb-2">
@@ -3042,10 +3204,19 @@ Instructions:
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="font-bold text-xs text-[var(--color-ink)] truncate font-mono">
                                   {im.name}
                                 </span>
+                                {im.name.startsWith('hf.co/') || im.name.includes('hf.co') ? (
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                                    Hugging Face
+                                  </span>
+                                ) : (
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                                    Ollama
+                                  </span>
+                                )}
                                 {isVram && (
                                   <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.5 font-mono text-[8.5px] font-bold">
                                     VRAM
@@ -3105,238 +3276,593 @@ Instructions:
                 )}
               </div>
 
-              {/* Filter Strip & Search Across the Ollama Library */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-[var(--color-rule-subtle)]">
-                {/* Category Filter Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1 min-w-0">
-                  {[
-                    { id: 'all', label: 'All Models' },
-                    { id: 'installed', label: `Installed (${installedModels.length})` },
-                    { id: 'compact', label: 'Fast & Compact' },
-                    { id: 'reasoning', label: 'Reasoning & Math' },
-                    { id: 'code', label: 'Code & Systems' },
-                    { id: 'vision', label: 'Vision & Multimodal' },
-                    { id: 'embeddings', label: 'Embeddings & RAG' },
-                  ].map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setModelCategory(cat.id)}
-                      className={cn(
-                        'px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer',
-                        modelCategory === cat.id
-                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold'
-                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 hover:text-neutral-900 dark:hover:bg-neutral-700 dark:hover:text-white'
-                      )}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
+              {/* Dual Catalog Tabs Switcher: Ollama Library vs Hugging Face Models */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[var(--color-rule-subtle)]">
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setModelSourceTab('ollama')}
+                    className={cn(
+                      'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                      modelSourceTab === 'ollama'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                        : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                    )}
+                  >
+                    <IconCpu size={14} />
+                    <span>Ollama Library</span>
+                    <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                      {CATALOG_MODELS.length}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModelSourceTab('huggingface')}
+                    className={cn(
+                      'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs',
+                      modelSourceTab === 'huggingface'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                        : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)]'
+                    )}
+                  >
+                    <IconCube size={14} />
+                    <span>Hugging Face Models</span>
+                    <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[10px] px-1.5 py-0.2 font-mono font-bold">
+                      GGUF
+                    </span>
+                  </button>
                 </div>
 
-                {/* Search Bar */}
-                <div className="relative w-full sm:w-64">
-                  <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
-                  <input
-                    type="text"
-                    value={modelSearch}
-                    onChange={(e) => setModelSearch(e.target.value)}
-                    placeholder="Search all Ollama models..."
-                    className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] pl-8 pr-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
-                  />
+                <div className="text-xs text-[var(--color-ink-muted)] font-mono">
+                  {modelSourceTab === 'ollama'
+                    ? 'Curated models from ollama.com/library'
+                    : 'GGUF models executed locally via Ollama hf.co/ runtime'}
                 </div>
               </div>
 
-              {/* Models Grid (Dynamic Catalog + Local Installed) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {allDisplayModels
-                  .filter((m) => {
-                    if (modelCategory === 'installed' && !m.isDownloaded) return false;
-                    if (modelCategory !== 'all' && modelCategory !== 'installed' && m.category !== modelCategory)
-                      return false;
-                    if (
-                      modelSearch &&
-                      !m.name.toLowerCase().includes(modelSearch.toLowerCase()) &&
-                      !m.id.toLowerCase().includes(modelSearch.toLowerCase())
-                    )
-                      return false;
-                    return true;
-                  })
-                  .map((model) => {
-                    const isInstalled =
-                      model.isDownloaded ||
-                      installedModels.some(
-                        (im) =>
-                          im.name === model.id ||
-                          `${im.name}:latest` === model.id ||
-                          im.name === `${model.id}:latest`
-                      );
-                    const installedData = installedModels.find(
-                      (im) =>
-                        im.name === model.id ||
-                        `${im.name}:latest` === model.id ||
-                        im.name === `${model.id}:latest`
-                    );
-                    const isLoadedInVram = runningModels.some(
-                      (rm) =>
-                        rm === model.id ||
-                        `${rm}:latest` === model.id ||
-                        rm === `${model.id}:latest`
-                    );
-                    const isPulling = downloadingModelId === model.id;
+              {/* TAB 1: OLLAMA LIBRARY */}
+              {modelSourceTab === 'ollama' && (
+                <div className="space-y-4">
+                  {/* 📥 Custom Ollama Model Pull Input Bar */}
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5 p-3 rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] shadow-xs">
+                    <div className="flex items-center gap-2 text-xs font-mono text-[var(--color-ink)] shrink-0 px-1">
+                      <IconDownload size={15} />
+                      <span className="font-bold">Pull Custom Ollama Tag:</span>
+                    </div>
+                    <div className="relative flex-1 w-full">
+                      <input
+                        type="text"
+                        value={customPullTag}
+                        onChange={(e) => setCustomPullTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handlePullModel(customPullTag);
+                        }}
+                        placeholder="Enter any Ollama tag e.g. mistral:latest, deepseek-coder-v2:16b, starcoder2:3b..."
+                        className="w-full rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] px-3 py-1.5 text-xs font-mono text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePullModel(customPullTag)}
+                      disabled={!customPullTag.trim() || !!downloadingModelId}
+                      className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-1.5 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shrink-0"
+                    >
+                      <IconDownload size={13} />
+                      <span>Pull Tag</span>
+                    </button>
+                  </div>
 
-                    return (
-                      <div
-                        key={model.id}
-                        className={cn(
-                          'flex flex-col justify-between rounded-2xl border bg-[var(--color-paper-card)] p-5 shadow-2xs transition-all space-y-4',
-                          isLoadedInVram
-                            ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900/10 dark:ring-white/10'
-                            : 'border-[var(--color-rule)] hover:border-[var(--color-rule-strong)]'
-                        )}
-                      >
-                        <div>
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate">{model.name}</h3>
-                                {isLoadedInVram && (
-                                  <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 font-mono text-[9px] font-bold shrink-0">
-                                    IN VRAM
+                  {/* Filter Strip & Search Across the Ollama Library */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                    {/* Category Filter Pills */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1 min-w-0">
+                      {[
+                        { id: 'all', label: 'All Models' },
+                        { id: 'installed', label: `Installed (${installedModels.filter((im) => !im.name.startsWith('hf.co/')).length})` },
+                        { id: 'compact', label: 'Fast & Compact' },
+                        { id: 'reasoning', label: 'Reasoning & Math' },
+                        { id: 'code', label: 'Code & Systems' },
+                        { id: 'vision', label: 'Vision & Multimodal' },
+                        { id: 'embeddings', label: 'Embeddings & RAG' },
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setModelCategory(cat.id)}
+                          className={cn(
+                            'px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer',
+                            modelCategory === cat.id
+                              ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold'
+                              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 hover:text-neutral-900 dark:hover:bg-neutral-700 dark:hover:text-white'
+                          )}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative w-full sm:w-64">
+                      <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
+                      <input
+                        type="text"
+                        value={modelSearch}
+                        onChange={(e) => setModelSearch(e.target.value)}
+                        placeholder="Search all Ollama models..."
+                        className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] pl-8 pr-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Models Grid (Dynamic Catalog + Local Installed) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allDisplayModels
+                      .filter((m) => {
+                        if (modelCategory === 'installed' && !m.isDownloaded) return false;
+                        if (modelCategory !== 'all' && modelCategory !== 'installed' && m.category !== modelCategory)
+                          return false;
+                        if (
+                          modelSearch &&
+                          !m.name.toLowerCase().includes(modelSearch.toLowerCase()) &&
+                          !m.id.toLowerCase().includes(modelSearch.toLowerCase())
+                        )
+                          return false;
+                        return true;
+                      })
+                      .map((model) => {
+                        const isInstalled =
+                          model.isDownloaded ||
+                          installedModels.some(
+                            (im) =>
+                              im.name === model.id ||
+                              `${im.name}:latest` === model.id ||
+                              im.name === `${model.id}:latest`
+                          );
+                        const installedData = installedModels.find(
+                          (im) =>
+                            im.name === model.id ||
+                            `${im.name}:latest` === model.id ||
+                            im.name === `${model.id}:latest`
+                        );
+                        const isLoadedInVram = runningModels.some(
+                          (rm) =>
+                            rm === model.id ||
+                            `${rm}:latest` === model.id ||
+                            rm === `${model.id}:latest`
+                        );
+                        const isPulling = downloadingModelId === model.id;
+
+                        return (
+                          <div
+                            key={model.id}
+                            className={cn(
+                              'flex flex-col justify-between rounded-2xl border bg-[var(--color-paper-card)] p-5 shadow-2xs transition-all space-y-4',
+                              isLoadedInVram
+                                ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900/10 dark:ring-white/10'
+                                : 'border-[var(--color-rule)] hover:border-[var(--color-rule-strong)]'
+                            )}
+                          >
+                            <div>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate">{model.name}</h3>
+                                    {isLoadedInVram && (
+                                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 font-mono text-[9px] font-bold shrink-0">
+                                        IN VRAM
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)] block truncate">{model.id}</span>
+                                </div>
+
+                                {isInstalled ? (
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                                    Installed
+                                  </span>
+                                ) : (
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                                    Available
                                   </span>
                                 )}
                               </div>
-                              <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)] block truncate">{model.id}</span>
+
+                              <p className="text-xs text-[var(--color-ink-muted)] mt-2 leading-snug">
+                                {model.description}
+                              </p>
+
+                              {/* Specs Row */}
+                              <div className="flex items-center gap-2 mt-4 text-[11px] font-mono text-[var(--color-ink-muted)] flex-wrap">
+                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                  {installedData ? `${(installedData.size / (1024 * 1024 * 1024)).toFixed(1)} GB` : model.size}
+                                </span>
+                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                  VRAM: {model.vram}
+                                </span>
+                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                  {installedData?.details?.parameter_size || model.parameters}
+                                </span>
+                                {installedData?.details?.quantization_level && (
+                                  <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 font-bold">
+                                    {installedData.details.quantization_level}
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
-                            {isInstalled ? (
-                              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
-                                <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
-                                Installed
-                              </span>
-                            ) : (
-                              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
-                                Available
-                              </span>
-                            )}
-                          </div>
+                            <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
+                              {/* Terminal Run Pill */}
+                              <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
+                                <span className="truncate">ollama run {model.id}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(`ollama run ${model.id}`, `term-${model.id}`)}
+                                  className="hover:text-[var(--color-primary)] transition-colors cursor-pointer shrink-0 ml-2"
+                                >
+                                  {copiedKey === `term-${model.id}` ? (
+                                    <IconCheck size={13} className="text-neutral-900 dark:text-white" />
+                                  ) : (
+                                    <IconCopy size={13} />
+                                  )}
+                                </button>
+                              </div>
 
-                          <p className="text-xs text-[var(--color-ink-muted)] mt-2 leading-snug">
-                            {model.description}
-                          </p>
-
-                          {/* Specs Row */}
-                          <div className="flex items-center gap-2 mt-4 text-[11px] font-mono text-[var(--color-ink-muted)] flex-wrap">
-                            <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                              {installedData ? `${(installedData.size / (1024 * 1024 * 1024)).toFixed(1)} GB` : model.size}
-                            </span>
-                            <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                              VRAM: {model.vram}
-                            </span>
-                            <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
-                              {installedData?.details?.parameter_size || model.parameters}
-                            </span>
-                            {installedData?.details?.quantization_level && (
-                              <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 font-bold">
-                                {installedData.details.quantization_level}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
-                          {/* Terminal Run Pill */}
-                          <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
-                            <span className="truncate">ollama run {model.id}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(`ollama run ${model.id}`, `term-${model.id}`)}
-                              className="hover:text-[var(--color-primary)] transition-colors cursor-pointer shrink-0 ml-2"
-                            >
-                              {copiedKey === `term-${model.id}` ? (
-                                <IconCheck size={13} className="text-neutral-900 dark:text-white" />
+                              {/* Download / Active Actions */}
+                              {isPulling ? (
+                                <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
+                                  <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
+                                    <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling layers...'}</span>
+                                    <span className="font-bold">{downloadProgress}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                                    <div
+                                      className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
+                                      style={{ width: `${downloadProgress}%` }}
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelPull}
+                                    className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
+                                  >
+                                    Cancel Download
+                                  </button>
+                                </div>
+                              ) : isInstalled ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedModel(model.id);
+                                      setActiveTab('chat');
+                                    }}
+                                    className="flex-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                  >
+                                    <IconPlayerPlay size={13} fill="currentColor" />
+                                    <span>Launch</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInspectModel(model.id)}
+                                    className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                    title="Inspect Model Architecture (GGUF tensors, Modelfile)"
+                                  >
+                                    <IconInfoCircle size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setModelToDelete(model.id)}
+                                    className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 p-1.5 text-xs text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
+                                    title="Delete from Local Disk"
+                                  >
+                                    <IconTrash size={15} />
+                                  </button>
+                                </div>
                               ) : (
-                                <IconCopy size={13} />
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePullModel(model.id)}
+                                    className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                  >
+                                    <IconDownload size={13} />
+                                    <span>Pull to Ollama</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInspectModel(model.id)}
+                                    className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                    title="Inspect Model Architecture"
+                                  >
+                                    <IconInfoCircle size={15} />
+                                  </button>
+                                </div>
                               )}
-                            </button>
+                            </div>
                           </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
 
-                          {/* Download / Active Actions */}
-                          {isPulling ? (
-                            <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
-                              <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
-                                <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling layers...'}</span>
-                                <span className="font-bold">{downloadProgress}%</span>
-                              </div>
-                              <div className="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
-                                <div
-                                  className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
-                                  style={{ width: `${downloadProgress}%` }}
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={handleCancelPull}
-                                className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
-                              >
-                                Cancel Download
-                              </button>
-                            </div>
-                          ) : isInstalled ? (
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedModel(model.id);
-                                  setActiveTab('chat');
-                                }}
-                                className="flex-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                              >
-                                <IconPlayerPlay size={13} fill="currentColor" />
-                                <span>Launch</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleInspectModel(model.id)}
-                                className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
-                                title="Inspect Model Architecture (GGUF tensors, Modelfile)"
-                              >
-                                <IconInfoCircle size={15} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setModelToDelete(model.id)}
-                                className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 p-1.5 text-xs text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
-                                title="Delete from Local Disk"
-                              >
-                                <IconTrash size={15} />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handlePullModel(model.id)}
-                                className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                              >
-                                <IconDownload size={13} />
-                                <span>Pull to Ollama</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleInspectModel(model.id)}
-                                className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
-                                title="Inspect Model Architecture"
-                              >
-                                <IconInfoCircle size={15} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
+              {/* TAB 2: HUGGING FACE MODELS */}
+              {modelSourceTab === 'huggingface' && (
+                <div className="space-y-4">
+                  {/* 📥 Custom Hugging Face GGUF Pull Card */}
+                  <div className="rounded-2xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] p-4 sm:p-5 shadow-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
+                        <IconCube size={16} />
+                        <span>Pull Any Hugging Face GGUF Model:</span>
                       </div>
-                    );
-                  })}
-              </div>
+                      <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
+                        Runs directly on local hardware via Ollama
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                      <div className="relative flex-1 w-full">
+                        <input
+                          type="text"
+                          value={customHfTag}
+                          onChange={(e) => setCustomHfTag(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handlePullHfModel(customHfTag);
+                          }}
+                          placeholder="Enter Hugging Face repo e.g. bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M"
+                          className="w-full rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] px-3 py-2 text-xs font-mono text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handlePullHfModel(customHfTag)}
+                        disabled={!customHfTag.trim() || !!downloadingModelId}
+                        className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold shadow-xs hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shrink-0"
+                      >
+                        <IconDownload size={13} />
+                        <span>Pull from Hugging Face</span>
+                      </button>
+                    </div>
+
+                    {/* Quick Example Chips */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px] text-[var(--color-ink-muted)]">
+                      <span className="font-mono text-[10.5px]">Quick repos:</span>
+                      {[
+                        { label: 'Llama 3.2 3B', tag: 'bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M' },
+                        { label: 'DeepSeek R1 1.5B', tag: 'unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF:Q4_K_M' },
+                        { label: 'Qwen 2.5 Coder 7B', tag: 'bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M' },
+                        { label: 'Phi-3.5 Mini', tag: 'bartowski/Phi-3.5-mini-instruct-GGUF:Q4_K_M' },
+                        { label: 'Gemma 2 2B', tag: 'bartowski/gemma-2-2b-it-GGUF:Q4_K_M' },
+                      ].map((chip) => (
+                        <button
+                          key={chip.tag}
+                          type="button"
+                          onClick={() => setCustomHfTag(chip.tag)}
+                          className="rounded-lg bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] border border-[var(--color-rule-subtle)] px-2 py-0.5 text-[10.5px] font-mono text-[var(--color-ink)] transition-colors cursor-pointer"
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hugging Face Search Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                    <div className="flex items-center gap-2 text-xs font-extrabold text-[var(--color-ink)]">
+                      <span>Curated GGUF Checkpoints</span>
+                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
+                        {allDisplayHfModels.length} Models
+                      </span>
+                    </div>
+
+                    <div className="relative w-full sm:w-64">
+                      <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
+                      <input
+                        type="text"
+                        value={hfSearch}
+                        onChange={(e) => setHfSearch(e.target.value)}
+                        placeholder="Search Hugging Face models..."
+                        className="w-full rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] pl-8 pr-3 py-1.5 text-xs text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)] focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hugging Face Models Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allDisplayHfModels
+                      .filter((m) => {
+                        if (
+                          hfSearch &&
+                          !m.name.toLowerCase().includes(hfSearch.toLowerCase()) &&
+                          !m.id.toLowerCase().includes(hfSearch.toLowerCase()) &&
+                          !(m.author && m.author.toLowerCase().includes(hfSearch.toLowerCase()))
+                        )
+                          return false;
+                        return true;
+                      })
+                      .map((model) => {
+                        const isInstalled =
+                          model.isDownloaded ||
+                          installedModels.some(
+                            (im) =>
+                              im.name === model.id ||
+                              `${im.name}:latest` === model.id ||
+                              im.name === `${model.id}:latest`
+                          );
+                        const installedData = installedModels.find(
+                          (im) =>
+                            im.name === model.id ||
+                            `${im.name}:latest` === model.id ||
+                            im.name === `${model.id}:latest`
+                        );
+                        const isLoadedInVram = runningModels.some(
+                          (rm) =>
+                            rm === model.id ||
+                            `${rm}:latest` === model.id ||
+                            rm === `${model.id}:latest`
+                        );
+                        const isPulling = downloadingModelId === model.id;
+
+                        return (
+                          <div
+                            key={model.id}
+                            className={cn(
+                              'flex flex-col justify-between rounded-2xl border bg-[var(--color-paper-card)] p-5 shadow-2xs transition-all space-y-4',
+                              isLoadedInVram
+                                ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900/10 dark:ring-white/10'
+                                : 'border-[var(--color-rule)] hover:border-[var(--color-rule-strong)]'
+                            )}
+                          >
+                            <div>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate">
+                                      {model.name}
+                                    </h3>
+                                    {model.quantization && (
+                                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.2 font-mono text-[9px] font-bold shrink-0">
+                                        {model.quantization}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="font-mono text-[10px] text-[var(--color-ink-muted)] block truncate mt-0.5">
+                                    {model.id}
+                                  </span>
+                                </div>
+
+                                {isInstalled ? (
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                                    Installed
+                                  </span>
+                                ) : (
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                                    GGUF
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-xs text-[var(--color-ink-muted)] mt-2 leading-snug">
+                                {model.description}
+                              </p>
+
+                              {/* Specs Row */}
+                              <div className="flex items-center gap-2 mt-4 text-[11px] font-mono text-[var(--color-ink-muted)] flex-wrap">
+                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                  {installedData ? `${(installedData.size / (1024 * 1024 * 1024)).toFixed(1)} GB` : model.size}
+                                </span>
+                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                  VRAM: {model.vram}
+                                </span>
+                                <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5">
+                                  {model.parameters}
+                                </span>
+                                {model.author && (
+                                  <span className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2 py-0.5 font-bold">
+                                    by {model.author}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
+                              {/* Terminal Run Pill */}
+                              <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
+                                <span className="truncate">ollama run {model.id}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(`ollama run ${model.id}`, `term-${model.id}`)}
+                                  className="hover:text-[var(--color-ink)] transition-colors cursor-pointer shrink-0 ml-2"
+                                >
+                                  {copiedKey === `term-${model.id}` ? (
+                                    <IconCheck size={13} className="text-neutral-900 dark:text-white" />
+                                  ) : (
+                                    <IconCopy size={13} />
+                                  )}
+                                </button>
+                              </div>
+
+                              {/* Download / Active Actions */}
+                              {isPulling ? (
+                                <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
+                                  <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
+                                    <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling GGUF layers...'}</span>
+                                    <span className="font-bold">{downloadProgress}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                                    <div
+                                      className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
+                                      style={{ width: `${downloadProgress}%` }}
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelPull}
+                                    className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
+                                  >
+                                    Cancel Download
+                                  </button>
+                                </div>
+                              ) : isInstalled ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedModel(model.id);
+                                      setActiveTab('chat');
+                                    }}
+                                    className="flex-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 py-1.5 text-xs font-bold hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                  >
+                                    <IconPlayerPlay size={13} fill="currentColor" />
+                                    <span>Launch</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInspectModel(model.id)}
+                                    className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                    title="Inspect Model Architecture"
+                                  >
+                                    <IconInfoCircle size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setModelToDelete(model.id)}
+                                    className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 p-1.5 text-xs text-neutral-800 dark:text-neutral-200 transition-all cursor-pointer"
+                                    title="Delete from Local Disk"
+                                  >
+                                    <IconTrash size={15} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePullModel(model.id)}
+                                    className="flex-1 rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] py-1.5 text-xs font-bold text-[var(--color-ink)] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                                  >
+                                    <IconDownload size={13} />
+                                    <span>Pull to Ollama</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInspectModel(model.id)}
+                                    className="rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] p-1.5 text-xs text-[var(--color-ink)] transition-all cursor-pointer"
+                                    title="Inspect Model Architecture"
+                                  >
+                                    <IconInfoCircle size={15} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
