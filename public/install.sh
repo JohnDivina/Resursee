@@ -25,4 +25,4 @@ xattr -cr /Applications/Resursee.app 2>/dev/null || true
 
 echo "==> Resursee installed successfully!"
 echo "==> Launching Resursee..."
-open -a Resursee
+open /Applications/Resursee.app
