@@ -32,11 +32,11 @@ export default function HomePage() {
         {/* 3. Integrated Full-Stack & AI Applications Suite */}
         <AppsSection />
 
-        {/* 4. Native Desktop App Download Section (macOS, Windows, Linux) */}
-        <DesktopDownloadSection />
-
-        {/* 5. Resursee Client-Side Productivity Toolbox (Aceternity Bento Grid) */}
+        {/* 4. Resursee Client-Side Productivity Toolbox (Aceternity Bento Grid) */}
         <ToolsPreview />
+
+        {/* 5. Native Desktop App Download Section (macOS, Windows, Linux) */}
+        <DesktopDownloadSection />
       </main>
 
       {/* 5. Global Footer */}

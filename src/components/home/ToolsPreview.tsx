@@ -378,7 +378,7 @@ export default function ToolsPreview() {
   ];
 
   return (
-    <section className="border-t border-[var(--color-rule-subtle)] bg-transparent py-14 sm:py-20">
+    <section id="tools" className="border-b border-[var(--color-rule-subtle)] bg-transparent py-14 sm:py-20 scroll-mt-14 sm:scroll-mt-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mb-8">
