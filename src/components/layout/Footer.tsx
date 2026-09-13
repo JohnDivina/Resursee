@@ -61,6 +61,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/apps/data-studio" className="transition-colors hover:text-[var(--color-primary)] dark:hover:text-white font-medium text-[var(--color-ink)]">
+                  Resursee Data Studio (App #4)
+                </Link>
+              </li>
+              <li>
                 <Link href="/about" className="transition-colors hover:text-[var(--color-primary)]">
                   Developer Portfolio
                 </Link>

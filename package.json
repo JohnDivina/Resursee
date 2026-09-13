@@ -19,17 +19,22 @@
     "@tabler/icons-react": "^3.46.0",
     "@tauri-apps/api": "^2.11.1",
     "@types/jszip": "^3.4.0",
+    "@types/papaparse": "^5.5.2",
     "browser-image-compression": "^2.0.2",
     "jspdf": "^4.2.1",
+    "jstat": "^1.9.6",
     "jszip": "^3.10.2",
     "motion": "^13.1.1",
     "next": "16.3.3",
+    "papaparse": "^5.7.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "recharts": "^3.10.1",
     "rss-parser": "^3.13.0",
-    "simplex-noise": "^4.0.3"
+    "simplex-noise": "^4.0.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@netlify/functions": "^6.0.0",
