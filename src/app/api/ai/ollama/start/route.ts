@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
+import fs from 'fs';
 
 const execPromise = promisify(exec);
 
@@ -101,14 +102,23 @@ export async function POST(request: NextRequest) {
     let launched = false;
 
     if (platform === 'darwin') {
-      // macOS: Try opening official Ollama.app first
-      try {
-        await execPromise('open -a Ollama');
-        launched = true;
-      } catch (appErr) {
-        // Fallback to spawning 'ollama serve' binary with OLLAMA_ORIGINS="*"
+      // macOS: Prefer running headless daemon in the background without opening GUI application
+      const candidatePaths = [
+        '/usr/local/bin/ollama',
+        '/opt/homebrew/bin/ollama',
+        '/Applications/Ollama.app/Contents/Resources/ollama',
+      ];
+      const existingBin = candidatePaths.find((p) => {
         try {
-          const child = spawn('/usr/local/bin/ollama', ['serve'], {
+          return fs.existsSync(p);
+        } catch {
+          return false;
+        }
+      });
+
+      if (existingBin) {
+        try {
+          const child = spawn(existingBin, ['serve'], {
             detached: true,
             stdio: 'ignore',
             env: { ...process.env, OLLAMA_ORIGINS: '*' },
@@ -116,7 +126,12 @@ export async function POST(request: NextRequest) {
           child.unref();
           launched = true;
         } catch {
-          // If path is in Homebrew or custom path
+          // fallback to command search below
+        }
+      }
+
+      if (!launched) {
+        try {
           const child = spawn('ollama', ['serve'], {
             detached: true,
             stdio: 'ignore',
@@ -124,6 +139,17 @@ export async function POST(request: NextRequest) {
           });
           child.unref();
           launched = true;
+        } catch {
+          // If binary CLI not found, launch official app hidden in background without bringing to foreground
+          try {
+            await execPromise('open -g -j -a Ollama');
+            launched = true;
+          } catch {
+            try {
+              await execPromise('open -a Ollama');
+              launched = true;
+            } catch {}
+          }
         }
       }
     } else if (platform === 'win32') {

@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     if (platform === 'darwin') {
       // macOS: Stop Ollama GUI app and CLI serve daemon
       try {
-        await execPromise('pkill -f "Ollama" || pkill -f "ollama serve"');
+        await execPromise('pkill -i -f "ollama"; pkill -i -f "llama-server"');
       } catch {
         // pkill returns exit code 1 if processes already exited
       }

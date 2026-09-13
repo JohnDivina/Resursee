@@ -26,6 +26,7 @@ import {
   IconArrowLeft,
   IconSearch,
   IconPlayerPlay,
+  IconPlayerStop,
   IconFileCode,
   IconSparkles,
   IconSend,
@@ -70,10 +71,45 @@ import {
   checkOllamaConnection,
   streamOllamaChat,
   startOllamaDaemon,
+  stopOllamaDaemon,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
 import { OllamaModel, OllamaChatMessage } from '@/types/aiHub';
 import { cn } from '@/lib/utils';
+
+// High-contrast, crystal-clear tooltip component for charts (replaces unreadable dark-on-dark default)
+const StudioCustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-xl border border-neutral-700/80 bg-neutral-900/95 px-3 py-2.5 text-xs shadow-2xl backdrop-blur-md pointer-events-none min-w-[130px]">
+        {label !== undefined && label !== null && String(label).trim() !== '' && (
+          <p className="font-mono text-[11px] font-bold text-neutral-200 mb-1.5 border-b border-neutral-800 pb-1">
+            {String(label)}
+          </p>
+        )}
+        <div className="space-y-1">
+          {payload.map((entry: any, i: number) => {
+            const displayName = entry.name || entry.dataKey || `Value ${i + 1}`;
+            const val = entry.value;
+            const formattedVal =
+              typeof val === 'number'
+                ? Number.isInteger(val)
+                  ? val
+                  : Number(val.toFixed(3))
+                : val;
+            return (
+              <div key={i} className="flex items-center justify-between gap-4 font-mono text-[11px]">
+                <span className="text-neutral-400 font-medium">{displayName}:</span>
+                <span className="font-bold text-white tracking-tight">{formattedVal}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 type ActiveViewTab = 'ide' | 'table' | 'visualizer' | 'export';
 type OutputMode = 'console' | 'plot' | 'model' | 'table';
@@ -178,26 +214,29 @@ plot({
   };
 
   const [isStartingOllama, setIsStartingOllama] = useState(false);
+  const [isStoppingOllama, setIsStoppingOllama] = useState(false);
 
-  // 1-Click Start Ollama Daemon
+  // 1-Click Start Ollama Daemon (Runs silently in background)
   const handleStartOllama = async () => {
     setIsStartingOllama(true);
     try {
       await startOllamaDaemon();
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 8; i++) {
         await new Promise((r) => setTimeout(r, 500));
         const check = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 800);
-        if (check.status && check.models && check.models.length > 0) {
+        if (check.status) {
           setOllamaStatus('connected');
-          setInstalledModels(check.models);
-          const coder = check.models.find(
-            (m) =>
-              m.name.includes('coder') ||
-              m.name.includes('qwen') ||
-              m.name.includes('deepseek') ||
-              m.name.includes('llama3')
-          );
-          if (coder) setSelectedModel(coder.name);
+          if (check.models && check.models.length > 0) {
+            setInstalledModels(check.models);
+            const coder = check.models.find(
+              (m) =>
+                m.name.includes('coder') ||
+                m.name.includes('qwen') ||
+                m.name.includes('deepseek') ||
+                m.name.includes('llama3')
+            );
+            if (coder) setSelectedModel(coder.name);
+          }
           break;
         }
       }
@@ -209,26 +248,46 @@ plot({
     }
   };
 
+  // Stop Ollama Daemon
+  const handleStopOllama = async () => {
+    setIsStoppingOllama(true);
+    try {
+      const res = await stopOllamaDaemon();
+      if (res.stopped) {
+        setOllamaStatus('offline');
+        setInstalledModels([]);
+        setSelectedModel('');
+      }
+    } catch (err: any) {
+      console.error('Failed to stop Ollama daemon:', err);
+    } finally {
+      setIsStoppingOllama(false);
+      setTimeout(probeOllama, 800);
+    }
+  };
+
   // Probe Ollama connection
   const probeOllama = async () => {
     setOllamaStatus('checking');
     try {
       const res = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 2000);
-      if (res.status && res.models && res.models.length > 0) {
+      if (res.status) {
         setOllamaStatus('connected');
-        setInstalledModels(res.models);
-        // Prefer code models if available
-        const coder = res.models.find(
-          (m) =>
-            m.name.includes('coder') ||
-            m.name.includes('qwen') ||
-            m.name.includes('deepseek') ||
-            m.name.includes('llama3')
-        );
-        if (coder) {
-          setSelectedModel(coder.name);
-        } else {
-          setSelectedModel(res.models[0].name);
+        if (res.models && res.models.length > 0) {
+          setInstalledModels(res.models);
+          // Prefer code models if available
+          const coder = res.models.find(
+            (m) =>
+              m.name.includes('coder') ||
+              m.name.includes('qwen') ||
+              m.name.includes('deepseek') ||
+              m.name.includes('llama3')
+          );
+          if (coder) {
+            setSelectedModel(coder.name);
+          } else {
+            setSelectedModel(res.models[0].name);
+          }
         }
       } else {
         setOllamaStatus('offline');
@@ -796,11 +855,17 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
 
           {/* Sidebar Footer: Ollama Status & Back to Resursee */}
           <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 mt-auto space-y-2">
-            {/* Ollama Status Pill */}
+            {/* Ollama Status Pill & Start/Stop Action */}
             <div
-              onClick={probeOllama}
+              onClick={() => {
+                if (ollamaStatus === 'connected') {
+                  handleStopOllama();
+                } else {
+                  handleStartOllama();
+                }
+              }}
               className="group flex items-center justify-between p-2 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 cursor-pointer transition-all"
-              title="Click to check Ollama status"
+              title={ollamaStatus === 'connected' ? 'Click to stop Ollama daemon' : 'Click to start Ollama daemon'}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span
@@ -808,7 +873,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     'h-1.5 w-1.5 rounded-full shrink-0',
                     ollamaStatus === 'connected'
                       ? 'bg-neutral-900 dark:bg-white'
-                      : ollamaStatus === 'checking'
+                      : ollamaStatus === 'checking' || isStartingOllama || isStoppingOllama
                       ? 'bg-neutral-500 animate-pulse'
                       : 'bg-neutral-400'
                   )}
@@ -820,10 +885,14 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   }}
                   className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate"
                 >
-                  {ollamaStatus === 'connected'
+                  {isStartingOllama
+                    ? 'Starting Engine...'
+                    : isStoppingOllama
+                    ? 'Stopping Engine...'
+                    : ollamaStatus === 'connected'
                     ? `Ollama (${installedModels.length} models)`
                     : ollamaStatus === 'checking'
-                    ? 'Probing Ollama...'
+                    ? 'Connecting...'
                     : 'Ollama Standby (11434)'}
                 </motion.span>
               </div>
@@ -832,9 +901,9 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   display: sidebarOpen ? 'inline-block' : 'none',
                   opacity: sidebarOpen ? 1 : 0,
                 }}
-                className="text-[10px] font-mono text-neutral-400 group-hover:underline"
+                className="text-[10px] font-mono text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors"
               >
-                Reload
+                {ollamaStatus === 'connected' ? 'Stop' : 'Start'}
               </motion.span>
             </div>
 
@@ -882,37 +951,50 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
               />
             </label>
 
-            {/* Start Ollama Button */}
-            <button
-              type="button"
-              onClick={handleStartOllama}
-              disabled={isStartingOllama}
-              title={
-                ollamaStatus === 'connected'
-                  ? 'Ollama is running. Click to re-probe daemon.'
-                  : 'Click to start local Ollama daemon'
-              }
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
-            >
-              <span
-                className={cn(
-                  'h-1.5 w-1.5 rounded-full shrink-0',
-                  ollamaStatus === 'connected'
-                    ? 'bg-neutral-900 dark:bg-white'
-                    : isStartingOllama
-                    ? 'bg-neutral-500 animate-pulse'
-                    : 'bg-neutral-400'
+            {/* Start / Stop Ollama Button (Like AI Studio) */}
+            {ollamaStatus === 'connected' ? (
+              <button
+                type="button"
+                onClick={handleStopOllama}
+                disabled={isStoppingOllama}
+                title="Stop local Ollama background daemon"
+                className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
+              >
+                {isStoppingOllama ? (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse shrink-0" />
+                    <span>Stopping...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+                    <IconPlayerStop size={13} />
+                    <span>Stop Ollama</span>
+                  </>
                 )}
-              />
-              <IconSparkles size={14} />
-              <span>
-                {isStartingOllama
-                  ? 'Starting...'
-                  : ollamaStatus === 'connected'
-                  ? 'Ollama Active'
-                  : 'Start Ollama'}
-              </span>
-            </button>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleStartOllama}
+                disabled={isStartingOllama}
+                title="Launch local Ollama background daemon"
+                className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
+              >
+                {isStartingOllama ? (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 animate-pulse shrink-0" />
+                    <span>Starting...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 shrink-0" />
+                    <IconPlayerPlay size={13} />
+                    <span>Start Ollama</span>
+                  </>
+                )}
+              </button>
+            )}
 
             {/* Show R Script Modal Button */}
             <button
@@ -1079,8 +1161,14 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                               <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
                               <XAxis dataKey={activePlot.x} name={activePlot.x} stroke="#88888880" fontSize={10} />
                               <YAxis dataKey={activePlot.y} name={activePlot.y} stroke="#88888880" fontSize={10} />
-                              <RechartsTooltip contentStyle={{ backgroundColor: '#181818', borderRadius: '8px', fontSize: '11px', color: '#fff' }} />
-                              <Scatter data={rawDataset} fill="#525252" />
+                              <RechartsTooltip
+                                content={<StudioCustomTooltip />}
+                                contentStyle={{ backgroundColor: '#171717', borderColor: '#404040', borderRadius: '8px', fontSize: '11px', color: '#ffffff' }}
+                                itemStyle={{ color: '#ffffff' }}
+                                labelStyle={{ color: '#ffffff', fontWeight: 600 }}
+                                cursor={{ stroke: '#88888840', strokeWidth: 1 }}
+                              />
+                              <Scatter data={rawDataset} fill="#737373" />
                             </ScatterChart>
                           </ResponsiveContainer>
                         )}
@@ -1090,8 +1178,14 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                               <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
                               <XAxis dataKey={activePlot.x} stroke="#88888880" fontSize={10} />
                               <YAxis stroke="#88888880" fontSize={10} />
-                              <RechartsTooltip contentStyle={{ backgroundColor: '#181818', borderRadius: '8px', fontSize: '11px', color: '#fff' }} />
-                              <Bar dataKey={activePlot.y || activePlot.x} fill="#525252" radius={[3, 3, 0, 0]} />
+                              <RechartsTooltip
+                                content={<StudioCustomTooltip />}
+                                contentStyle={{ backgroundColor: '#171717', borderColor: '#404040', borderRadius: '8px', fontSize: '11px', color: '#ffffff' }}
+                                itemStyle={{ color: '#ffffff' }}
+                                labelStyle={{ color: '#ffffff', fontWeight: 600 }}
+                                cursor={{ fill: '#88888815' }}
+                              />
+                              <Bar dataKey={activePlot.y || activePlot.x} fill="#737373" radius={[3, 3, 0, 0]} />
                             </BarChart>
                           </ResponsiveContainer>
                         )}
@@ -1101,8 +1195,14 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                               <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
                               <XAxis dataKey={activePlot.x} stroke="#88888880" fontSize={10} />
                               <YAxis stroke="#88888880" fontSize={10} />
-                              <RechartsTooltip contentStyle={{ backgroundColor: '#181818', borderRadius: '8px', fontSize: '11px', color: '#fff' }} />
-                              <Line type="monotone" dataKey={activePlot.y} stroke="#525252" strokeWidth={2} dot={{ r: 1.5 }} />
+                              <RechartsTooltip
+                                content={<StudioCustomTooltip />}
+                                contentStyle={{ backgroundColor: '#171717', borderColor: '#404040', borderRadius: '8px', fontSize: '11px', color: '#ffffff' }}
+                                itemStyle={{ color: '#ffffff' }}
+                                labelStyle={{ color: '#ffffff', fontWeight: 600 }}
+                                cursor={{ stroke: '#88888840', strokeWidth: 1 }}
+                              />
+                              <Line type="monotone" dataKey={activePlot.y} stroke="#737373" strokeWidth={2} dot={{ r: 2 }} />
                             </LineChart>
                           </ResponsiveContainer>
                         )}
@@ -1251,7 +1351,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                         key={chip}
                         type="button"
                         onClick={() => handleSendChatMessage(chip)}
-                        className="shrink-0 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[10.5px] font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 transition-colors cursor-pointer"
+                        className="shrink-0 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[10.5px] font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
                       >
                         {chip}
                       </button>
@@ -1290,12 +1390,12 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   {/* File Upload Zone */}
                   <div className="p-3.5 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50 text-center">
                     <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200 mb-1">
-                      Upload Custom Data
+                       Upload Custom Data
                     </div>
                     <p className="text-[11px] text-neutral-500 mb-3">
                       Drop CSV, Excel, or JSON. Processed locally in memory.
                     </p>
-                    <label className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-black px-3 py-1.5 text-xs font-bold hover:bg-neutral-800 cursor-pointer">
+                    <label className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-black px-3 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer">
                       <IconFileSpreadsheet size={14} />
                       <span>Browse Files</span>
                       <input
@@ -1414,7 +1514,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     type="button"
                     disabled={tablePage <= 1}
                     onClick={() => setTablePage((p) => Math.max(1, p - 1))}
-                    className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
+                    className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 px-2.5 py-1 text-xs font-semibold disabled:opacity-40 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors cursor-pointer"
                   >
                     Previous
                   </button>
@@ -1422,7 +1522,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     type="button"
                     disabled={tablePage >= totalPages}
                     onClick={() => setTablePage((p) => Math.min(totalPages, p + 1))}
-                    className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
+                    className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 px-2.5 py-1 text-xs font-semibold disabled:opacity-40 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors cursor-pointer"
                   >
                     Next
                   </button>
@@ -1448,7 +1548,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                 <button
                   type="button"
                   onClick={() => setShowRScriptModal(true)}
-                  className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700"
+                  className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   <IconCode size={14} />
                   <span>Get ggplot2 Code</span>
@@ -1461,8 +1561,14 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
                     <XAxis dataKey={activePlot?.x || numericColumns[0]} name={activePlot?.x} stroke="#88888880" fontSize={11} />
                     <YAxis dataKey={activePlot?.y || numericColumns[1]} name={activePlot?.y} stroke="#88888880" fontSize={11} />
-                    <RechartsTooltip contentStyle={{ backgroundColor: '#181818', borderRadius: '8px', fontSize: '11px', color: '#fff' }} />
-                    <Scatter data={rawDataset} fill="#525252" />
+                    <RechartsTooltip
+                      content={<StudioCustomTooltip />}
+                      contentStyle={{ backgroundColor: '#171717', borderColor: '#404040', borderRadius: '8px', fontSize: '11px', color: '#ffffff' }}
+                      itemStyle={{ color: '#ffffff' }}
+                      labelStyle={{ color: '#ffffff', fontWeight: 600 }}
+                      cursor={{ stroke: '#88888840', strokeWidth: 1 }}
+                    />
+                    <Scatter data={rawDataset} fill="#737373" />
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>
@@ -1492,7 +1598,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     a.download = `${currentDatasetName}_analysis.R`;
                     a.click();
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold"
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
                 >
                   <IconDownload size={14} />
                   <span>Download .R Script</span>
@@ -1518,7 +1624,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     a.download = `${currentDatasetName}.csv`;
                     a.click();
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold"
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
                 >
                   <IconDownload size={14} />
                   <span>Download CSV</span>
@@ -1541,7 +1647,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     XLSX.utils.book_append_sheet(wb, ws, currentDatasetName);
                     XLSX.writeFile(wb, `${currentDatasetName}.xlsx`);
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold"
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
                 >
                   <IconDownload size={14} />
                   <span>Download XLSX</span>
