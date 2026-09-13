@@ -408,7 +408,7 @@ export default function PlantDoctorPage() {
                   <Link
                     href="/apps/ai-hub"
                     className="text-[10px] text-[var(--color-ink-muted)] hover:underline ml-0.5"
-                    title="Visit AI Hub to pull a local vision model"
+                    title="Visit AI Studio to pull a local vision model"
                   >
                     (Get Vision Model)
                   </Link>
@@ -508,7 +508,7 @@ export default function PlantDoctorPage() {
                 <span>{errorMessage}</span>
                 {!localEngine?.hasVisionModel && (
                   <p className="text-[11px] text-[var(--color-ink-muted)]">
-                    💡 Tip: For 100% offline crop diagnostics when internet is down, install a vision model in local Ollama (e.g. <code className="bg-neutral-200 dark:bg-neutral-700 px-1 py-0.5 rounded font-mono">ollama run qwen2.5vl:7b</code> or <code className="bg-neutral-200 dark:bg-neutral-700 px-1 py-0.5 rounded font-mono">ollama run llava:7b</code>) or visit the <Link href="/apps/ai-hub" className="underline font-bold">AI Hub Model Library</Link>.
+                    Tip: For 100% offline crop diagnostics when internet is down, install a vision model in local Ollama (e.g. <code className="bg-neutral-200 dark:bg-neutral-700 px-1 py-0.5 rounded font-mono">ollama run qwen2.5vl:7b</code> or <code className="bg-neutral-200 dark:bg-neutral-700 px-1 py-0.5 rounded font-mono">ollama run llava:7b</code>) or visit the <Link href="/apps/ai-hub" className="underline font-bold">AI Studio Model Library</Link>.
                   </p>
                 )}
               </div>

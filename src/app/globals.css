@@ -44,6 +44,10 @@
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
+code, kbd, samp, pre, .font-mono, [class*="font-mono"] {
+  font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace !important;
+}
+
 html {
   scroll-behavior: smooth;
 }

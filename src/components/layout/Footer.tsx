@@ -56,6 +56,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/apps/ai-hub" className="transition-colors hover:text-[var(--color-primary)] dark:hover:text-white font-medium text-[var(--color-ink)]">
+                  Resursee AI Studio (App #3)
+                </Link>
+              </li>
+              <li>
                 <Link href="/about" className="transition-colors hover:text-[var(--color-primary)]">
                   Developer Portfolio
                 </Link>

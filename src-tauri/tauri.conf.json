@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Resursee AI Hub",
+        "title": "Resursee AI Studio",
         "width": 1280,
         "height": 820,
         "minWidth": 1000,

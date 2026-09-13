@@ -1263,7 +1263,7 @@ export default function AIHubPage() {
     id: 'welcome',
     role: 'assistant',
     content:
-      'Welcome to **Resursee Local AI Hub**. All inference and embeddings run 100% locally on your machine via the local Ollama daemon (`http://localhost:11434`) with zero cloud data egress.\n\nSelect a model or try a sample inquiry below to begin exploring.',
+      'Welcome to **Resursee Local AI Studio**. All inference and embeddings run 100% locally on your machine via the local Ollama daemon (`http://localhost:11434`) with zero cloud data egress.\n\nSelect a model or try a sample inquiry below to begin exploring.',
     timestamp: 'Just now',
   };
 
@@ -1548,7 +1548,7 @@ export default function AIHubPage() {
 
   const handleExportChat = () => {
     const session = sessions.find((s) => s.id === currentSessionId);
-    const title = session?.title || 'Resursee AI Hub Conversation';
+    const title = session?.title || 'Resursee AI Studio Conversation';
     let md = `# ${title}\n\n`;
     md += `- **Date**: ${new Date().toLocaleString()}\n`;
     md += `- **Model**: \`${selectedModel}\`\n`;
@@ -1951,7 +1951,7 @@ export default function AIHubPage() {
 
   const handleExportVision = () => {
     if (!visionResult) return;
-    let md = `# Local AI Hub - Vision Analysis Report\n\n`;
+    let md = `# Local AI Studio - Vision Analysis Report\n\n`;
     md += `- **Date**: ${new Date().toLocaleString()}\n`;
     md += `- **Model**: \`${visionSelectedModel}\`\n`;
     md += `- **Image**: ${visionImageMeta?.name || 'Uploaded Image'} (${visionImageMeta?.dimensions || ''})\n`;
@@ -2228,7 +2228,7 @@ ${
 
   const handleExportRagReport = () => {
     if (!ragAnswer) return;
-    let md = `# Local AI Hub - Grounded Knowledge Report\n\n`;
+    let md = `# Local AI Studio - Grounded Knowledge Report\n\n`;
     md += `- **Date**: ${new Date().toLocaleString()}\n`;
     md += `- **Synthesis Model**: \`${ragSynthesisModel || selectedModel}\`\n`;
     md += `- **Embedding Model**: \`${ragEmbeddingModel}\`\n`;
@@ -2727,7 +2727,7 @@ ${
         <IconSparkles size={16} stroke={2} />
       </div>
       <div className="flex flex-col">
-        <span className="font-extrabold text-xs text-[var(--color-ink)] leading-none">Resursee AI Hub</span>
+        <span className="font-extrabold text-xs text-[var(--color-ink)] leading-none">Resursee AI Studio</span>
         <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">Local Ollama Studio</span>
       </div>
     </div>
@@ -2752,7 +2752,7 @@ ${
                 className="flex flex-col truncate"
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm text-[var(--color-ink)]">AI Hub Studio</span>
+                  <span className="font-extrabold text-sm text-[var(--color-ink)]">AI Studio</span>
                   <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold">
                     Local
                   </span>
@@ -3011,7 +3011,7 @@ ${
                         Ollama Installation & Engine Setup
                       </h2>
                       <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
-                        AI Hub Studio runs directly on local hardware via Ollama (<code className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 font-mono text-[11px] text-[var(--color-ink)]">http://localhost:11434</code>) for 100% data sovereignty, zero cloud egress, and complete privacy.
+                        AI Studio runs directly on local hardware via Ollama (<code className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 font-mono text-[11px] text-[var(--color-ink)]">http://localhost:11434</code>) for 100% data sovereignty, zero cloud egress, and complete privacy.
                       </p>
                     </div>
                   </div>
@@ -3127,7 +3127,7 @@ ${
                   </div>
                   <div>
                     <h3 className="text-xs sm:text-sm font-bold text-[var(--color-ink)]">
-                      Want to run AI Hub offline as a Standalone Desktop App?
+                      Want to run AI Studio offline as a Standalone Desktop App?
                     </h3>
                     <p className="text-[11px] text-[var(--color-ink-muted)]">
                       Available natively for macOS (Apple Silicon) and Windows with zero browser overhead and native hardware acceleration.
@@ -5896,7 +5896,7 @@ ${
         </div>
       </main>
 
-      {/* 🚀 How to Run DomoDomo / Resursee AI Hub Locally Modal */}
+      {/* How to Run Resursee AI Studio Locally Modal */}
       <AnimatePresence>
         {isSetupModalOpen && (
           <div
@@ -5918,7 +5918,7 @@ ${
                   </div>
                   <div>
                     <h3 className="text-sm sm:text-base font-extrabold text-[var(--color-ink)]">
-                      How to Run Resursee AI Hub Locally
+                      How to Run Resursee AI Studio Locally
                     </h3>
                     <p className="text-[11px] text-[var(--color-ink-muted)]">
                       Zero server egress • 100% private offline compute
@@ -6070,7 +6070,7 @@ ${
                 {/* Step 4 */}
                 <div className="rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3.5 space-y-1">
                   <span className="font-bold text-[var(--color-ink)]">
-                    STEP 4: Open Local AI Hub
+                    STEP 4: Open Local AI Studio
                   </span>
                   <p className="font-sans text-[11px] text-[var(--color-ink-muted)]">
                     Open <code className="font-bold text-[var(--color-ink)]">http://localhost:3000/apps/ai-hub</code> with zero cloud data transfer!
@@ -6682,7 +6682,7 @@ ${
               {/* Explanatory Body */}
               <div className="space-y-3 text-xs text-[var(--color-ink-muted)] leading-relaxed">
                 <p>
-                  You are accessing Resursee via a <strong className="text-[var(--color-ink)]">remote web host</strong>. The <strong>AI Hub Studio</strong> is designed to run models directly on your physical hardware via Ollama (<code className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[11px] text-[var(--color-ink)]">http://localhost:11434</code>) to guarantee complete data privacy with zero cloud subscription fees.
+                  You are accessing Resursee via a <strong className="text-[var(--color-ink)]">remote web host</strong>. The <strong>AI Studio</strong> is designed to run models directly on your physical hardware via Ollama (<code className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[11px] text-[var(--color-ink)]">http://localhost:11434</code>) to guarantee complete data privacy with zero cloud subscription fees.
                 </p>
                 <p>
                   Modern web browsers restrict remote websites from making silent requests to a visitor’s local computer. To experience real GPU/CPU inference, run Resursee locally or install Ollama on your machine.

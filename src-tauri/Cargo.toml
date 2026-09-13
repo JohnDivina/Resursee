@@ -1,7 +1,7 @@
 [package]
 name = "resursee-desktop"
 version = "0.1.0"
-description = "Resursee AI Hub - Native Desktop Studio"
+description = "Resursee AI Studio - Native Desktop Studio"
 authors = ["John Divina"]
 edition = "2021"
 

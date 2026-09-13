@@ -376,7 +376,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                       className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-colors"
                     >
                       <Sparkle size={15} className="text-[var(--color-ink)]" />
-                      <span>AI Hub Studio</span>
+                      <span>AI Studio</span>
                     </Link>
 
                     {(session.role === 'master_admin' || session.role === 'moderator') && (

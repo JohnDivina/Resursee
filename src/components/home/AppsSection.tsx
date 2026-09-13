@@ -85,7 +85,7 @@ const SolidGraphicIoTCloud = () => {
   );
 };
 
-// 3. Solid Neutral Graphic: Local AI Hub Studio
+// 3. Solid Neutral Graphic: Local AI Studio
 const SolidGraphicAIHub = () => {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center p-4 sm:p-6 bg-neutral-50 dark:bg-neutral-900/40 rounded-2xl border border-neutral-200/60 dark:border-neutral-800">
@@ -133,7 +133,7 @@ const items = [
     href: '/apps/iot-cloud',
   },
   {
-    title: 'AI Hub Studio',
+    title: 'AI Studio',
     description: 'Run, test, and prompt local LLMs (Llama 3.2, DeepSeek R1, LLaVA) via Ollama with complete offline privacy.',
     header: <SolidGraphicAIHub />,
     className: 'md:col-span-1 lg:col-span-1',
