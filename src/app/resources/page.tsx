@@ -29,12 +29,14 @@ import {
   Lock,
   Code,
   Tag,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 
 const publicApis = publicApisRaw as PublicApi[];
-const starredRepos = starredReposRaw as StarredRepo[];
+const fallbackStarredRepos = starredReposRaw as StarredRepo[];
 const APIS_PER_PAGE = 36;
 const REPOS_PER_PAGE = 24;
+const STARRED_CACHE_KEY = 'resursee_starred_repos_cache_v2';
 
 type ResourceTab = 'apis' | 'repos';
 
@@ -60,10 +62,12 @@ function ResourcesDirectoryInner() {
   const [apiPage, setApiPage] = useState(1);
 
   // --- GitHub Starred Repos State ---
+  const [starredRepos, setStarredRepos] = useState<StarredRepo[]>(fallbackStarredRepos);
+  const [isSyncingRepos, setIsSyncingRepos] = useState(false);
   const [repoSearchQuery, setRepoSearchQuery] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('all');
   const [selectedTopic, setSelectedTopic] = useState('all');
-  const [repoSortBy, setRepoSortBy] = useState<RepoSortOption>('stars');
+  const [repoSortBy, setRepoSortBy] = useState<RepoSortOption>('recently-starred');
   const [repoPage, setRepoPage] = useState(1);
 
   const resultsAnchorRef = useRef<HTMLDivElement>(null);
@@ -112,6 +116,67 @@ function ResourcesDirectoryInner() {
       setToastMessage(null);
     }, 3000);
   };
+
+  // Restore cached starred repos on mount and auto-sync live from /api/github/starred
+  const fetchLiveStarredRepos = async (forceRefresh = false) => {
+    try {
+      if (forceRefresh) setIsSyncingRepos(true);
+      const url = forceRefresh ? '/api/github/starred?refresh=true' : '/api/github/starred';
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.repos && Array.isArray(data.repos) && data.repos.length > 0) {
+          setStarredRepos(data.repos);
+          try {
+            localStorage.setItem(STARRED_CACHE_KEY, JSON.stringify(data.repos));
+          } catch {}
+          if (forceRefresh) {
+            showToast(`Synced ${data.repos.length} starred repositories from GitHub`);
+          }
+        }
+      }
+    } catch (err) {
+      if (forceRefresh) {
+        showToast('Failed to sync latest stars from GitHub');
+      }
+    } finally {
+      if (forceRefresh) setIsSyncingRepos(false);
+    }
+  };
+
+  useEffect(() => {
+    // 1. Try restoring from localStorage first for instant paint
+    try {
+      const cached = localStorage.getItem(STARRED_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setStarredRepos(parsed);
+        }
+      }
+    } catch {}
+
+    // 2. Fetch fresh from API
+    fetchLiveStarredRepos(false);
+
+    // 3. Re-sync whenever user focuses the browser tab or window
+    const handleFocus = () => {
+      fetchLiveStarredRepos(false);
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLiveStarredRepos(false);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   // -------------------------------------------------------------
   // Public APIs Computations
@@ -207,7 +272,7 @@ function ResourcesDirectoryInner() {
       if (r.language) set.add(r.language);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, []);
+  }, [starredRepos]);
 
   const popularTopics = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -220,7 +285,7 @@ function ResourcesDirectoryInner() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([topic]) => topic);
-  }, []);
+  }, [starredRepos]);
 
   const repoStats = useMemo(() => {
     const total = starredRepos.length;
@@ -231,7 +296,7 @@ function ResourcesDirectoryInner() {
       totalStars,
       languagesCount,
     };
-  }, [languages]);
+  }, [starredRepos, languages]);
 
   const filteredRepos = useMemo(() => {
     const q = repoSearchQuery.trim().toLowerCase();
@@ -255,6 +320,12 @@ function ResourcesDirectoryInner() {
         return true;
       })
       .sort((a, b) => {
+        if (repoSortBy === 'recently-starred') {
+          const timeA = a.starredAt ? new Date(a.starredAt).getTime() : 0;
+          const timeB = b.starredAt ? new Date(b.starredAt).getTime() : 0;
+          if (timeA !== timeB) return timeB - timeA;
+          return b.stargazersCount - a.stargazersCount;
+        }
         if (repoSortBy === 'stars') {
           return b.stargazersCount - a.stargazersCount;
         }
@@ -266,7 +337,7 @@ function ResourcesDirectoryInner() {
         }
         return 0;
       });
-  }, [repoSearchQuery, selectedLanguage, selectedTopic, repoSortBy]);
+  }, [repoSearchQuery, selectedLanguage, selectedTopic, repoSortBy, starredRepos]);
 
   useEffect(() => {
     setRepoPage(1);
@@ -310,7 +381,7 @@ function ResourcesDirectoryInner() {
     setRepoSearchQuery('');
     setSelectedLanguage('all');
     setSelectedTopic('all');
-    setRepoSortBy('stars');
+    setRepoSortBy('recently-starred');
     setRepoPage(1);
   };
 
@@ -326,7 +397,7 @@ function ResourcesDirectoryInner() {
     repoSearchQuery !== '' ||
     selectedLanguage !== 'all' ||
     selectedTopic !== 'all' ||
-    repoSortBy !== 'stars';
+    repoSortBy !== 'recently-starred';
 
   const quickApiCategories = [
     'all',
@@ -938,6 +1009,23 @@ function ResourcesDirectoryInner() {
                   )}
                 </div>
 
+                {/* Sync Stars Button */}
+                <button
+                  type="button"
+                  onClick={() => fetchLiveStarredRepos(true)}
+                  disabled={isSyncingRepos}
+                  title="Check GitHub for newly starred repositories"
+                  data-thock="button"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--color-rule)] bg-[var(--color-paper-muted)] hover:bg-[var(--color-paper)] text-xs font-semibold text-[var(--color-ink)] hover:border-neutral-400 dark:hover:border-neutral-600 transition-all shrink-0 shadow-2xs disabled:opacity-50"
+                >
+                  <ArrowsClockwise
+                    size={15}
+                    weight="bold"
+                    className={isSyncingRepos ? 'animate-spin text-[var(--color-ink)]' : 'text-[var(--color-ink-muted)]'}
+                  />
+                  <span>{isSyncingRepos ? 'Syncing...' : 'Sync Stars'}</span>
+                </button>
+
                 {/* View Mode Switcher */}
                 <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--color-paper-muted)] border border-[var(--color-rule)] shrink-0 self-end sm:self-auto">
                   <button
@@ -1038,6 +1126,7 @@ function ResourcesDirectoryInner() {
                     onChange={(e) => setRepoSortBy(e.target.value as RepoSortOption)}
                     className="w-full py-2 px-2.5 rounded-lg border border-[var(--color-rule)] bg-[var(--color-paper)] text-[var(--color-ink)] focus:outline-hidden text-xs"
                   >
+                    <option value="recently-starred">Recently Starred (Newest First)</option>
                     <option value="stars">Most Stars (High → Low)</option>
                     <option value="name-asc">Name (A → Z)</option>
                     <option value="updated">Recently Updated</option>
@@ -1083,9 +1172,9 @@ function ResourcesDirectoryInner() {
                         Topic: #{selectedTopic}
                       </span>
                     )}
-                    {repoSortBy !== 'stars' && (
+                    {repoSortBy !== 'recently-starred' && (
                       <span className="inline-flex items-center gap-1 bg-[var(--color-paper-muted)] px-2 py-0.5 rounded text-[11px] font-mono">
-                        Sort: {repoSortBy}
+                        Sort: {repoSortBy === 'stars' ? 'Most Stars' : repoSortBy === 'name-asc' ? 'Name A-Z' : 'Recently Updated'}
                       </span>
                     )}
                   </div>

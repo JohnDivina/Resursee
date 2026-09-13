@@ -1,0 +1,38 @@
+name: Auto-Sync GitHub Starred Repositories
+
+on:
+  schedule:
+    # Run automatically every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-starred-repos:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch Starred Repositories
+        run: |
+          python3 scripts/fetch_starred_repos.py
+
+      - name: Commit and Push if Changed
+        run: |
+          if ! git diff --quiet src/data/github_starred_repos.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add src/data/github_starred_repos.json
+            git commit -m "chore(data): auto-sync github starred repositories [skip ci]"
+            git push origin main
+          else
+            echo "No changes in starred repositories."
+          fi

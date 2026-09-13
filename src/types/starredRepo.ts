@@ -18,6 +18,7 @@ export interface StarredRepo {
   topics: string[];
   updatedAt: string;
   pushedAt: string;
+  starredAt?: string;
 }
 
-export type RepoSortOption = 'stars' | 'name-asc' | 'updated';
+export type RepoSortOption = 'recently-starred' | 'stars' | 'name-asc' | 'updated';

@@ -21,7 +21,7 @@ def fetch_starred_repos(username="JohnDivina"):
         url,
         headers={
             "User-Agent": "Resursee-Directory-Fetcher",
-            "Accept": "application/vnd.github+json",
+            "Accept": "application/vnd.github.v3.star+json",
         },
     )
 
@@ -33,7 +33,9 @@ def fetch_starred_repos(username="JohnDivina"):
         sys.exit(1)
 
     repos = []
-    for r in raw_data:
+    for item in raw_data:
+        r = item.get("repo", item)
+        starred_at = item.get("starred_at", "")
         repos.append({
             "id": r.get("id"),
             "name": r.get("name"),
@@ -52,10 +54,11 @@ def fetch_starred_repos(username="JohnDivina"):
             "topics": r.get("topics", []),
             "updatedAt": r.get("updated_at", ""),
             "pushedAt": r.get("pushed_at", ""),
+            "starredAt": starred_at,
         })
 
-    # Sort descending by stars by default
-    repos.sort(key=lambda x: x["stargazersCount"], reverse=True)
+    # Sort descending by recently starred by default
+    repos.sort(key=lambda x: x["starredAt"] or "", reverse=True)
 
     output_path = Path(__file__).resolve().parent.parent / "src" / "data" / "github_starred_repos.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
