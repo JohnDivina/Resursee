@@ -74,6 +74,7 @@ import {
   stopOllamaDaemon,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
+import { isLocalEnvironment, isTauriDesktop } from '@/lib/envDetector';
 import { OllamaModel, OllamaChatMessage } from '@/types/aiHub';
 import { cn } from '@/lib/utils';
 
@@ -192,16 +193,31 @@ plot({
   const [copiedCode, setCopiedCode] = useState(false);
   const [showLocalNoticeModal, setShowLocalNoticeModal] = useState(false);
   const [dontShowAgainNotice, setDontShowAgainNotice] = useState(false);
+  const [isLocalHost, setIsLocalHost] = useState(true);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setMounted(true);
     probeOllama();
+
     if (typeof window !== 'undefined') {
-      const dismissed = sessionStorage.getItem('resursee_datastudio_local_notice_dismissed');
-      if (!dismissed) {
-        setShowLocalNoticeModal(true);
+      const isLocal =
+        process.env.NODE_ENV === 'development' ||
+        isLocalEnvironment() ||
+        isTauriDesktop();
+
+      setIsLocalHost(isLocal);
+
+      // Only show the privacy/local notice on remote cloud deployments (e.g. Vercel)
+      // When running on desktop app or locally via `npm run dev`, NEVER pop up
+      if (!isLocal) {
+        const dismissed = sessionStorage.getItem('resursee_datastudio_local_notice_dismissed');
+        if (!dismissed) {
+          setShowLocalNoticeModal(true);
+        }
+      } else {
+        setShowLocalNoticeModal(false);
       }
     }
   }, []);
@@ -936,6 +952,19 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                 ({rawDataset.length} obs. of {allColumnNames.length} variables)
               </span>
             </div>
+
+            {/* Cloud Preview Mode Pill (only visible on remote cloud hosts) */}
+            {!isLocalHost && (
+              <button
+                type="button"
+                onClick={() => setShowLocalNoticeModal(true)}
+                className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 px-2.5 py-1 text-xs font-mono font-bold text-neutral-700 dark:text-neutral-300 transition-all cursor-pointer shadow-2xs"
+                title="Running in cloud web preview. Click to view local privacy & setup details."
+              >
+                <IconShieldCheck size={13} />
+                <span>Cloud Web Preview</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5">

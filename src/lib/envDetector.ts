@@ -6,10 +6,13 @@
 export function isLocalEnvironment(): boolean {
   if (typeof window === 'undefined') return true;
 
+  // 0. Development server (e.g. npm run dev)
+  if (process.env.NODE_ENV === 'development') return true;
+
   // 1. Check for native Tauri or Electron desktop runtimes
+  if (isTauriDesktop()) return true;
+
   const isDesktopContainer =
-    Boolean((window as any).__TAURI_INTERNALS__) ||
-    Boolean((window as any).__TAURI__) ||
     Boolean((window as any).electron) ||
     Boolean((window as any).process?.versions?.electron);
 
@@ -24,7 +27,8 @@ export function isLocalEnvironment(): boolean {
     hostname === '0.0.0.0' ||
     hostname === '::1' ||
     hostname.endsWith('.local') ||
-    hostname.endsWith('.internal')
+    hostname.endsWith('.internal') ||
+    hostname.endsWith('.localhost')
   ) {
     return true;
   }
@@ -47,5 +51,20 @@ export function isLocalEnvironment(): boolean {
  */
 export function isTauriDesktop(): boolean {
   if (typeof window === 'undefined') return false;
-  return Boolean((window as any).__TAURI_INTERNALS__) || Boolean((window as any).__TAURI__);
+
+  const hasTauriWindow =
+    Boolean((window as any).__TAURI_INTERNALS__) ||
+    Boolean((window as any).__TAURI__);
+
+  if (hasTauriWindow) return true;
+
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname.toLowerCase();
+
+  return (
+    protocol === 'tauri:' ||
+    protocol === 'asset:' ||
+    hostname === 'tauri.localhost' ||
+    hostname.includes('tauri')
+  );
 }
