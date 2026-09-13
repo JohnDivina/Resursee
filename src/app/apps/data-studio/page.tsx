@@ -2,36 +2,36 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'motion/react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import {
   Sidebar,
   SidebarBody,
   SidebarLink,
+  Links,
 } from '@/components/ui/sidebar';
 import {
   IconTable,
   IconTerminal2,
   IconChartBar,
-  IconTransform,
   IconMathFunction,
   IconDownload,
   IconCode,
   IconCopy,
   IconCheck,
   IconTrash,
-  IconFilter,
   IconFileSpreadsheet,
-  IconRefresh,
   IconPlus,
   IconArrowLeft,
-  IconDatabase,
-  IconVariable,
   IconSearch,
-  IconEye,
   IconPlayerPlay,
-  IconAdjustments,
   IconFileCode,
+  IconSparkles,
+  IconSend,
+  IconAdjustments,
+  IconReload,
+  IconBulb,
 } from '@tabler/icons-react';
 import {
   ResponsiveContainer,
@@ -48,7 +48,6 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
-  Cell,
 } from 'recharts';
 import { SAMPLE_DATASETS, DatasetItem } from './sampleData';
 import {
@@ -64,86 +63,131 @@ import {
   TTestResult,
   CorrelationCell,
 } from './statsEngine';
+import {
+  checkOllamaConnection,
+  streamOllamaChat,
+  DEFAULT_OLLAMA_ENDPOINT,
+} from '@/lib/ollamaClient';
+import { OllamaModel, OllamaChatMessage } from '@/types/aiHub';
+import { cn } from '@/lib/utils';
 
-type ActiveTab = 'workspace' | 'console' | 'visualize' | 'transform' | 'statistics' | 'export';
+type ActiveViewTab = 'ide' | 'table' | 'visualizer' | 'export';
+type OutputMode = 'console' | 'plot' | 'model' | 'table';
 
-interface FilterCondition {
-  id: string;
-  column: string;
-  operator: '==' | '!=' | '>' | '<' | '>=' | '<=' | 'contains';
-  value: string;
-}
-
-interface MutateRule {
-  id: string;
-  newColumn: string;
-  expression: string;
-}
-
-interface ConsoleEntry {
-  id: string;
-  command: string;
-  output: string;
-  type: 'output' | 'error' | 'info';
-  timestamp: string;
+interface PlotConfig {
+  type: 'scatter' | 'bar' | 'line' | 'area' | 'histogram';
+  x: string;
+  y?: string;
+  color?: string;
+  title?: string;
 }
 
 export default function DataStudioPage() {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('workspace');
+  const [activeTab, setActiveTab] = useState<ActiveViewTab>('ide');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Dataset State
   const [currentDatasetName, setCurrentDatasetName] = useState<string>('iris');
   const [rawDataset, setRawDataset] = useState<Record<string, any>[]>(SAMPLE_DATASETS[0].data);
   const [fileName, setFileName] = useState<string>('iris.csv');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 15;
 
-  // Wrangling Pipeline State (dplyr-style)
-  const [filterConditions, setFilterConditions] = useState<FilterCondition[]>([]);
-  const [mutateRules, setMutateRules] = useState<MutateRule[]>([]);
-  const [sortColumn, setSortColumn] = useState<string>('');
-  const [sortAscending, setSortAscending] = useState<boolean>(true);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  // Code Editor State
+  const [scriptCode, setScriptCode] = useState<string>(
+`// Data Studio Interactive Analysis Script
+// Active dataset is available as 'df' (${SAMPLE_DATASETS[0].rows} rows × ${SAMPLE_DATASETS[0].cols} cols)
 
-  // Chart State (ggplot2-style)
-  const [chartType, setChartType] = useState<'scatter' | 'bar' | 'line' | 'area' | 'histogram' | 'boxplot'>('scatter');
-  const [xAxisCol, setXAxisCol] = useState<string>('sepal_length');
-  const [yAxisCol, setYAxisCol] = useState<string>('petal_length');
-  const [colorCol, setColorCol] = useState<string>('species');
-  const [chartTitle, setChartTitle] = useState<string>('Sepal vs Petal Morphology');
-  const [showRScriptModal, setShowRScriptModal] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
+// 1. Inspect summary statistics
+summary(df);
 
-  // Statistics State (R-style lm, ANOVA, t-test)
-  const [regDepVar, setRegDepVar] = useState<string>('petal_length');
-  const [regIndepVars, setRegIndepVars] = useState<string[]>(['sepal_length', 'sepal_width']);
-  const [anovaNumVar, setAnovaNumVar] = useState<string>('petal_length');
-  const [anovaGroupVar, setAnovaGroupVar] = useState<string>('species');
-  const [tTestVar1, setTTestVar1] = useState<string>('sepal_length');
-  const [tTestVar2, setTTestVar2] = useState<string>('petal_length');
+// 2. Fit an OLS linear regression model: petal_length ~ sepal_length + sepal_width
+fitLinearModel('petal_length', ['sepal_length', 'sepal_width']);
 
-  // Console State (RStudio REPL)
-  const [consoleInput, setConsoleInput] = useState('');
-  const [consoleHistory, setConsoleHistory] = useState<ConsoleEntry[]>([
+// 3. Render a ggplot2-style scatter plot
+plot({
+  type: 'scatter',
+  x: 'sepal_length',
+  y: 'petal_length',
+  color: 'species',
+  title: 'Petal vs Sepal Morphology'
+});`
+  );
+
+  // Execution Output State
+  const [outputMode, setOutputMode] = useState<OutputMode>('console');
+  const [consoleOutput, setConsoleOutput] = useState<string>('Ready. Click "Run Script" or press Cmd+Enter to execute.');
+  const [lastReturnedData, setLastReturnedData] = useState<any[] | null>(null);
+  const [activePlot, setActivePlot] = useState<PlotConfig | null>({
+    type: 'scatter',
+    x: 'sepal_length',
+    y: 'petal_length',
+    color: 'species',
+    title: 'Petal vs Sepal Morphology',
+  });
+  const [activeRegression, setActiveRegression] = useState<RegressionResult | null>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  // Ollama AI Assistant State
+  const [ollamaStatus, setOllamaStatus] = useState<'connected' | 'checking' | 'offline'>('checking');
+  const [installedModels, setInstalledModels] = useState<OllamaModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('qwen2.5-coder');
+  const [chatMessages, setChatMessages] = useState<OllamaChatMessage[]>([
     {
-      id: 'welcome',
-      command: '# R Studio Interactive Console (Data Studio)',
-      output: `R version 4.4.1 (Data Studio Client-Side Engine)\nPlatform: browser-wasm-x86_64\nType 'summary(df)', 'glimpse(df)', 'cor(df)', 'names(df)', or 'help()' for commands.\nType JavaScript expressions or df manipulation code.\nDataset 'df' is loaded in memory (${SAMPLE_DATASETS[0].rows} obs. of ${SAMPLE_DATASETS[0].cols} variables).`,
-      type: 'info',
-      timestamp: new Date().toLocaleTimeString(),
+      role: 'assistant',
+      content:
+        'Hello! I am your **Ollama Data Science Copilot**. I have access to your active dataset and columns.\n\nAsk me to write R/DataStudio code, suggest statistical tests, plot charts, or interpret model outputs.',
     },
   ]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const consoleBottomRef = useRef<HTMLDivElement>(null);
+  const [chatInput, setChatInput] = useState('');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<'assistant' | 'schema'>('assistant');
+
+  // Data Table / Search State
+  const [tableSearch, setTableSearch] = useState('');
+  const [tablePage, setTablePage] = useState(1);
+  const pageSize = 15;
+
+  // Modals & UI Helpers
+  const [showRScriptModal, setShowRScriptModal] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setMounted(true);
+    probeOllama();
   }, []);
 
-  // Compute column summaries
+  // Probe Ollama connection
+  const probeOllama = async () => {
+    setOllamaStatus('checking');
+    try {
+      const res = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 2000);
+      if (res.status && res.models && res.models.length > 0) {
+        setOllamaStatus('connected');
+        setInstalledModels(res.models);
+        // Prefer code models if available
+        const coder = res.models.find(
+          (m) =>
+            m.name.includes('coder') ||
+            m.name.includes('qwen') ||
+            m.name.includes('deepseek') ||
+            m.name.includes('llama3')
+        );
+        if (coder) {
+          setSelectedModel(coder.name);
+        } else {
+          setSelectedModel(res.models[0].name);
+        }
+      } else {
+        setOllamaStatus('offline');
+      }
+    } catch {
+      setOllamaStatus('offline');
+    }
+  };
+
+  // Inspect column summaries
   const columnSummaries: ColumnSummary[] = useMemo(() => {
     return inspectColumns(rawDataset);
   }, [rawDataset]);
@@ -160,230 +204,208 @@ export default function DataStudioPage() {
     return columnSummaries.map((c) => c.name);
   }, [columnSummaries]);
 
-  // Apply transformations (Dplyr pipeline)
-  const transformedDataset = useMemo(() => {
-    let data = [...rawDataset];
+  // Execute Code in the Sandbox
+  const handleRunCode = (codeToRun?: string) => {
+    const code = codeToRun !== undefined ? codeToRun : scriptCode;
+    if (!code.trim()) return;
 
-    // 1. Mutate
-    for (const rule of mutateRules) {
-      if (!rule.newColumn || !rule.expression) continue;
-      data = data.map((row) => {
-        try {
-          // evaluate expression safely with row values
-          const expr = rule.expression.replace(/\b([a-zA-Z_]\w*)\b/g, (match) => {
-            if (row.hasOwnProperty(match)) {
-              return `Number(row['${match}'])`;
+    setIsExecuting(true);
+    const logs: string[] = [];
+    const log = (...args: any[]) => {
+      logs.push(
+        args
+          .map((a) => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)))
+          .join(' ')
+      );
+    };
+
+    try {
+      // Setup sandbox variables & helper functions
+      const df = rawDataset;
+
+      const summary = (data?: any[]) => {
+        const target = data || df;
+        const cols = inspectColumns(target);
+        const out = cols
+          .map((c) => {
+            if (c.type === 'numeric') {
+              return `${c.name} (num):\n  Min: ${c.min?.toFixed(2)} | 1st Qu: ${c.q1?.toFixed(2)} | Median: ${c.median?.toFixed(2)}\n  Mean: ${c.mean?.toFixed(2)} | 3rd Qu: ${c.q3?.toFixed(2)} | Max: ${c.max?.toFixed(2)}\n  StdDev: ${c.stdev?.toFixed(2)} | IQR: ${c.iqr?.toFixed(2)}`;
             }
-            return match;
-          });
-          // eslint-disable-next-line no-new-func
-          const func = new Function('row', `return ${expr}`);
-          const res = func(row);
-          return { ...row, [rule.newColumn]: isNaN(res) ? res : Number(res.toFixed(4)) };
-        } catch {
-          return { ...row, [rule.newColumn]: null };
+            return `${c.name} (${c.type}): Length: ${c.count} | Unique: ${c.uniqueCount}`;
+          })
+          .join('\n\n');
+        log(out);
+        return out;
+      };
+
+      const glimpse = (data?: any[]) => {
+        const target = data || df;
+        const cols = inspectColumns(target);
+        const out = `Rows: ${target.length}\nColumns: ${cols.length}\n` +
+          cols
+            .map((c) => {
+              const samples = target.slice(0, 4).map((r) => r[c.name]).join(', ');
+              return `$ ${c.name.padEnd(16)} <${c.type}> ${samples}...`;
+            })
+            .join('\n');
+        log(out);
+        return out;
+      };
+
+      const names = (data?: any[]) => {
+        const keys = Object.keys((data || df)[0] || {});
+        log(JSON.stringify(keys, null, 2));
+        return keys;
+      };
+
+      const head = (data?: any[], n = 6) => {
+        const res = (data || df).slice(0, n);
+        log(JSON.stringify(res, null, 2));
+        setLastReturnedData(res);
+        return res;
+      };
+
+      const tail = (data?: any[], n = 6) => {
+        const res = (data || df).slice(-n);
+        log(JSON.stringify(res, null, 2));
+        setLastReturnedData(res);
+        return res;
+      };
+
+      const cor = (data?: any[]) => {
+        const target = data || df;
+        const cols = inspectColumns(target).filter((c) => c.type === 'numeric').map((c) => c.name);
+        if (cols.length < 2) {
+          log('Need at least 2 numeric columns for correlation matrix.');
+          return;
         }
-      });
-    }
+        const matrix = computeCorrelationMatrix(target, cols);
+        let out = `Correlation Matrix (Pearson r):\n` +
+          cols.map((c) => c.slice(0, 10).padStart(11)).join('') + '\n' +
+          cols
+            .map((rowCol) => {
+              const vals = cols.map((colCol) => {
+                const cell = matrix.find((c) => c.var1 === rowCol && c.var2 === colCol);
+                return (cell ? cell.r.toFixed(3) : 'NA').padStart(11);
+              });
+              return rowCol.slice(0, 10).padEnd(10) + vals.join('');
+            })
+            .join('\n');
+        log(out);
+        return matrix;
+      };
 
-    // 2. Filter
-    if (filterConditions.length > 0) {
-      data = data.filter((row) => {
-        return filterConditions.every((cond) => {
-          const val = row[cond.column];
-          if (val === undefined || val === null) return false;
-          const targetNum = Number(cond.value);
-          const isValNum = !isNaN(Number(val));
-
-          switch (cond.operator) {
-            case '==':
-              return isValNum ? Number(val) === targetNum : String(val).toLowerCase() === cond.value.toLowerCase();
-            case '!=':
-              return isValNum ? Number(val) !== targetNum : String(val).toLowerCase() !== cond.value.toLowerCase();
-            case '>':
-              return isValNum ? Number(val) > targetNum : false;
-            case '<':
-              return isValNum ? Number(val) < targetNum : false;
-            case '>=':
-              return isValNum ? Number(val) >= targetNum : false;
-            case '<=':
-              return isValNum ? Number(val) <= targetNum : false;
-            case 'contains':
-              return String(val).toLowerCase().includes(cond.value.toLowerCase());
-            default:
-              return true;
-          }
-        });
-      });
-    }
-
-    // 3. Sort
-    if (sortColumn) {
-      data.sort((a, b) => {
-        const valA = a[sortColumn];
-        const valB = b[sortColumn];
-        if (valA === valB) return 0;
-        if (valA === null || valA === undefined) return 1;
-        if (valB === null || valB === undefined) return -1;
-        if (typeof valA === 'number' && typeof valB === 'number') {
-          return sortAscending ? valA - valB : valB - valA;
+      const fitLinearModel = (dependentVar: string, independentVars: string[]) => {
+        const reg = runLinearRegression(df, dependentVar, independentVars);
+        if (reg) {
+          setActiveRegression(reg);
+          log(reg.rSummaryOutput);
+          setOutputMode('model');
+          return reg;
+        } else {
+          log('Linear model failed: Ensure variables are numeric with enough observations.');
         }
-        return sortAscending
-          ? String(valA).localeCompare(String(valB))
-          : String(valB).localeCompare(String(valA));
-      });
-    }
+      };
 
-    // 4. Select Columns
-    if (selectedColumns.length > 0) {
-      data = data.map((row) => {
-        const newRow: Record<string, any> = {};
-        for (const col of selectedColumns) {
-          if (row.hasOwnProperty(col)) {
-            newRow[col] = row[col];
-          }
+      const plot = (config: PlotConfig) => {
+        setActivePlot(config);
+        setOutputMode('plot');
+        log(`Plot generated: [${config.type.toUpperCase()}] X: ${config.x} ${config.y ? `Y: ${config.y}` : ''}`);
+      };
+
+      const anova = (numVar: string, groupVar: string) => {
+        const res = runOneWayAnova(df, numVar, groupVar);
+        if (res) {
+          log(res.rSummaryOutput);
+          return res;
         }
-        return newRow;
-      });
+      };
+
+      const tTest = (var1: string, var2: string) => {
+        const res = runTwoSampleTTest(df, var1, var2);
+        if (res) {
+          log(res.rSummaryOutput);
+          return res;
+        }
+      };
+
+      // Wrap in sandbox
+      // eslint-disable-next-line no-new-func
+      const runFn = new Function(
+        'df',
+        'summary',
+        'glimpse',
+        'names',
+        'head',
+        'tail',
+        'cor',
+        'fitLinearModel',
+        'plot',
+        'anova',
+        'tTest',
+        'log',
+        `try {
+          ${code}
+        } catch(e) {
+          log("Runtime Error: " + e.message);
+        }`
+      );
+
+      runFn(df, summary, glimpse, names, head, tail, cor, fitLinearModel, plot, anova, tTest, log);
+
+      const finalOutput = logs.join('\n\n');
+      setConsoleOutput(finalOutput || 'Code executed successfully with zero standard output.');
+    } catch (err: any) {
+      setConsoleOutput(`Compilation Error: ${err.message}`);
+      setOutputMode('console');
+    } finally {
+      setIsExecuting(false);
     }
+  };
 
-    return data;
-  }, [rawDataset, filterConditions, mutateRules, sortColumn, sortAscending, selectedColumns]);
-
-  // Display columns
-  const activeColumns = useMemo(() => {
-    if (selectedColumns.length > 0) return selectedColumns;
-    if (transformedDataset.length > 0) return Object.keys(transformedDataset[0]);
-    return allColumnNames;
-  }, [selectedColumns, transformedDataset, allColumnNames]);
-
-  // Filtered rows for search
-  const searchedRows = useMemo(() => {
-    if (!searchQuery.trim()) return transformedDataset;
-    const q = searchQuery.toLowerCase();
-    return transformedDataset.filter((row) =>
-      Object.values(row).some((v) => String(v).toLowerCase().includes(q))
-    );
-  }, [transformedDataset, searchQuery]);
-
-  // Paginated Rows
-  const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return searchedRows.slice(start, start + pageSize);
-  }, [searchedRows, currentPage]);
-
-  const totalPages = Math.ceil(searchedRows.length / pageSize) || 1;
-
-  // Correlation Matrix
-  const correlationMatrix: CorrelationCell[] = useMemo(() => {
-    if (numericColumns.length < 2) return [];
-    return computeCorrelationMatrix(transformedDataset, numericColumns);
-  }, [transformedDataset, numericColumns]);
-
-  // Linear Regression Result
-  const regressionResult: RegressionResult | null = useMemo(() => {
-    if (!regDepVar || regIndepVars.length === 0) return null;
-    return runLinearRegression(transformedDataset, regDepVar, regIndepVars);
-  }, [transformedDataset, regDepVar, regIndepVars]);
-
-  // ANOVA Result
-  const anovaResult: AnovaResult | null = useMemo(() => {
-    if (!anovaNumVar || !anovaGroupVar) return null;
-    return runOneWayAnova(transformedDataset, anovaNumVar, anovaGroupVar);
-  }, [transformedDataset, anovaNumVar, anovaGroupVar]);
-
-  // T-Test Result
-  const tTestResult: TTestResult | null = useMemo(() => {
-    if (!tTestVar1 || !tTestVar2) return null;
-    return runTwoSampleTTest(transformedDataset, tTestVar1, tTestVar2);
-  }, [transformedDataset, tTestVar1, tTestVar2]);
-
-  // Generate Current R Script
-  const currentRScript = useMemo(() => {
-    return generateRScript({
-      datasetName: currentDatasetName,
-      filters: filterConditions.map((f) => ({
-        column: f.column,
-        operator: f.operator,
-        value: f.value,
-      })),
-      mutations: mutateRules.map((m) => ({
-        newColumn: m.newColumn,
-        expression: m.expression,
-      })),
-      selectCols: selectedColumns.length > 0 ? selectedColumns : undefined,
-      sortCol: sortColumn || undefined,
-      sortAsc: sortAscending,
-      chart: {
-        type: chartType,
-        x: xAxisCol,
-        y: yAxisCol,
-        color: colorCol || undefined,
-        title: chartTitle,
-      },
-      regression: {
-        y: regDepVar,
-        x: regIndepVars,
-      },
-    });
-  }, [
-    currentDatasetName,
-    filterConditions,
-    mutateRules,
-    selectedColumns,
-    sortColumn,
-    sortAscending,
-    chartType,
-    xAxisCol,
-    yAxisCol,
-    colorCol,
-    chartTitle,
-    regDepVar,
-    regIndepVars,
-  ]);
+  // Keyboard shortcut: Cmd+Enter or Ctrl+Enter to Run
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleRunCode();
+    }
+  };
 
   // Load sample dataset
   const handleLoadSample = (sample: DatasetItem) => {
     setCurrentDatasetName(sample.name);
     setFileName(sample.filename);
     setRawDataset(sample.data);
-    setFilterConditions([]);
-    setMutateRules([]);
-    setSortColumn('');
-    setSelectedColumns([]);
-    setCurrentPage(1);
+    setTablePage(1);
 
-    // auto set chart axes if appropriate
     const cols = inspectColumns(sample.data);
     const numCols = cols.filter((c) => c.type === 'numeric').map((c) => c.name);
     const catCols = cols.filter((c) => c.type !== 'numeric').map((c) => c.name);
 
     if (numCols.length >= 2) {
-      setXAxisCol(numCols[0]);
-      setYAxisCol(numCols[1]);
-      setRegDepVar(numCols[1]);
-      setRegIndepVars([numCols[0]]);
-      setTTestVar1(numCols[0]);
-      setTTestVar2(numCols[1]);
-    }
-    if (catCols.length >= 1) {
-      setColorCol(catCols[0]);
-      setAnovaGroupVar(catCols[0]);
-    }
-    if (numCols.length >= 1) {
-      setAnovaNumVar(numCols[0]);
+      setActivePlot({
+        type: 'scatter',
+        x: numCols[0],
+        y: numCols[1],
+        color: catCols[0] || '',
+        title: `${numCols[1]} vs ${numCols[0]}`,
+      });
+      const reg = runLinearRegression(sample.data, numCols[1], [numCols[0]]);
+      if (reg) setActiveRegression(reg);
     }
 
-    setConsoleHistory((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        command: `data(${sample.name})`,
-        output: `Loaded canonical R dataset '${sample.name}' (${sample.rows} obs. of ${sample.cols} variables).\nSource: ${sample.source}`,
-        type: 'info',
-        timestamp: new Date().toLocaleTimeString(),
-      },
-    ]);
+    setScriptCode(
+`// Canonical dataset '${sample.name}' loaded (${sample.rows} rows × ${sample.cols} columns)
+// Inspect structure
+glimpse(df);
+
+// Compute summary stats
+summary(df);
+
+${numCols.length >= 2 ? `// Fit linear model\nfitLinearModel('${numCols[1]}', ['${numCols[0]}']);\n\n// Plot relationship\nplot({ type: 'scatter', x: '${numCols[0]}', y: '${numCols[1]}', color: '${catCols[0] || ''}', title: '${sample.name} Analysis' });` : ''}`
+    );
+
+    setConsoleOutput(`Loaded dataset '${sample.name}' (${sample.rows} obs. of ${sample.cols} variables).`);
   };
 
   // File Upload Handlers (CSV, XLSX, JSON)
@@ -404,20 +426,13 @@ export default function DataStudioPage() {
         complete: (results) => {
           if (results.data && results.data.length > 0) {
             setRawDataset(results.data as Record<string, any>[]);
-            setFilterConditions([]);
-            setMutateRules([]);
-            setSelectedColumns([]);
-            setCurrentPage(1);
-            setConsoleHistory((prev) => [
-              ...prev,
-              {
-                id: String(Date.now()),
-                command: `read_csv("${file.name}")`,
-                output: `Parsed ${results.data.length} rows × ${Object.keys(results.data[0] || {}).length} columns successfully.`,
-                type: 'info',
-                timestamp: new Date().toLocaleTimeString(),
-              },
-            ]);
+            setTablePage(1);
+            setConsoleOutput(`Loaded ${file.name} (${results.data.length} rows × ${Object.keys(results.data[0] || {}).length} columns).`);
+            setScriptCode(
+`// Uploaded dataset '${cleanName}' (${results.data.length} rows)
+summary(df);
+glimpse(df);`
+            );
           }
         },
       });
@@ -431,20 +446,13 @@ export default function DataStudioPage() {
         const data = XLSX.utils.sheet_to_json(ws);
         if (data && data.length > 0) {
           setRawDataset(data as Record<string, any>[]);
-          setFilterConditions([]);
-          setMutateRules([]);
-          setSelectedColumns([]);
-          setCurrentPage(1);
-          setConsoleHistory((prev) => [
-            ...prev,
-            {
-              id: String(Date.now()),
-              command: `read_excel("${file.name}", sheet = "${wsname}")`,
-              output: `Imported sheet '${wsname}': ${data.length} rows × ${Object.keys(data[0] || {}).length} columns.`,
-              type: 'info',
-              timestamp: new Date().toLocaleTimeString(),
-            },
-          ]);
+          setTablePage(1);
+          setConsoleOutput(`Imported sheet '${wsname}' from ${file.name}: ${data.length} observations.`);
+          setScriptCode(
+`// Uploaded Excel sheet '${wsname}' (${data.length} rows)
+summary(df);
+glimpse(df);`
+          );
         }
       };
       reader.readAsBinaryString(file);
@@ -455,1722 +463,1032 @@ export default function DataStudioPage() {
           const parsed = JSON.parse(evt.target?.result as string);
           const arr = Array.isArray(parsed) ? parsed : [parsed];
           setRawDataset(arr);
-          setFilterConditions([]);
-          setMutateRules([]);
-          setSelectedColumns([]);
-          setCurrentPage(1);
-          setConsoleHistory((prev) => [
-            ...prev,
-            {
-              id: String(Date.now()),
-              command: `fromJSON("${file.name}")`,
-              output: `Parsed JSON array: ${arr.length} observations.`,
-              type: 'info',
-              timestamp: new Date().toLocaleTimeString(),
-            },
-          ]);
+          setTablePage(1);
+          setConsoleOutput(`Imported JSON records from ${file.name}: ${arr.length} observations.`);
         } catch (err: any) {
-          alert('Invalid JSON file format: ' + err.message);
+          alert('Invalid JSON file: ' + err.message);
         }
       };
       reader.readAsText(file);
     }
   };
 
-  // REPL Console Execution
-  const handleExecuteConsole = () => {
-    const cmd = consoleInput.trim();
-    if (!cmd) return;
+  // Chat with Ollama AI Copilot (Dataset-Aware)
+  const handleSendChatMessage = async (promptOverride?: string) => {
+    const text = promptOverride || chatInput.trim();
+    if (!text || isGeneratingAI) return;
 
-    let output = '';
-    let type: 'output' | 'error' | 'info' = 'output';
+    const userMsg: OllamaChatMessage = { role: 'user', content: text };
+    const newHistory = [...chatMessages, userMsg];
+    setChatMessages(newHistory);
+    if (!promptOverride) setChatInput('');
+    setIsGeneratingAI(true);
+
+    // Prepare system prompt with actual dataset schema & first 3 rows
+    const sampleRows = JSON.stringify(rawDataset.slice(0, 3), null, 2);
+    const colSummaryStr = columnSummaries
+      .map((c) => `- ${c.name} (${c.type}): count=${c.count}, unique=${c.uniqueCount}${c.type === 'numeric' ? `, mean=${c.mean?.toFixed(2)}, min=${c.min}, max=${c.max}` : ''}`)
+      .join('\n');
+
+    const systemPrompt: OllamaChatMessage = {
+      role: 'system',
+      content: `You are an expert AI Data Science Copilot inside Data Studio.
+You assist users (especially non-experts) in processing, analyzing, transforming, and visualizing data.
+
+ACTIVE DATASET IN MEMORY:
+- Name: "${currentDatasetName}"
+- Rows: ${rawDataset.length}
+- Columns: ${allColumnNames.join(', ')}
+
+COLUMNS & TYPES:
+${colSummaryStr}
+
+FIRST 3 SAMPLE ROWS:
+\`\`\`json
+${sampleRows}
+\`\`\`
+
+GUIDELINES:
+1. Provide concise, friendly explanations in plain language for non-experts.
+2. When generating code to run in Data Studio, provide executable JavaScript/DataStudio code that works directly with 'df'.
+Available sandbox functions:
+- summary(df) - descriptive statistics
+- glimpse(df) - inspect schema and sample rows
+- names(df) - list column names
+- head(df, n) / tail(df, n)
+- cor(df) - correlation matrix
+- fitLinearModel(dependentVar, [independentVars]) - OLS regression
+- plot({ type: 'scatter'|'bar'|'line'|'area', x: '...', y: '...', color: '...', title: '...' })
+- anova(numericVar, groupVar)
+- tTest(var1, var2)
+- Array methods: df.filter(d => ...), df.map(...), df.slice(...)
+
+Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the user can insert or run it directly.`,
+    };
+
+    const messagesToSend = [systemPrompt, ...newHistory];
+    let assistantAccumulated = '';
 
     try {
-      if (cmd === 'clear' || cmd === 'cls') {
-        setConsoleHistory([]);
-        setConsoleInput('');
-        return;
-      } else if (cmd === 'help()' || cmd === '?') {
-        output = `Data Studio R-Console Cheatsheet:\n  summary(df)        - Descriptive statistics across all variables\n  glimpse(df)        - Data structure, types, and first few values\n  names(df)          - List column names\n  head(df, n)        - Print first n rows (default 6)\n  tail(df, n)        - Print last n rows\n  cor(df)            - Display correlation matrix of numeric columns\n  lm(y ~ x)          - Fit OLS linear regression model\n  nrow(df) / ncol(df)- Row and column counts\n  JS Expressions     - Direct JavaScript code execution against 'df'`;
-        type = 'info';
-      } else if (cmd === 'summary(df)' || cmd === 'summary()') {
-        output = columnSummaries
-          .map((col) => {
-            if (col.type === 'numeric') {
-              return `${col.name} (numeric):\n  Min: ${col.min?.toFixed(2)} | 1st Qu: ${col.q1?.toFixed(2)} | Median: ${col.median?.toFixed(2)}\n  Mean: ${col.mean?.toFixed(2)} | 3rd Qu: ${col.q3?.toFixed(2)} | Max: ${col.max?.toFixed(2)}\n  Std Dev: ${col.stdev?.toFixed(2)} | IQR: ${col.iqr?.toFixed(2)}`;
-            }
-            return `${col.name} (${col.type}):\n  Length: ${col.count} | Class: character | Mode: character | Unique: ${col.uniqueCount}`;
-          })
-          .join('\n\n');
-      } else if (cmd === 'glimpse(df)' || cmd === 'str(df)') {
-        output = `Rows: ${transformedDataset.length}\nColumns: ${activeColumns.length}\n` +
-          columnSummaries
-            .map((col) => {
-              const samples = transformedDataset.slice(0, 4).map((r) => r[col.name]).join(', ');
-              return `$ ${col.name.padEnd(16)} <${col.type}> ${samples}...`;
-            })
-            .join('\n');
-      } else if (cmd === 'names(df)' || cmd === 'colnames(df)') {
-        output = JSON.stringify(activeColumns, null, 2);
-      } else if (cmd.startsWith('head(')) {
-        const match = cmd.match(/head\(\s*df\s*(?:,\s*(\d+))?\s*\)/);
-        const count = match && match[1] ? parseInt(match[1], 10) : 6;
-        output = JSON.stringify(transformedDataset.slice(0, count), null, 2);
-      } else if (cmd.startsWith('tail(')) {
-        const match = cmd.match(/tail\(\s*df\s*(?:,\s*(\d+))?\s*\)/);
-        const count = match && match[1] ? parseInt(match[1], 10) : 6;
-        output = JSON.stringify(transformedDataset.slice(-count), null, 2);
-      } else if (cmd === 'nrow(df)') {
-        output = `[1] ${transformedDataset.length}`;
-      } else if (cmd === 'ncol(df)') {
-        output = `[1] ${activeColumns.length}`;
-      } else if (cmd === 'cor(df)') {
-        if (correlationMatrix.length === 0) {
-          output = 'Need at least 2 numeric columns for correlation matrix.';
-        } else {
-          output = `Correlation Matrix (Pearson r):\n` +
-            numericColumns.map((c) => c.slice(0, 10).padStart(11)).join('') + '\n' +
-            numericColumns
-              .map((rowCol) => {
-                const vals = numericColumns.map((colCol) => {
-                  const cell = correlationMatrix.find((c) => c.var1 === rowCol && c.var2 === colCol);
-                  return (cell ? cell.r.toFixed(3) : 'NA').padStart(11);
-                });
-                return rowCol.slice(0, 10).padEnd(10) + vals.join('');
-              })
-              .join('\n');
+      await streamOllamaChat(
+        DEFAULT_OLLAMA_ENDPOINT,
+        {
+          model: selectedModel,
+          messages: messagesToSend,
+          temperature: 0.3,
+        },
+        (fullText) => {
+          assistantAccumulated = fullText;
+          setChatMessages([...newHistory, { role: 'assistant', content: fullText }]);
+          chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
-      } else if (cmd.startsWith('lm(')) {
-        const reg = regressionResult;
-        if (reg) {
-          output = reg.rSummaryOutput;
-        } else {
-          output = 'Linear model could not be fitted. Check dependent and independent variables in Statistics tab.';
-        }
-      } else {
-        // Evaluate JavaScript expression with sandbox context
-        const df = transformedDataset;
-        // eslint-disable-next-line no-new-func
-        const evalFn = new Function('df', 'jStat', `return (${cmd})`);
-        const result = evalFn(df, (window as any).jStat);
-        output = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
-      }
+      );
     } catch (err: any) {
-      output = 'Error in command: ' + err.message;
-      type = 'error';
+      setChatMessages([
+        ...newHistory,
+        {
+          role: 'assistant',
+          content: `⚠️ Failed to query local Ollama (${err.message}). Make sure Ollama daemon is running at \`http://localhost:11434\` and model \`${selectedModel}\` is installed.`,
+        },
+      ]);
+    } finally {
+      setIsGeneratingAI(false);
     }
-
-    setConsoleHistory((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        command: cmd,
-        output,
-        type,
-        timestamp: new Date().toLocaleTimeString(),
-      },
-    ]);
-    setConsoleInput('');
-    setHistoryIndex(-1);
-
-    setTimeout(() => {
-      consoleBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 50);
   };
 
-  // Exports
-  const handleExportCSV = () => {
-    const csv = Papa.unparse(transformedDataset);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${currentDatasetName}_processed.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Plain-English AI Explanation of latest output
+  const handleExplainOutputWithAI = () => {
+    setRightPanelTab('assistant');
+    const prompt = `Please explain this output in clear, simple terms for someone who is not a data science expert. What does it mean practically?\n\n\`\`\`\n${consoleOutput.slice(0, 1500)}\n\`\`\``;
+    handleSendChatMessage(prompt);
   };
 
-  const handleExportExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(transformedDataset);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, currentDatasetName);
-    XLSX.writeFile(wb, `${currentDatasetName}_processed.xlsx`);
+  // Helper to extract code from markdown block
+  const extractFirstCodeBlock = (text: string): string | null => {
+    const match = text.match(/```(?:javascript|js|r)?\n([\s\S]*?)```/i);
+    return match ? match[1].trim() : null;
   };
 
-  const handleExportJSON = () => {
-    const json = JSON.stringify(transformedDataset, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${currentDatasetName}_processed.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // Generate Current R Script for RStudio Export
+  const currentRScript = useMemo(() => {
+    return generateRScript({
+      datasetName: currentDatasetName,
+      chart: activePlot ? {
+        type: activePlot.type,
+        x: activePlot.x,
+        y: activePlot.y,
+        color: activePlot.color,
+        title: activePlot.title,
+      } : undefined,
+      regression: activeRegression ? {
+        y: activeRegression.dependentVar,
+        x: activeRegression.independentVars,
+      } : undefined,
+    });
+  }, [currentDatasetName, activePlot, activeRegression]);
 
-  const handleExportRScript = () => {
-    const blob = new Blob([currentRScript], { type: 'text/plain;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${currentDatasetName}_analysis.R`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleCopyRScript = () => {
-    navigator.clipboard.writeText(currentRScript);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
-
-  // Sidebar Links
-  const sidebarLinks = [
+  // Sidebar Links (Uses exact same structure as ai-hub to prevent glitching)
+  const sidebarLinks: Links[] = [
     {
-      label: 'Workspace',
-      href: '#workspace',
-      icon: <IconTable className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      tab: 'workspace' as ActiveTab,
-      badge: `${transformedDataset.length} rows`,
+      label: 'Code IDE',
+      icon: <IconTerminal2 size={18} stroke={2} className="shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      isActive: activeTab === 'ide',
+      onClick: () => setActiveTab('ide'),
+      badge: 'IDE',
     },
     {
-      label: 'Console',
-      href: '#console',
-      icon: <IconTerminal2 className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      tab: 'console' as ActiveTab,
-      badge: 'R / REPL',
+      label: 'Data Table',
+      icon: <IconTable size={18} stroke={2} className="shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      isActive: activeTab === 'table',
+      onClick: () => setActiveTab('table'),
+      badge: `${rawDataset.length} rows`,
     },
     {
-      label: 'Visualize',
-      href: '#visualize',
-      icon: <IconChartBar className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      tab: 'visualize' as ActiveTab,
+      label: 'Visualizer',
+      icon: <IconChartBar size={18} stroke={2} className="shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      isActive: activeTab === 'visualizer',
+      onClick: () => setActiveTab('visualizer'),
       badge: 'ggplot2',
     },
     {
-      label: 'Transform',
-      href: '#transform',
-      icon: <IconTransform className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      tab: 'transform' as ActiveTab,
-      badge: `${filterConditions.length + mutateRules.length} steps`,
-    },
-    {
-      label: 'Statistics',
-      href: '#statistics',
-      icon: <IconMathFunction className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      tab: 'statistics' as ActiveTab,
-      badge: 'lm & tests',
-    },
-    {
-      label: 'Export',
-      href: '#export',
-      icon: <IconDownload className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      tab: 'export' as ActiveTab,
-      badge: '.R / .csv',
+      label: 'R Export',
+      icon: <IconDownload size={18} stroke={2} className="shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      isActive: activeTab === 'export',
+      onClick: () => setActiveTab('export'),
+      badge: '.R',
     },
   ];
+
+  // Mobile Brand Header (Identical pattern to AI Studio)
+  const mobileBrand = (
+    <div className="flex items-center gap-2.5">
+      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-bold text-xs shadow-xs">
+        <IconMathFunction size={16} stroke={2} />
+      </div>
+      <div className="flex flex-col">
+        <span className="font-extrabold text-xs text-neutral-900 dark:text-white leading-none">
+          Data Studio
+        </span>
+        <span className="text-[10px] font-mono text-neutral-500">
+          R Studio &amp; AI Copilot
+        </span>
+      </div>
+    </div>
+  );
+
+  // Paginated Data Table
+  const filteredTableRows = useMemo(() => {
+    if (!tableSearch.trim()) return rawDataset;
+    const q = tableSearch.toLowerCase();
+    return rawDataset.filter((r) =>
+      Object.values(r).some((v) => String(v).toLowerCase().includes(q))
+    );
+  }, [rawDataset, tableSearch]);
+
+  const paginatedRows = useMemo(() => {
+    const start = (tablePage - 1) * pageSize;
+    return filteredTableRows.slice(start, start + pageSize);
+  }, [filteredTableRows, tablePage]);
+
+  const totalPages = Math.ceil(filteredTableRows.length / pageSize) || 1;
 
   if (!mounted) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-neutral-50 dark:bg-black">
         <div className="flex items-center gap-3 font-mono text-sm text-neutral-600 dark:text-neutral-400">
           <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white animate-ping" />
-          <span>Initializing Data Studio Engine...</span>
+          <span>Starting Data Studio IDE...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-neutral-100 dark:bg-black font-sans text-neutral-900 dark:text-neutral-100">
-      {/* 1. Left Sidebar Navigation (Aceternity style, matching AI Studio) */}
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
-        <SidebarBody className="justify-between gap-6 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c]">
-          <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
+    <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden bg-[var(--color-paper)] text-[var(--color-ink)] font-sans antialiased">
+      {/* 🧭 Collapsible Sidebar (Glitch-Free Animated Architecture from AI Studio) */}
+      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate={true}>
+        <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c]">
+          <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             {/* Header Brand */}
-            <div className="flex items-center gap-3 py-2 border-b border-neutral-200 dark:border-neutral-800 pb-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black font-mono font-black text-base shadow-sm">
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs font-mono font-bold select-none text-base">
                 R
               </div>
-              {sidebarOpen && (
-                <div className="flex flex-col">
-                  <span className="text-sm font-extrabold tracking-tight text-neutral-900 dark:text-white">
-                    Data Studio
-                  </span>
-                  <span className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
-                    Statistical Computing & R Bridge
+              <motion.div
+                animate={{
+                  display: sidebarOpen ? 'flex' : 'none',
+                  opacity: sidebarOpen ? 1 : 0,
+                }}
+                className="flex flex-col truncate"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-sm text-[var(--color-ink)]">Data Studio</span>
+                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                    R+AI
                   </span>
                 </div>
-              )}
+                <span className="text-[10.5px] font-mono text-[var(--color-ink-muted)]">
+                  Coding &amp; Statistical IDE
+                </span>
+              </motion.div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="mt-4 flex flex-col gap-1.5">
-              {sidebarLinks.map((link) => {
-                const isActive = activeTab === link.tab;
-                return (
+            {/* Sidebar Navigation Links */}
+            <div className="mt-6 flex flex-col gap-1">
+              {sidebarLinks.map((link, idx) => (
+                <SidebarLink key={idx} link={link} />
+              ))}
+            </div>
+
+            {/* Canonical Datasets Switcher */}
+            <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <motion.div
+                animate={{
+                  display: sidebarOpen ? 'flex' : 'none',
+                  opacity: sidebarOpen ? 1 : 0,
+                }}
+                className="flex items-center justify-between mb-2 px-1"
+              >
+                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-mono">
+                  Sample Datasets
+                </span>
+                <span className="text-[10px] text-neutral-400 font-mono">R Studio</span>
+              </motion.div>
+
+              <div className="flex flex-col gap-1">
+                {SAMPLE_DATASETS.map((sample) => (
                   <button
-                    key={link.tab}
+                    key={sample.name}
                     type="button"
-                    onClick={() => setActiveTab(link.tab)}
-                    className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                      isActive
-                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-black font-bold shadow-xs'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white'
+                    onClick={() => handleLoadSample(sample)}
+                    className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                      currentDatasetName === sample.name
+                        ? 'bg-neutral-200/70 dark:bg-neutral-800 font-bold text-neutral-900 dark:text-white'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      {link.icon}
-                      {sidebarOpen && <span>{link.label}</span>}
-                    </div>
-                    {sidebarOpen && (
-                      <span
-                        className={`text-[9.5px] px-2 py-0.5 rounded-md font-mono ${
-                          isActive
-                            ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-800'
-                            : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
-                        }`}
-                      >
-                        {link.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Canonical Datasets Quick Switcher */}
-            {sidebarOpen && (
-              <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-                <div className="flex items-center justify-between mb-2 px-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-mono">
-                    R Datasets
-                  </span>
-                  <span className="text-[10px] text-neutral-400 font-mono">Built-in</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {SAMPLE_DATASETS.map((sample) => (
-                    <button
-                      key={sample.name}
-                      type="button"
-                      onClick={() => handleLoadSample(sample)}
-                      className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-                        currentDatasetName === sample.name
-                          ? 'bg-neutral-200/70 dark:bg-neutral-800 font-bold text-neutral-900 dark:text-white'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900'
-                      }`}
+                    <span className="font-mono text-xs">{sample.name}</span>
+                    <motion.span
+                      animate={{
+                        display: sidebarOpen ? 'inline-block' : 'none',
+                        opacity: sidebarOpen ? 1 : 0,
+                      }}
+                      className="text-[10px] text-neutral-400 font-mono"
                     >
-                      <span className="font-mono text-xs">{sample.name}</span>
-                      <span className="text-[10px] text-neutral-400 font-mono">
-                        {sample.rows} × {sample.cols}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                      {sample.rows} × {sample.cols}
+                    </motion.span>
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Sidebar Footer */}
-          <div className="flex flex-col gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-            {sidebarOpen && (
-              <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-                <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
-                    Client-Side Engine
-                  </span>
-                  <span>100% Private</span>
-                </div>
-              </div>
-            )}
-
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+          {/* Sidebar Footer: Ollama Status & Back to Resursee */}
+          <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 mt-auto space-y-2">
+            {/* Ollama Status Pill */}
+            <div
+              onClick={probeOllama}
+              className="group flex items-center justify-between p-2 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 cursor-pointer transition-all"
+              title="Click to check Ollama status"
             >
-              <IconArrowLeft className="h-4 w-4 shrink-0" />
-              {sidebarOpen && <span>Back to Resursee</span>}
-            </Link>
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={cn(
+                    'h-1.5 w-1.5 rounded-full shrink-0',
+                    ollamaStatus === 'connected'
+                      ? 'bg-neutral-900 dark:bg-white'
+                      : ollamaStatus === 'checking'
+                      ? 'bg-neutral-500 animate-pulse'
+                      : 'bg-neutral-400'
+                  )}
+                />
+                <motion.span
+                  animate={{
+                    display: sidebarOpen ? 'inline-block' : 'none',
+                    opacity: sidebarOpen ? 1 : 0,
+                  }}
+                  className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate"
+                >
+                  {ollamaStatus === 'connected'
+                    ? `Ollama (${installedModels.length} models)`
+                    : ollamaStatus === 'checking'
+                    ? 'Probing Ollama...'
+                    : 'Ollama Standby (11434)'}
+                </motion.span>
+              </div>
+              <motion.span
+                animate={{
+                  display: sidebarOpen ? 'inline-block' : 'none',
+                  opacity: sidebarOpen ? 1 : 0,
+                }}
+                className="text-[10px] font-mono text-neutral-400 group-hover:underline"
+              >
+                Reload
+              </motion.span>
+            </div>
+
+            {/* Return to Resursee */}
+            <SidebarLink
+              link={{
+                label: 'Back to Resursee',
+                href: '/#apps',
+                icon: <IconArrowLeft size={16} className="shrink-0 text-neutral-500" />,
+              }}
+            />
           </div>
         </SidebarBody>
       </Sidebar>
 
-      {/* 2. Main Canvas & Workspace */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top Action Header Bar */}
+      {/* 🖥️ Main Studio Canvas */}
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-neutral-100/70 dark:bg-black">
+        {/* Top Header Bar */}
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <h1 className="text-sm sm:text-base font-extrabold tracking-tight capitalize text-neutral-900 dark:text-white">
-              {activeTab === 'workspace' && 'Environment & Data Table'}
-              {activeTab === 'console' && 'R Interactive Console & REPL'}
-              {activeTab === 'visualize' && 'Grammar of Graphics (ggplot2)'}
-              {activeTab === 'transform' && 'Data Wrangling Pipeline (dplyr)'}
-              {activeTab === 'statistics' && 'Statistical Modeling & Hypothesis Tests'}
-              {activeTab === 'export' && 'Reproducible Export & R Scripts'}
+            <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-neutral-900 dark:text-white">
+              Data Studio — Coding &amp; Statistical IDE
             </h1>
 
             {/* Active Data Frame Pill */}
             <div className="hidden sm:flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 px-3 py-1 text-xs font-mono text-neutral-700 dark:text-neutral-300">
               <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
               <span className="font-bold">{currentDatasetName}</span>
-              <span className="text-neutral-400 dark:text-neutral-500">
-                ({transformedDataset.length} obs. of {activeColumns.length} variables)
+              <span className="text-neutral-400">
+                ({rawDataset.length} obs. of {allColumnNames.length} variables)
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5">
-            {/* Show R Script Drawer Toggle */}
+            {/* Quick Upload Button */}
+            <label className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs">
+              <IconFileSpreadsheet size={15} />
+              <span className="hidden sm:inline">Upload File</span>
+              <input
+                type="file"
+                accept=".csv,.tsv,.xlsx,.xls,.json,.txt"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+
+            {/* Show R Script Modal Button */}
             <button
               type="button"
               onClick={() => setShowRScriptModal(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shadow-2xs cursor-pointer"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs"
             >
               <IconCode size={15} />
-              <span>Show R Script</span>
+              <span className="hidden md:inline">R Script</span>
             </button>
 
-            {/* Quick Export Button */}
+            {/* Run Code Primary Button */}
             <button
               type="button"
-              onClick={handleExportCSV}
-              className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-black px-3 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors shadow-2xs cursor-pointer"
+              disabled={isExecuting}
+              onClick={() => handleRunCode()}
+              className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-black px-3.5 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
             >
-              <IconDownload size={15} />
-              <span className="hidden sm:inline">Export CSV</span>
+              <IconPlayerPlay size={15} />
+              <span>Run (Cmd+↵)</span>
             </button>
           </div>
         </header>
 
-        {/* Dynamic Main Content Container */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-neutral-100/70 dark:bg-black">
-          {/* TAB 1: WORKSPACE (Data Viewer & File Import) */}
-          {activeTab === 'workspace' && (
-            <div className="space-y-6">
-              {/* Import & Info Bar */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* File Dropzone / Picker */}
-                <div className="lg:col-span-2 flex flex-col justify-between rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-4 sm:p-5 shadow-xs">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
-                        Import Dataset
-                      </span>
-                      <span className="text-xs font-mono text-neutral-400">
-                        CSV, TSV, XLSX, JSON
-                      </span>
-                    </div>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Import tabular data directly into your browser memory. Computation is 100% client-side with zero data sent over the network.
-                    </p>
+        {/* Dynamic Main Workspace: VIEW 1 — CODE IDE (Split Screen: Code + Output + Ollama) */}
+        {activeTab === 'ide' && (
+          <div className="flex-1 overflow-hidden p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* Left Column (7 cols): Code Editor + Execution Output Canvas */}
+            <div className="lg:col-span-7 flex flex-col gap-4 h-full overflow-hidden">
+              {/* Top: Source Code Editor */}
+              <div className="flex-1 min-h-[260px] rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3.5 py-2 bg-neutral-50 dark:bg-neutral-900">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-neutral-400" />
+                    <span className="text-xs font-mono font-bold text-neutral-800 dark:text-neutral-200">
+                      script.js (Data Studio Runtime)
+                    </span>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer shadow-xs">
-                      <IconFileSpreadsheet size={16} />
-                      <span>Choose File to Import</span>
-                      <input
-                        type="file"
-                        accept=".csv,.tsv,.xlsx,.xls,.json,.txt"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </label>
+                  <div className="flex items-center gap-2">
+                    {/* Template Selector */}
+                    <select
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'summary') {
+                          setScriptCode(`// 1. Data Summary & Glimpse\nsummary(df);\nglimpse(df);`);
+                        } else if (val === 'scatter') {
+                          setScriptCode(`// 2. Scatter Plot\nplot({\n  type: 'scatter',\n  x: '${numericColumns[0] || 'x'}',\n  y: '${numericColumns[1] || 'y'}',\n  color: '${categoricalColumns[0] || ''}',\n  title: 'Scatter Plot'\n});`);
+                        } else if (val === 'lm') {
+                          setScriptCode(`// 3. Linear Regression Model\nfitLinearModel('${numericColumns[1] || 'y'}', ['${numericColumns[0] || 'x'}']);`);
+                        } else if (val === 'cor') {
+                          setScriptCode(`// 4. Correlation Matrix\ncor(df);`);
+                        } else if (val === 'filter') {
+                          setScriptCode(`// 5. Filter & Transform\nconst filtered = df.filter(r => r.${numericColumns[0] || 'x'} > 0);\nsummary(filtered);`);
+                        }
+                      }}
+                      className="h-7 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 text-[11px] font-mono text-neutral-800 dark:text-neutral-200"
+                    >
+                      <option value="">Select Code Template...</option>
+                      <option value="summary">1. Summary &amp; Glimpse</option>
+                      <option value="scatter">2. Scatter Plot</option>
+                      <option value="lm">3. Linear Regression (lm)</option>
+                      <option value="cor">4. Correlation Matrix</option>
+                      <option value="filter">5. Filter &amp; Transform</option>
+                    </select>
 
-                    <span className="text-xs text-neutral-500 font-mono">
-                      Current file: <strong className="text-neutral-800 dark:text-neutral-200">{fileName}</strong>
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setScriptCode('')}
+                      className="text-[11px] font-mono text-neutral-400 hover:text-neutral-800 dark:hover:text-white px-1.5 py-0.5"
+                    >
+                      Clear
+                    </button>
                   </div>
                 </div>
 
-                {/* RStudio-Like Environment Pane Card */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
-                        Global Environment
-                      </span>
-                      <span className="text-xs font-mono text-neutral-400">RStudio Sync</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span className="font-mono font-bold text-neutral-900 dark:text-white">df</span>
-                        <span className="font-mono text-neutral-500">
-                          {transformedDataset.length} obs. of {activeColumns.length} variables
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span className="font-mono font-bold text-neutral-900 dark:text-white">model</span>
-                        <span className="font-mono text-neutral-500">
-                          {regressionResult ? `lm(${regDepVar} ~ ${regIndepVars.join('+')})` : 'NULL'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs py-1">
-                        <span className="font-mono font-bold text-neutral-900 dark:text-white">pipeline</span>
-                        <span className="font-mono text-neutral-500">
-                          {filterConditions.length + mutateRules.length} operations
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                    <button
-                      type="button"
-                      onClick={() => handleLoadSample(SAMPLE_DATASETS[0])}
-                      className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white underline cursor-pointer"
-                    >
-                      Reset to iris
-                    </button>
-                    <span className="text-[10px] font-mono text-neutral-400">
-                      RAM: ~{(JSON.stringify(rawDataset).length / 1024).toFixed(1)} KB
-                    </span>
-                  </div>
+                <div className="flex-1 relative flex">
+                  {/* Textarea Code Editor with Monospace Font */}
+                  <textarea
+                    ref={editorRef}
+                    value={scriptCode}
+                    onChange={(e) => setScriptCode(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="// Write your data analysis script here... Press Cmd+Enter to run"
+                    spellCheck={false}
+                    className="w-full h-full p-3.5 font-mono text-xs text-neutral-900 dark:text-neutral-100 bg-transparent resize-none focus:outline-hidden leading-relaxed"
+                  />
                 </div>
               </div>
 
-              {/* Column Types Strip */}
-              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-4 shadow-xs">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
-                    Column Variables & Data Types
-                  </span>
-                  <span className="text-xs font-mono text-neutral-400">
-                    {columnSummaries.length} columns detected
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                  {columnSummaries.map((col) => (
-                    <div
-                      key={col.name}
-                      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 p-2.5 flex flex-col justify-between"
+              {/* Bottom: Execution Output Canvas (Console, Plot, Model, Data Preview) */}
+              <div className="flex-1 min-h-[260px] rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3.5 py-2 bg-neutral-50 dark:bg-neutral-900">
+                  {/* Output Tabs */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setOutputMode('console')}
+                      className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all ${
+                        outputMode === 'console'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                          : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                      }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold font-mono truncate text-neutral-900 dark:text-white" title={col.name}>
-                          {col.name}
-                        </span>
-                        <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
-                          {col.type === 'numeric' ? 'num' : col.type === 'string' ? 'chr' : 'bool'}
-                        </span>
+                      Console
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOutputMode('plot')}
+                      className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all ${
+                        outputMode === 'plot'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                          : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Plot
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOutputMode('model')}
+                      className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all ${
+                        outputMode === 'model'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                          : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Model (lm)
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Explain Output with AI Button */}
+                    <button
+                      type="button"
+                      onClick={handleExplainOutputWithAI}
+                      className="flex items-center gap-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2.5 py-1 text-[11px] font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors shadow-2xs"
+                    >
+                      <IconSparkles size={13} />
+                      <span>Explain with AI</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Output Canvas Body */}
+                <div className="flex-1 overflow-y-auto p-3.5 font-mono text-xs bg-neutral-50/40 dark:bg-[#070707]">
+                  {outputMode === 'console' && (
+                    <pre className="whitespace-pre-wrap leading-relaxed text-neutral-800 dark:text-neutral-200">
+                      {consoleOutput}
+                    </pre>
+                  )}
+
+                  {outputMode === 'plot' && (
+                    <div className="h-full w-full min-h-[220px] flex flex-col justify-between">
+                      <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200 mb-1">
+                        {activePlot?.title || 'Interactive Visualization'}
                       </div>
-                      <div className="text-[10px] text-neutral-500 font-mono space-y-0.5">
-                        {col.type === 'numeric' ? (
-                          <>
-                            <div>μ: {col.mean?.toFixed(2)}</div>
-                            <div>range: [{col.min?.toFixed(1)}, {col.max?.toFixed(1)}]</div>
-                          </>
-                        ) : (
-                          <>
-                            <div>unique: {col.uniqueCount}</div>
-                            <div>nulls: {col.nullCount}</div>
-                          </>
+                      <div className="h-[210px] w-full">
+                        {activePlot?.type === 'scatter' && (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
+                              <XAxis dataKey={activePlot.x} name={activePlot.x} stroke="#88888880" fontSize={10} />
+                              <YAxis dataKey={activePlot.y} name={activePlot.y} stroke="#88888880" fontSize={10} />
+                              <RechartsTooltip contentStyle={{ backgroundColor: '#181818', borderRadius: '8px', fontSize: '11px', color: '#fff' }} />
+                              <Scatter data={rawDataset} fill="#525252" />
+                            </ScatterChart>
+                          </ResponsiveContainer>
+                        )}
+                        {activePlot?.type === 'bar' && (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={rawDataset.slice(0, 25)} margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
+                              <XAxis dataKey={activePlot.x} stroke="#88888880" fontSize={10} />
+                              <YAxis stroke="#88888880" fontSize={10} />
+                              <RechartsTooltip contentStyle={{ backgroundColor: '#181818', borderRadius: '8px', fontSize: '11px', color: '#fff' }} />
+                              <Bar dataKey={activePlot.y || activePlot.x} fill="#525252" radius={[3, 3, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
+                        {activePlot?.type === 'line' && (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={rawDataset} margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
+                              <XAxis dataKey={activePlot.x} stroke="#88888880" fontSize={10} />
+                              <YAxis stroke="#88888880" fontSize={10} />
+                              <RechartsTooltip contentStyle={{ backgroundColor: '#181818', borderRadius: '8px', fontSize: '11px', color: '#fff' }} />
+                              <Line type="monotone" dataKey={activePlot.y} stroke="#525252" strokeWidth={2} dot={{ r: 1.5 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  )}
 
-              {/* Interactive Data Table View */}
-              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
-                      Data Table View (View(df))
-                    </span>
-                    <span className="text-xs text-neutral-400 font-mono">
-                      Showing {searchedRows.length} matching observations
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <IconSearch size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-                      <input
-                        type="text"
-                        placeholder="Search observations..."
-                        value={searchQuery}
-                        onChange={(e) => {
-                          setSearchQuery(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        className="h-8 w-44 sm:w-60 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 pl-8 pr-3 text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-hidden"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Table Container */}
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-xs font-mono">
-                    <thead>
-                      <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-900/80 text-neutral-600 dark:text-neutral-400">
-                        <th className="px-4 py-2.5 w-12 text-center text-neutral-400">#</th>
-                        {activeColumns.map((col) => (
-                          <th
-                            key={col}
-                            onClick={() => {
-                              if (sortColumn === col) {
-                                setSortAscending(!sortAscending);
-                              } else {
-                                setSortColumn(col);
-                                setSortAscending(true);
-                              }
-                            }}
-                            className="px-4 py-2.5 font-bold cursor-pointer hover:bg-neutral-200/50 dark:hover:bg-neutral-800 transition-colors"
-                          >
-                            <div className="flex items-center gap-1.5">
-                              <span>{col}</span>
-                              {sortColumn === col && (
-                                <span className="text-[10px] text-neutral-900 dark:text-white">
-                                  {sortAscending ? '▲' : '▼'}
-                                </span>
-                              )}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-                      {paginatedRows.length === 0 ? (
-                        <tr>
-                          <td colSpan={activeColumns.length + 1} className="px-4 py-8 text-center text-neutral-400">
-                            No observations found matching the search criteria.
-                          </td>
-                        </tr>
+                  {outputMode === 'model' && (
+                    <div className="space-y-3">
+                      {activeRegression ? (
+                        <>
+                          <pre className="whitespace-pre-wrap leading-relaxed text-neutral-800 dark:text-neutral-200">
+                            {activeRegression.rSummaryOutput}
+                          </pre>
+                        </>
                       ) : (
-                        paginatedRows.map((row, idx) => {
-                          const rowNum = (currentPage - 1) * pageSize + idx + 1;
-                          return (
-                            <tr
-                              key={idx}
-                              className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors"
-                            >
-                              <td className="px-4 py-2 text-center text-neutral-400 select-none">
-                                {rowNum}
-                              </td>
-                              {activeColumns.map((col) => {
-                                const val = row[col];
-                                const isNum = typeof val === 'number';
-                                return (
-                                  <td
-                                    key={col}
-                                    className={`px-4 py-2 truncate max-w-[220px] ${
-                                      isNum ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-600 dark:text-neutral-400'
-                                    }`}
-                                  >
-                                    {val !== null && val !== undefined ? String(val) : <span className="text-neutral-400">NA</span>}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          );
-                        })
+                        <div className="text-neutral-400">
+                          No linear model fitted yet. Call <code className="font-bold">fitLinearModel(y, [x1, x2])</code> in the editor to run regression.
+                        </div>
                       )}
-                    </tbody>
-                  </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column (5 cols): Ollama AI Copilot & Dataset Schema Tabs */}
+            <div className="lg:col-span-5 flex flex-col h-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs overflow-hidden">
+              {/* Right Header Navigation Tabs */}
+              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3.5 py-2 bg-neutral-50 dark:bg-neutral-900">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setRightPanelTab('assistant')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      rightPanelTab === 'assistant'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-2xs'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <IconSparkles size={14} />
+                    <span>Ollama Copilot</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRightPanelTab('schema')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      rightPanelTab === 'schema'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-2xs'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <IconTable size={14} />
+                    <span>Data Schema</span>
+                  </button>
                 </div>
 
-                {/* Table Pagination */}
-                <div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-800 px-4 py-3 bg-neutral-50/50 dark:bg-neutral-900/30">
-                  <span className="text-xs font-mono text-neutral-500">
-                    Page {currentPage} of {totalPages} ({searchedRows.length} total rows)
-                  </span>
+                {/* Model Selector Dropdown */}
+                {rightPanelTab === 'assistant' && (
                   <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={currentPage <= 1}
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2.5 py-1 text-xs font-semibold disabled:opacity-40 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      type="button"
-                      disabled={currentPage >= totalPages}
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2.5 py-1 text-xs font-semibold disabled:opacity-40 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: CONSOLE (RStudio Interactive REPL) */}
-          {activeTab === 'console' && (
-            <div className="flex flex-col h-[calc(100vh-8.5rem)] rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs overflow-hidden">
-              {/* Console Toolbar */}
-              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-4 py-2.5 bg-neutral-50 dark:bg-neutral-900">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-neutral-400 dark:bg-neutral-600" />
-                  <span className="text-xs font-mono font-bold text-neutral-800 dark:text-neutral-200">
-                    Console — RStudio Style REPL
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConsoleInput('summary(df)');
-                      setTimeout(handleExecuteConsole, 50);
-                    }}
-                    className="text-[11px] font-mono px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-                  >
-                    summary(df)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConsoleInput('glimpse(df)');
-                      setTimeout(handleExecuteConsole, 50);
-                    }}
-                    className="text-[11px] font-mono px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-                  >
-                    glimpse(df)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConsoleInput('cor(df)');
-                      setTimeout(handleExecuteConsole, 50);
-                    }}
-                    className="text-[11px] font-mono px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-                  >
-                    cor(df)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConsoleHistory([])}
-                    className="text-[11px] font-mono text-neutral-500 hover:text-neutral-900 dark:hover:text-white px-2 py-1"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-
-              {/* Console History Terminal Area */}
-              <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-4 bg-neutral-50/50 dark:bg-[#070707]">
-                {consoleHistory.map((item) => (
-                  <div key={item.id} className="space-y-1">
-                    <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 font-semibold">
-                      <span className="text-neutral-900 dark:text-white font-bold">&gt;</span>
-                      <span>{item.command}</span>
-                      <span className="text-[10px] text-neutral-400 ml-auto">{item.timestamp}</span>
-                    </div>
-                    <pre
-                      className={`p-3 rounded-xl overflow-x-auto whitespace-pre-wrap ${
-                        item.type === 'error'
-                          ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/50'
-                          : item.type === 'info'
-                          ? 'bg-neutral-100 dark:bg-neutral-900/80 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800'
-                          : 'bg-white dark:bg-[#121212] text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800'
-                      }`}
-                    >
-                      {item.output}
-                    </pre>
-                  </div>
-                ))}
-                <div ref={consoleBottomRef} />
-              </div>
-
-              {/* Console Interactive Input Box */}
-              <div className="border-t border-neutral-200 dark:border-neutral-800 p-3 bg-white dark:bg-[#0c0c0c] flex items-center gap-3">
-                <span className="font-mono font-bold text-neutral-900 dark:text-white">&gt;</span>
-                <input
-                  type="text"
-                  placeholder="Enter R command or JS expression (e.g. summary(df), glimpse(df), names(df))..."
-                  value={consoleInput}
-                  onChange={(e) => setConsoleInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleExecuteConsole();
-                    }
-                  }}
-                  className="flex-1 font-mono text-xs bg-transparent text-neutral-900 dark:text-neutral-100 focus:outline-hidden placeholder:text-neutral-400"
-                />
-                <button
-                  type="button"
-                  onClick={handleExecuteConsole}
-                  className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-black px-3 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
-                >
-                  <IconPlayerPlay size={14} />
-                  <span>Run</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: VISUALIZE (ggplot2 Grammar of Graphics Builder) */}
-          {activeTab === 'visualize' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Chart Aesthetics Controls (Aesthetics mapping: X, Y, Color, Geom) */}
-              <div className="lg:col-span-1 space-y-4">
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-4 sm:p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
-                      ggplot2 Aesthetics & Geoms
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
-                      aes()
-                    </span>
-                  </div>
-
-                  {/* Geom Selector */}
-                  <div>
-                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5 block">
-                      Geometry Layer (geom_*)
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { id: 'scatter', label: 'Scatter (point)' },
-                        { id: 'bar', label: 'Bar (col)' },
-                        { id: 'line', label: 'Line' },
-                        { id: 'area', label: 'Area' },
-                        { id: 'histogram', label: 'Histogram' },
-                        { id: 'boxplot', label: 'Boxplot' },
-                      ].map((geom) => (
-                        <button
-                          key={geom.id}
-                          type="button"
-                          onClick={() => setChartType(geom.id as any)}
-                          className={`px-2.5 py-2 rounded-xl text-xs font-medium border transition-all text-center ${
-                            chartType === geom.id
-                              ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-black font-bold'
-                              : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400'
-                          }`}
-                        >
-                          {geom.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* X Axis Mapping */}
-                  <div>
-                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                      X Aesthetic (x =)
-                    </label>
                     <select
-                      value={xAxisCol}
-                      onChange={(e) => setXAxisCol(e.target.value)}
-                      className="w-full h-9 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 text-xs font-mono text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      className="h-7 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 text-[11px] font-mono text-neutral-800 dark:text-neutral-200"
                     >
-                      {allColumnNames.map((col) => (
-                        <option key={col} value={col}>
-                          {col} ({columnSummaries.find((c) => c.name === col)?.type})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Y Axis Mapping */}
-                  {chartType !== 'histogram' && (
-                    <div>
-                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                        Y Aesthetic (y =)
-                      </label>
-                      <select
-                        value={yAxisCol}
-                        onChange={(e) => setYAxisCol(e.target.value)}
-                        className="w-full h-9 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 text-xs font-mono text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
-                      >
-                        {numericColumns.map((col) => (
-                          <option key={col} value={col}>
-                            {col} (num)
+                      {installedModels.length > 0 ? (
+                        installedModels.map((m) => (
+                          <option key={m.name} value={m.name}>
+                            {m.name}
                           </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Color / Grouping Aesthetic */}
-                  <div>
-                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                      Color / Fill Group (color =)
-                    </label>
-                    <select
-                      value={colorCol}
-                      onChange={(e) => setColorCol(e.target.value)}
-                      className="w-full h-9 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 text-xs font-mono text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
-                    >
-                      <option value="">None (Monochrome)</option>
-                      {categoricalColumns.map((col) => (
-                        <option key={col} value={col}>
-                          {col} (categorical)
-                        </option>
-                      ))}
+                        ))
+                      ) : (
+                        <option value="qwen2.5-coder">qwen2.5-coder (local)</option>
+                      )}
                     </select>
-                  </div>
-
-                  {/* Title Customization */}
-                  <div>
-                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                      Plot Title
-                    </label>
-                    <input
-                      type="text"
-                      value={chartTitle}
-                      onChange={(e) => setChartTitle(e.target.value)}
-                      className="w-full h-9 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 text-xs text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
-                    />
-                  </div>
-
-                  {/* Quick ggplot2 Code Snippet */}
-                  <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px] font-mono text-neutral-500 font-bold">Equivalent ggplot2:</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const snippet = `ggplot(df, aes(x = ${xAxisCol}, y = ${yAxisCol}${colorCol ? `, color = ${colorCol}` : ''})) + geom_${chartType === 'scatter' ? 'point()' : chartType === 'bar' ? 'col()' : chartType + '()'} + theme_minimal()`;
-                          navigator.clipboard.writeText(snippet);
-                          setCopiedCode(true);
-                          setTimeout(() => setCopiedCode(false), 1500);
-                        }}
-                        className="text-[10px] font-mono text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white flex items-center gap-1"
-                      >
-                        {copiedCode ? <IconCheck size={12} /> : <IconCopy size={12} />}
-                        <span>{copiedCode ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
-                    <pre className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 font-mono text-[11px] overflow-x-auto text-neutral-800 dark:text-neutral-200">
-                      {`ggplot(df, aes(x = ${xAxisCol}, y = ${yAxisCol}${colorCol ? `, color = ${colorCol}` : ''})) +
-  geom_${chartType === 'scatter' ? 'point()' : chartType === 'bar' ? 'col()' : chartType + '()'} +
-  theme_minimal()`}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chart Live Canvas Rendering Area */}
-              <div className="lg:col-span-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs flex flex-col justify-between min-h-[460px]">
-                <div>
-                  <div className="flex items-center justify-between mb-4 border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                    <div>
-                      <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
-                        {chartTitle || 'Visualization'}
-                      </h2>
-                      <span className="text-xs text-neutral-400 font-mono">
-                        {chartType.toUpperCase()} | X: {xAxisCol} {chartType !== 'histogram' && `| Y: ${yAxisCol}`}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowRScriptModal(true)}
-                        className="flex items-center gap-1 text-xs font-mono px-2.5 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 text-neutral-700 dark:text-neutral-300"
-                      >
-                        <IconCode size={13} />
-                        <span>View R Script</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Chart Component */}
-                  <div className="h-[360px] w-full pt-2">
-                    {chartType === 'scatter' && (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
-                          <XAxis
-                            type="number"
-                            dataKey={xAxisCol}
-                            name={xAxisCol}
-                            stroke="#88888880"
-                            fontSize={11}
-                            tickLine={false}
-                          />
-                          <YAxis
-                            type="number"
-                            dataKey={yAxisCol}
-                            name={yAxisCol}
-                            stroke="#88888880"
-                            fontSize={11}
-                            tickLine={false}
-                          />
-                          <RechartsTooltip
-                            cursor={{ strokeDasharray: '3 3' }}
-                            contentStyle={{
-                              backgroundColor: '#181818',
-                              borderColor: '#333333',
-                              borderRadius: '8px',
-                              color: '#ffffff',
-                              fontSize: '11px',
-                            }}
-                          />
-                          <Scatter
-                            name={currentDatasetName}
-                            data={transformedDataset}
-                            fill="#525252"
-                          />
-                        </ScatterChart>
-                      </ResponsiveContainer>
-                    )}
-
-                    {chartType === 'bar' && (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={transformedDataset.slice(0, 30)} margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
-                          <XAxis dataKey={xAxisCol} stroke="#88888880" fontSize={11} tickLine={false} />
-                          <YAxis stroke="#88888880" fontSize={11} tickLine={false} />
-                          <RechartsTooltip
-                            contentStyle={{
-                              backgroundColor: '#181818',
-                              borderColor: '#333333',
-                              borderRadius: '8px',
-                              color: '#ffffff',
-                              fontSize: '11px',
-                            }}
-                          />
-                          <Bar dataKey={yAxisCol} fill="#525252" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-
-                    {chartType === 'line' && (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={transformedDataset} margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
-                          <XAxis dataKey={xAxisCol} stroke="#88888880" fontSize={11} tickLine={false} />
-                          <YAxis stroke="#88888880" fontSize={11} tickLine={false} />
-                          <RechartsTooltip
-                            contentStyle={{
-                              backgroundColor: '#181818',
-                              borderColor: '#333333',
-                              borderRadius: '8px',
-                              color: '#ffffff',
-                              fontSize: '11px',
-                            }}
-                          />
-                          <Line type="monotone" dataKey={yAxisCol} stroke="#525252" strokeWidth={2} dot={{ r: 2 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    )}
-
-                    {chartType === 'area' && (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={transformedDataset} margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
-                          <XAxis dataKey={xAxisCol} stroke="#88888880" fontSize={11} tickLine={false} />
-                          <YAxis stroke="#88888880" fontSize={11} tickLine={false} />
-                          <RechartsTooltip
-                            contentStyle={{
-                              backgroundColor: '#181818',
-                              borderColor: '#333333',
-                              borderRadius: '8px',
-                              color: '#ffffff',
-                              fontSize: '11px',
-                            }}
-                          />
-                          <Area type="monotone" dataKey={yAxisCol} stroke="#525252" fill="#88888830" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    )}
-
-                    {(chartType === 'histogram' || chartType === 'boxplot') && (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={transformedDataset.slice(0, 25)}
-                          margin={{ top: 10, right: 20, bottom: 20, left: 10 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
-                          <XAxis dataKey={xAxisCol} stroke="#88888880" fontSize={11} tickLine={false} />
-                          <YAxis stroke="#88888880" fontSize={11} tickLine={false} />
-                          <RechartsTooltip
-                            contentStyle={{
-                              backgroundColor: '#181818',
-                              borderColor: '#333333',
-                              borderRadius: '8px',
-                              color: '#ffffff',
-                              fontSize: '11px',
-                            }}
-                          />
-                          <Bar dataKey={yAxisCol || xAxisCol} fill="#525252" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-500 font-mono">
-                  <span>Grammar of graphics: data | aesthetics | geoms | stats</span>
-                  <span>theme_minimal() applied</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: TRANSFORM (Dplyr Wrangling Pipeline) */}
-          {activeTab === 'transform' && (
-            <div className="space-y-6">
-              {/* Pipeline Step Builder Card */}
-              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs space-y-5">
-                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                  <div>
-                    <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
-                      Dplyr Transformation Pipeline
-                    </h2>
-                    <p className="text-xs text-neutral-500">
-                      Chain operations with R-style pipes (<code className="font-mono">%&gt;%</code> or <code className="font-mono">|&gt;</code>). Filter observations and mutate new variables.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterConditions([]);
-                      setMutateRules([]);
-                      setSelectedColumns([]);
-                      setSortColumn('');
-                    }}
-                    className="text-xs font-mono text-neutral-500 hover:text-neutral-900 dark:hover:text-white px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-neutral-800"
-                  >
-                    Reset Pipeline
-                  </button>
-                </div>
-
-                {/* 1. Filter Rules (filter()) */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 font-mono">
-                      1. Filter Rows (filter())
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFilterConditions([
-                          ...filterConditions,
-                          {
-                            id: String(Date.now()),
-                            column: allColumnNames[0] || '',
-                            operator: '>',
-                            value: '0',
-                          },
-                        ]);
-                      }}
-                      className="flex items-center gap-1 text-xs font-bold text-neutral-900 dark:text-white hover:underline cursor-pointer"
-                    >
-                      <IconPlus size={14} />
-                      <span>Add Filter Rule</span>
-                    </button>
-                  </div>
-
-                  {filterConditions.length === 0 ? (
-                    <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-400 font-mono">
-                      No active filter conditions. All observations are passing through.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {filterConditions.map((cond, idx) => (
-                        <div
-                          key={cond.id}
-                          className="flex flex-wrap items-center gap-2.5 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
-                        >
-                          <span className="text-xs font-mono text-neutral-400">filter(</span>
-                          <select
-                            value={cond.column}
-                            onChange={(e) => {
-                              const newConds = [...filterConditions];
-                              newConds[idx].column = e.target.value;
-                              setFilterConditions(newConds);
-                            }}
-                            className="h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2.5 text-xs font-mono text-neutral-900 dark:text-neutral-100"
-                          >
-                            {allColumnNames.map((col) => (
-                              <option key={col} value={col}>
-                                {col}
-                              </option>
-                            ))}
-                          </select>
-
-                          <select
-                            value={cond.operator}
-                            onChange={(e) => {
-                              const newConds = [...filterConditions];
-                              newConds[idx].operator = e.target.value as any;
-                              setFilterConditions(newConds);
-                            }}
-                            className="h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2.5 text-xs font-mono text-neutral-900 dark:text-neutral-100"
-                          >
-                            <option value=">">&gt; (greater than)</option>
-                            <option value=">=">&gt;= (greater or equal)</option>
-                            <option value="<">&lt; (less than)</option>
-                            <option value="<=">&lt;= (less or equal)</option>
-                            <option value="==">== (equal to)</option>
-                            <option value="!=">!= (not equal to)</option>
-                            <option value="contains">contains (str_detect)</option>
-                          </select>
-
-                          <input
-                            type="text"
-                            value={cond.value}
-                            onChange={(e) => {
-                              const newConds = [...filterConditions];
-                              newConds[idx].value = e.target.value;
-                              setFilterConditions(newConds);
-                            }}
-                            placeholder="value..."
-                            className="h-8 w-32 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2.5 text-xs font-mono text-neutral-900 dark:text-neutral-100"
-                          />
-
-                          <span className="text-xs font-mono text-neutral-400">)</span>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFilterConditions(filterConditions.filter((_, i) => i !== idx));
-                            }}
-                            className="ml-auto text-neutral-400 hover:text-red-500 transition-colors"
-                          >
-                            <IconTrash size={15} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Mutate Rules (mutate()) */}
-                <div className="space-y-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 font-mono">
-                      2. Compute Derived Variables (mutate())
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMutateRules([
-                          ...mutateRules,
-                          {
-                            id: String(Date.now()),
-                            newColumn: `calc_${mutateRules.length + 1}`,
-                            expression: `${numericColumns[0] || 'x'} * 2`,
-                          },
-                        ]);
-                      }}
-                      className="flex items-center gap-1 text-xs font-bold text-neutral-900 dark:text-white hover:underline cursor-pointer"
-                    >
-                      <IconPlus size={14} />
-                      <span>Add Mutate Rule</span>
-                    </button>
-                  </div>
-
-                  {mutateRules.length === 0 ? (
-                    <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-400 font-mono">
-                      No computed columns. Click &quot;Add Mutate Rule&quot; to calculate new fields (e.g. ratio = sepal_length / sepal_width).
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {mutateRules.map((rule, idx) => (
-                        <div
-                          key={rule.id}
-                          className="flex flex-wrap items-center gap-2.5 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
-                        >
-                          <span className="text-xs font-mono text-neutral-400">mutate(</span>
-                          <input
-                            type="text"
-                            value={rule.newColumn}
-                            onChange={(e) => {
-                              const newRules = [...mutateRules];
-                              newRules[idx].newColumn = e.target.value;
-                              setMutateRules(newRules);
-                            }}
-                            placeholder="new_column_name"
-                            className="h-8 w-36 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2.5 text-xs font-mono text-neutral-900 dark:text-neutral-100"
-                          />
-                          <span className="text-xs font-mono text-neutral-400">=</span>
-                          <input
-                            type="text"
-                            value={rule.expression}
-                            onChange={(e) => {
-                              const newRules = [...mutateRules];
-                              newRules[idx].expression = e.target.value;
-                              setMutateRules(newRules);
-                            }}
-                            placeholder="expression (e.g. col1 / col2)"
-                            className="h-8 flex-1 min-w-[200px] rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2.5 text-xs font-mono text-neutral-900 dark:text-neutral-100"
-                          />
-                          <span className="text-xs font-mono text-neutral-400">)</span>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMutateRules(mutateRules.filter((_, i) => i !== idx));
-                            }}
-                            className="ml-auto text-neutral-400 hover:text-red-500 transition-colors"
-                          >
-                            <IconTrash size={15} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Pipeline Output Summary Pill */}
-                <div className="p-3 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-between text-xs font-mono">
-                  <span>
-                    Pipeline Result: <strong>{transformedDataset.length} rows</strong> remaining (from {rawDataset.length})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('workspace')}
-                    className="underline text-neutral-800 dark:text-neutral-200 font-bold"
-                  >
-                    View in Data Table &rarr;
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: STATISTICS (R-Style Linear Regression, ANOVA, Tests) */}
-          {activeTab === 'statistics' && (
-            <div className="space-y-6">
-              {/* OLS Linear Regression (lm()) Authentic R Summary Output */}
-              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                  <div>
-                    <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
-                      Ordinary Least Squares (OLS) Linear Regression — lm()
-                    </h2>
-                    <span className="text-xs text-neutral-400 font-mono">
-                      summary(lm(formula = {regDepVar} ~ {regIndepVars.join(' + ')}, data = df))
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (regressionResult) {
-                          navigator.clipboard.writeText(regressionResult.rSummaryOutput);
-                          setCopiedCode(true);
-                          setTimeout(() => setCopiedCode(false), 2000);
-                        }
-                      }}
-                      className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 py-1.5 text-xs font-mono text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
-                    >
-                      {copiedCode ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                      <span>{copiedCode ? 'Copied' : 'Copy R Output'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Variable Pickers */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800">
-                  <div>
-                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                      Dependent Variable (Y):
-                    </label>
-                    <select
-                      value={regDepVar}
-                      onChange={(e) => setRegDepVar(e.target.value)}
-                      className="w-full h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2.5 text-xs font-mono text-neutral-900 dark:text-neutral-100"
-                    >
-                      {numericColumns.map((col) => (
-                        <option key={col} value={col}>
-                          {col}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                      Independent Variable(s) (X):
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {numericColumns
-                        .filter((c) => c !== regDepVar)
-                        .map((col) => {
-                          const isSelected = regIndepVars.includes(col);
-                          return (
-                            <button
-                              key={col}
-                              type="button"
-                              onClick={() => {
-                                if (isSelected) {
-                                  if (regIndepVars.length > 1) {
-                                    setRegIndepVars(regIndepVars.filter((v) => v !== col));
-                                  }
-                                } else {
-                                  setRegIndepVars([...regIndepVars, col]);
-                                }
-                              }}
-                              className={`px-2 py-1 rounded-md text-xs font-mono transition-colors ${
-                                isSelected
-                                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-black font-bold'
-                                  : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                              }`}
-                            >
-                              {col}
-                            </button>
-                          );
-                        })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Exact R summary(lm) Monospace Display */}
-                {regressionResult ? (
-                  <div className="space-y-4">
-                    <pre className="p-4 rounded-xl bg-neutral-50 dark:bg-[#070707] border border-neutral-200 dark:border-neutral-800 font-mono text-xs overflow-x-auto text-neutral-800 dark:text-neutral-200 leading-relaxed">
-                      {regressionResult.rSummaryOutput}
-                    </pre>
-
-                    {/* Residuals vs Fitted Diagnostic Chart */}
-                    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-4 bg-neutral-50/50 dark:bg-neutral-900/30">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-mono font-bold text-neutral-700 dark:text-neutral-300">
-                          Diagnostic Plot: Residuals vs Fitted (plot(model, which = 1))
-                        </span>
-                        <span className="text-[10px] font-mono text-neutral-400">OLS Assumption Check</span>
-                      </div>
-                      <div className="h-48 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
-                            <XAxis dataKey="fitted" name="Fitted Values" stroke="#88888880" fontSize={10} />
-                            <YAxis dataKey="residual" name="Residuals" stroke="#88888880" fontSize={10} />
-                            <RechartsTooltip
-                              contentStyle={{
-                                backgroundColor: '#181818',
-                                borderColor: '#333333',
-                                borderRadius: '8px',
-                                color: '#ffffff',
-                                fontSize: '11px',
-                              }}
-                            />
-                            <Scatter data={regressionResult.residualPoints} fill="#525252" />
-                          </ScatterChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900 text-xs text-neutral-400 font-mono text-center">
-                    Select valid numeric dependent and independent variables to run linear regression.
                   </div>
                 )}
               </div>
 
-              {/* Correlation Heatmap */}
-              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                  <div>
-                    <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
-                      Pearson Correlation Matrix — cor(df)
-                    </h2>
-                    <span className="text-xs text-neutral-400 font-mono">
-                      Pairwise linear correlation coefficients [-1.0, +1.0]
-                    </span>
+              {/* TAB A: OLLAMA AI ASSISTANT */}
+              {rightPanelTab === 'assistant' && (
+                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                  {/* Chat Conversation History */}
+                  <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 text-xs">
+                    {chatMessages.map((msg, idx) => {
+                      const isUser = msg.role === 'user';
+                      const codeBlock = extractFirstCodeBlock(msg.content);
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                        >
+                          <div
+                            className={`max-w-[92%] rounded-2xl p-3 leading-relaxed ${
+                              isUser
+                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-black font-medium'
+                                : 'bg-neutral-50 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200'
+                            }`}
+                          >
+                            <div className="whitespace-pre-wrap">{msg.content}</div>
+
+                            {/* 1-Click Code Insertion Buttons for Assistant Code Blocks */}
+                            {!isUser && codeBlock && (
+                              <div className="mt-3 pt-2.5 border-t border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setScriptCode((prev) => prev + '\n\n' + codeBlock);
+                                  }}
+                                  className="flex items-center gap-1 rounded-md bg-neutral-200 dark:bg-neutral-800 px-2 py-1 text-[10.5px] font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
+                                >
+                                  <IconPlus size={12} />
+                                  <span>Insert in Editor</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setScriptCode(codeBlock);
+                                    setTimeout(() => handleRunCode(codeBlock), 50);
+                                  }}
+                                  className="flex items-center gap-1 rounded-md bg-neutral-900 text-white dark:bg-white dark:text-black px-2 py-1 text-[10.5px] font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
+                                >
+                                  <IconPlayerPlay size={12} />
+                                  <span>Run Now</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={chatBottomRef} />
+                  </div>
+
+                  {/* Quick Inquiry Chips for Non-Experts */}
+                  <div className="px-3.5 py-2 border-t border-neutral-100 dark:border-neutral-800/60 bg-neutral-50/50 dark:bg-neutral-900/30 flex items-center gap-1.5 overflow-x-auto">
+                    {[
+                      'Suggest 3 analysis ideas',
+                      'Plot a scatter chart',
+                      'Fit a regression model',
+                      'Explain summary statistics',
+                    ].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => handleSendChatMessage(chip)}
+                        className="shrink-0 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[10.5px] font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 transition-colors cursor-pointer"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Chat Input Bar */}
+                  <div className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder={`Ask ${selectedModel} about ${currentDatasetName}...`}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSendChatMessage();
+                        }
+                      }}
+                      className="flex-1 h-9 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isGeneratingAI || !chatInput.trim()}
+                      onClick={() => handleSendChatMessage()}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-40 cursor-pointer"
+                    >
+                      <IconSend size={15} />
+                    </button>
                   </div>
                 </div>
+              )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse font-mono text-xs text-center">
-                    <thead>
-                      <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-                        <th className="p-2 text-left font-bold">Variable</th>
-                        {numericColumns.map((col) => (
-                          <th key={col} className="p-2 font-bold truncate max-w-[90px]">
-                            {col}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                      {numericColumns.map((rowCol) => (
-                        <tr key={rowCol}>
-                          <td className="p-2 text-left font-bold text-neutral-800 dark:text-neutral-200">
-                            {rowCol}
-                          </td>
-                          {numericColumns.map((colCol) => {
-                            const cell = correlationMatrix.find(
-                              (c) => c.var1 === rowCol && c.var2 === colCol
-                            );
-                            const rVal = cell ? cell.r : 0;
-                            const isDiag = rowCol === colCol;
-                            return (
-                              <td
-                                key={colCol}
-                                className={`p-2 transition-colors ${
-                                  isDiag
-                                    ? 'font-bold bg-neutral-100 dark:bg-neutral-800'
-                                    : Math.abs(rVal) > 0.7
-                                    ? 'bg-neutral-200/70 dark:bg-neutral-700/60 font-bold'
-                                    : ''
-                                }`}
-                              >
-                                {rVal.toFixed(3)}
-                              </td>
-                            );
-                          })}
-                        </tr>
+              {/* TAB B: DATA SCHEMA & ATTRIBUTES */}
+              {rightPanelTab === 'schema' && (
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {/* File Upload Zone */}
+                  <div className="p-3.5 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50 text-center">
+                    <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200 mb-1">
+                      Upload Custom Data
+                    </div>
+                    <p className="text-[11px] text-neutral-500 mb-3">
+                      Drop CSV, Excel, or JSON. Processed locally in memory.
+                    </p>
+                    <label className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-black px-3 py-1.5 text-xs font-bold hover:bg-neutral-800 cursor-pointer">
+                      <IconFileSpreadsheet size={14} />
+                      <span>Browse Files</span>
+                      <input
+                        type="file"
+                        accept=".csv,.tsv,.xlsx,.xls,.json"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Columns List */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
+                        Columns ({columnSummaries.length})
+                      </span>
+                      <span className="text-[10px] font-mono text-neutral-400">
+                        {rawDataset.length} rows
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {columnSummaries.map((col) => (
+                        <div
+                          key={col.name}
+                          className="flex items-center justify-between p-2 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs font-mono"
+                        >
+                          <span className="font-bold text-neutral-900 dark:text-white truncate max-w-[150px]">
+                            {col.name}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {col.type === 'numeric' && col.mean !== undefined && (
+                              <span className="text-[10px] text-neutral-400">
+                                μ={col.mean.toFixed(1)}
+                              </span>
+                            )}
+                            <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                              {col.type === 'numeric' ? 'num' : 'chr'}
+                            </span>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 2: DATA TABLE VIEW (View(df)) */}
+        {activeTab === 'table' && (
+          <div className="flex-1 p-4 sm:p-6 overflow-hidden flex flex-col">
+            <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs flex-1 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-800">
+                <div>
+                  <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
+                    Data Table Browser — View(df)
+                  </h2>
+                  <span className="text-xs text-neutral-400 font-mono">
+                    {filteredTableRows.length} matching rows in memory
+                  </span>
+                </div>
+                <div className="relative">
+                  <IconSearch size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                  <input
+                    type="text"
+                    placeholder="Search rows..."
+                    value={tableSearch}
+                    onChange={(e) => {
+                      setTableSearch(e.target.value);
+                      setTablePage(1);
+                    }}
+                    className="h-8 w-56 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 pl-8 pr-3 text-xs text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
+                  />
                 </div>
               </div>
 
-              {/* Hypothesis Testing (ANOVA & Two-Sample T-Test) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* One-Way ANOVA */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs space-y-4">
-                  <div className="border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                    <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
-                      One-Way ANOVA — aov()
-                    </h2>
-                    <span className="text-xs text-neutral-400 font-mono">
-                      Test difference in means across categorical groups
-                    </span>
-                  </div>
+              <div className="flex-1 overflow-x-auto overflow-y-auto">
+                <table className="w-full border-collapse text-left text-xs font-mono">
+                  <thead>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400">
+                      <th className="px-4 py-2.5 w-12 text-center text-neutral-400">#</th>
+                      {allColumnNames.map((col) => (
+                        <th key={col} className="px-4 py-2.5 font-bold">
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                    {paginatedRows.map((row, idx) => {
+                      const rowNum = (tablePage - 1) * pageSize + idx + 1;
+                      return (
+                        <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40">
+                          <td className="px-4 py-2 text-center text-neutral-400">{rowNum}</td>
+                          {allColumnNames.map((col) => (
+                            <td key={col} className="px-4 py-2 truncate max-w-[200px]">
+                              {row[col] !== undefined && row[col] !== null ? String(row[col]) : 'NA'}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                        Numeric Variable:
-                      </label>
-                      <select
-                        value={anovaNumVar}
-                        onChange={(e) => setAnovaNumVar(e.target.value)}
-                        className="w-full h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 text-xs font-mono"
-                      >
-                        {numericColumns.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                        Group Variable:
-                      </label>
-                      <select
-                        value={anovaGroupVar}
-                        onChange={(e) => setAnovaGroupVar(e.target.value)}
-                        className="w-full h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 text-xs font-mono"
-                      >
-                        {categoricalColumns.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {anovaResult ? (
-                    <pre className="p-3 rounded-xl bg-neutral-50 dark:bg-[#070707] border border-neutral-200 dark:border-neutral-800 font-mono text-xs overflow-x-auto text-neutral-800 dark:text-neutral-200 leading-relaxed">
-                      {anovaResult.rSummaryOutput}
-                    </pre>
-                  ) : (
-                    <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 text-xs text-neutral-400 font-mono text-center">
-                      Select valid group and numeric variables.
-                    </div>
-                  )}
-                </div>
-
-                {/* Two-Sample T-Test */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs space-y-4">
-                  <div className="border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                    <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
-                      Student&apos;s T-Test — t.test()
-                    </h2>
-                    <span className="text-xs text-neutral-400 font-mono">
-                      Welch two-sample test for difference in means
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                        Variable 1 (x):
-                      </label>
-                      <select
-                        value={tTestVar1}
-                        onChange={(e) => setTTestVar1(e.target.value)}
-                        className="w-full h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 text-xs font-mono"
-                      >
-                        {numericColumns.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1 block">
-                        Variable 2 (y):
-                      </label>
-                      <select
-                        value={tTestVar2}
-                        onChange={(e) => setTTestVar2(e.target.value)}
-                        className="w-full h-8 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 text-xs font-mono"
-                      >
-                        {numericColumns.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {tTestResult ? (
-                    <pre className="p-3 rounded-xl bg-neutral-50 dark:bg-[#070707] border border-neutral-200 dark:border-neutral-800 font-mono text-xs overflow-x-auto text-neutral-800 dark:text-neutral-200 leading-relaxed">
-                      {tTestResult.rSummaryOutput}
-                    </pre>
-                  ) : (
-                    <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 text-xs text-neutral-400 font-mono text-center">
-                      Select two distinct numeric columns for t-test.
-                    </div>
-                  )}
+              <div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-800 px-4 py-3 bg-neutral-50 dark:bg-neutral-900">
+                <span className="text-xs font-mono text-neutral-500">
+                  Page {tablePage} of {totalPages}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={tablePage <= 1}
+                    onClick={() => setTablePage((p) => Math.max(1, p - 1))}
+                    className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    disabled={tablePage >= totalPages}
+                    onClick={() => setTablePage((p) => Math.min(totalPages, p + 1))}
+                    className="rounded-lg border border-neutral-300 dark:border-neutral-700 px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* TAB 6: EXPORT (Reproducible R Code & Formats) */}
-          {activeTab === 'export' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* 1. Export Clean CSV */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <div className="h-10 w-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-mono font-bold text-sm mb-3">
-                      CSV
-                    </div>
-                    <h3 className="text-sm font-bold text-neutral-900 dark:text-white mb-1">
-                      Processed CSV
-                    </h3>
-                    <p className="text-xs text-neutral-500 mb-4">
-                      Download current dataset after all dplyr pipeline filters and derived columns.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleExportCSV}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
-                  >
-                    <IconDownload size={15} />
-                    <span>Download CSV</span>
-                  </button>
+        {/* VIEW 3: DEDICATED VISUALIZER (ggplot2) */}
+        {activeTab === 'visualizer' && (
+          <div className="flex-1 p-4 sm:p-6 overflow-hidden flex flex-col">
+            <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs flex-1 flex flex-col p-5">
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4">
+                <div>
+                  <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
+                    Grammar of Graphics Plot Studio
+                  </h2>
+                  <span className="text-xs text-neutral-400 font-mono">
+                    ggplot(df, aes(x = {activePlot?.x}, y = {activePlot?.y})) + geom_{activePlot?.type}()
+                  </span>
                 </div>
-
-                {/* 2. Export Excel */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <div className="h-10 w-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-mono font-bold text-sm mb-3">
-                      XLSX
-                    </div>
-                    <h3 className="text-sm font-bold text-neutral-900 dark:text-white mb-1">
-                      Excel Spreadsheet
-                    </h3>
-                    <p className="text-xs text-neutral-500 mb-4">
-                      Export full dataset formatted for Microsoft Excel and Google Sheets.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleExportExcel}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
-                  >
-                    <IconDownload size={15} />
-                    <span>Download XLSX</span>
-                  </button>
-                </div>
-
-                {/* 3. Export JSON */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <div className="h-10 w-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-mono font-bold text-sm mb-3">
-                      JSON
-                    </div>
-                    <h3 className="text-sm font-bold text-neutral-900 dark:text-white mb-1">
-                      JSON Records
-                    </h3>
-                    <p className="text-xs text-neutral-500 mb-4">
-                      Export dataset as structured JSON records for web development and APIs.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleExportJSON}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
-                  >
-                    <IconDownload size={15} />
-                    <span>Download JSON</span>
-                  </button>
-                </div>
-
-                {/* 4. Export R Script (.R) */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <div className="h-10 w-10 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black flex items-center justify-center font-mono font-bold text-sm mb-3">
-                      .R
-                    </div>
-                    <h3 className="text-sm font-bold text-neutral-900 dark:text-white mb-1">
-                      RStudio Script (.R)
-                    </h3>
-                    <p className="text-xs text-neutral-500 mb-4">
-                      Reproducible R script replicating all steps in RStudio with Tidyverse &amp; ggplot2.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleExportRScript}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
-                  >
-                    <IconFileCode size={15} />
-                    <span>Download .R Script</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRScriptModal(true)}
+                  className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700"
+                >
+                  <IconCode size={14} />
+                  <span>Get ggplot2 Code</span>
+                </button>
               </div>
 
-              {/* Complete R Script Live Code Mirror */}
-              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
-                      Complete Reproducible R Script
-                    </h3>
-                    <span className="text-xs text-neutral-500 font-mono">
-                      Copy directly into Desktop RStudio, Quarto (.qmd), or RMarkdown (.Rmd)
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleCopyRScript}
-                    className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 py-1.5 text-xs font-mono font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
-                  >
-                    {copiedCode ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                    <span>{copiedCode ? 'Copied' : 'Copy R Script'}</span>
-                  </button>
-                </div>
-
-                <pre className="p-4 rounded-xl bg-neutral-50 dark:bg-[#070707] border border-neutral-200 dark:border-neutral-800 font-mono text-xs overflow-x-auto text-neutral-800 dark:text-neutral-200 leading-relaxed max-h-96">
-                  {currentRScript}
-                </pre>
+              <div className="flex-1 w-full min-h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#88888820" />
+                    <XAxis dataKey={activePlot?.x || numericColumns[0]} name={activePlot?.x} stroke="#88888880" fontSize={11} />
+                    <YAxis dataKey={activePlot?.y || numericColumns[1]} name={activePlot?.y} stroke="#88888880" fontSize={11} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#181818', borderRadius: '8px', fontSize: '11px', color: '#fff' }} />
+                    <Scatter data={rawDataset} fill="#525252" />
+                  </ScatterChart>
+                </ResponsiveContainer>
               </div>
             </div>
-          )}
-        </main>
-      </div>
+          </div>
+        )}
+
+        {/* VIEW 4: REPRODUCIBLE R EXPORT */}
+        {activeTab === 'export' && (
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold text-neutral-400">.R</span>
+                  <h3 className="text-sm font-bold mt-1">RStudio Script</h3>
+                  <p className="text-xs text-neutral-500 mt-1 mb-4">
+                    Download reproducible R script with Tidyverse and ggplot2 syntax.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const blob = new Blob([currentRScript], { type: 'text/plain;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${currentDatasetName}_analysis.R`;
+                    a.click();
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold"
+                >
+                  <IconDownload size={14} />
+                  <span>Download .R Script</span>
+                </button>
+              </div>
+
+              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold text-neutral-400">.CSV</span>
+                  <h3 className="text-sm font-bold mt-1">Export Data CSV</h3>
+                  <p className="text-xs text-neutral-500 mt-1 mb-4">
+                    Download current dataset as formatted CSV spreadsheet.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const csv = Papa.unparse(rawDataset);
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${currentDatasetName}.csv`;
+                    a.click();
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold"
+                >
+                  <IconDownload size={14} />
+                  <span>Download CSV</span>
+                </button>
+              </div>
+
+              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold text-neutral-400">.XLSX</span>
+                  <h3 className="text-sm font-bold mt-1">Excel Workbook</h3>
+                  <p className="text-xs text-neutral-500 mt-1 mb-4">
+                    Export dataset formatted for Microsoft Excel and Google Sheets.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ws = XLSX.utils.json_to_sheet(rawDataset);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, currentDatasetName);
+                    XLSX.writeFile(wb, `${currentDatasetName}.xlsx`);
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold"
+                >
+                  <IconDownload size={14} />
+                  <span>Download XLSX</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Code Mirror */}
+            <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5">
+              <div className="flex items-center justify-between mb-3 border-b border-neutral-200 dark:border-neutral-800 pb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
+                  Full Reproducible R Script
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(currentRScript);
+                    setCopiedCode(true);
+                    setTimeout(() => setCopiedCode(false), 2000);
+                  }}
+                  className="flex items-center gap-1 text-xs font-mono px-2.5 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700"
+                >
+                  {copiedCode ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                  <span>{copiedCode ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+              <pre className="p-4 rounded-xl bg-neutral-50 dark:bg-[#070707] border border-neutral-200 dark:border-neutral-800 font-mono text-xs overflow-x-auto text-neutral-800 dark:text-neutral-200 leading-relaxed max-h-96">
+                {currentRScript}
+              </pre>
+            </div>
+          </div>
+        )}
+      </main>
 
       {/* R Script Modal */}
       {showRScriptModal && (
@@ -2188,7 +1506,7 @@ export default function DataStudioPage() {
               <button
                 type="button"
                 onClick={() => setShowRScriptModal(false)}
-                className="text-neutral-400 hover:text-neutral-900 dark:hover:text-white text-sm font-bold"
+                className="text-neutral-400 hover:text-neutral-900 dark:hover:text-white text-sm font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -2201,16 +1519,27 @@ export default function DataStudioPage() {
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
               <button
                 type="button"
-                onClick={handleCopyRScript}
-                className="flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-4 py-2 text-xs font-bold hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(currentRScript);
+                  setCopiedCode(true);
+                  setTimeout(() => setCopiedCode(false), 2000);
+                }}
+                className="flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-4 py-2 text-xs font-bold hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-pointer"
               >
                 {copiedCode ? <IconCheck size={15} /> : <IconCopy size={15} />}
                 <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
               </button>
               <button
                 type="button"
-                onClick={handleExportRScript}
-                className="flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
+                onClick={() => {
+                  const blob = new Blob([currentRScript], { type: 'text/plain;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${currentDatasetName}_analysis.R`;
+                  a.click();
+                }}
+                className="flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
               >
                 <IconDownload size={15} />
                 <span>Download .R File</span>
