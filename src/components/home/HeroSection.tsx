@@ -68,7 +68,7 @@ export default function HeroSection() {
             href="/download"
             className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 px-3.5 py-1 shadow-2xs font-mono text-[11px] font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <span>Desktop App (macOS • Windows • Linux)</span>
+            <span>Desktop App (macOS • Windows)</span>
             <ArrowRight size={12} weight="bold" />
           </Link>
         </div>

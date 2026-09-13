@@ -3130,7 +3130,7 @@ ${
                       Want to run AI Hub offline as a Standalone Desktop App?
                     </h3>
                     <p className="text-[11px] text-[var(--color-ink-muted)]">
-                      Available natively for macOS (Apple Silicon), Windows, and Linux with zero browser overhead and native hardware acceleration.
+                      Available natively for macOS (Apple Silicon) and Windows with zero browser overhead and native hardware acceleration.
                     </p>
                   </div>
                 </div>

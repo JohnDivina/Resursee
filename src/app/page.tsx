@@ -35,7 +35,7 @@ export default function HomePage() {
         {/* 4. Resursee Client-Side Productivity Toolbox (Aceternity Bento Grid) */}
         <ToolsPreview />
 
-        {/* 5. Native Desktop App Download Section (macOS, Windows, Linux) */}
+        {/* 5. Native Desktop App Download Section (macOS, Windows) */}
         <DesktopDownloadSection />
       </main>
 

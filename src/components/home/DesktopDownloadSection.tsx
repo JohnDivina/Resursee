@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   IconBrandApple,
   IconBrandWindows,
-  IconBrandUbuntu,
   IconDownload,
   IconDeviceDesktop,
   IconCpu,
@@ -17,7 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function DesktopDownloadSection() {
-  const [userOS, setUserOS] = useState<'macos' | 'windows' | 'linux'>('macos');
+  const [userOS, setUserOS] = useState<'macos' | 'windows'>('macos');
   const [copiedCmd, setCopiedCmd] = useState(false);
 
   const handleCopyCmd = () => {
@@ -31,8 +30,6 @@ export default function DesktopDownloadSection() {
       const ua = navigator.userAgent.toLowerCase();
       if (ua.includes('win')) {
         setUserOS('windows');
-      } else if (ua.includes('linux')) {
-        setUserOS('linux');
       } else {
         setUserOS('macos');
       }
@@ -42,7 +39,6 @@ export default function DesktopDownloadSection() {
   const downloadLinks = {
     macos: 'https://github.com/JohnDivina/Resursee/releases/download/v0.1.0/Resursee_0.1.0_aarch64.dmg',
     windows: 'https://github.com/JohnDivina/Resursee/releases/latest',
-    linux: 'https://github.com/JohnDivina/Resursee/releases/latest',
   };
 
   return (
@@ -64,8 +60,8 @@ export default function DesktopDownloadSection() {
           </p>
         </div>
 
-        {/* 3 OS Selection Cards */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 2 OS Selection Cards */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {/* macOS Card */}
           <div
             className={cn(
@@ -214,74 +210,6 @@ export default function DesktopDownloadSection() {
               >
                 <IconDownload size={16} />
                 <span>Download for Windows</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Linux Card */}
-          <div
-            className={cn(
-              "relative flex flex-col justify-between rounded-2xl border p-6 transition-all",
-              userOS === 'linux'
-                ? "border-neutral-900 dark:border-white bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-md"
-                : "border-[var(--color-rule-strong)] bg-[var(--color-paper-card)] text-[var(--color-ink)] hover:border-neutral-400 dark:hover:border-neutral-600"
-            )}
-          >
-            {userOS === 'linux' && (
-              <span className="absolute top-4 right-4 rounded-full bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider">
-                Detected OS
-              </span>
-            )}
-
-            <div className="space-y-4">
-              <div
-                className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-xl font-bold",
-                  userOS === 'linux'
-                    ? "bg-white/10 text-white dark:bg-neutral-900/10 dark:text-neutral-900"
-                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                )}
-              >
-                <IconBrandUbuntu size={28} />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold">Linux</h3>
-                <p className={cn("text-xs mt-1", userOS === 'linux' ? "text-neutral-300 dark:text-neutral-600" : "text-[var(--color-ink-muted)]")}>
-                  Universal AppImage & Debian/Ubuntu
-                </p>
-              </div>
-
-              <div className="space-y-2 pt-2 text-xs border-t border-current/10">
-                <div className="flex items-center gap-2">
-                  <IconCheck size={14} className="shrink-0" />
-                  <span>Portable AppImage (zero install)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <IconCheck size={14} className="shrink-0" />
-                  <span>Systemd Ollama daemon probe</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <IconCheck size={14} className="shrink-0" />
-                  <span>Native GTK3 / WebKit desktop window</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-4 border-t border-current/10">
-              <a
-                href={downloadLinks.linux}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  "flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-xs",
-                  userOS === 'linux'
-                    ? "bg-white text-neutral-900 hover:bg-neutral-100 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
-                    : "bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
-                )}
-              >
-                <IconDownload size={16} />
-                <span>Download for Linux</span>
               </a>
             </div>
           </div>
