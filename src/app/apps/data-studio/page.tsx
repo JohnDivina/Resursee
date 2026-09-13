@@ -32,7 +32,10 @@ import {
   IconAdjustments,
   IconReload,
   IconBulb,
+  IconShieldCheck,
+  IconX,
 } from '@tabler/icons-react';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 import {
   ResponsiveContainer,
   BarChart,
@@ -66,6 +69,7 @@ import {
 import {
   checkOllamaConnection,
   streamOllamaChat,
+  startOllamaDaemon,
   DEFAULT_OLLAMA_ENDPOINT,
 } from '@/lib/ollamaClient';
 import { OllamaModel, OllamaChatMessage } from '@/types/aiHub';
@@ -135,7 +139,7 @@ plot({
     {
       role: 'assistant',
       content:
-        'Hello! I am your **Ollama Data Science Copilot**. I have access to your active dataset and columns.\n\nAsk me to write R/DataStudio code, suggest statistical tests, plot charts, or interpret model outputs.',
+        'Hello! I am your **Local LLM Copilot**. I have access to your active dataset and columns.\n\nAsk me to write R/DataStudio code, suggest statistical tests, plot charts, or interpret model outputs.',
     },
   ]);
   const [chatInput, setChatInput] = useState('');
@@ -150,13 +154,60 @@ plot({
   // Modals & UI Helpers
   const [showRScriptModal, setShowRScriptModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [showLocalNoticeModal, setShowLocalNoticeModal] = useState(false);
+  const [dontShowAgainNotice, setDontShowAgainNotice] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setMounted(true);
     probeOllama();
+    if (typeof window !== 'undefined') {
+      const dismissed = sessionStorage.getItem('resursee_datastudio_local_notice_dismissed');
+      if (!dismissed) {
+        setShowLocalNoticeModal(true);
+      }
+    }
   }, []);
+
+  const handleDismissNotice = () => {
+    if (dontShowAgainNotice && typeof window !== 'undefined') {
+      sessionStorage.setItem('resursee_datastudio_local_notice_dismissed', 'true');
+    }
+    setShowLocalNoticeModal(false);
+  };
+
+  const [isStartingOllama, setIsStartingOllama] = useState(false);
+
+  // 1-Click Start Ollama Daemon
+  const handleStartOllama = async () => {
+    setIsStartingOllama(true);
+    try {
+      await startOllamaDaemon();
+      for (let i = 0; i < 6; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        const check = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 800);
+        if (check.status && check.models && check.models.length > 0) {
+          setOllamaStatus('connected');
+          setInstalledModels(check.models);
+          const coder = check.models.find(
+            (m) =>
+              m.name.includes('coder') ||
+              m.name.includes('qwen') ||
+              m.name.includes('deepseek') ||
+              m.name.includes('llama3')
+          );
+          if (coder) setSelectedModel(coder.name);
+          break;
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to start Ollama daemon:', err);
+    } finally {
+      setIsStartingOllama(false);
+      probeOllama();
+    }
+  };
 
   // Probe Ollama connection
   const probeOllama = async () => {
@@ -831,6 +882,38 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
               />
             </label>
 
+            {/* Start Ollama Button */}
+            <button
+              type="button"
+              onClick={handleStartOllama}
+              disabled={isStartingOllama}
+              title={
+                ollamaStatus === 'connected'
+                  ? 'Ollama is running. Click to re-probe daemon.'
+                  : 'Click to start local Ollama daemon'
+              }
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
+            >
+              <span
+                className={cn(
+                  'h-1.5 w-1.5 rounded-full shrink-0',
+                  ollamaStatus === 'connected'
+                    ? 'bg-neutral-900 dark:bg-white'
+                    : isStartingOllama
+                    ? 'bg-neutral-500 animate-pulse'
+                    : 'bg-neutral-400'
+                )}
+              />
+              <IconSparkles size={14} />
+              <span>
+                {isStartingOllama
+                  ? 'Starting...'
+                  : ollamaStatus === 'connected'
+                  ? 'Ollama Active'
+                  : 'Start Ollama'}
+              </span>
+            </button>
+
             {/* Show R Script Modal Button */}
             <button
               type="button"
@@ -851,6 +934,9 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
               <IconPlayerPlay size={15} />
               <span>Run (Cmd+↵)</span>
             </button>
+
+            {/* Dark Mode / Light Mode Toggle */}
+            <ThemeToggle className="shrink-0" />
           </div>
         </header>
 
@@ -1058,7 +1144,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     }`}
                   >
                     <IconSparkles size={14} />
-                    <span>Ollama Copilot</span>
+                    <span>Local LLM Copilot</span>
                   </button>
 
                   <button
@@ -1548,6 +1634,91 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
           </div>
         </div>
       )}
+      {/* Local-Only Feature Notice Modal (Similar to AI Studio) */}
+      <AnimatePresence>
+        {showLocalNoticeModal && (
+          <div
+            onClick={() => handleDismissNotice()}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-6 shadow-2xl space-y-4 text-left"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-xs">
+                    <IconShieldCheck size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-neutral-900 dark:text-white">
+                      100% Local &amp; Private Feature
+                    </h3>
+                    <p className="text-[11px] font-mono text-neutral-500">
+                      Zero cloud data transfer • Client-side compute
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleDismissNotice()}
+                  className="p-1 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
+                >
+                  <IconX size={18} />
+                </button>
+              </div>
+
+              {/* Explanatory Body */}
+              <div className="space-y-2.5 text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                <p>
+                  <strong>Data Studio</strong> is designed to run entirely on your physical hardware. Your datasets, spreadsheets, and scripts never touch an external cloud server.
+                </p>
+
+                <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-3.5 space-y-2 font-mono text-[11px] text-neutral-800 dark:text-neutral-200">
+                  <div className="flex items-start gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
+                    <span><strong>Browser Sandbox:</strong> All data parsing (PapaParse, SheetJS), computations (jStat), and charts (Recharts) run 100% in your browser memory.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
+                    <span><strong>Local LLM Copilot:</strong> Inference runs directly on your local GPU/CPU via Ollama (<code className="bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded text-[10px]">http://localhost:11434</code>) with zero subscription fees or data egress.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
+                    <span><strong>R Studio Bridge:</strong> Export reproducible R/Tidyverse scripts anytime to run directly on desktop RStudio.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Checkbox: Don't show again */}
+              <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-800">
+                <label className="flex items-center gap-2 text-xs text-neutral-500 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={dontShowAgainNotice}
+                    onChange={(e) => setDontShowAgainNotice(e.target.checked)}
+                    className="rounded border-neutral-300 text-neutral-900 dark:text-white cursor-pointer"
+                  />
+                  <span>Don&apos;t show again this session</span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => handleDismissNotice()}
+                  className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
+                >
+                  Got It, Start Coding
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
