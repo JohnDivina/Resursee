@@ -20,6 +20,7 @@ import {
   AppWindow,
   Desktop,
   ChartBar,
+  Microphone,
 } from '@phosphor-icons/react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import SoundToggle from '@/components/sound/SoundToggle';
@@ -387,6 +388,15 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     >
                       <ChartBar size={15} className="text-[var(--color-ink)]" />
                       <span>Data Studio</span>
+                    </Link>
+
+                    <Link
+                      href="/apps/transcriber"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-colors"
+                    >
+                      <Microphone size={15} className="text-[var(--color-ink)]" />
+                      <span>AI Transcriber</span>
                     </Link>
 
                     {(session.role === 'master_admin' || session.role === 'moderator') && (

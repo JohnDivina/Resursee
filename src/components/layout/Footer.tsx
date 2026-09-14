@@ -66,6 +66,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/apps/transcriber" className="transition-colors hover:text-[var(--color-primary)] dark:hover:text-white font-medium text-[var(--color-ink)]">
+                  Resursee AI Transcriber (App #5)
+                </Link>
+              </li>
+              <li>
                 <Link href="/about" className="transition-colors hover:text-[var(--color-primary)]">
                   Developer Portfolio
                 </Link>
