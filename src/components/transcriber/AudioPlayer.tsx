@@ -60,14 +60,32 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   }, [volume, isMuted]);
 
+  // Reload audio source when new recording or file is loaded
+  useEffect(() => {
+    if (audioRef.current && audioUrl) {
+      audioRef.current.load();
+      setIsPlaying(false);
+    }
+  }, [audioUrl]);
+
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().catch((err) => console.warn('Audio playback error:', err));
-      setIsPlaying(true);
+      if (audioRef.current.ended) {
+        audioRef.current.currentTime = 0;
+      }
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            console.warn('Audio playback error:', err);
+            setIsPlaying(false);
+          });
+      }
     }
   }, [isPlaying]);
 

@@ -9,10 +9,15 @@ import {
   SlidersHorizontal,
   WarningCircle,
 } from '@phosphor-icons/react';
-import { formatTimestamp, float32ArrayToWavBlob } from '@/lib/audioProcessor';
+import { formatTimestamp, decodeAudioFile } from '@/lib/audioProcessor';
 
 interface RecordingControlsProps {
-  onRecordingComplete: (audioBlob: Blob, rawChannelData: Float32Array, liveDraftText?: string) => void;
+  onRecordingComplete: (
+    audioBlob: Blob,
+    rawChannelData: Float32Array,
+    duration: number,
+    liveDraftText?: string
+  ) => void;
   isProcessing?: boolean;
 }
 
@@ -29,29 +34,29 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const isPausedRef = useRef<boolean>(false);
-  const audioChunksRef = useRef<Float32Array[]>([]);
+  const pcmChunksRef = useRef<Float32Array[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
+  const isPausedRef = useRef<boolean>(false);
 
-  // Sync ref
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
 
-  // Cleanup on unmount
+  // Clean up on unmount
   useEffect(() => {
     return () => {
-      cleanupAudioGraph();
+      cleanup();
     };
   }, []);
 
-  const cleanupAudioGraph = () => {
+  const cleanup = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
@@ -59,16 +64,12 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       processorRef.current.disconnect();
       processorRef.current = null;
     }
-    if (sourceNodeRef.current) {
-      sourceNodeRef.current.disconnect();
-      sourceNodeRef.current = null;
-    }
     if (analyserRef.current) {
       analyserRef.current.disconnect();
       analyserRef.current = null;
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
@@ -97,20 +98,20 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       sum += dataArray[i];
     }
     const average = sum / dataArray.length;
-    const normalized = Math.min(1, average / 100);
+    const normalized = Math.min(1, average / 90);
     setAudioLevel(normalized);
 
     animFrameRef.current = requestAnimationFrame(updateAudioMeter);
   }, [isRecording]);
 
-  // Start recording using direct Web Audio PCM capture
   const startRecording = async () => {
     setErrorMessage(null);
-    audioChunksRef.current = [];
+    recordedChunksRef.current = [];
+    pcmChunksRef.current = [];
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Microphone recording is not supported in this browser environment.');
+        throw new Error('Microphone access is not supported in this browser.');
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -118,73 +119,80 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          channelCount: 1,
         },
       });
       streamRef.current = stream;
 
+      // 1. Web Audio for Visual VU Meter and PCM Backup
       const AudioCtx =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-
-      // Prefer 16kHz context if supported by browser, else system sample rate
-      let audioCtx: AudioContext;
-      try {
-        audioCtx = new AudioCtx({ sampleRate: 16000 });
-      } catch {
-        audioCtx = new AudioCtx();
-      }
+      const audioCtx = new AudioCtx();
       audioContextRef.current = audioCtx;
 
-      // Essential for macOS / Safari: user gesture resume
       if (audioCtx.state === 'suspended') {
         await audioCtx.resume();
       }
 
       const source = audioCtx.createMediaStreamSource(stream);
-      sourceNodeRef.current = source;
-
-      // Analyser Node for real-time VU meter
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 64;
-      analyser.smoothingTimeConstant = 0.3;
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      // ScriptProcessorNode for lossless PCM sample capture
+      // ScriptProcessor with zero-gain connection to avoid feedback
       const bufferSize = 4096;
       const processor = audioCtx.createScriptProcessor(bufferSize, 1, 1);
       processorRef.current = processor;
-
       processor.onaudioprocess = (e) => {
         if (isPausedRef.current) return;
         const inputData = e.inputBuffer.getChannelData(0);
-        // Clone samples into storage buffer
-        audioChunksRef.current.push(new Float32Array(inputData));
+        pcmChunksRef.current.push(new Float32Array(inputData));
+      };
+      source.connect(processor);
+      const zeroGain = audioCtx.createGain();
+      zeroGain.gain.value = 0;
+      processor.connect(zeroGain);
+      zeroGain.connect(audioCtx.destination);
+
+      // 2. MediaRecorder for Native Playable Container (WebM / MP4)
+      let options: MediaRecorderOptions = {};
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options = { mimeType: 'audio/webm;codecs=opus' };
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          options = { mimeType: 'audio/mp4' };
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = { mimeType: 'audio/webm' };
+        }
+      }
+
+      const recorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunksRef.current.push(e.data);
+        }
       };
 
-      source.connect(processor);
-      // ScriptProcessor must be connected to destination in some browsers to trigger events
-      processor.connect(audioCtx.destination);
+      recorder.start(250); // Flush chunks every 250ms
 
       setIsRecording(true);
       setIsPaused(false);
       setElapsedSeconds(0);
 
-      // Start duration timer
       timerRef.current = setInterval(() => {
         setElapsedSeconds((prev) => prev + 1);
       }, 1000);
 
-      // Start audio meter animation loop
       animFrameRef.current = requestAnimationFrame(updateAudioMeter);
 
-      // Optional Live Speech Recognition
       if (livePreviewEnabled) {
         startLiveSpeech();
       }
     } catch (err: unknown) {
-      console.error('Failed to start mic recording:', err);
+      console.error('Failed to start microphone:', err);
       const msg =
         err instanceof DOMException && err.name === 'NotAllowedError'
           ? 'Microphone permission denied. Please allow microphone access in your browser settings.'
@@ -192,7 +200,7 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
           ? err.message
           : 'Could not access microphone.';
       setErrorMessage(msg);
-      cleanupAudioGraph();
+      cleanup();
       setIsRecording(false);
     }
   };
@@ -219,12 +227,14 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       recognition.start();
       recognitionRef.current = recognition;
     } catch (err) {
-      console.warn('Live Speech API could not start:', err);
+      console.warn('Live speech recognition warning:', err);
     }
   };
 
-  // Pause recording (Requirement: "Pause and resume a recording. The break is not in the file.")
   const pauseRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.pause();
+    }
     setIsPaused(true);
     isPausedRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
@@ -235,8 +245,10 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
     }
   };
 
-  // Resume recording
   const resumeRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+      mediaRecorderRef.current.resume();
+    }
     setIsPaused(false);
     isPausedRef.current = false;
 
@@ -251,63 +263,56 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
     }
   };
 
-  // Stop recording and assemble PCM WAV
   const stopRecording = async () => {
     if (!isRecording) return;
 
-    const currentCtx = audioContextRef.current;
-    const sampleRate = currentCtx ? currentCtx.sampleRate : 16000;
-    const chunks = audioChunksRef.current;
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.requestData();
+      recorder.stop();
+    }
 
-    // Disconnect audio nodes
-    cleanupAudioGraph();
+    // Brief delay to allow final chunk to flush into recordedChunksRef
+    await new Promise((r) => setTimeout(r, 120));
+
+    const mimeType = recorder?.mimeType || 'audio/webm';
+    const finalChunks = recordedChunksRef.current;
+    const finalBlob = new Blob(finalChunks, { type: mimeType });
+
+    cleanup();
     setIsRecording(false);
     setIsPaused(false);
     setAudioLevel(0);
 
-    if (chunks.length === 0) {
-      setErrorMessage('No audio data recorded. Please speak into the microphone.');
+    // Assemble raw Float32Array PCM samples
+    let rawChannelData: Float32Array;
+    let duration = elapsedSeconds;
+
+    try {
+      // Decode the native blob into 16kHz Float32Array for waveform and Whisper
+      const decoded = await decodeAudioFile(finalBlob);
+      rawChannelData = decoded.channelData;
+      duration = Math.max(decoded.duration, elapsedSeconds);
+    } catch {
+      // Fallback to accumulated PCM chunks from ScriptProcessorNode
+      const pcmChunks = pcmChunksRef.current;
+      const totalLen = pcmChunks.reduce((acc, c) => acc + c.length, 0);
+      rawChannelData = new Float32Array(totalLen);
+      let offset = 0;
+      for (const c of pcmChunks) {
+        rawChannelData.set(c, offset);
+        offset += c.length;
+      }
+      duration = Math.max(1, totalLen / 16000);
+    }
+
+    if (finalBlob.size === 0 && rawChannelData.length === 0) {
+      setErrorMessage('No speech recorded. Please check your microphone input.');
       return;
     }
 
-    // Merge Float32Array chunks
-    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
-    const mergedPcm = new Float32Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      mergedPcm.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    // Resample down to 16kHz mono if context was at 44.1kHz or 48kHz
-    let final16kPcm = mergedPcm;
-    if (sampleRate !== 16000) {
-      const OfflineCtx =
-        window.OfflineAudioContext ||
-        (window as unknown as { webkitOfflineAudioContext: typeof OfflineAudioContext })
-          .webkitOfflineAudioContext;
-
-      const duration = totalLength / sampleRate;
-      const targetLength = Math.ceil(duration * 16000);
-      const offline = new OfflineCtx(1, targetLength, 16000);
-
-      const buffer = offline.createBuffer(1, totalLength, sampleRate);
-      buffer.copyToChannel(mergedPcm, 0);
-
-      const source = offline.createBufferSource();
-      source.buffer = buffer;
-      source.connect(offline.destination);
-      source.start(0);
-
-      const rendered = await offline.startRendering();
-      final16kPcm = rendered.getChannelData(0);
-    }
-
-    // Create standard PCM WAV blob
-    const wavBlob = float32ArrayToWavBlob(final16kPcm, 16000);
-
-    // Trigger complete
-    onRecordingComplete(wavBlob, final16kPcm, liveTranscript);
+    // Send final playable audioBlob and rawChannelData
+    onRecordingComplete(finalBlob, rawChannelData, duration, liveTranscript);
   };
 
   return (
@@ -335,7 +340,7 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
             </span>
           </div>
 
-          {/* Timer */}
+          {/* Duration Timer */}
           <div className="font-mono text-sm font-semibold text-neutral-900 dark:text-white">
             {formatTimestamp(elapsedSeconds)}
           </div>

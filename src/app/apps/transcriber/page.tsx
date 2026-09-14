@@ -271,15 +271,15 @@ export default function TranscriberPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentTime]);
 
-  // Handle Recording Completion (Receives 16kHz PCM Float32Array directly)
+  // Handle Recording Completion
   const handleRecordingComplete = async (
     audioBlob: Blob,
     rawSamples: Float32Array,
+    duration: number,
     liveDraftText?: string
   ) => {
     setErrorMessage(null);
     const audioUrl = URL.createObjectURL(audioBlob);
-    const duration = rawSamples.length / 16000;
 
     setRawChannelData(rawSamples);
     setWaveformPeaks(getAudioWaveform(rawSamples, 120));
