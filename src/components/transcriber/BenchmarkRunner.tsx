@@ -56,14 +56,14 @@ export const BenchmarkRunner: React.FC<BenchmarkRunnerProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setSelectedTier('cloud')}
+              onClick={() => setSelectedTier('local')}
               className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
-                selectedTier === 'cloud'
+                selectedTier === 'local'
                   ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                   : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
               }`}
             >
-              Cloud Gemini
+              Local Ollama
             </button>
           </div>
 

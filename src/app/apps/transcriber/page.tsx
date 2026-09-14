@@ -26,8 +26,10 @@ import {
   CheckCircle,
   WarningCircle,
   Sparkle,
-  ArrowsMerge,
   User,
+  X,
+  Play,
+  Stop,
 } from '@phosphor-icons/react';
 import {
   TranscriberSession,
@@ -43,17 +45,22 @@ import {
 import {
   decodeAudioFile,
   getAudioWaveform,
-  sliceAudioChunk,
 } from '@/lib/audioProcessor';
 import {
-  transcribeWithCloud,
   transcribeWithBrowser,
-  generateNotesFromTranscript,
+  generateMeetingNotesLocal,
   extractSpeakers,
   mergeSpeakersInTranscript,
   reassignSegmentSpeaker,
   runTierBenchmark,
 } from '@/lib/transcriberEngine';
+import {
+  checkOllamaConnection,
+  startOllamaDaemon,
+  stopOllamaDaemon,
+  DEFAULT_OLLAMA_ENDPOINT,
+} from '@/lib/ollamaClient';
+import { OllamaModel } from '@/types/aiHub';
 import {
   saveSession,
   loadSession,
@@ -91,16 +98,24 @@ export default function TranscriberPage() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('record');
   const [uiMode, setUiMode] = useState<'simple' | 'advanced'>('advanced');
   const [openSidebar, setOpenSidebar] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
 
-  // Active Session State
+  // Ollama Daemon State (Just like Data Studio)
+  const [ollamaStatus, setOllamaStatus] = useState<'connected' | 'checking' | 'offline'>('checking');
+  const [installedModels, setInstalledModels] = useState<OllamaModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [isStartingOllama, setIsStartingOllama] = useState(false);
+  const [isStoppingOllama, setIsStoppingOllama] = useState(false);
+
+  // Active Session State (100% Client-Side & Local)
   const [session, setSession] = useState<TranscriberSession>({
     id: crypto.randomUUID(),
-    title: 'New Meeting Recording',
+    title: 'Local Meeting Recording',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     duration: 0,
-    language: 'fil', // Tagalog/Taglish default
-    tier: 'cloud',
+    language: 'fil', // Tagalog / Taglish default
+    tier: 'browser', // 100% local default
     status: 'idle',
     segments: [],
     speakers: [],
@@ -133,10 +148,80 @@ export default function TranscriberPage() {
     'notes' | 'speakers' | 'bookmarks' | 'search'
   >('notes');
 
-  // Load saved sessions on mount
+  // Probe Ollama connection on mount
   useEffect(() => {
     refreshSessionList();
+    probeOllama();
   }, []);
+
+  const probeOllama = async () => {
+    setOllamaStatus('checking');
+    try {
+      const res = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 1200);
+      if (res.status) {
+        setOllamaStatus('connected');
+        if (res.models && res.models.length > 0) {
+          setInstalledModels(res.models);
+          setSelectedModel((prev) => {
+            if (prev) return prev;
+            const preferred = res.models.find(
+              (m) =>
+                m.name.includes('llama3') ||
+                m.name.includes('qwen') ||
+                m.name.includes('mistral') ||
+                m.name.includes('deepseek')
+            ) || res.models[0];
+            return preferred.name;
+          });
+        }
+      } else {
+        setOllamaStatus('offline');
+      }
+    } catch {
+      setOllamaStatus('offline');
+    }
+  };
+
+  // 1-Click Start Ollama Daemon (matches Data Studio)
+  const handleStartOllama = async () => {
+    setIsStartingOllama(true);
+    try {
+      await startOllamaDaemon();
+      for (let i = 0; i < 8; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        const check = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 800);
+        if (check.status) {
+          setOllamaStatus('connected');
+          if (check.models && check.models.length > 0) {
+            setInstalledModels(check.models);
+            if (!selectedModel) setSelectedModel(check.models[0].name);
+          }
+          break;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to start Ollama daemon:', err);
+    } finally {
+      setIsStartingOllama(false);
+      probeOllama();
+    }
+  };
+
+  // 1-Click Stop Ollama Daemon
+  const handleStopOllama = async () => {
+    setIsStoppingOllama(true);
+    try {
+      const res = await stopOllamaDaemon();
+      if (res.stopped) {
+        setOllamaStatus('offline');
+      }
+    } catch (err) {
+      console.error('Failed to stop Ollama daemon:', err);
+    } finally {
+      setIsStoppingOllama(false);
+      setTimeout(probeOllama, 800);
+    }
+  };
 
   const refreshSessionList = async () => {
     try {
@@ -147,20 +232,21 @@ export default function TranscriberPage() {
     }
   };
 
-  // Auto-save session when segments, notes, or speakers change
+  // Auto-save session
   useEffect(() => {
     if (session.segments.length > 0 || session.userNotes) {
       saveSession({
         ...session,
         updatedAt: new Date().toISOString(),
-      }).then(() => refreshSessionList()).catch(() => {});
+      })
+        .then(() => refreshSessionList())
+        .catch(() => {});
     }
   }, [session.segments, session.meetingNotes, session.userNotes, session.title]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore when typing in inputs/textareas
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
         return;
       }
@@ -168,11 +254,13 @@ export default function TranscriberPage() {
       // Space: Toggle Audio Play / Pause
       if (e.code === 'Space') {
         e.preventDefault();
-        const playBtn = document.querySelector('button[title="Play"], button[title="Pause"]') as HTMLButtonElement;
+        const playBtn = document.querySelector(
+          'button[title="Play"], button[title="Pause"]'
+        ) as HTMLButtonElement;
         playBtn?.click();
       }
 
-      // Cmd/Ctrl + B: Add bookmark at current position
+      // Cmd/Ctrl + B: Bookmark
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
         handleAddBookmark(currentTime);
@@ -183,33 +271,31 @@ export default function TranscriberPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentTime]);
 
-  // Handle Recording Completion
-  const handleRecordingComplete = async (audioBlob: Blob, liveDraftText?: string) => {
+  // Handle Recording Completion (Receives 16kHz PCM Float32Array directly)
+  const handleRecordingComplete = async (
+    audioBlob: Blob,
+    rawSamples: Float32Array,
+    liveDraftText?: string
+  ) => {
     setErrorMessage(null);
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const duration = rawSamples.length / 16000;
+
+    setRawChannelData(rawSamples);
+    setWaveformPeaks(getAudioWaveform(rawSamples, 120));
+
     setSession((prev) => ({
       ...prev,
       audioBlob,
-      audioUrl: URL.createObjectURL(audioBlob),
+      audioUrl,
+      duration,
       status: 'transcribing',
     }));
 
     try {
-      setProgressStatus('Decoding recorded audio buffer...');
-      setProgressPercent(10);
-
-      const decoded = await decodeAudioFile(audioBlob);
-      setRawChannelData(decoded.channelData);
-      setWaveformPeaks(getAudioWaveform(decoded.channelData, 120));
-
-      setSession((prev) => ({
-        ...prev,
-        duration: decoded.duration,
-      }));
-
-      // Execute whole-file transcription
-      await executeTranscription(decoded.channelData, decoded.duration);
+      await executeTranscription(rawSamples, duration, liveDraftText);
     } catch (err) {
-      console.error('Transcription failed:', err);
+      console.error('Transcription error:', err);
       const msg = err instanceof Error ? err.message : 'Transcription encountered an error.';
       setErrorMessage(msg);
       setSession((prev) => ({ ...prev, status: 'error', error: msg }));
@@ -249,60 +335,30 @@ export default function TranscriberPage() {
       await executeTranscription(decoded.channelData, decoded.duration);
     } catch (err) {
       console.error('File transcription error:', err);
-      const msg = err instanceof Error ? err.message : 'Failed to parse and transcribe file.';
+      const msg = err instanceof Error ? err.message : 'Failed to decode audio file.';
       setErrorMessage(msg);
       setSession((prev) => ({ ...prev, status: 'error', error: msg }));
     }
   };
 
-  // Core transcription runner
+  // Core local transcription runner
   const executeTranscription = async (
     channelData: Float32Array,
-    duration: number
+    duration: number,
+    liveDraftText?: string
   ) => {
     setSession((prev) => ({ ...prev, status: 'transcribing' }));
 
-    let result: {
-      segments: TranscriptSegment[];
-      summary: string;
-      meetingNotes: MeetingNoteItem[];
-      detectedLanguage: string;
-    };
-
-    if (session.tier === 'browser') {
-      try {
-        result = await transcribeWithBrowser(
-          channelData,
-          session.language,
-          'base',
-          ({ status, percentage }) => {
-            setProgressStatus(status);
-            setProgressPercent(percentage);
-          }
-        );
-      } catch (browserErr) {
-        console.warn('Browser inference failed, falling back to Cloud tier:', browserErr);
-        setProgressStatus('Falling back to Cloud tier...');
-        result = await transcribeWithCloud(
-          channelData,
-          session.language,
-          ({ status, percentage }) => {
-            setProgressStatus(status);
-            setProgressPercent(percentage);
-          }
-        );
+    const result = await transcribeWithBrowser(
+      channelData,
+      session.language,
+      'base',
+      liveDraftText,
+      ({ status, percentage }) => {
+        setProgressStatus(status);
+        setProgressPercent(percentage);
       }
-    } else {
-      // Cloud tier (Gemini 2.0 Flash)
-      result = await transcribeWithCloud(
-        channelData,
-        session.language,
-        ({ status, percentage }) => {
-          setProgressStatus(status);
-          setProgressPercent(percentage);
-        }
-      );
-    }
+    );
 
     const speakers = extractSpeakers(result.segments);
 
@@ -311,29 +367,40 @@ export default function TranscriberPage() {
       status: 'complete',
       segments: result.segments,
       speakers,
-      summary: result.summary || prev.summary,
-      meetingNotes:
-        result.meetingNotes.length > 0 ? result.meetingNotes : prev.meetingNotes,
-      language: (result.detectedLanguage as SupportedLanguage) || prev.language,
-      modelUsed:
-        session.tier === 'cloud'
-          ? 'Gemini 2.0 Flash'
-          : 'Whisper Base (WebGPU)',
+      summary: result.summary,
+      modelUsed: 'Whisper Base (WebGPU Local)',
     }));
 
     setProgressPercent(100);
     setProgressStatus('');
+
+    // Automatically generate local notes if segments exist
+    if (result.segments.length > 0) {
+      try {
+        const notes = await generateMeetingNotesLocal(
+          result.segments,
+          ollamaStatus === 'connected' ? selectedModel : undefined
+        );
+        setSession((prev) => ({
+          ...prev,
+          summary: notes.summary || prev.summary,
+          meetingNotes: notes.meetingNotes,
+        }));
+      } catch (notesErr) {
+        console.warn('Initial notes generation skipped:', notesErr);
+      }
+    }
   };
 
-  // Generate Notes manually
+  // Manual Notes Generation
   const handleGenerateNotes = async () => {
     if (session.segments.length === 0) return;
     setSession((prev) => ({ ...prev, status: 'generating_notes' }));
 
     try {
-      const notes = await generateNotesFromTranscript(
+      const notes = await generateMeetingNotesLocal(
         session.segments,
-        session.tier
+        ollamaStatus === 'connected' ? selectedModel : undefined
       );
       setSession((prev) => ({
         ...prev,
@@ -347,7 +414,7 @@ export default function TranscriberPage() {
     }
   };
 
-  // Transcript Editing Handlers
+  // Segment editing handlers
   const handleUpdateSegment = (segmentId: string, newText: string) => {
     setSession((prev) => ({
       ...prev,
@@ -462,7 +529,7 @@ export default function TranscriberPage() {
     const newBm: Bookmark = {
       id: crypto.randomUUID(),
       timestamp: time,
-      label: `Bookmark @ ${Math.floor(time)}s`,
+      label: `Marker @ ${Math.floor(time)}s`,
     };
     setSession((prev) => ({
       ...prev,
@@ -535,10 +602,10 @@ export default function TranscriberPage() {
     }
   };
 
-  // Benchmark callback
+  // Benchmark runner
   const handleRunBenchmark = async (tier: TranscriptionTier): Promise<BenchmarkResult> => {
     if (!rawChannelData || session.duration <= 0) {
-      throw new Error('Please record or load an audio file first to run benchmark.');
+      throw new Error('Please record or load an audio file first to benchmark.');
     }
     return await runTierBenchmark(rawChannelData, session.duration, tier);
   };
@@ -547,12 +614,12 @@ export default function TranscriberPage() {
   const handleNewSession = () => {
     setSession({
       id: crypto.randomUUID(),
-      title: 'New Meeting Recording',
+      title: 'Local Meeting Recording',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       duration: 0,
       language: 'fil',
-      tier: 'cloud',
+      tier: 'browser',
       status: 'idle',
       segments: [],
       speakers: [],
@@ -602,7 +669,7 @@ export default function TranscriberPage() {
                       AI Transcriber
                     </span>
                     <span className="font-mono text-[10px] text-neutral-400">
-                      Taglish & Diarization
+                      100% Client-Side & Local
                     </span>
                   </div>
                 </div>
@@ -667,7 +734,7 @@ export default function TranscriberPage() {
                   <>
                     <SidebarLink
                       link={{
-                        label: 'AI Tiers & Engine',
+                        label: 'Local Engines & Ollama',
                         onClick: () => setActiveTab('models'),
                         icon: (
                           <Cpu
@@ -710,9 +777,50 @@ export default function TranscriberPage() {
             </div>
 
             {/* Sidebar Bottom Controls */}
-            <div className="border-t border-neutral-200 pt-3 dark:border-neutral-800">
+            <div className="border-t border-neutral-200 pt-3 mt-auto space-y-2.5 dark:border-neutral-800">
+              {/* Ollama Status Strip (Click to Start / Stop) */}
+              <div
+                onClick={() => {
+                  if (ollamaStatus === 'connected') {
+                    handleStopOllama();
+                  } else {
+                    handleStartOllama();
+                  }
+                }}
+                className="group flex cursor-pointer items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 p-2 transition-all hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-900/80"
+                title={
+                  ollamaStatus === 'connected'
+                    ? 'Click to stop local Ollama background daemon'
+                    : 'Click to start local Ollama background daemon'
+                }
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                      ollamaStatus === 'connected'
+                        ? 'bg-neutral-900 dark:bg-white'
+                        : isStartingOllama || isStoppingOllama || ollamaStatus === 'checking'
+                        ? 'bg-neutral-400 animate-pulse'
+                        : 'bg-neutral-400'
+                    }`}
+                  />
+                  <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200 truncate">
+                    {isStartingOllama
+                      ? 'Starting...'
+                      : isStoppingOllama
+                      ? 'Stopping...'
+                      : ollamaStatus === 'connected'
+                      ? `Ollama (${installedModels.length} models)`
+                      : 'Ollama Standby'}
+                  </span>
+                </div>
+                <span className="font-mono text-[10px] text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white">
+                  {ollamaStatus === 'connected' ? 'Stop' : 'Start'}
+                </span>
+              </div>
+
               {/* UI Mode Toggle: Simple vs Advanced */}
-              <div className="mb-3 flex items-center justify-between px-2 text-xs">
+              <div className="flex items-center justify-between px-1 text-xs">
                 <span className="text-neutral-500 dark:text-neutral-400">Mode:</span>
                 <button
                   type="button"
@@ -725,7 +833,7 @@ export default function TranscriberPage() {
                 </button>
               </div>
 
-              {/* Theme Toggle & New Button */}
+              {/* Theme Toggle & New Session Button */}
               <div className="flex items-center justify-between px-1">
                 <ThemeToggle />
                 <button
@@ -743,50 +851,80 @@ export default function TranscriberPage() {
         </Sidebar>
 
         {/* MAIN APPLICATION WORKSPACE */}
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden min-w-0">
           {/* TOP APP BAR */}
-          <header className="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-6 dark:border-neutral-800 dark:bg-[#121212]">
-            <div className="flex items-center gap-3">
+          <header className="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6 dark:border-neutral-800 dark:bg-[#121212] min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
               <input
                 type="text"
                 value={session.title}
                 onChange={(e) =>
                   setSession((prev) => ({ ...prev, title: e.target.value }))
                 }
-                className="rounded-md border-none bg-transparent font-semibold text-sm text-neutral-900 focus:bg-neutral-100 focus:outline-none dark:text-white dark:focus:bg-neutral-800"
+                className="rounded-md border-none bg-transparent font-semibold text-xs sm:text-sm text-neutral-900 focus:bg-neutral-100 focus:outline-none dark:text-white dark:focus:bg-neutral-800 truncate min-w-0"
                 placeholder="Meeting Title..."
               />
-              <span className="hidden font-mono text-xs text-neutral-400 sm:inline">
+              <span className="hidden font-mono text-xs text-neutral-400 md:inline shrink-0">
                 • {new Date(session.createdAt).toLocaleDateString()}
               </span>
             </div>
 
-            {/* Language & Tier Indicators (Solid Grey Bubbles, Anti-Slop Directive) */}
-            <div className="flex items-center gap-2">
-              <span className="rounded-md border border-neutral-200 bg-neutral-100 px-2.5 py-1 font-mono text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-[#1a1a1a] dark:text-neutral-300">
+            {/* Header Right Actions: Ollama Status, Language, and Panel Toggle */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Ollama 1-Click Start/Stop Button */}
+              {ollamaStatus === 'connected' ? (
+                <button
+                  type="button"
+                  onClick={handleStopOllama}
+                  disabled={isStoppingOllama}
+                  className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 cursor-pointer"
+                  title="Stop local Ollama daemon"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
+                  <Stop size={12} weight="fill" />
+                  <span className="hidden sm:inline">Stop Ollama</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleStartOllama}
+                  disabled={isStartingOllama}
+                  className="flex items-center gap-1.5 rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 cursor-pointer"
+                  title="Launch local Ollama daemon"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <Play size={12} weight="fill" />
+                  <span className="hidden sm:inline">
+                    {isStartingOllama ? 'Starting...' : 'Start Ollama'}
+                  </span>
+                </button>
+              )}
+
+              {/* Language Indicator */}
+              <span className="hidden sm:inline-flex rounded-md border border-neutral-200 bg-neutral-100 px-2.5 py-1 font-mono text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-[#1a1a1a] dark:text-neutral-300">
                 {session.language === 'fil'
                   ? 'Tagalog / Taglish'
                   : session.language.toUpperCase()}
               </span>
 
-              <span className="rounded-md border border-neutral-200 bg-neutral-100 px-2.5 py-1 font-mono text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-[#1a1a1a] dark:text-neutral-300">
-                {session.tier.toUpperCase()} TIER
-              </span>
-
-              {session.status === 'transcribing' && (
-                <div className="flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-100 px-2.5 py-1 font-mono text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-[#1a1a1a] dark:text-neutral-300">
-                  <span className="h-2 w-2 animate-ping rounded-full bg-neutral-900 dark:bg-white" />
-                  <span>Transcribing {progressPercent}%</span>
-                </div>
-              )}
+              {/* Responsive Drawer Toggle Button for Small/Medium Screens */}
+              <button
+                type="button"
+                onClick={() => setRightPanelOpen(!rightPanelOpen)}
+                className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs hover:bg-neutral-50 lg:hidden dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 cursor-pointer"
+                title="Toggle Notes & Search Panel"
+              >
+                <Sparkle size={14} weight="bold" />
+                <span>Panel</span>
+              </button>
             </div>
           </header>
 
           {/* ERROR NOTIFICATION BANNER */}
           {errorMessage && (
-            <div className="flex items-center justify-between border-b border-neutral-300 bg-neutral-200/70 px-6 py-2 text-xs text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
+            <div className="flex items-center justify-between border-b border-neutral-300 bg-neutral-200/80 px-4 sm:px-6 py-2 text-xs text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
               <div className="flex items-center gap-2">
-                <WarningCircle size={15} weight="bold" />
+                <WarningCircle size={15} weight="bold" className="shrink-0" />
                 <span>{errorMessage}</span>
               </div>
               <button
@@ -800,18 +938,18 @@ export default function TranscriberPage() {
           )}
 
           {/* CENTER + RIGHT PANELS GRID */}
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 overflow-hidden relative">
             {/* CENTER WORKSPACE */}
-            <main className="flex flex-1 flex-col overflow-y-auto p-6">
-              {/* SIDEBAR TAB SECTIONS (Conditionally rendered when user clicks sidebar tab) */}
+            <main className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6 min-w-0">
+              {/* SIDEBAR TAB SECTIONS */}
               {activeTab === 'record' && session.segments.length === 0 && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
                   <div className="mb-4">
                     <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                      Live Meeting Recorder
+                      Live Microphone Recording
                     </h2>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Record microphone audio with pause/resume support. Whole-file transcription begins automatically upon completion.
+                      Record speech directly in your browser. Pause and resume smoothly; gaps are not included in the file.
                     </p>
                   </div>
                   <RecordingControls
@@ -822,13 +960,13 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'import' && session.segments.length === 0 && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
                   <div className="mb-4">
                     <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                      Audio & Video File Import
+                      Local Media File Import
                     </h2>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Import MP3, WAV, M4A, AIFF, MP4, or MOV for speaker identification and structured intelligence.
+                      Drop an MP3, WAV, M4A, AIFF, MP4, or MOV file for speech transcription and turn diarization.
                     </p>
                   </div>
                   <FileDropZone
@@ -839,14 +977,14 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'history' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
                   <h2 className="mb-3 text-base font-bold text-neutral-900 dark:text-white">
-                    Saved Meeting Sessions ({savedSessions.length})
+                    Saved Sessions ({savedSessions.length})
                   </h2>
                   <div className="space-y-2">
                     {savedSessions.length === 0 ? (
                       <p className="text-xs text-neutral-400">
-                        No saved sessions yet. Transcribed recordings are saved automatically.
+                        No saved sessions yet. Transcribed recordings are saved automatically to your device.
                       </p>
                     ) : (
                       savedSessions.map((s) => (
@@ -854,15 +992,15 @@ export default function TranscriberPage() {
                           key={s.id}
                           className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 p-3 transition hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#141414] dark:hover:border-neutral-700"
                         >
-                          <div>
-                            <div className="font-semibold text-xs text-neutral-900 dark:text-white">
+                          <div className="min-w-0 mr-2">
+                            <div className="font-semibold text-xs text-neutral-900 dark:text-white truncate">
                               {s.title}
                             </div>
                             <div className="font-mono text-[10px] text-neutral-400">
                               {new Date(s.createdAt).toLocaleString()} • {s.segments.length} turns
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             <button
                               type="button"
                               onClick={() => handleLoadSession(s.id)}
@@ -889,12 +1027,12 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'export' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
                   <h2 className="mb-2 text-base font-bold text-neutral-900 dark:text-white">
-                    Export Transcripts & Meeting Notes
+                    Export Transcripts & Meeting Intelligence
                   </h2>
                   <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">
-                    Download this session in your desired format:
+                    Download this session directly to your device:
                   </p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                     {[
@@ -909,7 +1047,7 @@ export default function TranscriberPage() {
                         type="button"
                         onClick={() => handleExport(fmt.id as any)}
                         disabled={session.segments.length === 0}
-                        className="flex flex-col items-start rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-left transition hover:border-neutral-900 disabled:opacity-40 dark:border-neutral-800 dark:bg-neutral-900/50 dark:hover:border-neutral-400"
+                        className="flex flex-col items-start rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-left transition hover:border-neutral-900 disabled:opacity-40 dark:border-neutral-800 dark:bg-neutral-900/50 dark:hover:border-neutral-400 cursor-pointer"
                       >
                         <Export size={18} className="mb-1 text-neutral-700 dark:text-neutral-300" />
                         <span className="font-semibold text-xs text-neutral-900 dark:text-white">
@@ -925,57 +1063,76 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'models' && uiMode === 'advanced' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
                   <h2 className="mb-2 text-base font-bold text-neutral-900 dark:text-white">
-                    Transcription Engine Tier
+                    Local Engines & Ollama Integration
                   </h2>
                   <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">
-                    Choose between local in-browser WebGPU inference or server-proxied Gemini Cloud tier.
+                    100% private, on-device transcription and meeting note synthesis.
                   </p>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <button
-                      type="button"
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-4">
+                    <div
                       onClick={() =>
                         setSession((prev) => ({ ...prev, tier: 'browser' }))
                       }
-                      className={`flex flex-col items-start rounded-xl border p-4 text-left transition ${
+                      className={`flex flex-col items-start rounded-xl border p-4 text-left cursor-pointer transition ${
                         session.tier === 'browser'
                           ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900'
                           : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#141414]'
                       }`}
                     >
                       <div className="mb-1 flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
-                        <span>🟢 Browser Tier (Transformers.js + WebGPU)</span>
+                        <span>🟢 Browser Engine (Transformers.js WebGPU)</span>
                       </div>
                       <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                        100% private, runs on-device inside your browser tab without transmitting audio bytes over the internet.
+                        Runs Whisper ONNX in your browser tab with WebGPU hardware acceleration. Zero setup required.
                       </p>
-                    </button>
+                    </div>
 
-                    <button
-                      type="button"
+                    <div
                       onClick={() =>
-                        setSession((prev) => ({ ...prev, tier: 'cloud' }))
+                        setSession((prev) => ({ ...prev, tier: 'local' }))
                       }
-                      className={`flex flex-col items-start rounded-xl border p-4 text-left transition ${
-                        session.tier === 'cloud'
+                      className={`flex flex-col items-start rounded-xl border p-4 text-left cursor-pointer transition ${
+                        session.tier === 'local'
                           ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900'
                           : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#141414]'
                       }`}
                     >
                       <div className="mb-1 flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
-                        <span>🔴 Cloud Tier (Gemini 2.0 Flash)</span>
+                        <span>🟡 Local Ollama Engine (localhost:11434)</span>
                       </div>
                       <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                        Maximum conversational accuracy with Taglish code-switching, speaker diarization, and meeting intelligence synthesis.
+                        Uses your local Ollama daemon for meeting intelligence, summaries, and action item synthesis.
                       </p>
-                    </button>
+                    </div>
                   </div>
+
+                  {/* Local Model Selector */}
+                  {installedModels.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
+                      <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                        Selected Ollama Model:
+                      </span>
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
+                      >
+                        {installedModels.map((m) => (
+                          <option key={m.name} value={m.name}>
+                            {m.name} ({m.details?.parameter_size || 'LLM'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               )}
 
               {activeTab === 'benchmark' && uiMode === 'advanced' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
                   <BenchmarkRunner
                     currentTier={session.tier}
                     onRunBenchmark={handleRunBenchmark}
@@ -984,7 +1141,7 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'settings' && uiMode === 'advanced' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
                   <h2 className="mb-3 text-base font-bold text-neutral-900 dark:text-white">
                     Spoken Language & Detection
                   </h2>
@@ -999,7 +1156,7 @@ export default function TranscriberPage() {
                             language: lang.code,
                           }))
                         }
-                        className={`flex flex-col items-start rounded-lg border p-2.5 text-left transition ${
+                        className={`flex flex-col items-start rounded-lg border p-2.5 text-left transition cursor-pointer ${
                           session.language === lang.code
                             ? 'border-neutral-900 bg-neutral-100 font-bold dark:border-white dark:bg-neutral-800'
                             : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#141414]'
@@ -1032,8 +1189,8 @@ export default function TranscriberPage() {
                 </div>
               )}
 
-              {/* TRANSCRIPT EDITOR (Core Feed) */}
-              <div className="flex-1">
+              {/* TRANSCRIPT EDITOR (Feed) */}
+              <div className="flex-1 min-w-0">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-sm text-neutral-900 dark:text-white">
@@ -1070,10 +1227,10 @@ export default function TranscriberPage() {
               </div>
             </main>
 
-            {/* RIGHT SIDE PANEL (Meeting Notes, Speakers, Bookmarks, Search) */}
-            <aside className="hidden w-80 flex-col border-l border-neutral-200 bg-white p-4 lg:flex dark:border-neutral-800 dark:bg-[#111111]">
-              {/* Panel Tab Switcher */}
-              <div className="mb-4 flex items-center gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800">
+            {/* RIGHT SIDE PANEL (Desktop persistent column) */}
+            <aside className="hidden lg:flex w-80 2xl:w-96 flex-col border-l border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-[#111111] shrink-0 min-w-0">
+              {/* Panel Tabs */}
+              <div className="mb-4 flex items-center gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800 shrink-0">
                 <button
                   type="button"
                   onClick={() => setRightPanelTab('notes')}
@@ -1127,8 +1284,8 @@ export default function TranscriberPage() {
                 </button>
               </div>
 
-              {/* Panel Content */}
-              <div className="flex-1 overflow-y-auto">
+              {/* Panel Body */}
+              <div className="flex-1 overflow-y-auto min-w-0">
                 {rightPanelTab === 'notes' && (
                   <MeetingNotes
                     summary={session.summary}
@@ -1153,32 +1310,32 @@ export default function TranscriberPage() {
                 )}
 
                 {rightPanelTab === 'bookmarks' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0">
                     <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
-                      <span>Timeline Bookmarks ({session.bookmarks.length})</span>
+                      <span>Markers ({session.bookmarks.length})</span>
                     </div>
                     {session.bookmarks.length === 0 ? (
                       <p className="text-xs text-neutral-400">
-                        Press ⌘B or click "Bookmark" during playback to save audio markers.
+                        Press ⌘B or click &quot;Bookmark&quot; to place timeline markers.
                       </p>
                     ) : (
                       session.bookmarks.map((bm) => (
                         <div
                           key={bm.id}
-                          className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-2 text-xs dark:border-neutral-800 dark:bg-[#141414]"
+                          className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-2 text-xs dark:border-neutral-800 dark:bg-[#141414] min-w-0"
                         >
                           <button
                             type="button"
                             onClick={() => setCurrentTime(bm.timestamp)}
-                            className="flex items-center gap-2 text-neutral-800 hover:underline dark:text-neutral-200"
+                            className="flex items-center gap-2 text-neutral-800 hover:underline dark:text-neutral-200 truncate min-w-0 mr-2"
                           >
-                            <BookmarkSimple size={14} weight="bold" />
-                            <span>{bm.label}</span>
+                            <BookmarkSimple size={14} weight="bold" className="shrink-0" />
+                            <span className="truncate">{bm.label}</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteBookmark(bm.id)}
-                            className="text-neutral-400 hover:text-neutral-800 dark:hover:text-white"
+                            className="text-neutral-400 hover:text-neutral-800 dark:hover:text-white shrink-0"
                           >
                             <Trash size={13} />
                           </button>
@@ -1200,6 +1357,162 @@ export default function TranscriberPage() {
                 )}
               </div>
             </aside>
+
+            {/* MOBILE & TABLET RESPONSIVE OVERLAY DRAWER */}
+            {rightPanelOpen && (
+              <div className="fixed inset-0 z-50 flex lg:hidden">
+                <div
+                  className="fixed inset-0 bg-neutral-900/50 backdrop-blur-xs transition-opacity"
+                  onClick={() => setRightPanelOpen(false)}
+                />
+                <aside className="relative ml-auto flex h-full w-full max-w-sm flex-col bg-white p-4 shadow-2xl dark:bg-[#121212] min-w-0 z-10">
+                  {/* Drawer Header */}
+                  <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-2 dark:border-neutral-800">
+                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
+                      Intelligence & Notes
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setRightPanelOpen(false)}
+                      className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-white cursor-pointer"
+                    >
+                      <X size={16} weight="bold" />
+                    </button>
+                  </div>
+
+                  {/* Drawer Tabs */}
+                  <div className="mb-4 flex items-center gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setRightPanelTab('notes')}
+                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
+                        rightPanelTab === 'notes'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                          : 'text-neutral-500'
+                      }`}
+                    >
+                      <Sparkle size={12} weight="bold" />
+                      <span>Notes</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRightPanelTab('speakers')}
+                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
+                        rightPanelTab === 'speakers'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                          : 'text-neutral-500'
+                      }`}
+                    >
+                      <User size={12} weight="bold" />
+                      <span>Speakers</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRightPanelTab('bookmarks')}
+                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
+                        rightPanelTab === 'bookmarks'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                          : 'text-neutral-500'
+                      }`}
+                    >
+                      <BookmarkSimple size={12} weight="bold" />
+                      <span>Marks</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRightPanelTab('search')}
+                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
+                        rightPanelTab === 'search'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                          : 'text-neutral-500'
+                      }`}
+                    >
+                      <MagnifyingGlass size={12} weight="bold" />
+                      <span>Search</span>
+                    </button>
+                  </div>
+
+                  {/* Drawer Content */}
+                  <div className="flex-1 overflow-y-auto min-w-0">
+                    {rightPanelTab === 'notes' && (
+                      <MeetingNotes
+                        summary={session.summary}
+                        meetingNotes={session.meetingNotes}
+                        userNotes={session.userNotes}
+                        onUpdateUserNotes={(userNotes) =>
+                          setSession((prev) => ({ ...prev, userNotes }))
+                        }
+                        onToggleActionItem={handleToggleActionItem}
+                        onSeek={(t) => {
+                          setCurrentTime(t);
+                          setRightPanelOpen(false);
+                        }}
+                        onGenerateNotes={handleGenerateNotes}
+                        isGenerating={session.status === 'generating_notes'}
+                      />
+                    )}
+
+                    {rightPanelTab === 'speakers' && (
+                      <SpeakerManager
+                        speakers={session.speakers}
+                        onRenameSpeaker={handleRenameSpeaker}
+                        onMergeSpeakers={handleMergeSpeakers}
+                      />
+                    )}
+
+                    {rightPanelTab === 'bookmarks' && (
+                      <div className="space-y-2">
+                        {session.bookmarks.length === 0 ? (
+                          <p className="text-xs text-neutral-400">
+                            No markers created yet.
+                          </p>
+                        ) : (
+                          session.bookmarks.map((bm) => (
+                            <div
+                              key={bm.id}
+                              className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-2 text-xs dark:border-neutral-800 dark:bg-[#141414]"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCurrentTime(bm.timestamp);
+                                  setRightPanelOpen(false);
+                                }}
+                                className="flex items-center gap-2 text-neutral-800 truncate"
+                              >
+                                <BookmarkSimple size={14} weight="bold" />
+                                <span className="truncate">{bm.label}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBookmark(bm.id)}
+                                className="text-neutral-400"
+                              >
+                                <Trash size={13} />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+
+                    {rightPanelTab === 'search' && (
+                      <TranscriberSearch
+                        segments={session.segments}
+                        meetingNotes={session.meetingNotes}
+                        bookmarks={session.bookmarks}
+                        onSeek={(t) => {
+                          setCurrentTime(t);
+                          setRightPanelOpen(false);
+                        }}
+                        searchQuery={searchQuery}
+                        onSearchQueryChange={setSearchQuery}
+                      />
+                    )}
+                  </div>
+                </aside>
+              </div>
+            )}
           </div>
         </div>
       </div>

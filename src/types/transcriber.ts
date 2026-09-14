@@ -1,4 +1,4 @@
-export type TranscriptionTier = 'browser' | 'local' | 'cloud';
+export type TranscriptionTier = 'browser' | 'local';
 
 export type SupportedLanguage =
   | 'auto'
