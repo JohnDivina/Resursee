@@ -247,7 +247,7 @@ export const SidebarLink = ({
             opacity: animate ? (open ? 1 : 0) : 1,
           }}
           className={cn(
-            'ml-auto rounded-full font-mono text-[9px] font-bold px-1.5 py-0.2 shrink-0 transition-colors',
+            'ml-auto rounded-full font-mono text-[11px] font-bold px-1.5 py-0.2 shrink-0 transition-colors',
             link.isActive
               ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900'
               : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'

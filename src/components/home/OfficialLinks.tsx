@@ -67,7 +67,7 @@ export default function OfficialLinks({ links = mockOfficialLinks }: OfficialLin
                 <p className="mt-1 text-xs text-[var(--color-ink-muted)] line-clamp-2">
                   {link.description}
                 </p>
-                <div className="mt-2 flex items-center gap-1 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
+                <div className="mt-2 flex items-center gap-1 font-mono text-[11px] text-[var(--color-ink-muted)]">
                   <span>{link.category}</span>
                 </div>
               </div>

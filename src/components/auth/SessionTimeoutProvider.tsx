@@ -374,7 +374,7 @@ export default function SessionTimeoutProvider({ children }: { children: React.R
             </div>
             <div>
               <p className="font-extrabold">Logged Out Due to Inactivity</p>
-              <p className="text-[10.5px] font-normal text-[var(--color-ink-muted)]">
+              <p className="text-[11px] font-normal text-[var(--color-ink-muted)]">
                 Your session was securely timed out after 15 minutes of inactivity.
               </p>
             </div>

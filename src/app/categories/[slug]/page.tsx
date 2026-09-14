@@ -125,7 +125,7 @@ export default function CategoryDetailPage() {
                 <span className="font-display text-xl font-bold text-[var(--color-primary)] sm:text-2xl">
                   {categoryResources.length}
                 </span>
-                <p className="font-mono text-[10.5px] uppercase text-[var(--color-ink-muted)]">
+                <p className="font-mono text-[11px] uppercase text-[var(--color-ink-muted)]">
                   Documents
                 </p>
               </div>

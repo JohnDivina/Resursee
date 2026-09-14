@@ -49,14 +49,14 @@ export default function ScanHistory({ history, onSelect, onClear }: ScanHistoryP
           >
             <div>
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+                <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
                   {new Date(item.timestamp).toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric',
                   })}
                 </span>
                 <span
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9.5px] font-bold bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700"
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[11px] font-bold bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700"
                 >
                   {item.isHealthy ? (
                     <CheckCircle size={10} weight="fill" className="text-neutral-700 dark:text-neutral-300" />

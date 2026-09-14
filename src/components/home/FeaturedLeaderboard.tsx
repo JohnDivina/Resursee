@@ -66,7 +66,7 @@ function LeaderboardItemCard({
         {/* Text details */}
         <div className="min-w-0 flex-1">
           {/* Category & Department Header */}
-          <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
             <span className="truncate">{categoryName}</span>
             <span>•</span>
             <span className="text-[var(--color-ink-muted)] shrink-0">{officeName}</span>
@@ -99,7 +99,7 @@ function LeaderboardItemCard({
               <span>{rankDiff}</span>
             </span>
           ) : (
-            <span className="flex items-center text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 rounded-full text-[10px]">
+            <span className="flex items-center text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 rounded-full text-[11px]">
               • Hot
             </span>
           )}

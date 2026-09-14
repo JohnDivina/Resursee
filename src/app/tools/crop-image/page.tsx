@@ -283,7 +283,7 @@ export default function CropImagePage() {
                       className="max-h-full max-w-full object-contain rounded-[16px] shadow-lg ring-2 ring-[var(--color-primary)]"
                     />
 
-                    <div className="pointer-events-none absolute bottom-3.5 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-1.5 font-mono text-[10px] font-semibold text-white backdrop-blur-xs">
+                    <div className="pointer-events-none absolute bottom-3.5 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-1.5 font-mono text-[11px] font-semibold text-white backdrop-blur-xs">
                       Drag image to reposition · Use zoom slider below
                     </div>
                   </div>

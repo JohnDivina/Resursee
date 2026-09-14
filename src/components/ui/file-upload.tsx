@@ -164,7 +164,7 @@ export function FileUpload({
                 {acceptedTypesLabel.map((fmt) => (
                   <span
                     key={fmt}
-                    className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] font-bold text-[var(--color-ink-secondary)]"
+                    className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--color-ink-secondary)]"
                   >
                     {fmt}
                   </span>
@@ -172,7 +172,7 @@ export function FileUpload({
               </div>
             )}
 
-            <span className="mt-3 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
+            <span className="mt-3 font-mono text-[11px] text-[var(--color-ink-muted)]">
               Maximum file size: {maxSizeMB}MB
             </span>
           </motion.div>
@@ -201,7 +201,7 @@ export function FileUpload({
                       <h4 className="text-xs font-bold text-[var(--color-ink)] truncate max-w-[200px] sm:max-w-[240px]">
                         {file.name}
                       </h4>
-                      <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
+                      <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-[var(--color-ink-muted)]">
                         <span>{formatFileSize(file.size)}</span>
                         <span>•</span>
                         <span className="text-[var(--color-ink)] font-bold flex items-center gap-1">

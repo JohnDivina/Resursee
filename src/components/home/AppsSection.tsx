@@ -62,7 +62,7 @@ const SolidGraphicPlantVision = () => {
         <Plant size={30} weight="regular" />
       </div>
 
-      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[10.5px] font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
+      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
         <span className="h-1.5 w-1.5 rounded-full bg-neutral-600 dark:bg-neutral-400 shrink-0" />
         <span className="truncate">Foliage Pathology Analysis</span>
       </div>
@@ -78,7 +78,7 @@ const SolidGraphicIoTCloud = () => {
         <Cpu size={30} weight="regular" />
       </div>
 
-      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[10.5px] font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
+      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
         <span className="h-1.5 w-1.5 rounded-full bg-neutral-600 dark:bg-neutral-400 shrink-0" />
         <span className="truncate">Hardware Telemetry Stream</span>
       </div>
@@ -94,7 +94,7 @@ const SolidGraphicAIHub = () => {
         <Sparkle size={30} weight="regular" />
       </div>
 
-      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[10.5px] font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
+      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
         <span className="h-1.5 w-1.5 rounded-full bg-neutral-600 dark:bg-neutral-400 shrink-0" />
         <span className="truncate">Local Ollama & LLM Studio</span>
       </div>
@@ -110,7 +110,7 @@ const SolidGraphicDataStudio = () => {
         <ChartBar size={30} weight="regular" />
       </div>
 
-      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[10.5px] font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
+      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
         <span className="h-1.5 w-1.5 rounded-full bg-neutral-600 dark:bg-neutral-400 shrink-0" />
         <span className="truncate">R Studio & Statistical Engine</span>
       </div>
@@ -126,7 +126,7 @@ const SolidGraphicMediaToolbox = () => {
         <SlidersHorizontal size={30} weight="regular" />
       </div>
 
-      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[10.5px] font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
+      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
         <span className="h-1.5 w-1.5 rounded-full bg-neutral-600 dark:bg-neutral-400 shrink-0" />
         <span className="truncate">In-Browser Local Processing</span>
       </div>

@@ -308,7 +308,7 @@ export default function ResizeImagePage() {
                           <span className="block text-xs font-bold text-[var(--color-ink)]">
                             {preset.label}
                           </span>
-                          <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+                          <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
                             {preset.width}×{preset.height}
                           </span>
                         </button>

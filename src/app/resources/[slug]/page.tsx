@@ -156,14 +156,14 @@ export default function ResourceDetailPage() {
                       className="h-5 w-5 object-contain"
                     />
                   </div>
-                  <span className="rounded-md bg-neutral-900 dark:bg-white px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-white dark:text-neutral-900 uppercase">
+                  <span className="rounded-md bg-neutral-900 dark:bg-white px-2.5 py-0.5 font-mono text-[11px] font-bold text-white dark:text-neutral-900 uppercase">
                     {activeResource.file_format}
                   </span>
-                  <span className="flex items-center gap-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 text-[10.5px] font-medium">
+                  <span className="flex items-center gap-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 text-[11px] font-medium">
                     <ShieldCheck size={12} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
                     <span>Official Document</span>
                   </span>
-                  <span className="rounded-md bg-[var(--color-paper-muted)] px-2 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink-muted)]">
+                  <span className="rounded-md bg-[var(--color-paper-muted)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--color-ink-muted)]">
                     v{activeResource.current_version}
                   </span>
                 </div>
@@ -262,7 +262,7 @@ export default function ResourceDetailPage() {
                       <span className="font-mono font-bold text-neutral-800 dark:text-neutral-200">
                         Version {activeResource.current_version}
                       </span>
-                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 font-mono text-[9px] font-bold uppercase">
+                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 font-mono text-[11px] font-bold uppercase">
                         Current
                       </span>
                     </div>
@@ -279,7 +279,7 @@ export default function ResourceDetailPage() {
               {/* Primary Direct Download Action Card */}
               <div className="rounded-[28px] border border-[var(--color-rule)] bg-[var(--color-paper-card)] p-6 sm:p-7 shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-4 sticky top-20">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                     Direct Download
                   </span>
                   <span className="font-mono text-xs text-[var(--color-ink-muted)]">
@@ -344,7 +344,7 @@ export default function ResourceDetailPage() {
                           <span className="text-xs font-bold text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-1 block">
                             {rel.title}
                           </span>
-                          <span className="font-mono text-[10px] text-[var(--color-ink-muted)] block">
+                          <span className="font-mono text-[11px] text-[var(--color-ink-muted)] block">
                             {rel.department?.abbreviation || rel.source_name}
                           </span>
                         </div>

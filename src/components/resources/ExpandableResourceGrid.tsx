@@ -280,7 +280,7 @@ function ExpandableCardItem({
         >
           <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-2">
-              <span className="rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white">
+              <span className="rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider text-white">
                 {format}
               </span>
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/25 backdrop-blur-md p-0.5 shadow-2xs">
@@ -294,7 +294,7 @@ function ExpandableCardItem({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white">
+            <div className="flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[11px] font-bold text-white">
               <CaretUp size={12} weight="fill" className="text-white" />
               <span>{realtimeDownloads}</span>
             </div>

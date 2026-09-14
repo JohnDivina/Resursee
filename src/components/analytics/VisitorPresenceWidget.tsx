@@ -146,13 +146,13 @@ export default function VisitorPresenceWidget() {
               damping: 26,
               mass: 0.6,
             }}
-            className="absolute right-0 top-full pt-2.5 z-50 whitespace-nowrap pointer-events-auto"
+            className="absolute right-0 top-full pt-2.5 z-50 pointer-events-auto max-w-[calc(100vw-32px)]"
           >
             {/* Top Pointer Caret pointing exactly to center of the 36px circle button */}
             <div className="absolute top-1.5 right-[13px] h-2.5 w-2.5 rotate-45 rounded-[1px] bg-[var(--color-paper-card)] border-l border-t border-[var(--color-rule-strong)] z-10" />
 
             {/* Notch Pill Container */}
-            <div className="relative flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3.5 py-1.5 shadow-xl">
+            <div className="relative flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3.5 py-1.5 shadow-xl whitespace-nowrap">
               {/* Inner Live Indicator */}
               <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
 

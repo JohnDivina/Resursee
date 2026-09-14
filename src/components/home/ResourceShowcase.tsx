@@ -41,15 +41,15 @@ function ShowcaseCardItem({ item }: { item: Resource }) {
               className="h-4.5 w-4.5 object-contain"
             />
           </div>
-          <span className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+          <span className="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
             {item.file_format}
           </span>
-          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] text-[var(--color-ink-muted)]">
+          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[11px] text-[var(--color-ink-muted)]">
             v{item.current_version}
           </span>
         </div>
 
-        <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+        <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
           {realtimeDownloads} downloads
         </span>
       </div>
@@ -158,7 +158,7 @@ export default function ResourceShowcase({
           className="mt-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-primary)] transition-colors"
         >
           <span>{isOpen ? 'Close preview' : 'Quick document showcase'}</span>
-          <span className="text-[10px] text-[var(--color-primary)]">{isOpen ? '▲' : '▼'}</span>
+          <span className="text-[11px] text-[var(--color-primary)]">{isOpen ? '▲' : '▼'}</span>
         </button>
       </div>
 

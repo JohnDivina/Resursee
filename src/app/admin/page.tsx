@@ -1111,7 +1111,7 @@ export default function AdminDashboardPage() {
                 className="flex flex-col truncate"
               >
                 <span className="font-extrabold text-sm text-[var(--color-ink)]">Resursee Admin</span>
-                <span className="text-[10px] text-[var(--color-ink-muted)]">
+                <span className="text-[11px] text-[var(--color-ink-muted)]">
                   Central Management Portal
                 </span>
               </motion.div>
@@ -1313,7 +1313,7 @@ export default function AdminDashboardPage() {
                           <td className="px-5 py-4 text-[var(--color-ink-secondary)]">{res.category?.name}</td>
                           <td className="px-5 py-4 text-[var(--color-ink-secondary)]">{res.department?.abbreviation || res.source_name}</td>
                           <td className="px-5 py-4">
-                            <span className="rounded-md bg-[var(--color-paper-muted)] px-2 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink)]">
+                            <span className="rounded-md bg-[var(--color-paper-muted)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--color-ink)]">
                               {res.file_format}
                             </span>
                           </td>
@@ -1425,7 +1425,7 @@ export default function AdminDashboardPage() {
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           <span
-                            className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase"
+                            className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase"
                           >
                             {sub.status}
                           </span>
@@ -1548,7 +1548,7 @@ export default function AdminDashboardPage() {
                               {cat.slug}
                             </span>
                           </div>
-                          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink)]">
+                          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--color-ink)]">
                             {docCount} {docCount === 1 ? 'Doc' : 'Docs'}
                           </span>
                         </div>
@@ -1627,7 +1627,7 @@ export default function AdminDashboardPage() {
                               {dept.abbreviation}
                             </span>
                           </div>
-                          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10.5px] font-bold text-[var(--color-ink)]">
+                          <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--color-ink)]">
                             {docCount} {docCount === 1 ? 'Doc' : 'Docs'}
                           </span>
                         </div>
@@ -1751,7 +1751,7 @@ export default function AdminDashboardPage() {
                       <div className="space-y-1.5 flex-1">
                         <div className="flex items-center gap-2">
                           <span
-                            className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase"
+                            className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase"
                           >
                             {art.status === 'approved' ? 'Live on Campus Feed' : art.status}
                           </span>
@@ -1931,7 +1931,7 @@ export default function AdminDashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <span className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
+                    <span className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase">
                       Owner
                     </span>
                   </div>
@@ -1954,7 +1954,7 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <span className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase">
+                        <span className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase">
                           Moderator (Review Only)
                         </span>
                         <button

@@ -192,7 +192,7 @@ export default function CommandPalette({
                             className="h-4 w-4 object-contain"
                           />
                         </div>
-                        <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 font-mono text-[10px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+                        <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 font-mono text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
                           {resource.file_format}
                         </span>
                       </div>
@@ -203,7 +203,7 @@ export default function CommandPalette({
                             {resource.title}
                           </p>
                           {resource.is_featured && (
-                            <span className="shrink-0 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.5 font-mono text-[9px] font-medium">
+                            <span className="shrink-0 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.5 font-mono text-[11px] font-medium">
                               ★ Featured
                             </span>
                           )}
@@ -219,7 +219,7 @@ export default function CommandPalette({
                     </div>
 
                     <div className="flex items-center gap-2 pl-3">
-                      <span className="hidden font-mono text-[10px] text-[var(--color-ink-muted)] sm:inline">
+                      <span className="hidden font-mono text-[11px] text-[var(--color-ink-muted)] sm:inline">
                         {resource.download_count} dl
                       </span>
                       <ArrowRight size={14} className="opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />

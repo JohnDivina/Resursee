@@ -72,20 +72,20 @@ export default function PublicApiCard({ api, onCopyNotice }: PublicApiCardProps)
     const lower = cors.toLowerCase();
     if (lower === 'yes') {
       return (
-        <span className="text-[10.5px] font-mono font-medium text-neutral-600 dark:text-neutral-400">
+        <span className="text-[11px] font-mono font-medium text-neutral-600 dark:text-neutral-400">
           CORS: Yes
         </span>
       );
     }
     if (lower === 'no') {
       return (
-        <span className="text-[10.5px] font-mono font-medium text-neutral-500 dark:text-neutral-500">
+        <span className="text-[11px] font-mono font-medium text-neutral-500 dark:text-neutral-500">
           CORS: No
         </span>
       );
     }
     return (
-      <span className="text-[10.5px] font-mono font-medium text-neutral-400 dark:text-neutral-500">
+      <span className="text-[11px] font-mono font-medium text-neutral-400 dark:text-neutral-500">
         CORS: {cors}
       </span>
     );

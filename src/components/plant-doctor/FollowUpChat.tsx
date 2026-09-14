@@ -188,7 +188,7 @@ Provide direct, actionable, practical advice in 2-4 concise sentences. Emphasize
             >
               <p>{msg.text}</p>
               <span
-                className={`mt-1 block text-[9.5px] font-mono opacity-60 ${
+                className={`mt-1 block text-[11px] font-mono opacity-70 ${
                   msg.sender === 'user' ? 'text-white text-right' : 'text-[var(--color-ink-muted)]'
                 }`}
               >

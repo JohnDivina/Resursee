@@ -58,7 +58,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                   />
                   <div className="absolute top-3.5 left-3.5">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-black/70 px-3 py-1 font-mono text-[10px] font-semibold text-white backdrop-blur-xs">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-black/70 px-3 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-xs">
                       <ShieldCheck size={12} className="text-white/90" />
                       <span>Verified Notice</span>
                     </span>
@@ -73,7 +73,7 @@ export default function LatestNews({ articles = mockNewsArticles }: LatestNewsPr
                     <Buildings size={14} />
                     <span>{article.department?.abbreviation || 'Campus'}</span>
                   </div>
-                  <div className="flex items-center gap-1 font-mono text-[10.5px]">
+                  <div className="flex items-center gap-1 font-mono text-[11px]">
                     <CalendarBlank size={14} />
                     <span>{formatDate(article.published_at)}</span>
                   </div>

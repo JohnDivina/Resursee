@@ -99,7 +99,7 @@ export default function StarredRepoRow({
                 type="button"
                 data-thock="button"
                 onClick={() => onSelectTopic && onSelectTopic(topic)}
-                className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
+                className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
               >
                 #{topic}
               </button>

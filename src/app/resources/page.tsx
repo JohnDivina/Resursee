@@ -450,7 +450,7 @@ function ResourcesDirectoryInner() {
               >
                 <Globe size={15} weight={activeTab === 'apis' ? 'bold' : 'regular'} className="shrink-0" />
                 <span className="truncate">Public APIs</span>
-                <span className="font-mono text-[10.5px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)] shrink-0">
+                <span className="font-mono text-[11px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)] shrink-0">
                   {apiStats.total}
                 </span>
               </button>
@@ -471,7 +471,7 @@ function ResourcesDirectoryInner() {
                   className={activeTab === 'repos' ? 'text-[var(--color-ink)] shrink-0' : 'shrink-0'}
                 />
                 <span className="truncate">Repositories</span>
-                <span className="font-mono text-[10.5px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)] shrink-0">
+                <span className="font-mono text-[11px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-[var(--color-paper-surface)] dark:bg-[#1a1a1a] text-[var(--color-ink-muted)] shrink-0">
                   {repoStats.total}
                 </span>
               </button>

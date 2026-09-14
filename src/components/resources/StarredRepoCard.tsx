@@ -104,13 +104,13 @@ export default function StarredRepoCard({
                 type="button"
                 data-thock="button"
                 onClick={() => onSelectTopic && onSelectTopic(topic)}
-                className="text-[10.5px] font-mono px-2 py-0.5 rounded-md bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer border border-[var(--color-rule-subtle)]"
+                className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-[var(--color-paper-muted)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer border border-[var(--color-rule-subtle)]"
               >
                 #{topic}
               </button>
             ))}
             {repo.topics.length > 4 && (
-              <span className="text-[10px] font-mono text-[var(--color-ink-muted)] self-center px-1">
+              <span className="text-[11px] font-mono text-[var(--color-ink-muted)] self-center px-1">
                 +{repo.topics.length - 4} more
               </span>
             )}

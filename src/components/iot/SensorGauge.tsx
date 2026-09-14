@@ -58,7 +58,7 @@ export default function SensorGauge({
             {title}
           </span>
         </div>
-        <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">Live</span>
+        <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">Live</span>
       </div>
 
       {/* Circular Gauge Graphic */}
@@ -104,14 +104,14 @@ export default function SensorGauge({
             {value}
             <span className="ml-0.5 text-xs font-semibold text-[var(--color-ink-muted)]">{unit}</span>
           </motion.span>
-          <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+          <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
             Range {minVal}–{maxVal}
           </span>
         </div>
       </div>
 
       {/* Footer Range Bar */}
-      <div className="flex w-full items-center justify-between border-t border-[var(--color-rule-subtle)] pt-2 text-[10.5px] font-mono text-[var(--color-ink-muted)]">
+      <div className="flex w-full items-center justify-between border-t border-[var(--color-rule-subtle)] pt-2 text-[11px] font-mono text-[var(--color-ink-muted)]">
         <span>Min {minVal}{unit}</span>
         <span className="font-bold text-[var(--color-ink)]">{percentage.toFixed(0)}% Capacity</span>
         <span>Max {maxVal}{unit}</span>

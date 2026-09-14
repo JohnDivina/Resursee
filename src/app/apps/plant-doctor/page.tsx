@@ -401,13 +401,13 @@ export default function PlantDoctorPage() {
                   <option value="cloud">Cloud Only (Gemini 2.5)</option>
                 </select>
                 {localEngine?.hasVisionModel ? (
-                  <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[9px] px-1.5 py-0.2 font-mono text-neutral-700 dark:text-neutral-300">
+                  <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 text-[11px] px-1.5 py-0.2 font-mono text-neutral-700 dark:text-neutral-300">
                     Offline Ready
                   </span>
                 ) : (
                   <Link
                     href="/apps/ai-hub"
-                    className="text-[10px] text-[var(--color-ink-muted)] hover:underline ml-0.5"
+                    className="text-[11px] text-[var(--color-ink-muted)] hover:underline ml-0.5"
                     title="Visit AI Studio to pull a local vision model"
                   >
                     (Get Vision Model)

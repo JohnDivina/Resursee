@@ -323,7 +323,7 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     className="h-5 w-5 rounded-full object-cover border border-white/20"
                   />
                 ) : (
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-white text-[9px]">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-white text-[11px] font-bold">
                     {session.name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -337,13 +337,13 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     <p className="text-xs font-extrabold text-[var(--color-ink)] truncate">
                       {session.name}
                     </p>
-                    <p className="text-[10.5px] font-mono text-[var(--color-ink-muted)] truncate">
+                    <p className="text-[11px] font-mono text-[var(--color-ink-muted)] truncate">
                       {session.email}
                     </p>
 
                     {/* Quota Badge */}
                     {quota && (
-                      <div className="mt-2 flex items-center justify-between rounded-lg bg-[var(--color-paper-muted)] px-2 py-1 text-[10px] font-mono font-bold">
+                      <div className="mt-2 flex items-center justify-between rounded-lg bg-[var(--color-paper-muted)] px-2 py-1 text-[11px] font-mono font-medium">
                         <span className="text-[var(--color-ink-muted)]">Daily AI Scans:</span>
                         <span className="text-[var(--color-ink)]">
                           {quota.maxQuota > 100 ? 'Unlimited' : `${quota.remaining} / ${quota.maxQuota} left`}

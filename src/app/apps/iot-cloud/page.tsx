@@ -449,7 +449,7 @@ export default function IoTCloudPage() {
                     <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                       ESP32 IoT Cloud · App #2
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[9.5px] font-medium">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2.5 py-0.5 font-mono text-[11px] font-medium">
                       <ShieldCheck size={12} weight="bold" className="text-neutral-500 dark:text-neutral-400" />
                       <span>Isolated Multi-Tenant Session</span>
                     </span>
@@ -473,7 +473,7 @@ export default function IoTCloudPage() {
                         className="h-6 w-6 rounded-full object-cover border border-white/20"
                       />
                     ) : (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-primary)] text-[11px] font-bold text-white">
                         {session.name.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -481,7 +481,7 @@ export default function IoTCloudPage() {
                       <p className="text-[11px] font-extrabold text-[var(--color-ink)] leading-tight truncate max-w-[120px]">
                         {session.name}
                       </p>
-                      <p className="text-[9.5px] font-mono text-[var(--color-ink-muted)] leading-tight">
+                      <p className="text-[11px] font-mono text-[var(--color-ink-muted)] leading-tight">
                         Personal Cloud
                       </p>
                     </div>
@@ -534,7 +534,7 @@ export default function IoTCloudPage() {
                           ))}
                         </select>
 
-                        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
+                        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
                               selectedDevice.status === 'online'
@@ -554,7 +554,7 @@ export default function IoTCloudPage() {
                           <span>{selectedDevice.rssi || -58} dBm</span>
                         </span>
                         <span>•</span>
-                        <span className="text-[10px] text-[var(--color-ink)] font-bold">
+                        <span className="text-[11px] text-[var(--color-ink)] font-bold">
                           Owner: {session.name.split(' ')[0]}
                         </span>
                       </p>

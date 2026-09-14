@@ -292,7 +292,7 @@ export default function CompressImagePage() {
                       onChange={(e) => handleQualityChange(parseFloat(e.target.value))}
                       className="w-full accent-[var(--color-primary)] cursor-pointer"
                     />
-                    <div className="flex justify-between text-[10px] text-[var(--color-ink-muted)]">
+                    <div className="flex justify-between text-[11px] text-[var(--color-ink-muted)]">
                       <span>Smaller size</span>
                       <span>Balanced</span>
                       <span>Best clarity</span>

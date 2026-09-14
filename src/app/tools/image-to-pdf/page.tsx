@@ -259,7 +259,7 @@ export default function ImageToPdfPage() {
                             <p className="text-xs font-bold text-[var(--color-ink)] line-clamp-1">
                               {item.name}
                             </p>
-                            <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)]">
+                            <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
                               {(item.size / 1024).toFixed(1)} KB
                             </span>
                           </div>

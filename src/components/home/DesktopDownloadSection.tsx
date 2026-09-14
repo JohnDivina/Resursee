@@ -72,7 +72,7 @@ export default function DesktopDownloadSection() {
             )}
           >
             {userOS === 'macos' && (
-              <span className="absolute top-4 right-4 rounded-full bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider">
+              <span className="absolute top-4 right-4 rounded-full bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider">
                 Detected OS
               </span>
             )}
@@ -156,7 +156,7 @@ export default function DesktopDownloadSection() {
             )}
           >
             {userOS === 'windows' && (
-              <span className="absolute top-4 right-4 rounded-full bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider">
+              <span className="absolute top-4 right-4 rounded-full bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider">
                 Detected OS
               </span>
             )}

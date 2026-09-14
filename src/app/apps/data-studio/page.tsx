@@ -755,7 +755,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
         <span className="font-extrabold text-xs text-neutral-900 dark:text-white leading-none">
           Data Studio
         </span>
-        <span className="text-[10px] font-mono text-neutral-500">
+        <span className="text-[11px] font-mono text-neutral-500">
           R Studio &amp; AI Copilot
         </span>
       </div>
@@ -809,11 +809,11 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
               >
                 <div className="flex items-center gap-1.5">
                   <span className="font-extrabold text-sm text-[var(--color-ink)]">Data Studio</span>
-                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[11px] font-bold">
                     R+AI
                   </span>
                 </div>
-                <span className="text-[10.5px] font-mono text-[var(--color-ink-muted)]">
+                <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
                   Coding &amp; Statistical IDE
                 </span>
               </motion.div>
@@ -838,7 +838,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                 <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-mono">
                   Sample Datasets
                 </span>
-                <span className="text-[10px] text-neutral-400 font-mono">R Studio</span>
+                <span className="text-[11px] text-neutral-400 font-mono">R Studio</span>
               </motion.div>
 
               <div className="flex flex-col gap-1">
@@ -859,7 +859,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                         display: sidebarOpen ? 'inline-block' : 'none',
                         opacity: sidebarOpen ? 1 : 0,
                       }}
-                      className="text-[10px] text-neutral-400 font-mono"
+                      className="text-[11px] text-neutral-400 font-mono"
                     >
                       {sample.rows} × {sample.cols}
                     </motion.span>
@@ -917,7 +917,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   display: sidebarOpen ? 'inline-block' : 'none',
                   opacity: sidebarOpen ? 1 : 0,
                 }}
-                className="text-[10px] font-mono text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors"
+                className="text-[11px] font-mono text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors"
               >
                 {ollamaStatus === 'connected' ? 'Stop' : 'Start'}
               </motion.span>
@@ -967,9 +967,9 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
             )}
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar py-0.5">
             {/* Quick Upload Button */}
-            <label className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs">
+            <label className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs shrink-0">
               <IconFileSpreadsheet size={15} />
               <span className="hidden sm:inline">Upload File</span>
               <input
@@ -987,7 +987,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                 onClick={handleStopOllama}
                 disabled={isStoppingOllama}
                 title="Stop local Ollama background daemon"
-                className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 cursor-pointer shadow-2xs transition-colors disabled:opacity-50 shrink-0"
               >
                 {isStoppingOllama ? (
                   <>
@@ -998,7 +998,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   <>
                     <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
                     <IconPlayerStop size={13} />
-                    <span>Stop Ollama</span>
+                    <span>Stop<span className="hidden sm:inline"> Ollama</span></span>
                   </>
                 )}
               </button>
@@ -1008,7 +1008,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                 onClick={handleStartOllama}
                 disabled={isStartingOllama}
                 title="Launch local Ollama background daemon"
-                className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2.5 sm:px-3 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 cursor-pointer shadow-2xs transition-colors disabled:opacity-50 shrink-0"
               >
                 {isStartingOllama ? (
                   <>
@@ -1019,7 +1019,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   <>
                     <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 shrink-0" />
                     <IconPlayerPlay size={13} />
-                    <span>Start Ollama</span>
+                    <span>Start<span className="hidden sm:inline"> Ollama</span></span>
                   </>
                 )}
               </button>
@@ -1029,10 +1029,10 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
             <button
               type="button"
               onClick={() => setShowRScriptModal(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs shrink-0"
             >
               <IconCode size={15} />
-              <span className="hidden md:inline">R Script</span>
+              <span className="hidden sm:inline">R Script</span>
             </button>
 
             {/* Run Code Primary Button */}
@@ -1040,10 +1040,10 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
               type="button"
               disabled={isExecuting}
               onClick={() => handleRunCode()}
-              className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-black px-3.5 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-black px-3 sm:px-3.5 py-1.5 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
             >
               <IconPlayerPlay size={15} />
-              <span>Run (Cmd+↵)</span>
+              <span>Run<span className="hidden md:inline"> (Cmd+↵)</span></span>
             </button>
 
             {/* Dark Mode / Light Mode Toggle */}
@@ -1053,9 +1053,9 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
 
         {/* Dynamic Main Workspace: VIEW 1 — CODE IDE (Split Screen: Code + Output + Ollama) */}
         {activeTab === 'ide' && (
-          <div className="flex-1 overflow-hidden p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="flex-1 overflow-y-auto lg:overflow-hidden p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left Column (7 cols): Code Editor + Execution Output Canvas */}
-            <div className="lg:col-span-7 flex flex-col gap-4 h-full overflow-hidden">
+            <div className="lg:col-span-7 flex flex-col gap-4 min-h-[500px] lg:h-full lg:overflow-hidden">
               {/* Top: Source Code Editor */}
               <div className="flex-1 min-h-[260px] rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3.5 py-2 bg-neutral-50 dark:bg-neutral-900">
@@ -1259,7 +1259,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
             </div>
 
             {/* Right Column (5 cols): Ollama AI Copilot & Dataset Schema Tabs */}
-            <div className="lg:col-span-5 flex flex-col h-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs overflow-hidden">
+            <div className="lg:col-span-5 flex flex-col min-h-[500px] lg:h-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs overflow-hidden">
               {/* Right Header Navigation Tabs */}
               <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3.5 py-2 bg-neutral-50 dark:bg-neutral-900">
                 <div className="flex items-center gap-1">
@@ -1296,7 +1296,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     <select
                       value={selectedModel}
                       onChange={(e) => setSelectedModel(e.target.value)}
-                      className="h-7 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 text-[11px] font-mono text-neutral-800 dark:text-neutral-200"
+                      className="h-7 max-w-[120px] sm:max-w-[170px] truncate rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 text-[11px] font-mono text-neutral-800 dark:text-neutral-200"
                     >
                       {installedModels.length > 0 ? (
                         installedModels.map((m) => (
@@ -1343,7 +1343,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                                   onClick={() => {
                                     setScriptCode((prev) => prev + '\n\n' + codeBlock);
                                   }}
-                                  className="flex items-center gap-1 rounded-md bg-neutral-200 dark:bg-neutral-800 px-2 py-1 text-[10.5px] font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
+                                  className="flex items-center gap-1 rounded-md bg-neutral-200 dark:bg-neutral-800 px-2 py-1 text-[11px] font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors"
                                 >
                                   <IconPlus size={12} />
                                   <span>Insert in Editor</span>
@@ -1354,7 +1354,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                                     setScriptCode(codeBlock);
                                     setTimeout(() => handleRunCode(codeBlock), 50);
                                   }}
-                                  className="flex items-center gap-1 rounded-md bg-neutral-900 text-white dark:bg-white dark:text-black px-2 py-1 text-[10.5px] font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
+                                  className="flex items-center gap-1 rounded-md bg-neutral-900 text-white dark:bg-white dark:text-black px-2 py-1 text-[11px] font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
                                 >
                                   <IconPlayerPlay size={12} />
                                   <span>Run Now</span>
@@ -1380,7 +1380,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                         key={chip}
                         type="button"
                         onClick={() => handleSendChatMessage(chip)}
-                        className="shrink-0 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[10.5px] font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+                        className="shrink-0 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[11px] font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
                       >
                         {chip}
                       </button>
@@ -1442,7 +1442,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                       <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
                         Columns ({columnSummaries.length})
                       </span>
-                      <span className="text-[10px] font-mono text-neutral-400">
+                      <span className="text-[11px] font-mono text-neutral-400">
                         {rawDataset.length} rows
                       </span>
                     </div>
@@ -1458,11 +1458,11 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                           </span>
                           <div className="flex items-center gap-2">
                             {col.type === 'numeric' && col.mean !== undefined && (
-                              <span className="text-[10px] text-neutral-400">
+                              <span className="text-[11px] text-neutral-400">
                                 μ={col.mean.toFixed(1)}
                               </span>
                             )}
-                            <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                               {col.type === 'numeric' ? 'num' : 'chr'}
                             </span>
                           </div>
@@ -1478,9 +1478,9 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
 
         {/* VIEW 2: DATA TABLE VIEW (View(df)) */}
         {activeTab === 'table' && (
-          <div className="flex-1 p-4 sm:p-6 overflow-hidden flex flex-col">
+          <div className="flex-1 p-3 sm:p-6 overflow-hidden flex flex-col">
             <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs flex-1 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 gap-3 border-b border-neutral-200 dark:border-neutral-800">
                 <div>
                   <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
                     Data Table Browser — View(df)
@@ -1489,7 +1489,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     {filteredTableRows.length} matching rows in memory
                   </span>
                 </div>
-                <div className="relative">
+                <div className="relative w-full sm:w-auto">
                   <IconSearch size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                   <input
                     type="text"
@@ -1499,7 +1499,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                       setTableSearch(e.target.value);
                       setTablePage(1);
                     }}
-                    className="h-8 w-56 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 pl-8 pr-3 text-xs text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
+                    className="h-8 w-full sm:w-56 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 pl-8 pr-3 text-xs text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -1821,7 +1821,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
-                    <span><strong>Local LLM Copilot:</strong> Inference runs directly on your local GPU/CPU via Ollama (<code className="bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded text-[10px]">http://localhost:11434</code>) with zero subscription fees or data egress.</span>
+                    <span><strong>Local LLM Copilot:</strong> Inference runs directly on your local GPU/CPU via Ollama (<code className="bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded text-[11px]">http://localhost:11434</code>) with zero subscription fees or data egress.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />

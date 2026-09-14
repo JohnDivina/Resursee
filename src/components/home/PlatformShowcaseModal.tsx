@@ -141,7 +141,7 @@ export default function PlatformShowcaseModal() {
           className="mt-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
         >
           <span>What can I use Resursee for?</span>
-          <span className="text-[10px] text-[var(--color-primary)] font-bold">✨</span>
+          <span className="text-[11px] text-[var(--color-primary)] font-bold">✨</span>
         </button>
       </div>
 
@@ -210,7 +210,7 @@ export default function PlatformShowcaseModal() {
                         <div className={`flex h-11 w-11 items-center justify-center rounded-[14px] ${item.iconBg} shadow-xs transition-transform duration-300 group-hover:scale-110`}>
                           {item.icon}
                         </div>
-                        <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[10px] font-bold text-[var(--color-ink-secondary)]">
+                        <span className="rounded-full bg-[var(--color-paper-muted)] px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--color-ink-secondary)]">
                           {item.badge}
                         </span>
                       </div>
@@ -241,7 +241,7 @@ export default function PlatformShowcaseModal() {
 
                 <div className="flex items-center gap-1.5 text-[var(--color-ink-muted)] font-medium">
                   <span>Quick search anywhere:</span>
-                  <kbd className="inline-flex items-center gap-0.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--color-ink)]">
+                  <kbd className="inline-flex items-center gap-0.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--color-ink)]">
                     <Command size={10} /> K
                   </kbd>
                 </div>

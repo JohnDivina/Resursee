@@ -142,7 +142,7 @@ export default function DeviceWizardModal({
                     }`}
                   >
                     <span className="text-xs font-bold text-[var(--color-ink)]">{board.name}</span>
-                    <span className="text-[10.5px] text-[var(--color-ink-muted)] font-mono">{board.sub}</span>
+                    <span className="text-[11px] text-[var(--color-ink-muted)] font-mono">{board.sub}</span>
                   </div>
                 ))}
               </div>
@@ -189,7 +189,7 @@ export default function DeviceWizardModal({
                 <span className="font-mono text-xs font-bold text-neutral-800 dark:text-neutral-200">
                   Device Created: {createdDevice.name}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2.5 py-0.5 font-mono text-[9px] font-bold">
+                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2.5 py-0.5 font-mono text-[11px] font-bold">
                   <ShieldCheck size={11} />
                   Token Active
                 </span>

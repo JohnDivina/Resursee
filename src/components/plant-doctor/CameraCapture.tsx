@@ -151,7 +151,7 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
               {/* Botanical Target Reticle */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="h-48 w-48 rounded-[24px] border-2 border-dashed border-white/60 flex items-center justify-center">
-                  <span className="font-mono text-[10px] text-white/90 bg-black/70 px-2.5 py-1 rounded-full border border-white/20">
+                  <span className="font-mono text-[11px] text-white/90 bg-black/70 px-2.5 py-1 rounded-full border border-white/20">
                     Center Leaf in Frame
                   </span>
                 </div>

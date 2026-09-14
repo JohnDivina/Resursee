@@ -41,7 +41,7 @@ export default function RelaySwitch({ actuator, onToggle }: RelaySwitchProps) {
           <h4 className="text-xs sm:text-sm font-bold text-[var(--color-ink)]">
             {actuator.name}
           </h4>
-          <p className="mt-0.5 font-mono text-[10.5px] text-[var(--color-ink-muted)] flex items-center gap-1.5">
+          <p className="mt-0.5 font-mono text-[11px] text-[var(--color-ink-muted)] flex items-center gap-1.5">
             <span>GPIO Pin {actuator.pin}</span>
             <span>•</span>
             <span

@@ -446,7 +446,7 @@ export default function MergePdfPage() {
                             <p className="text-xs font-bold text-[var(--color-ink)] truncate max-w-[220px] sm:max-w-[280px]">
                               {item.name}
                             </p>
-                            <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[10.5px] text-[var(--color-ink-muted)]">
+                            <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[11px] text-[var(--color-ink-muted)]">
                               <span className="rounded-md bg-[var(--color-paper-muted)] px-1.5 py-0.5 font-semibold text-[var(--color-ink)]">
                                 {item.pageCount} {item.pageCount === 1 ? 'page' : 'pages'}
                               </span>
@@ -536,7 +536,7 @@ export default function MergePdfPage() {
 
                   {/* Summary Breakdown Card */}
                   <div className="space-y-2 rounded-[18px] border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-3.5">
-                    <p className="font-mono text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
+                    <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
                       Summary
                     </p>
                     <div className="space-y-1.5 text-xs">
@@ -587,7 +587,7 @@ export default function MergePdfPage() {
                   </button>
 
                   {/* Page Range Syntax Helper */}
-                  <div className="border-t border-[var(--color-rule-subtle)] pt-3 text-[10.5px] text-[var(--color-ink-muted)] space-y-1">
+                  <div className="border-t border-[var(--color-rule-subtle)] pt-3 text-[11px] text-[var(--color-ink-muted)] space-y-1">
                     <p className="font-bold text-[var(--color-ink)] flex items-center gap-1">
                       <Info size={13} />
                       <span>Page Range Tips:</span>

@@ -40,7 +40,7 @@ export default function VirtualSimulator({
                 Virtual ESP32 Hardware Simulator
               </h4>
               <span
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[9.5px] font-bold bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700"
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-bold bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700"
               >
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${

@@ -242,7 +242,7 @@ export default function GitHubContributionsGraph() {
         {/* Swipe helper pill for touch screens when scrolling is active */}
         {timeframe !== '3m' && (
           <div className="sm:hidden mb-3 flex items-center justify-center">
-            <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[var(--color-ink-muted)] bg-[var(--color-paper-surface)] px-2.5 py-1 rounded-full border border-[var(--color-rule-subtle)]">
+            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-[var(--color-ink-muted)] bg-[var(--color-paper-surface)] px-2.5 py-1 rounded-full border border-[var(--color-rule-subtle)]">
               ← Swipe horizontally to explore past activity →
             </span>
           </div>
@@ -251,13 +251,13 @@ export default function GitHubContributionsGraph() {
         {/* Matrix Grid Container */}
         <div
           ref={scrollContainerRef}
-          className={`relative overflow-x-auto pb-2 scrollbar-none select-none ${
+          className={`relative overflow-x-auto touch-pan-x pb-2 scrollbar-none select-none ${
             timeframe === '3m' ? 'flex justify-center sm:justify-start' : ''
           }`}
         >
           <div className="inline-block min-w-max">
             {/* Months Header Row */}
-            <div className="flex text-[10px] font-mono font-medium text-[var(--color-ink-muted)] mb-2 pl-7 sm:pl-8">
+            <div className="flex text-[11px] font-mono font-medium text-[var(--color-ink-muted)] mb-2 pl-7 sm:pl-8">
               {displayWeeks.map((_, colIdx) => {
                 const month = monthLabels.find((m) => m.colIndex === colIdx);
                 return (
@@ -276,7 +276,7 @@ export default function GitHubContributionsGraph() {
             {/* Matrix Grid: Left Sticky Day Labels + Columns of GitHub Squares */}
             <div className="flex items-start">
               {/* Day Labels Column: Mon, Wed, Fri (Sticky on scroll) */}
-              <div className="sticky left-0 bg-[var(--color-paper-card)] flex flex-col text-[9.5px] font-mono text-[var(--color-ink-muted)] opacity-75 shrink-0 select-none pr-2.5 sm:pr-3 z-10 shadow-[2px_0_4px_rgba(0,0,0,0.02)]">
+              <div className="sticky left-0 bg-[var(--color-paper-card)] flex flex-col text-[11px] font-mono text-[var(--color-ink-muted)] opacity-75 shrink-0 select-none pr-2.5 sm:pr-3 z-10 shadow-[2px_0_4px_rgba(0,0,0,0.02)]">
                 <div className="h-[11px] sm:h-[12px] mb-[3px] sm:mb-[3.5px]" />
                 <div className="h-[11px] sm:h-[12px] mb-[3px] sm:mb-[3.5px] flex items-center">
                   <span>Mon</span>
@@ -346,7 +346,7 @@ export default function GitHubContributionsGraph() {
           </div>
 
           {/* Right: Legend (Less -> More) */}
-          <div className="flex items-center gap-1.5 font-mono text-[10.5px] sm:text-[11px] text-[var(--color-ink-muted)] self-end sm:self-auto">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] sm:text-[11px] text-[var(--color-ink-muted)] self-end sm:self-auto">
             <span>Less</span>
             <div className="flex items-center gap-[3px]">
               <div className="w-[10px] h-[10px] rounded-[2px] bg-[#f4f4f5] dark:bg-[#121212] border border-black/[0.04] dark:border-white/[0.04]" />
@@ -382,7 +382,7 @@ export default function GitHubContributionsGraph() {
                   ? 'No contributions'
                   : `${hoveredDay.day.count} contribution${hoveredDay.day.count === 1 ? '' : 's'}`}
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-400 mt-0.5">
                 {formatDate(hoveredDay.day.date)}
               </p>
             </motion.div>

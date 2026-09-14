@@ -49,7 +49,7 @@ const SkeletonCompressImage = () => {
         </motion.div>
       </div>
 
-      <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink-muted)]">
+      <div className="flex items-center justify-between text-[11px] font-mono text-[var(--color-ink-muted)]">
         <span>Original: 4.8 MB</span>
         <span className="font-bold text-[var(--color-ink)]">Compressed: 580 KB</span>
       </div>
@@ -72,8 +72,8 @@ const SkeletonResizeImage = () => {
         }}
         className="h-20 w-20 rounded-[14px] border-2 border-dashed border-slate-300 dark:border-neutral-800 bg-white/70 dark:bg-[#0f0f0f]/80 flex flex-col items-center justify-center shadow-xs"
       >
-        <span className="font-mono text-[10px] font-bold text-[var(--color-ink)]">2 × 2 in</span>
-        <span className="text-[9px] text-[var(--color-ink-muted)]">600×600px</span>
+        <span className="font-mono text-[11px] font-bold text-[var(--color-ink)]">2 × 2 in</span>
+        <span className="text-[11px] text-[var(--color-ink-muted)]">600×600px</span>
       </motion.div>
 
       <motion.div
@@ -83,8 +83,8 @@ const SkeletonResizeImage = () => {
         }}
         className="h-16 w-16 rounded-[12px] border border-slate-300 dark:border-neutral-800 bg-slate-100/60 dark:bg-[#181818]/80 flex flex-col items-center justify-center"
       >
-        <span className="font-mono text-[9px] font-bold text-[var(--color-ink)]">1 × 1 in</span>
-        <span className="text-[8px] text-[var(--color-ink-muted)]">Passport</span>
+        <span className="font-mono text-[11px] font-bold text-[var(--color-ink)]">1 × 1 in</span>
+        <span className="text-[11px] text-[var(--color-ink-muted)]">Passport</span>
       </motion.div>
     </motion.div>
   );
@@ -163,7 +163,7 @@ const SkeletonPdfToImage = () => {
       {/* PDF Document Source */}
       <div className="h-20 w-16 rounded-[12px] border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 flex flex-col items-center justify-center shadow-xs text-neutral-800 dark:text-neutral-200">
         <FilePdf size={24} weight="fill" />
-        <span className="font-mono text-[9px] font-bold mt-1">.PDF</span>
+        <span className="font-mono text-[11px] font-bold mt-1">.PDF</span>
       </div>
 
       <motion.div
@@ -188,7 +188,7 @@ const SkeletonPdfToImage = () => {
             className="h-20 w-16 rounded-[12px] border border-slate-300 dark:border-neutral-800 bg-white dark:bg-[#0f0f0f] shadow-md flex flex-col items-center justify-center"
           >
             <FileImage size={18} className="text-[var(--color-ink)]" weight="bold" />
-            <span className="font-mono text-[8px] text-[var(--color-ink-muted)] mt-1">P.{page}</span>
+            <span className="font-mono text-[11px] text-[var(--color-ink-muted)] mt-1">P.{page}</span>
           </motion.div>
         ))}
       </div>
@@ -211,20 +211,20 @@ const SkeletonMergePdf = () => {
             initial: { rotate: -6 },
             hover: { rotate: 0, x: 2 },
           }}
-          className="h-16 w-14 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex flex-col items-center justify-center shadow-xs text-neutral-800 dark:text-neutral-200 font-mono text-[10px] font-bold"
+          className="h-16 w-14 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex flex-col items-center justify-center shadow-xs text-neutral-800 dark:text-neutral-200 font-mono text-[11px] font-bold"
         >
           <FilePdf size={18} weight="fill" />
-          <span className="text-[8px] mt-0.5">PDF 1</span>
+          <span className="text-[11px] mt-0.5">PDF 1</span>
         </motion.div>
         <motion.div
           variants={{
             initial: { rotate: 6 },
             hover: { rotate: 0, x: -2 },
           }}
-          className="h-16 w-14 rounded-lg bg-neutral-200 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center shadow-xs text-neutral-800 dark:text-neutral-200 font-mono text-[10px] font-bold"
+          className="h-16 w-14 rounded-lg bg-neutral-200 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center shadow-xs text-neutral-800 dark:text-neutral-200 font-mono text-[11px] font-bold"
         >
           <FilePdf size={18} weight="fill" />
-          <span className="text-[8px] mt-0.5">PDF 2</span>
+          <span className="text-[11px] mt-0.5">PDF 2</span>
         </motion.div>
       </div>
 
@@ -239,7 +239,7 @@ const SkeletonMergePdf = () => {
         className="h-20 w-16 rounded-[14px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-lg flex flex-col items-center justify-center p-1.5"
       >
         <Files size={22} weight="fill" />
-        <span className="font-mono text-[8px] font-bold uppercase mt-1 tracking-wider">Merged</span>
+        <span className="font-mono text-[11px] font-bold uppercase mt-1 tracking-wider">Merged</span>
       </motion.div>
     </motion.div>
   );
@@ -256,21 +256,21 @@ const SkeletonImageToPdf = () => {
       {/* Source Photo / Scan Card */}
       <motion.div
         variants={{
-          initial: { rotate: -4, scale: 1 },
+          initial: { rotate: -2, scale: 1 },
           hover: { rotate: 0, scale: 1.05 },
         }}
         transition={{ duration: 0.3 }}
-        className="relative h-20 w-16 rounded-[13px] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#0f0f0f] p-1.5 shadow-sm flex flex-col justify-between"
+        className="relative h-24 w-20 rounded-[13px] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#0f0f0f] p-2 shadow-sm flex flex-col justify-between"
       >
         {/* Photo Viewfinder Mini Thumbnail */}
-        <div className="h-11 w-full rounded-[8px] bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-neutral-700 overflow-hidden relative text-neutral-800 dark:text-neutral-200">
-          <FileImage size={20} weight="bold" />
-          <span className="absolute bottom-0.5 right-1 text-[6.5px] font-mono font-bold text-neutral-800 dark:text-neutral-200">
-            .JPG
+        <div className="h-12 w-full rounded-[8px] bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-neutral-700 overflow-hidden relative text-neutral-800 dark:text-neutral-200">
+          <FileImage size={22} weight="bold" />
+          <span className="absolute bottom-0.5 right-1 text-[11px] font-mono font-bold text-neutral-800 dark:text-neutral-200">
+            JPG
           </span>
         </div>
-        <div className="flex items-center justify-between px-0.5 font-mono text-[7px] text-[var(--color-ink-muted)]">
-          <span>photo</span>
+        <div className="flex items-center justify-between px-0.5 font-mono text-[11px] text-[var(--color-ink-muted)]">
+          <span>IMG</span>
           <span className="text-neutral-800 dark:text-neutral-200 font-bold">300dpi</span>
         </div>
       </motion.div>
@@ -284,7 +284,7 @@ const SkeletonImageToPdf = () => {
         transition={{ duration: 0.3 }}
         className="text-[var(--color-ink)]"
       >
-        <ArrowRight size={15} weight="bold" />
+        <ArrowRight size={16} weight="bold" />
       </motion.div>
 
       {/* Converted PDF Page Document */}
@@ -294,19 +294,19 @@ const SkeletonImageToPdf = () => {
           hover: { rotate: 0, scale: 1.05, borderColor: '#525252' },
         }}
         transition={{ duration: 0.3 }}
-        className="relative h-22 w-16 rounded-[13px] border-2 border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-1.5 shadow-sm flex flex-col items-center justify-between"
+        className="relative h-24 w-20 rounded-[13px] border-2 border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-2 shadow-sm flex flex-col items-center justify-between"
       >
-        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-900 dark:bg-white text-white dark:text-black shadow-2xs mt-1">
-          <FilePdf size={12} weight="fill" />
+        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-900 dark:bg-white text-white dark:text-black shadow-2xs mt-0.5">
+          <FilePdf size={14} weight="fill" />
         </div>
 
-        <div className="w-full space-y-1 px-1">
+        <div className="w-full space-y-1.5 px-1">
           <div className="h-1 w-full bg-neutral-300 dark:bg-neutral-600 rounded-full" />
           <div className="h-1 w-3/4 bg-neutral-200 dark:bg-neutral-700 rounded-full" />
         </div>
 
-        <span className="font-mono text-[7.5px] font-bold text-neutral-800 dark:text-neutral-200 uppercase tracking-wider mb-0.5">
-          PDF Page
+        <span className="font-mono text-[11px] font-bold text-neutral-800 dark:text-neutral-200 uppercase tracking-wider mb-0.5">
+          PDF
         </span>
       </motion.div>
     </motion.div>

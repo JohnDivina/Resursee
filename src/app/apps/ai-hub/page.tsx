@@ -1182,14 +1182,14 @@ function FormattedMessage({
               key={idx}
               className="rounded-xl border border-[var(--color-rule-strong)] bg-neutral-950 text-neutral-100 p-3 font-mono text-[11px] overflow-x-auto relative my-2 shadow-xs"
             >
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-[10px] text-neutral-400">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-[11px] text-neutral-400">
                 <span className="font-bold uppercase tracking-wider text-neutral-300">
                   {part.language || 'code'}
                 </span>
                 <button
                   type="button"
                   onClick={() => onCopy(part.content, codeKey)}
-                  className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer bg-neutral-900 hover:bg-neutral-800 px-2 py-0.5 rounded-md border border-neutral-800 text-[10px]"
+                  className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer bg-neutral-900 hover:bg-neutral-800 px-2 py-0.5 rounded-md border border-neutral-800 text-[11px]"
                 >
                   {copiedKey === codeKey ? (
                     <>
@@ -2728,7 +2728,7 @@ ${
       </div>
       <div className="flex flex-col">
         <span className="font-extrabold text-xs text-[var(--color-ink)] leading-none">Resursee AI Studio</span>
-        <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">Local Ollama Studio</span>
+        <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">Local Ollama Studio</span>
       </div>
     </div>
   );
@@ -2753,11 +2753,11 @@ ${
               >
                 <div className="flex items-center gap-1.5">
                   <span className="font-extrabold text-sm text-[var(--color-ink)]">AI Studio</span>
-                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[11px] font-bold">
                     Local
                   </span>
                 </div>
-                <span className="text-[10.5px] font-mono text-[var(--color-ink-muted)]">
+                <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
                   Local LLM & WebLLM Engine
                 </span>
               </motion.div>
@@ -2818,7 +2818,7 @@ ${
                   display: sidebarOpen ? 'inline-block' : 'none',
                   opacity: sidebarOpen ? 1 : 0,
                 }}
-                className="text-[10px] font-mono text-[var(--color-ink-muted)] group-hover:underline"
+                className="text-[11px] font-mono text-[var(--color-ink-muted)] group-hover:underline"
               >
                 {connectionStatus === 'connected' ? 'Stop' : 'Start'}
               </motion.span>
@@ -2923,12 +2923,12 @@ ${
             )}
 
             {/* Model Selector Dropdown (strictly downloaded local models) */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
                 disabled={installedModels.length === 0}
-                className="appearance-none rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 pr-8 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] focus:outline-hidden cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                className="appearance-none max-w-[130px] sm:max-w-[200px] md:max-w-xs truncate rounded-xl border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-2.5 sm:px-3 py-1.5 pr-7 text-xs font-mono font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] focus:outline-hidden cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 title={installedModels.length > 0 ? 'Select downloaded local model' : 'No downloaded models available'}
               >
                 {installedModels.filter((im) => !isEmbeddingModel(im.name, im)).length > 0 ? (
@@ -2945,7 +2945,7 @@ ${
                   </option>
                 )}
               </select>
-              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[11px]">
                 ▼
               </div>
             </div>
@@ -3069,7 +3069,7 @@ ${
                           ? 'Ollama Engine is Active & Connected'
                           : 'Ollama Engine is Not Running'}
                       </h3>
-                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
+                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold">
                         {connectionStatus === 'connected'
                           ? `${installedModels.length} models installed on disk`
                           : 'Port 11434 unreachable'}
@@ -3168,7 +3168,7 @@ ${
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                          <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[11px]">
                             STEP 1
                           </span>
                           <span>Install via Terminal / CMD</span>
@@ -3270,7 +3270,7 @@ ${
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 font-mono text-xs font-bold text-[var(--color-ink)]">
-                          <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px]">
+                          <span className="rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[11px]">
                             STEP 2
                           </span>
                           <span>Download in Resursee Model Library</span>
@@ -3287,9 +3287,9 @@ ${
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-[var(--color-ink)] font-mono">Llama 3.2 (3B)</span>
-                              <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[9px] font-bold">2.0 GB</span>
+                              <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[11px] font-bold">2.0 GB</span>
                             </div>
-                            <span className="text-[10.5px] text-[var(--color-ink-muted)] block">Fast, smart, lightweight general assistant</span>
+                            <span className="text-[11px] text-[var(--color-ink-muted)] block">Fast, smart, lightweight general assistant</span>
                           </div>
                           <button
                             type="button"
@@ -3307,9 +3307,9 @@ ${
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-[var(--color-ink)] font-mono">Qwen 2.5 (1.5B)</span>
-                              <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[9px] font-bold">986 MB</span>
+                              <span className="rounded-full bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[11px] font-bold">986 MB</span>
                             </div>
-                            <span className="text-[10.5px] text-[var(--color-ink-muted)] block">Ultra-fast edge model with sharp reasoning</span>
+                            <span className="text-[11px] text-[var(--color-ink-muted)] block">Ultra-fast edge model with sharp reasoning</span>
                           </div>
                           <button
                             type="button"
@@ -3471,7 +3471,7 @@ ${
                       msg.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
                     )}
                   >
-                    <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--color-ink-muted)]">
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--color-ink-muted)]">
                       <span className="font-bold uppercase">{msg.role === 'user' ? 'You' : selectedModel}</span>
                       <span>•</span>
                       <span>{msg.timestamp}</span>
@@ -3499,7 +3499,7 @@ ${
                       {/* Fallback code snippet if present */}
                       {msg.codeSnippet && !msg.content.includes('```') && (
                         <div className="mt-3 rounded-xl border border-[var(--color-rule-strong)] bg-neutral-950 text-neutral-100 p-3 font-mono text-[11px] overflow-x-auto relative group">
-                          <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-[10px] text-neutral-400">
+                          <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-[11px] text-neutral-400">
                             <span>code</span>
                             <button
                               type="button"
@@ -3557,7 +3557,7 @@ ${
                     <button
                       type="button"
                       onClick={() => setIsParametersModalOpen(true)}
-                      className="rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold cursor-pointer transition-colors"
+                      className="rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold cursor-pointer transition-colors"
                       title="Adjust Temperature"
                     >
                       Temp: {temperature.toFixed(2)}
@@ -3565,7 +3565,7 @@ ${
                     <button
                       type="button"
                       onClick={() => setIsParametersModalOpen(true)}
-                      className="hidden sm:inline rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold cursor-pointer transition-colors"
+                      className="hidden sm:inline rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold cursor-pointer transition-colors"
                       title="Adjust Context Tokens"
                     >
                       Ctx: {numCtx}
@@ -3679,16 +3679,16 @@ ${
                               <span className="font-bold text-xs text-[var(--color-ink)] truncate font-mono">
                                 {downloadingModelId}
                               </span>
-                              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold inline-flex items-center gap-1">
+                              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[11px] font-bold inline-flex items-center gap-1">
                                 <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                                 Downloading
                               </span>
                             </div>
-                            <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
+                            <span className="text-[11px] font-mono text-[var(--color-ink-muted)] block mt-0.5">
                               {downloadStatus || 'Downloading layers to disk...'}
                             </span>
                           </div>
-                          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold shrink-0">
                             {downloadProgress}%
                           </span>
                         </div>
@@ -3701,12 +3701,12 @@ ${
                           />
                         </div>
 
-                        <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink-muted)] pt-1 border-t border-[var(--color-rule-subtle)]">
+                        <div className="flex items-center justify-between text-[11px] font-mono text-[var(--color-ink-muted)] pt-1 border-t border-[var(--color-rule-subtle)]">
                           <span>Pulling to local Ollama library</span>
                           <button
                             type="button"
                             onClick={handleCancelPull}
-                            className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                            className="text-[11px] text-red-500 hover:underline cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -3735,26 +3735,26 @@ ${
                                   {im.name}
                                 </span>
                                 {im.name.startsWith('hf.co/') || im.name.includes('hf.co') ? (
-                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[11px] font-bold">
                                     Hugging Face
                                   </span>
                                 ) : (
-                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[11px] font-bold">
                                     Ollama
                                   </span>
                                 )}
                                 {isVram && (
-                                  <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.5 font-mono text-[8.5px] font-bold">
+                                  <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.5 font-mono text-[11px] font-bold">
                                     VRAM
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block">
+                              <span className="text-[11px] font-mono text-[var(--color-ink-muted)] block">
                                 {im.details?.family || 'Transformer'} • {im.details?.parameter_size || 'N/A'} • {im.details?.quantization_level || 'Q4_K_M'}
                               </span>
                             </div>
 
-                            <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                            <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold shrink-0">
                               {sizeGB} GB
                             </span>
                           </div>
@@ -3820,7 +3820,7 @@ ${
                     <span>Ollama Library</span>
                     <span
                       className={cn(
-                        'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                        'rounded-full text-[11px] px-1.5 py-0.2 font-mono font-bold transition-colors',
                         modelSourceTab === 'ollama'
                           ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
                           : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
@@ -3843,7 +3843,7 @@ ${
                     <span>Hugging Face Models</span>
                     <span
                       className={cn(
-                        'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                        'rounded-full text-[11px] px-1.5 py-0.2 font-mono font-bold transition-colors',
                         modelSourceTab === 'huggingface'
                           ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
                           : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
@@ -3872,7 +3872,7 @@ ${
                         <span>Curated Selection</span>
                         <span
                           className={cn(
-                            'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                            'rounded-full text-[11px] px-1.5 py-0.2 font-mono font-bold transition-colors',
                             ollamaViewMode === 'curated'
                               ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
                               : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
@@ -3902,7 +3902,7 @@ ${
                         <span>Full Catalog</span>
                         <span
                           className={cn(
-                            'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                            'rounded-full text-[11px] px-1.5 py-0.2 font-mono font-bold transition-colors',
                             ollamaViewMode === 'full'
                               ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
                               : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
@@ -3928,7 +3928,7 @@ ${
                         <span>Curated Showcase</span>
                         <span
                           className={cn(
-                            'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                            'rounded-full text-[11px] px-1.5 py-0.2 font-mono font-bold transition-colors',
                             hfViewMode === 'curated'
                               ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
                               : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
@@ -3956,7 +3956,7 @@ ${
                         <span>Full Catalog</span>
                         <span
                           className={cn(
-                            'rounded-full text-[10px] px-1.5 py-0.2 font-mono font-bold transition-colors',
+                            'rounded-full text-[11px] px-1.5 py-0.2 font-mono font-bold transition-colors',
                             hfViewMode === 'full'
                               ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
                               : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
@@ -4105,7 +4105,7 @@ ${
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate">{model.name}</h3>
                                     {isLoadedInVram && (
-                                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.2 font-mono text-[9px] font-bold">
+                                      <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.2 font-mono text-[11px] font-bold">
                                         ACTIVE IN VRAM
                                       </span>
                                     )}
@@ -4113,12 +4113,12 @@ ${
                                 </div>
 
                                 {isInstalled ? (
-                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold flex items-center gap-1 shrink-0">
                                     <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
                                     Installed
                                   </span>
                                 ) : (
-                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold shrink-0">
                                     Catalog
                                   </span>
                                 )}
@@ -4144,7 +4144,7 @@ ${
 
                             <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
                               {/* Terminal Run Pill */}
-                              <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
+                              <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[11px] font-mono text-[var(--color-ink)]">
                                 <span className="truncate">ollama run {model.id}</span>
                                 <button
                                   type="button"
@@ -4162,7 +4162,7 @@ ${
                               {/* Download / Active Actions */}
                               {isPulling ? (
                                 <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
-                                  <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
+                                  <div className="flex items-center justify-between text-[11px] font-mono text-[var(--color-ink)]">
                                     <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling layers...'}</span>
                                     <span className="font-bold">{downloadProgress}%</span>
                                   </div>
@@ -4175,7 +4175,7 @@ ${
                                   <button
                                     type="button"
                                     onClick={handleCancelPull}
-                                    className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
+                                    className="w-full text-center text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
                                   >
                                     Cancel Download
                                   </button>
@@ -4283,7 +4283,7 @@ ${
 
                         {/* Quick Example Chips */}
                         <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px] text-[var(--color-ink-muted)]">
-                          <span className="font-mono text-[10.5px]">Quick repos:</span>
+                          <span className="font-mono text-[11px]">Quick repos:</span>
                           {[
                             { label: 'Llama 3.2 3B', tag: 'bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M' },
                             { label: 'DeepSeek R1 1.5B', tag: 'unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF:Q4_K_M' },
@@ -4298,7 +4298,7 @@ ${
                               key={chip.tag}
                               type="button"
                               onClick={() => setCustomHfTag(chip.tag)}
-                              className="rounded-lg bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] border border-[var(--color-rule-subtle)] px-2 py-0.5 text-[10.5px] font-mono text-[var(--color-ink)] transition-colors cursor-pointer"
+                              className="rounded-lg bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] border border-[var(--color-rule-subtle)] px-2 py-0.5 text-[11px] font-mono text-[var(--color-ink)] transition-colors cursor-pointer"
                             >
                               {chip.label}
                             </button>
@@ -4310,7 +4310,7 @@ ${
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                         <div className="flex items-center gap-2 text-xs font-extrabold text-[var(--color-ink)]">
                           <span>Curated GGUF Checkpoints</span>
-                          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold">
+                          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold">
                             {allDisplayHfModels.length} Models
                           </span>
                         </div>
@@ -4381,7 +4381,7 @@ ${
                                           {model.name}
                                         </h3>
                                         {model.quantization && (
-                                          <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.2 font-mono text-[9px] font-bold shrink-0">
+                                          <span className="rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-1.5 py-0.2 font-mono text-[11px] font-bold shrink-0">
                                             {model.quantization}
                                           </span>
                                         )}
@@ -4389,12 +4389,12 @@ ${
                                     </div>
 
                                     {isInstalled ? (
-                                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold flex items-center gap-1 shrink-0">
                                         <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
                                         Installed
                                       </span>
                                     ) : (
-                                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold shrink-0">
                                         GGUF
                                       </span>
                                     )}
@@ -4425,7 +4425,7 @@ ${
 
                                 <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
                                   {/* Terminal Run Pill */}
-                                  <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
+                                  <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[11px] font-mono text-[var(--color-ink)]">
                                     <span className="truncate">ollama run {model.id}</span>
                                     <button
                                       type="button"
@@ -4443,7 +4443,7 @@ ${
                                   {/* Download / Active Actions */}
                                   {isPulling ? (
                                     <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
-                                      <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
+                                      <div className="flex items-center justify-between text-[11px] font-mono text-[var(--color-ink)]">
                                         <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling GGUF layers...'}</span>
                                         <span className="font-bold">{downloadProgress}%</span>
                                       </div>
@@ -4456,7 +4456,7 @@ ${
                                       <button
                                         type="button"
                                         onClick={handleCancelPull}
-                                        className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
+                                        className="w-full text-center text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
                                       >
                                         Cancel Download
                                       </button>
@@ -4583,7 +4583,7 @@ ${
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1 border-t border-[var(--color-rule-subtle)]">
                           {/* Quick Trending Tags */}
                           <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[var(--color-ink-muted)]">
-                            <span className="font-mono text-[10.5px]">Trending topics:</span>
+                            <span className="font-mono text-[11px]">Trending topics:</span>
                             {[
                               { label: 'DeepSeek R1', q: 'deepseek-r1' },
                               { label: 'Llama 3.3', q: 'llama-3.3' },
@@ -4600,7 +4600,7 @@ ${
                                   setHfLiveQuery(tag.q);
                                   fetchHfLiveModels(tag.q, hfLiveSort);
                                 }}
-                                className="rounded-lg bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] border border-[var(--color-rule-subtle)] px-2 py-0.5 text-[10.5px] font-mono text-[var(--color-ink)] transition-colors cursor-pointer"
+                                className="rounded-lg bg-[var(--color-paper-surface)] hover:bg-[var(--color-paper-muted)] border border-[var(--color-rule-subtle)] px-2 py-0.5 text-[11px] font-mono text-[var(--color-ink)] transition-colors cursor-pointer"
                               >
                                 {tag.label}
                               </button>
@@ -4696,18 +4696,18 @@ ${
                                         <h3 className="text-sm font-extrabold text-[var(--color-ink)] truncate" title={model.name}>
                                           {model.name}
                                         </h3>
-                                        <span className="font-mono text-[10.5px] text-[var(--color-ink-muted)] block truncate mt-0.5">
+                                        <span className="font-mono text-[11px] text-[var(--color-ink-muted)] block truncate mt-0.5">
                                           by {model.author}
                                         </span>
                                       </div>
 
                                       {isInstalled ? (
-                                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold flex items-center gap-1 shrink-0">
                                           <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
                                           Installed
                                         </span>
                                       ) : (
-                                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[10px] font-bold shrink-0">
+                                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold shrink-0">
                                           GGUF
                                         </span>
                                       )}
@@ -4740,7 +4740,7 @@ ${
                                         {model.tags.slice(0, 3).map((t: string) => (
                                           <span
                                             key={t}
-                                            className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-1.5 py-0.5 text-[9.5px] font-mono text-[var(--color-ink-muted)]"
+                                            className="rounded-md bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-1.5 py-0.5 text-[11px] font-mono text-[var(--color-ink-muted)]"
                                           >
                                             {t}
                                           </span>
@@ -4751,7 +4751,7 @@ ${
 
                                   <div className="pt-3 border-t border-[var(--color-rule-subtle)] space-y-2">
                                     {/* Terminal Run Pill */}
-                                    <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[10.5px] font-mono text-[var(--color-ink)]">
+                                    <div className="flex items-center justify-between rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] px-2.5 py-1.5 text-[11px] font-mono text-[var(--color-ink)]">
                                       <span className="truncate">ollama run {model.ollamaTag}</span>
                                       <button
                                         type="button"
@@ -4769,7 +4769,7 @@ ${
                                     {/* Download / Active Actions */}
                                     {isPulling ? (
                                       <div className="space-y-1.5 p-2 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)]">
-                                        <div className="flex items-center justify-between text-[10px] font-mono text-[var(--color-ink)]">
+                                        <div className="flex items-center justify-between text-[11px] font-mono text-[var(--color-ink)]">
                                           <span className="truncate max-w-[170px]">{downloadStatus || 'Pulling GGUF layers...'}</span>
                                           <span className="font-bold">{downloadProgress}%</span>
                                         </div>
@@ -4782,7 +4782,7 @@ ${
                                         <button
                                           type="button"
                                           onClick={handleCancelPull}
-                                          className="w-full text-center text-[10px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
+                                          className="w-full text-center text-[11px] font-mono text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer pt-0.5"
                                         >
                                           Cancel Download
                                         </button>
@@ -4897,7 +4897,7 @@ ${
                           <option value="moondream:latest">moondream:latest (1.6 GB Compact)</option>
                         </optgroup>
                       </select>
-                      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
+                      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[11px]">
                         ▼
                       </div>
                     </div>
@@ -5044,7 +5044,7 @@ ${
                       <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--color-ink-muted)]">
                         Or Try a 1-Click Sample
                       </span>
-                      <span className="text-[10px] text-[var(--color-ink-muted)]">Instant Preview</span>
+                      <span className="text-[11px] text-[var(--color-ink-muted)]">Instant Preview</span>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
@@ -5056,7 +5056,7 @@ ${
                         <span className="text-xs font-bold text-[var(--color-ink)] block leading-tight">
                           Citrus Leaf
                         </span>
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block mt-1">
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)] block mt-1">
                           Pathology
                         </span>
                       </button>
@@ -5069,7 +5069,7 @@ ${
                         <span className="text-xs font-bold text-[var(--color-ink)] block leading-tight">
                           Receipt
                         </span>
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block mt-1">
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)] block mt-1">
                           Table OCR
                         </span>
                       </button>
@@ -5082,7 +5082,7 @@ ${
                         <span className="text-xs font-bold text-[var(--color-ink)] block leading-tight">
                           ESP32 Circuit
                         </span>
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] block mt-1">
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)] block mt-1">
                           Schematic
                         </span>
                       </button>
@@ -5201,7 +5201,7 @@ ${
                           Local Visual Reasoning Output
                         </span>
                         {isAnalyzingVision && (
-                          <span className="flex items-center gap-1 text-[10px] font-mono text-[var(--color-ink-muted)] animate-pulse">
+                          <span className="flex items-center gap-1 text-[11px] font-mono text-[var(--color-ink-muted)] animate-pulse">
                             <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                             <span>Streaming tokens...</span>
                           </span>
@@ -5213,14 +5213,14 @@ ${
                           <button
                             type="button"
                             onClick={() => handleCopy(visionResult, 'vision-result')}
-                            className="inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                            className="inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
                           >
                             <span>{copiedKey === 'vision-result' ? 'Copied' : 'Copy'}</span>
                           </button>
                           <button
                             type="button"
                             onClick={handleExportVision}
-                            className="inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                            className="inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
                           >
                             <span>Export .md</span>
                           </button>
@@ -5320,7 +5320,7 @@ ${
                         <IconLayersLinked size={15} className="text-[var(--color-ink-muted)]" />
                         <span>Embedding Model (Semantic Vectors)</span>
                       </label>
-                      <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                      <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
                         Local Dense Retrieval
                       </span>
                     </div>
@@ -5352,7 +5352,7 @@ ${
                             <option value="snowflake-arctic-embed2">snowflake-arctic-embed2 (1.2 GB • Rec. 16GB)</option>
                           </optgroup>
                         </select>
-                        <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
+                        <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[11px]">
                           ▼
                         </div>
                       </div>
@@ -5388,7 +5388,7 @@ ${
                         <IconCpu size={15} className="text-[var(--color-ink-muted)]" />
                         <span>Synthesis LLM (Grounded Answer)</span>
                       </label>
-                      <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                      <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
                         Local Reasoning Engine
                       </span>
                     </div>
@@ -5419,7 +5419,7 @@ ${
                             <option value="qwen2.5:14b">qwen2.5:14b (9.0 GB • Rec. 16GB+ RAM)</option>
                           </optgroup>
                         </select>
-                        <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[10px]">
+                        <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)] text-[11px]">
                           ▼
                         </div>
                       </div>
@@ -5450,7 +5450,7 @@ ${
                 </div>
 
                 {/* Specs Budget Recommendations Guide Pills */}
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--color-rule-subtle)] text-[10.5px]">
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--color-rule-subtle)] text-[11px]">
                   <span className="font-mono font-bold text-[var(--color-ink-muted)]">Specs Guide:</span>
                   <span className="px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 font-mono">
                     4GB RAM: nomic-embed + llama3.2:1b
@@ -5525,7 +5525,7 @@ ${
                           </div>
                           <div>
                             <p className="font-bold text-xs text-[var(--color-ink)]">No documents uploaded yet</p>
-                            <p className="text-[10.5px] font-mono text-[var(--color-ink-muted)] mt-1">
+                            <p className="text-[11px] font-mono text-[var(--color-ink-muted)] mt-1">
                               Upload PDF, Word (.docx), PowerPoint (.pptx), or text files to select and query with local RAG.
                             </p>
                           </div>
@@ -5566,22 +5566,22 @@ ${
                                       {doc.name}
                                     </span>
                                     {doc.name.toLowerCase().includes('.pdf') && (
-                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                      <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
                                         PDF
                                       </span>
                                     )}
                                     {doc.name.toLowerCase().includes('.docx') && (
-                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                      <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
                                         DOCX
                                       </span>
                                     )}
                                     {doc.name.toLowerCase().includes('.pptx') && (
-                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
+                                      <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 shrink-0">
                                         PPTX
                                       </span>
                                     )}
                                   </div>
-                                  <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+                                  <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
                                     {doc.chunks.length} chunks • {(doc.size / 1024).toFixed(1)} KB • {isSelected ? 'Active' : 'Excluded'}
                                   </span>
                                 </div>
@@ -5711,7 +5711,7 @@ ${
                           >
                             <span>Retrieved Context</span>
                             {ragRetrievalResults.length > 0 && (
-                              <span className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-700 text-[10px] inline-flex items-center justify-center font-mono">
+                              <span className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-700 text-[11px] inline-flex items-center justify-center font-mono">
                                 {ragRetrievalResults.length}
                               </span>
                             )}
@@ -5719,7 +5719,7 @@ ${
                         </div>
 
                         {isGeneratingRagAnswer && (
-                          <span className="flex items-center gap-1 text-[10px] font-mono text-[var(--color-ink-muted)] animate-pulse">
+                          <span className="flex items-center gap-1 text-[11px] font-mono text-[var(--color-ink-muted)] animate-pulse">
                             <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
                             <span>Synthesizing...</span>
                           </span>
@@ -5731,7 +5731,7 @@ ${
                           <button
                             type="button"
                             onClick={() => handleCopy(ragAnswer, 'rag-answer')}
-                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
                           >
                             {copiedKey === 'rag-answer' ? <IconCheck size={12} /> : <IconCopy size={12} />}
                             <span>{copiedKey === 'rag-answer' ? 'Copied' : 'Copy'}</span>
@@ -5739,7 +5739,7 @@ ${
                           <button
                             type="button"
                             onClick={handleExportRagReport}
-                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-mono font-bold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] cursor-pointer"
                           >
                             <IconFileExport size={12} />
                             <span>Export .md</span>
@@ -5783,11 +5783,11 @@ ${
                                   <div className="flex items-center gap-1.5 font-bold text-[var(--color-ink)] truncate max-w-[280px]">
                                     <IconFileText size={13} className="shrink-0 text-[var(--color-ink-muted)]" />
                                     <span>{result.chunk.documentName}</span>
-                                    <span className="text-[10px] text-[var(--color-ink-muted)] font-normal">
+                                    <span className="text-[11px] text-[var(--color-ink-muted)] font-normal">
                                       (Chunk #{result.chunk.chunkIndex})
                                     </span>
                                   </div>
-                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 text-[10px] font-bold">
+                                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 text-[11px] font-bold">
                                     {(result.score * 100).toFixed(1)}% Match
                                   </span>
                                 </div>
@@ -5859,7 +5859,7 @@ ${
                       onChange={(e) => setTemperature(parseFloat(e.target.value))}
                       className="w-full accent-neutral-900 dark:accent-white cursor-pointer"
                     />
-                    <div className="flex justify-between text-[10px] font-mono text-[var(--color-ink-muted)]">
+                    <div className="flex justify-between text-[11px] font-mono text-[var(--color-ink-muted)]">
                       <span>0.0 (Strict Logic)</span>
                       <span className="font-bold text-[var(--color-ink)]">{temperature.toFixed(2)}</span>
                       <span>1.0 (Creative)</span>
@@ -6111,7 +6111,7 @@ ${
                 <div className="flex items-center gap-2">
                   <IconHistory size={18} className="text-[var(--color-ink)]" />
                   <h3 className="text-sm font-extrabold text-[var(--color-ink)]">Saved Conversations</h3>
-                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 text-[10px] font-mono font-bold">
+                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 text-[11px] font-mono font-bold">
                     {sessions.length}
                   </span>
                 </div>
@@ -6157,7 +6157,7 @@ ${
                           <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--color-ink-muted)] mt-0.5">
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--color-ink-muted)] mt-0.5">
                         <span>{sess.model || selectedModel}</span>
                         <span>•</span>
                         <span>{sess.messages.length} msgs</span>
@@ -6225,7 +6225,7 @@ ${
                     onChange={(e) => setTemperature(parseFloat(e.target.value))}
                     className="w-full accent-neutral-900 dark:accent-white cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] font-mono text-[var(--color-ink-muted)]">
+                  <div className="flex justify-between text-[11px] font-mono text-[var(--color-ink-muted)]">
                     <span>0.0 (Strict / Code)</span>
                     <span>0.7 (Balanced)</span>
                     <span>1.0 (Creative)</span>
@@ -6256,7 +6256,7 @@ ${
                           'You are a private, offline intelligence engine integrated into Resursee. Provide concise, factual, and direct answers without unnecessary filler.'
                         )
                       }
-                      className="text-[10px] font-mono text-[var(--color-ink-muted)] hover:underline cursor-pointer"
+                      className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:underline cursor-pointer"
                     >
                       Reset Default
                     </button>
@@ -6368,7 +6368,7 @@ ${
                   <IconCpu size={18} className="text-[var(--color-ink)]" />
                   <div>
                     <h3 className="text-sm font-extrabold text-[var(--color-ink)]">Model Architecture & Weights</h3>
-                    <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">{inspectingModel}</span>
+                    <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">{inspectingModel}</span>
                   </div>
                 </div>
                 <button
@@ -6415,19 +6415,19 @@ ${
                     {/* Technical Matrix */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-0.5">
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase block">Format</span>
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)] uppercase block">Format</span>
                         <span className="font-mono font-bold text-xs text-[var(--color-ink)]">{inspectData?.details?.format || 'GGUF'}</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-0.5">
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase block">Family</span>
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)] uppercase block">Family</span>
                         <span className="font-mono font-bold text-xs text-[var(--color-ink)]">{inspectData?.details?.family || 'Transformer'}</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-0.5">
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase block">Parameters</span>
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)] uppercase block">Parameters</span>
                         <span className="font-mono font-bold text-xs text-[var(--color-ink)]">{inspectData?.details?.parameter_size || 'N/A'}</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-[var(--color-paper-surface)] border border-[var(--color-rule-subtle)] space-y-0.5">
-                        <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase block">Quantization</span>
+                        <span className="text-[11px] font-mono text-[var(--color-ink-muted)] uppercase block">Quantization</span>
                         <span className="font-mono font-bold text-xs text-[var(--color-ink)]">{inspectData?.details?.quantization_level || 'Q4_K_M'}</span>
                       </div>
                     </div>
@@ -6440,7 +6440,7 @@ ${
                           <button
                             type="button"
                             onClick={() => handleCopy(inspectData.modelfile, 'inspect-modelfile')}
-                            className="text-[10px] font-mono text-[var(--color-ink-muted)] hover:underline cursor-pointer"
+                            className="text-[11px] font-mono text-[var(--color-ink-muted)] hover:underline cursor-pointer"
                           >
                             {copiedKey === 'inspect-modelfile' ? 'Copied' : 'Copy Modelfile'}
                           </button>
@@ -6465,7 +6465,7 @@ ${
                     {inspectData?.license && (
                       <div className="space-y-1.5">
                         <label className="font-bold text-[var(--color-ink)]">Model License</label>
-                        <div className="rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-2.5 text-[10.5px] font-mono text-[var(--color-ink-muted)] max-h-24 overflow-y-auto">
+                        <div className="rounded-xl border border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)] p-2.5 text-[11px] font-mono text-[var(--color-ink-muted)] max-h-24 overflow-y-auto">
                           <pre className="whitespace-pre-wrap">{inspectData.license.slice(0, 500)}...</pre>
                         </div>
                       </div>
@@ -6508,7 +6508,7 @@ ${
                   <IconFileText size={18} className="text-[var(--color-ink)]" />
                   <div>
                     <h3 className="text-sm font-extrabold text-[var(--color-ink)]">Add Knowledge Document</h3>
-                    <span className="font-mono text-[10px] text-[var(--color-ink-muted)]">
+                    <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
                       Indexed locally for semantic RAG retrieval (0 bytes uploaded)
                     </span>
                   </div>
@@ -6547,26 +6547,26 @@ ${
                     >
                       {isParsingDoc ? (parseStatusText || 'Extracting text...') : 'Choose file to index'}
                     </button>
-                    <p className="text-[10.5px] font-mono text-[var(--color-ink-muted)] mt-0.5">
+                    <p className="text-[11px] font-mono text-[var(--color-ink-muted)] mt-0.5">
                       Extracts text directly in your browser. Zero cloud upload.
                     </p>
                   </div>
 
                   {/* Format badges */}
                   <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                    <span className="px-2 py-0.5 text-[11px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                       PDF (.pdf)
                     </span>
-                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                    <span className="px-2 py-0.5 text-[11px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                       Word (.docx)
                     </span>
-                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                    <span className="px-2 py-0.5 text-[11px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                       PowerPoint (.pptx)
                     </span>
-                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                    <span className="px-2 py-0.5 text-[11px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                       Markdown (.md)
                     </span>
-                    <span className="px-2 py-0.5 text-[9.5px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                    <span className="px-2 py-0.5 text-[11px] font-mono rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
                       Code &amp; TXT
                     </span>
                   </div>
@@ -6575,7 +6575,7 @@ ${
                 {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-[var(--color-rule-subtle)]" />
-                  <span className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase">or paste text</span>
+                  <span className="text-[11px] font-mono text-[var(--color-ink-muted)] uppercase">or paste text</span>
                   <div className="h-px flex-1 bg-[var(--color-rule-subtle)]" />
                 </div>
 
@@ -6599,7 +6599,7 @@ ${
                       <label className="text-[11px] font-bold text-[var(--color-ink)]">
                         Document Content
                       </label>
-                      <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                      <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
                         {newDocContent.length} chars (approx. {Math.max(1, Math.ceil(newDocContent.length / 500))} chunks)
                       </span>
                     </div>

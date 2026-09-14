@@ -239,7 +239,7 @@ export default function AboutPage() {
                         <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)] shrink-0" />
                       )}
                     </div>
-                    <span className="mt-0.5 text-[10.5px] sm:text-[10px] font-mono text-[var(--color-ink-muted)] block">
+                    <span className="mt-0.5 text-[11px] font-mono text-[var(--color-ink-muted)] block">
                       {tech.category}
                     </span>
                   </div>
@@ -276,7 +276,7 @@ export default function AboutPage() {
               >
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-full bg-[var(--color-paper-muted)] px-3 py-1 font-mono text-[10px] sm:text-[10.5px] font-bold text-[var(--color-ink-secondary)]">
+                    <span className="rounded-full bg-[var(--color-paper-muted)] px-3 py-1 font-mono text-[11px] sm:text-xs font-bold text-[var(--color-ink-secondary)]">
                       {work.badge}
                     </span>
                   </div>

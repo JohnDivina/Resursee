@@ -106,7 +106,7 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
               </span>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {diagnosis.modelUsed && (
-                  <span className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 font-mono text-[10px] font-bold text-neutral-800 dark:text-neutral-200">
+                  <span className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 font-mono text-[11px] font-bold text-neutral-800 dark:text-neutral-200">
                     {diagnosis.modelUsed}
                   </span>
                 )}
@@ -135,10 +135,10 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
 
               {/* Status Chips Overlay */}
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                <span className="rounded-full bg-black/80 px-2.5 py-1 text-[10px] font-mono font-bold text-white backdrop-blur-md">
+                <span className="rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-mono font-bold text-white backdrop-blur-md">
                   {diagnosis.plantName}
                 </span>
-                <span className="rounded-full bg-black/80 px-2.5 py-1 text-[10px] font-mono text-white/90 backdrop-blur-md flex items-center gap-1">
+                <span className="rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-mono text-white/90 backdrop-blur-md flex items-center gap-1">
                   <MagnifyingGlassPlus size={12} />
                   <span>Click to zoom</span>
                 </span>
@@ -237,15 +237,15 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                 </svg>
-                <span className="absolute font-mono text-[10px] font-black text-neutral-900 dark:text-neutral-100">
+                <span className="absolute font-mono text-[11px] font-black text-neutral-900 dark:text-neutral-100">
                   {healthScore}%
                 </span>
               </div>
               <div className="text-left">
-                <span className="block text-[10.5px] font-bold text-neutral-900 dark:text-neutral-100">
+                <span className="block text-[11px] font-bold text-neutral-900 dark:text-neutral-100">
                   Foliage Vitality
                 </span>
-                <span className="block font-mono text-[9px] text-neutral-600 dark:text-neutral-400">
+                <span className="block font-mono text-[11px] text-neutral-600 dark:text-neutral-400">
                   {diagnosis.isHealthy ? 'Optimal' : 'Pathology Present'}
                 </span>
               </div>
@@ -354,7 +354,7 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
                         <h5 className="text-xs sm:text-sm font-extrabold text-[var(--color-ink)]">
                           {treat.title}
                         </h5>
-                        <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 font-mono text-[10px] font-bold text-neutral-800 dark:text-neutral-200">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 font-mono text-[11px] font-bold text-neutral-800 dark:text-neutral-200">
                           <CalendarCheck size={12} />
                           <span>{treat.timeline}</span>
                         </span>
@@ -365,13 +365,13 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
                       </p>
 
                       <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        <span className="font-mono text-[10.5px] font-bold text-neutral-500">
+                        <span className="font-mono text-[11px] font-bold text-neutral-500">
                           Materials:
                         </span>
                         {treat.materials.map((mat, mIdx) => (
                           <span
                             key={mIdx}
-                            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 font-mono text-[10px] font-medium text-neutral-800 dark:text-neutral-200"
+                            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 font-mono text-[11px] font-medium text-neutral-800 dark:text-neutral-200"
                           >
                             {mat}
                           </span>
@@ -410,7 +410,7 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
                             {chem.activeIngredients.map((ing, iIdx) => (
                               <span
                                 key={iIdx}
-                                className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 font-mono text-[10px] font-bold text-neutral-800 dark:text-neutral-200"
+                                className="rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 font-mono text-[11px] font-bold text-neutral-800 dark:text-neutral-200"
                               >
                                 {ing}
                               </span>
@@ -447,7 +447,7 @@ export default function DiagnosisReport({ diagnosis, imageUrl, onReset }: Diagno
                       key={tIdx}
                       className="flex items-start gap-2.5 rounded-[16px] border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 shadow-2xs"
                     >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono text-[10px] font-bold">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono text-[11px] font-bold">
                         {tIdx + 1}
                       </span>
                       <p className="text-xs text-[var(--color-ink)] leading-relaxed">

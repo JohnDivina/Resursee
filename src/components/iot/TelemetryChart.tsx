@@ -144,7 +144,7 @@ export default function TelemetryChart({
             x={paddingX - 8}
             y={paddingY + 4}
             textAnchor="end"
-            className="text-[9px] font-mono fill-[var(--color-ink-muted)]"
+            className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
           >
             {maxVal}
           </text>
@@ -152,7 +152,7 @@ export default function TelemetryChart({
             x={paddingX - 8}
             y={paddingY + chartHeight / 2 + 3}
             textAnchor="end"
-            className="text-[9px] font-mono fill-[var(--color-ink-muted)]"
+            className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
           >
             {((maxVal + minVal) / 2).toFixed(1)}
           </text>
@@ -160,7 +160,7 @@ export default function TelemetryChart({
             x={paddingX - 8}
             y={height - paddingY}
             textAnchor="end"
-            className="text-[9px] font-mono fill-[var(--color-ink-muted)]"
+            className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
           >
             {minVal}
           </text>
