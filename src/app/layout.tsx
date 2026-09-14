@@ -81,7 +81,7 @@ export default function RootLayout({
             <SessionTimeoutProvider>
               <WavyBackground
                 isFixed={true}
-                waveOpacity={0.32}
+                waveOpacity={0.48}
                 darkWaveOpacity={0.28}
                 blur={10}
                 speed="fast"
