@@ -3,6 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { ShieldCheck, ArrowSquareOut, GithubLogo, EnvelopeSimple, Sparkle } from '@phosphor-icons/react';
+import { isTauriDesktop } from '@/lib/envDetector';
+import { openExternalUrl } from '@/lib/tauriBridge';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -139,6 +141,12 @@ export default function Footer() {
                   href="https://github.com/JohnDivina"
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => {
+                    if (isTauriDesktop()) {
+                      e.preventDefault();
+                      openExternalUrl('https://github.com/JohnDivina');
+                    }
+                  }}
                   className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]"
                 >
                   <GithubLogo size={13} />

@@ -277,6 +277,49 @@ fn ollama_proxy_request(
     Ok(json)
 }
 
+/// Natively opens any external URL in the user's default system browser (macOS, Windows, Linux)
+#[tauri::command]
+fn open_external_url(url: String) -> Result<bool, String> {
+    let clean_url = url.trim();
+    if !clean_url.starts_with("http://")
+        && !clean_url.starts_with("https://")
+        && !clean_url.starts_with("mailto:")
+    {
+        return Err("Invalid or unsupported external URL scheme".to_string());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(clean_url)
+            .spawn()
+            .map_err(|e| format!("Failed to open URL in browser: {}", e))?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(&["/C", "start", "", clean_url])
+            .spawn()
+            .map_err(|e| format!("Failed to open URL in browser: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(clean_url)
+            .spawn()
+            .map_err(|e| format!("Failed to open URL in browser: {}", e))?;
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        return Err("Unsupported OS for native browser launch".to_string());
+    }
+
+    Ok(true)
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -287,8 +330,10 @@ fn main() {
             query_ollama_tags,
             query_ollama_ps,
             stream_ollama_chat,
-            ollama_proxy_request
+            ollama_proxy_request,
+            open_external_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running Resursee desktop application");
 }
+

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GithubLogo, ArrowSquareOut } from '@phosphor-icons/react';
 import initialData from '@/data/github_contributions.json';
+import { isTauriDesktop } from '@/lib/envDetector';
+import { openExternalUrl } from '@/lib/tauriBridge';
 
 interface ContributionDay {
   date: string;
@@ -228,6 +230,12 @@ export default function GitHubContributionsGraph() {
             href="https://github.com/JohnDivina"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => {
+              if (isTauriDesktop()) {
+                e.preventDefault();
+                openExternalUrl('https://github.com/JohnDivina');
+              }
+            }}
             className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-3 py-1.5 font-mono text-xs font-bold text-[var(--color-ink)] shadow-2xs hover:bg-[var(--color-paper-muted)] hover:border-[var(--color-primary)] transition-all cursor-pointer shrink-0"
           >
             <GithubLogo size={14} weight="bold" />

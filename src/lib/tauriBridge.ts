@@ -180,3 +180,26 @@ export async function tauriOllamaProxyRequest<T = any>(
     body: body ?? null,
   });
 }
+
+/**
+ * Natively opens any external URL in the host system's default browser (Safari, Chrome, Edge, etc.)
+ * Bypasses Tauri webview navigation limitations and gracefully falls back to window.open in web mode.
+ */
+export async function openExternalUrl(url: string): Promise<void> {
+  if (!url) return;
+  const cleanUrl = url.trim();
+
+  if (isTauriDesktop()) {
+    try {
+      await safeTauriInvoke<boolean>('open_external_url', { url: cleanUrl });
+      return;
+    } catch (err) {
+      console.warn('Tauri open_external_url failed, falling back to window.open', err);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.open(cleanUrl, '_blank', 'noopener,noreferrer');
+  }
+}
+

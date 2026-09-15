@@ -22,6 +22,8 @@ import {
   BracketsAngle,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
+import { isTauriDesktop } from '@/lib/envDetector';
+import { openExternalUrl } from '@/lib/tauriBridge';
 
 type TechGroup = 'all' | 'frontend' | 'embedded' | 'ai';
 
@@ -114,6 +116,12 @@ export default function AboutPage() {
                 href="https://github.com/JohnDivina"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => {
+                  if (isTauriDesktop()) {
+                    e.preventDefault();
+                    openExternalUrl('https://github.com/JohnDivina');
+                  }
+                }}
                 className="group flex items-center gap-2 rounded-full border border-[var(--color-rule-strong)] bg-[var(--color-paper-surface)] px-4 py-2 text-xs font-bold text-[var(--color-ink)] shadow-2xs transition-all hover:bg-[var(--color-paper-card)] hover:border-[var(--color-rule-strong)] active:scale-95 cursor-pointer"
               >
                 <GithubLogo size={15} weight="bold" />

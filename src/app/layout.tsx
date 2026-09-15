@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SoundProvider } from '@/components/sound/SoundProvider';
 import SessionTimeoutProvider from '@/components/auth/SessionTimeoutProvider';
 import { WavyBackground } from '@/components/ui/wavy-background';
+import { TauriExternalLinkHandler } from '@/components/desktop/TauriExternalLinkHandler';
 
 export const metadata: Metadata = {
   title: {
@@ -79,6 +80,7 @@ export default function RootLayout({
         <ThemeProvider>
           <SoundProvider>
             <SessionTimeoutProvider>
+              <TauriExternalLinkHandler />
               <WavyBackground
                 isFixed={true}
                 waveOpacity={0.48}
