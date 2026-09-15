@@ -74,14 +74,10 @@ function CloudflareVerificationContent() {
         const data = await response.json();
         setStatus('success');
 
-        // Allow user to see the green checkmark before redirection
+        // Allow user to see the success checkmark before redirection
         setTimeout(() => {
           const targetUrl = data.redirectUrl || redirectParam || '/';
-          if (targetUrl.startsWith('/')) {
-            router.push(targetUrl);
-          } else {
-            window.location.href = targetUrl;
-          }
+          window.location.href = targetUrl;
         }, 650);
       } catch (err: any) {
         setStatus('idle');

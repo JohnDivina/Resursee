@@ -1,7 +1,7 @@
 cask "resursee" do
   arch arm: "aarch64"
 
-  version "0.1.1"
+  version "0.1.2"
   sha256 "5ea83309e6ce31ff1a165c4b549edf197dc65f7396d3470264f879e965157df3"
 
   url "https://github.com/JohnDivina/Resursee/releases/download/v#{version}/Resursee_#{version}_#{arch}.dmg"
