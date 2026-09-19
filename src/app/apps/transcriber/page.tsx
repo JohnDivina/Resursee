@@ -293,7 +293,7 @@ export default function TranscriberPage() {
     }));
 
     try {
-      await executeTranscription(rawSamples, duration, liveDraftText);
+      await executeTranscription(rawSamples, duration, liveDraftText, audioBlob);
     } catch (err) {
       console.error('Transcription error:', err);
       const msg = err instanceof Error ? err.message : 'Transcription encountered an error.';
@@ -332,7 +332,7 @@ export default function TranscriberPage() {
         duration: decoded.duration,
       }));
 
-      await executeTranscription(decoded.channelData, decoded.duration);
+      await executeTranscription(decoded.channelData, decoded.duration, undefined, file);
     } catch (err) {
       console.error('File transcription error:', err);
       const msg = err instanceof Error ? err.message : 'Failed to decode audio file.';
@@ -345,50 +345,64 @@ export default function TranscriberPage() {
   const executeTranscription = async (
     channelData: Float32Array,
     duration: number,
-    liveDraftText?: string
+    liveDraftText?: string,
+    audioBlob?: Blob
   ) => {
     setSession((prev) => ({ ...prev, status: 'transcribing' }));
 
-    const result = await transcribeWithBrowser(
-      channelData,
-      session.language,
-      'base',
-      liveDraftText,
-      ({ status, percentage }) => {
-        setProgressStatus(status);
-        setProgressPercent(percentage);
+    try {
+      const result = await transcribeWithBrowser(
+        channelData,
+        session.language,
+        'tiny',
+        liveDraftText,
+        ({ status, percentage }) => {
+          setProgressStatus(status);
+          setProgressPercent(percentage);
+        },
+        audioBlob || session.audioBlob
+      );
+
+      const speakers = extractSpeakers(result.segments);
+
+      setSession((prev) => ({
+        ...prev,
+        status: 'complete',
+        segments: result.segments,
+        speakers,
+        summary: result.summary || prev.summary,
+        meetingNotes: result.meetingNotes.length > 0 ? result.meetingNotes : prev.meetingNotes,
+        modelUsed: liveDraftText
+          ? 'Live Speech Recognition'
+          : result.summary
+          ? 'AI Speech Engine (Gemini / Whisper)'
+          : 'Whisper Local (WebGPU/WASM)',
+      }));
+
+      setProgressPercent(100);
+      setProgressStatus('');
+
+      // Automatically generate local notes if segments exist and notes were not already populated
+      if (result.segments.length > 0 && (!result.meetingNotes || result.meetingNotes.length === 0)) {
+        try {
+          const notes = await generateMeetingNotesLocal(
+            result.segments,
+            ollamaStatus === 'connected' ? selectedModel : undefined
+          );
+          setSession((prev) => ({
+            ...prev,
+            summary: notes.summary || prev.summary,
+            meetingNotes: notes.meetingNotes,
+          }));
+        } catch (notesErr) {
+          console.warn('Initial notes generation skipped:', notesErr);
+        }
       }
-    );
-
-    const speakers = extractSpeakers(result.segments);
-
-    setSession((prev) => ({
-      ...prev,
-      status: 'complete',
-      segments: result.segments,
-      speakers,
-      summary: result.summary,
-      modelUsed: 'Whisper Base (WebGPU Local)',
-    }));
-
-    setProgressPercent(100);
-    setProgressStatus('');
-
-    // Automatically generate local notes if segments exist
-    if (result.segments.length > 0) {
-      try {
-        const notes = await generateMeetingNotesLocal(
-          result.segments,
-          ollamaStatus === 'connected' ? selectedModel : undefined
-        );
-        setSession((prev) => ({
-          ...prev,
-          summary: notes.summary || prev.summary,
-          meetingNotes: notes.meetingNotes,
-        }));
-      } catch (notesErr) {
-        console.warn('Initial notes generation skipped:', notesErr);
-      }
+    } catch (err: any) {
+      console.error('Transcription execution error:', err);
+      const msg = err?.message || 'Transcription failed.';
+      setErrorMessage(msg);
+      setSession((prev) => ({ ...prev, status: 'error', error: msg }));
     }
   };
 
@@ -942,32 +956,57 @@ export default function TranscriberPage() {
             {/* CENTER WORKSPACE */}
             <main className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6 min-w-0">
               {/* SIDEBAR TAB SECTIONS */}
-              {activeTab === 'record' && session.segments.length === 0 && (
+              {activeTab === 'record' && (
                 <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
-                  <div className="mb-4">
-                    <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                      Live Microphone Recording
-                    </h2>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Record speech directly in your browser. Pause and resume smoothly; gaps are not included in the file.
-                    </p>
+                  <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+                        Live Microphone Recording
+                      </h2>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        Record speech directly in your browser or desktop app. Audio is processed with live speech recognition and AI turn diarization.
+                      </p>
+                    </div>
+                    {session.segments.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleNewSession}
+                        className="self-start sm:self-auto flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 cursor-pointer"
+                      >
+                        <Plus size={14} weight="bold" />
+                        <span>Start Fresh Session</span>
+                      </button>
+                    )}
                   </div>
                   <RecordingControls
                     onRecordingComplete={handleRecordingComplete}
                     isProcessing={session.status === 'transcribing'}
+                    language={session.language}
                   />
                 </div>
               )}
 
-              {activeTab === 'import' && session.segments.length === 0 && (
+              {activeTab === 'import' && (
                 <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
-                  <div className="mb-4">
-                    <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                      Local Media File Import
-                    </h2>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Drop an MP3, WAV, M4A, AIFF, MP4, or MOV file for speech transcription and turn diarization.
-                    </p>
+                  <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+                        Local Media File Import
+                      </h2>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        Drop an MP3, WAV, M4A, AIFF, MP4, or MOV file for speech transcription and turn diarization.
+                      </p>
+                    </div>
+                    {session.segments.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleNewSession}
+                        className="self-start sm:self-auto flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 cursor-pointer"
+                      >
+                        <Plus size={14} weight="bold" />
+                        <span>Start Fresh Session</span>
+                      </button>
+                    )}
                   </div>
                   <FileDropZone
                     onFileSelect={handleFileSelect}

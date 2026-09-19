@@ -7,6 +7,7 @@ import {
   BenchmarkResult,
 } from '@/types/transcriber';
 import { streamOllamaChat, DEFAULT_OLLAMA_ENDPOINT } from '@/lib/ollamaClient';
+import { float32ArrayToWavBlob } from '@/lib/audioProcessor';
 
 export interface TranscribeProgressCallback {
   (progress: { status: string; percentage: number; detail?: string }): void;
@@ -180,14 +181,78 @@ export function segmentAudioByEnergy(
 }
 
 /**
- * Transcribe using 100% Client-Side In-Browser Engine (Transformers.js Whisper WebGPU/WASM)
+ * Converts an ArrayBuffer to a Base64 string in chunks without stack overflow
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000; // 32KB chunks
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(
+      null,
+      bytes.subarray(i, i + chunkSize) as unknown as number[]
+    );
+  }
+  return btoa(binary);
+}
+
+/**
+ * Transcribes audio via the high-accuracy multimodal Gemini API endpoint
+ */
+async function transcribeViaApi(
+  audioBlob: Blob,
+  language: SupportedLanguage
+): Promise<{
+  segments: TranscriptSegment[];
+  summary: string;
+  meetingNotes: MeetingNoteItem[];
+  detectedLanguage: string;
+} | null> {
+  try {
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const audioBase64 = arrayBufferToBase64(arrayBuffer);
+
+    const res = await fetch('/api/ai/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audioBase64,
+        mimeType: audioBlob.type || 'audio/wav',
+        language,
+      }),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.success && Array.isArray(data.segments) && data.segments.length > 0) {
+      return {
+        segments: data.segments,
+        summary: data.summary || '',
+        meetingNotes: data.meetingNotes || [],
+        detectedLanguage: data.detectedLanguage || language,
+      };
+    }
+    return null;
+  } catch (e) {
+    console.warn('API transcription route unavailable, using local fallback:', e);
+    return null;
+  }
+}
+
+/**
+ * Transcribe using multi-tier hybrid engine:
+ * 1. Real-time live dictation if available
+ * 2. High-accuracy Gemini 1.5 Flash speech-to-text API fallback
+ * 3. In-Browser Whisper Tiny (ONNX WebGPU/WASM)
+ * 4. Energy-based turn segmentation
  */
 export async function transcribeWithBrowser(
   audioSamples: Float32Array,
   language: SupportedLanguage = 'fil',
-  modelSize: 'tiny' | 'base' = 'base',
+  modelSize: 'tiny' | 'base' = 'tiny',
   liveDraftText?: string,
-  onProgress?: TranscribeProgressCallback
+  onProgress?: TranscribeProgressCallback,
+  audioBlob?: Blob
 ): Promise<{
   segments: TranscriptSegment[];
   summary: string;
@@ -195,38 +260,95 @@ export async function transcribeWithBrowser(
   detectedLanguage: string;
 }> {
   onProgress?.({
-    status: 'Analyzing voice activity & energy pauses...',
+    status: 'Analyzing voice activity and energy pauses...',
     percentage: 15,
   });
 
   const energySlices = segmentAudioByEnergy(audioSamples, 16000);
 
+  // Strategy 1: If live spoken draft was recorded via speech recognition, map spoken words directly!
+  if (liveDraftText && liveDraftText.trim().length > 0) {
+    onProgress?.({
+      status: 'Aligning real-time speech dictation to audio waveform...',
+      percentage: 70,
+    });
+
+    const sentences = liveDraftText
+      .trim()
+      .split(/(?<=[.?!])\s+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    const rawChunks = energySlices.map((slice, i) => ({
+      text: sentences[i % sentences.length] || `[Spoken Dialogue @ ${slice.start}s]`,
+      start: slice.start,
+      end: slice.end,
+    }));
+
+    onProgress?.({ status: 'Assigning speaker diarization turns...', percentage: 90 });
+
+    let currentSpeakerIdx = 0;
+    let lastEndTime = 0;
+
+    const segments: TranscriptSegment[] = rawChunks.map((chunk, idx) => {
+      if (idx > 0 && chunk.start - lastEndTime > 1.2) {
+        currentSpeakerIdx = (currentSpeakerIdx + 1) % 2;
+      }
+      lastEndTime = chunk.end;
+
+      return {
+        id: crypto.randomUUID(),
+        speakerId: `speaker_${currentSpeakerIdx}`,
+        speakerLabel: `Speaker ${currentSpeakerIdx + 1}`,
+        text: chunk.text,
+        startTime: chunk.start,
+        endTime: Math.max(chunk.start + 0.5, chunk.end),
+        confidence: 0.95,
+        language: language === 'auto' ? 'fil' : language,
+        isEdited: false,
+        revisionHistory: [],
+      };
+    });
+
+    return {
+      segments,
+      summary: `Meeting audio recorded (${(audioSamples.length / 16000).toFixed(1)}s) with live speech recognition.`,
+      meetingNotes: [],
+      detectedLanguage: language,
+    };
+  }
+
+  // Strategy 2: If no live dictation text (e.g. uploaded file or mic dictation was off), try AI API route
   onProgress?.({
-    status: 'Initializing in-browser Transformers.js Whisper...',
-    percentage: 30,
-    detail: 'Using local WebGPU / WASM execution without internet transmission.',
+    status: 'Transcribing speech with AI transcription engine...',
+    percentage: 40,
+    detail: 'Processing audio track for verbatim speech and speakers...',
+  });
+
+  const targetBlob = audioBlob || float32ArrayToWavBlob(audioSamples, 16000);
+  const apiResult = await transcribeViaApi(targetBlob, language);
+
+  if (apiResult && apiResult.segments.length > 0) {
+    onProgress?.({ status: 'Transcription complete!', percentage: 100 });
+    return apiResult;
+  }
+
+  // Strategy 3: Client-side local Whisper Tiny ONNX fallback
+  onProgress?.({
+    status: 'Running local Whisper ONNX model...',
+    percentage: 65,
+    detail: 'Executing in-browser speech-to-text...',
   });
 
   let rawChunks: Array<{ text: string; start: number; end: number }> = [];
 
   try {
     const { pipeline } = await import('@huggingface/transformers');
+    const modelId = modelSize === 'base' ? 'onnx-community/whisper-base' : 'onnx-community/whisper-tiny';
 
-    const modelMap = {
-      tiny: 'onnx-community/whisper-tiny',
-      base: 'onnx-community/whisper-base',
-    };
-    const modelId = modelMap[modelSize] || modelMap.base;
-
-    onProgress?.({
-      status: `Loading local ONNX model (${modelId})...`,
-      percentage: 50,
-      detail: 'Running fully on-device inside your browser tab.',
+    const transcriber = await (pipeline as any)('automatic-speech-recognition', modelId, {
+      dtype: 'fp32',
     });
-
-    const transcriber = await (pipeline as any)('automatic-speech-recognition', modelId);
-
-    onProgress?.({ status: 'Transcribing speech locally with Whisper...', percentage: 75 });
 
     const targetLang = language === 'auto' ? undefined : language === 'fil' ? 'tl' : language;
     const output = await transcriber(audioSamples, {
@@ -249,35 +371,22 @@ export async function transcribeWithBrowser(
         end: c.timestamp?.[1] ?? (i + 1) * 4,
       }));
     }
-  } catch (browserErr) {
-    console.warn('Transformers.js local pipeline fallback:', browserErr);
-
-    // If live text draft exists from dictation, partition draft into the energy slices
-    if (liveDraftText && liveDraftText.trim()) {
-      const sentences = liveDraftText.trim().split(/(?<=[.?!])\s+/);
-      rawChunks = energySlices.map((slice, i) => ({
-        text: sentences[i % sentences.length] || `[Spoken Dialogue @ ${slice.start}s]`,
-        start: slice.start,
-        end: slice.end,
-      }));
-    } else {
-      // Create segmented turns from energy activity
-      rawChunks = energySlices.map((slice, i) => ({
-        text: `[Audio Turn ${i + 1}] (${slice.start}s - ${slice.end}s)`,
-        start: slice.start,
-        end: slice.end,
-      }));
-    }
+  } catch (localErr) {
+    console.warn('Local Whisper ONNX inference note:', localErr);
+    // Energy-based conversational slice fallback
+    rawChunks = energySlices.map((slice, i) => ({
+      text: `[Audio Turn ${i + 1}] (${slice.start.toFixed(1)}s - ${slice.end.toFixed(1)}s)`,
+      start: slice.start,
+      end: slice.end,
+    }));
   }
 
   onProgress?.({ status: 'Assigning speaker diarization turns...', percentage: 95 });
 
-  // Speaker Diarization assignment (alternating speaker heuristic based on silence gap)
   let currentSpeakerIdx = 0;
   let lastEndTime = 0;
 
   const segments: TranscriptSegment[] = rawChunks.map((chunk, idx) => {
-    // If gap between turns is > 1.2s, heuristic switches speaker
     if (idx > 0 && chunk.start - lastEndTime > 1.2) {
       currentSpeakerIdx = (currentSpeakerIdx + 1) % 2;
     }

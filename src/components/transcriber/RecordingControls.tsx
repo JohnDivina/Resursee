@@ -10,6 +10,7 @@ import {
   WarningCircle,
 } from '@phosphor-icons/react';
 import { formatTimestamp, decodeAudioFile } from '@/lib/audioProcessor';
+import { isTauriDesktop } from '@/lib/envDetector';
 
 interface RecordingControlsProps {
   onRecordingComplete: (
@@ -19,16 +20,18 @@ interface RecordingControlsProps {
     liveDraftText?: string
   ) => void;
   isProcessing?: boolean;
+  language?: string;
 }
 
 export const RecordingControls: React.FC<RecordingControlsProps> = ({
   onRecordingComplete,
   isProcessing = false,
+  language = 'fil',
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [livePreviewEnabled, setLivePreviewEnabled] = useState(false);
+  const [livePreviewEnabled, setLivePreviewEnabled] = useState(true);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [audioLevel, setAudioLevel] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -104,23 +107,58 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
     animFrameRef.current = requestAnimationFrame(updateAudioMeter);
   }, [isRecording]);
 
+  /**
+   * Resilient cross-platform media stream getter supporting macOS WKWebView and modern browsers
+   */
+  const requestAudioStream = async (): Promise<MediaStream> => {
+    // 1. Standard modern navigator.mediaDevices
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+      try {
+        return await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+      } catch (err: any) {
+        // If standard getUserMedia threw with generic or permission error, handle gracefully
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          throw err;
+        }
+      }
+    }
+
+    // 2. Fallback to WebKit / legacy getUserMedia if modern API is restricted in WKWebView
+    const legacyGUM =
+      (navigator as any)?.webkitGetUserMedia ||
+      (navigator as any)?.mozGetUserMedia ||
+      (navigator as any)?.getUserMedia;
+
+    if (legacyGUM) {
+      return new Promise<MediaStream>((resolve, reject) => {
+        legacyGUM.call(navigator, { audio: true }, resolve, reject);
+      });
+    }
+
+    // 3. Informative error if running in Tauri desktop vs browser
+    if (isTauriDesktop()) {
+      throw new Error(
+        'Microphone access is restricted in the desktop app. Please verify microphone permission under System Settings > Privacy & Security > Microphone.'
+      );
+    }
+
+    throw new Error('Microphone access is not supported or blocked in this browser. Please check address bar permissions.');
+  };
+
   const startRecording = async () => {
     setErrorMessage(null);
     recordedChunksRef.current = [];
     pcmChunksRef.current = [];
+    setLiveTranscript('');
 
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Microphone access is not supported in this browser.');
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
+      const stream = await requestAudioStream();
       streamRef.current = stream;
 
       // 1. Web Audio for Visual VU Meter and PCM Backup
@@ -155,7 +193,7 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       processor.connect(zeroGain);
       zeroGain.connect(audioCtx.destination);
 
-      // 2. MediaRecorder for Native Playable Container (WebM / MP4)
+      // 2. MediaRecorder for Playable Container (WebM / MP4 / OGG)
       let options: MediaRecorderOptions = {};
       if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
         if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
@@ -191,14 +229,20 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       if (livePreviewEnabled) {
         startLiveSpeech();
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Failed to start microphone:', err);
-      const msg =
-        err instanceof DOMException && err.name === 'NotAllowedError'
-          ? 'Microphone permission denied. Please allow microphone access in your browser settings.'
-          : err instanceof Error
-          ? err.message
-          : 'Could not access microphone.';
+      let msg = 'Could not access microphone.';
+
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        msg = isTauriDesktop()
+          ? 'Microphone permission was denied. Please allow microphone access under macOS System Settings > Privacy & Security > Microphone.'
+          : 'Microphone permission was denied. Please allow microphone access in your browser address bar.';
+      } else if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
+        msg = 'No microphone input device detected. Please connect a microphone or headset.';
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
       setErrorMessage(msg);
       cleanup();
       setIsRecording(false);
@@ -214,7 +258,16 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       const recognition = new SpeechRec();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'fil-PH';
+
+      // Match recognition language to requested session language
+      recognition.lang =
+        language === 'fil'
+          ? 'fil-PH'
+          : language === 'en'
+          ? 'en-US'
+          : language === 'ja'
+          ? 'ja-JP'
+          : 'fil-PH';
 
       recognition.onresult = (event: any) => {
         let currentDraft = '';
@@ -222,6 +275,11 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
           currentDraft += event.results[i][0].transcript + ' ';
         }
         setLiveTranscript(currentDraft);
+      };
+
+      recognition.onerror = (e: any) => {
+        // SpeechRecognition warnings are non-fatal (audio capture still records)
+        console.warn('SpeechRecognition notice:', e?.error);
       };
 
       recognition.start();
