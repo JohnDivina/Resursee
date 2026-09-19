@@ -135,7 +135,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           onEnded={() => setIsPlaying(false)}
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
-          preload="metadata"
+          onError={(e) => {
+            console.warn('Audio player error:', e);
+            setIsPlaying(false);
+          }}
+          preload="auto"
         />
       )}
 

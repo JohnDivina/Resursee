@@ -103,8 +103,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Native Tauri desktop app bypass (local WKWebView)
-  if (userAgent.includes('com.resursee.desktop') || userAgent.includes('tauri')) {
+  // 3. Localhost & Native Tauri desktop app bypass
+  const host = request.headers.get('host') || '';
+  const isLocalHost = host.includes('localhost') || host.includes('127.0.0.1');
+  if (isLocalHost || userAgent.includes('com.resursee.desktop') || userAgent.includes('tauri')) {
+    return NextResponse.next();
+  }
+
+  // 4. Dedicated AI transcription route enforces its own sliding-window rate limiter (AGENTS.md)
+  if (pathname === '/api/ai/transcribe') {
     return NextResponse.next();
   }
 

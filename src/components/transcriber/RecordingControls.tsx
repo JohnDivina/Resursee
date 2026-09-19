@@ -12,7 +12,7 @@ import {
   SpeakerHigh,
   SpeakerSimpleSlash,
 } from '@phosphor-icons/react';
-import { formatTimestamp, decodeAudioFile } from '@/lib/audioProcessor';
+import { formatTimestamp, decodeAudioFile, float32ArrayToWavBlob } from '@/lib/audioProcessor';
 import { isTauriDesktop } from '@/lib/envDetector';
 
 interface AudioDeviceOption {
@@ -388,7 +388,7 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
     setLiveTranscript('');
 
     try {
-      const stream = await requestAudioStream();
+      const stream = await requestAudioStream(selectedDeviceId);
       streamRef.current = stream;
 
       // 1. Web Audio for Visual VU Meter and PCM Backup
@@ -594,13 +594,19 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       duration = Math.max(1, totalLen / 16000);
     }
 
-    if (finalBlob.size === 0 && rawChannelData.length === 0) {
+    // Generate universal uncompressed 16kHz PCM WAV blob guaranteed to play across all platforms
+    const playableWavBlob =
+      rawChannelData.length > 0
+        ? float32ArrayToWavBlob(rawChannelData, 16000)
+        : finalBlob;
+
+    if (playableWavBlob.size === 0 && rawChannelData.length === 0) {
       setErrorMessage('No speech recorded. Please check your microphone input.');
       return;
     }
 
     // Send final playable audioBlob and rawChannelData
-    onRecordingComplete(finalBlob, rawChannelData, duration, liveTranscript);
+    onRecordingComplete(playableWavBlob, rawChannelData, duration, liveTranscript);
   };
 
   return (

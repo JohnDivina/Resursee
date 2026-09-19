@@ -31,6 +31,8 @@ import {
   X,
   Play,
   Stop,
+  FileText,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 import {
   TranscriberSession,
@@ -1046,16 +1048,14 @@ export default function TranscriberPage() {
                         Record speech directly in your browser or desktop app. Audio is processed with live speech recognition and AI turn diarization.
                       </p>
                     </div>
-                    {session.segments.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleNewSession}
-                        className="self-start sm:self-auto flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 cursor-pointer"
-                      >
-                        <Plus size={14} weight="bold" />
-                        <span>Start Fresh Session</span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={handleNewSession}
+                      className="self-start sm:self-auto flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 cursor-pointer"
+                    >
+                      <Plus size={14} weight="bold" />
+                      <span>Start Fresh Session</span>
+                    </button>
                   </div>
 
                   {/* Curated Model Selection Pill / Quality Bar */}
@@ -1118,16 +1118,14 @@ export default function TranscriberPage() {
                         Drop an MP3, WAV, M4A, AIFF, MP4, or MOV file for speech transcription and turn diarization.
                       </p>
                     </div>
-                    {session.segments.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleNewSession}
-                        className="self-start sm:self-auto flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 cursor-pointer"
-                      >
-                        <Plus size={14} weight="bold" />
-                        <span>Start Fresh Session</span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={handleNewSession}
+                      className="self-start sm:self-auto flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 cursor-pointer"
+                    >
+                      <Plus size={14} weight="bold" />
+                      <span>Start Fresh Session</span>
+                    </button>
                   </div>
 
                   {/* Curated Model Selection Pill / Quality Bar */}
@@ -1266,21 +1264,71 @@ export default function TranscriberPage() {
 
               {activeTab === 'models' && uiMode === 'advanced' && (
                 <div className="mb-6 space-y-6">
-                  {/* Curated Speech Models Panel (Matching Notero Design) */}
+                  {/* Architectural Clarification Card */}
                   <div className="rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
-                    <div className="mb-6">
-                      <h2 className="text-lg font-bold text-neutral-900 dark:text-white mb-1">
-                        Speech-to-Text Models
+                    <div className="flex items-center gap-2 mb-3">
+                      <Cpu size={18} weight="bold" className="text-neutral-900 dark:text-white" />
+                      <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+                        AI Engine Architecture &amp; Roles
                       </h2>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Curated OpenAI Whisper open-source models for on-device Filipino-English (Taglish) and multilingual conversations.
-                      </p>
+                    </div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed mb-4">
+                      Resursee uses two completely separate, independent engines. OpenAI Whisper handles audio transcription, while Ollama handles text summarization.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="font-bold text-xs text-neutral-900 dark:text-white flex items-center gap-1.5">
+                            <Microphone size={15} weight="bold" /> 1. Speech-to-Text Engine
+                          </span>
+                          <span className="rounded-md border border-neutral-300 bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                            Independent Engine
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                          Powered by <strong>OpenAI Whisper</strong> on-device via WebGPU / ONNX WebAssembly. It runs directly in your app/browser to convert audio waveforms into text. <strong>It does NOT run inside or require Ollama.</strong>
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="font-bold text-xs text-neutral-900 dark:text-white flex items-center gap-1.5">
+                            <FileText size={15} weight="bold" /> 2. Meeting Notes LLM
+                          </span>
+                          <span className="rounded-md border border-neutral-300 bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                            Text LLM Only
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                          Powered by <strong>Ollama</strong> (e.g. Llama 3, Mistral, Qwen) or our built-in summarizer. Ollama does not process audio files; it strictly reads the completed transcript text to synthesize action items and executive summaries.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 1: Speech-to-Text Engine (OpenAI Whisper) */}
+                  <div className="rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
+                    <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
+                            Speech-to-Text Models (OpenAI Whisper)
+                          </h2>
+                          <span className="rounded-md border border-neutral-300 bg-neutral-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                            On-Device WebGPU
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          Curated OpenAI Whisper open-source models for on-device Filipino-English (Taglish) and multilingual conversations. Runs independently of Ollama.
+                        </p>
+                      </div>
                     </div>
 
                     {/* Quality Switcher */}
                     <div className="mb-6 space-y-3">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                        Quality
+                        Speech Quality Preset
                       </h3>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50/70 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
                         <span className="font-semibold text-xs text-neutral-900 dark:text-white">
@@ -1323,9 +1371,9 @@ export default function TranscriberPage() {
 
                         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-2.5 dark:border-neutral-800">
                           <div className="flex items-center gap-2">
-                            <span className="text-neutral-500 dark:text-neutral-400">Uses:</span>
+                            <span className="text-neutral-500 dark:text-neutral-400">Architecture:</span>
                             <span className="font-mono font-semibold text-neutral-900 dark:text-white">
-                              {activeCuratedModel.name}
+                              {activeCuratedModel.architecture}
                             </span>
                           </div>
 
@@ -1339,11 +1387,11 @@ export default function TranscriberPage() {
                       </div>
                     </div>
 
-                    {/* On this Mac / Device Section */}
+                    {/* On this Device Section */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                          Curated Models on this Device
+                          Curated Whisper Models on this Device
                         </h3>
                         <span className="font-mono text-[10px] text-neutral-400">
                           Open-Source Weights (MIT License) • $0 API Cost
@@ -1409,16 +1457,31 @@ export default function TranscriberPage() {
                     </div>
                   </div>
 
-                  {/* Local LLM Engines & Ollama Integration */}
+                  {/* Section 2: Meeting Intelligence & Notes LLM (Ollama) */}
                   <div className="rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
-                    <h2 className="mb-2 text-base font-bold text-neutral-900 dark:text-white">
-                      Meeting Intelligence &amp; Ollama Integration
-                    </h2>
-                    <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">
-                      Local LLM engines for meeting notes synthesis, summaries, action items, and speaker diarization.
-                    </p>
+                    <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                      <div>
+                        <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+                          Meeting Intelligence &amp; Ollama Integration
+                        </h2>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                          Text summarization engine for meeting notes, executive briefs, and action item synthesis. (Does not transcribe audio).
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => probeOllama()}
+                          className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-800 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 cursor-pointer"
+                          title="Check Ollama status on localhost:11434"
+                        >
+                          <ArrowsClockwise size={13} weight="bold" />
+                          <span>Refresh Ollama</span>
+                        </button>
+                      </div>
+                    </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-4 mt-4">
                       <div
                         onClick={() =>
                           setSession((prev) => ({ ...prev, tier: 'browser' }))
@@ -1431,10 +1494,10 @@ export default function TranscriberPage() {
                       >
                         <div className="mb-1 flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
                           <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
-                          <span>Browser Web Audio &amp; WebGPU</span>
+                          <span>Built-in Browser Summarizer</span>
                         </div>
                         <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                          Runs inference in your browser tab with WebGPU hardware acceleration. Zero external setup required.
+                          Instant smart heuristic summarization and action item extractor directly in your browser. Zero setup or external server required.
                         </p>
                       </div>
 
@@ -1450,31 +1513,45 @@ export default function TranscriberPage() {
                       >
                         <div className="mb-1 flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
                           <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
-                          <span>Local Ollama Daemon (localhost:11434)</span>
+                          <span>Local Ollama LLM (localhost:11434)</span>
                         </div>
                         <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                          Uses your local Ollama headless daemon for meeting intelligence, summaries, and action item synthesis.
+                          Connects to your local Ollama instance (running Llama 3, Mistral, Gemma, or Qwen) for deep meeting intelligence synthesis.
                         </p>
                       </div>
                     </div>
 
-                    {/* Local Model Selector */}
-                    {installedModels.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
-                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                          Selected Ollama LLM:
+                    {/* Local Model Selector & Connection Status */}
+                    {installedModels.length > 0 ? (
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
+                          <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                            Ollama Connected ({installedModels.length} text models available):
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
+                          >
+                            {installedModels.map((m) => (
+                              <option key={m.name} value={m.name}>
+                                {m.name} ({m.details?.parameter_size || 'LLM'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 text-xs text-neutral-500 dark:text-neutral-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <span>
+                          Ollama daemon is currently not running on <code>localhost:11434</code>. Resursee will automatically use the built-in summarizer for meeting notes.
                         </span>
-                        <select
-                          value={selectedModel}
-                          onChange={(e) => setSelectedModel(e.target.value)}
-                          className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
-                        >
-                          {installedModels.map((m) => (
-                            <option key={m.name} value={m.name}>
-                              {m.name} ({m.details?.parameter_size || 'LLM'})
-                            </option>
-                          ))}
-                        </select>
+                        <span className="font-mono text-[11px] text-neutral-400 shrink-0">
+                          Run: <code>ollama serve</code>
+                        </span>
                       </div>
                     )}
                   </div>

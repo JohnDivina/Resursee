@@ -351,7 +351,11 @@ export async function transcribeWithBrowser(
 
   try {
     const { pipeline } = await import('@huggingface/transformers');
-    const modelId = matchedCurated.huggingFaceRepo;
+    // Safeguard in-browser ONNX memory: map large models to whisper-base to avoid WebAssembly OOM crashes
+    const modelId =
+      matchedCurated.huggingFaceRepo.includes('large')
+        ? 'onnx-community/whisper-base'
+        : matchedCurated.huggingFaceRepo;
 
     const transcriber = await (pipeline as any)('automatic-speech-recognition', modelId, {
       dtype: 'fp32',
