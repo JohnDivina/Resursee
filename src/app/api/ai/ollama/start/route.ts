@@ -102,15 +102,16 @@ export async function POST(request: NextRequest) {
     let launched = false;
 
     if (platform === 'darwin') {
-      // macOS: Prefer running headless daemon in the background without opening GUI application
+      // macOS: Run headless daemon in the background without opening GUI application
       const candidatePaths = [
+        '/Applications/Ollama.app/Contents/Resources/ollama',
         '/usr/local/bin/ollama',
         '/opt/homebrew/bin/ollama',
-        '/Applications/Ollama.app/Contents/Resources/ollama',
+        'ollama',
       ];
       const existingBin = candidatePaths.find((p) => {
         try {
-          return fs.existsSync(p);
+          return p === 'ollama' || fs.existsSync(p);
         } catch {
           return false;
         }
@@ -125,12 +126,19 @@ export async function POST(request: NextRequest) {
           });
           child.unref();
           launched = true;
-        } catch {
-          // fallback to command search below
-        }
+        } catch {}
       }
-
-      if (!launched) {
+    } else if (platform === 'win32') {
+      // Windows: Spawn headless CLI daemon
+      try {
+        const child = spawn('ollama.exe', ['serve'], {
+          detached: true,
+          stdio: 'ignore',
+          env: { ...process.env, OLLAMA_ORIGINS: '*' },
+        });
+        child.unref();
+        launched = true;
+      } catch {
         try {
           const child = spawn('ollama', ['serve'], {
             detached: true,
@@ -139,36 +147,7 @@ export async function POST(request: NextRequest) {
           });
           child.unref();
           launched = true;
-        } catch {
-          // If binary CLI not found, launch official app hidden in background without bringing to foreground
-          try {
-            await execPromise('open -g -j -a Ollama');
-            launched = true;
-          } catch {
-            try {
-              await execPromise('open -a Ollama');
-              launched = true;
-            } catch {}
-          }
-        }
-      }
-    } else if (platform === 'win32') {
-      // Windows
-      try {
-        const child = spawn('cmd.exe', ['/c', 'start', '', 'ollama', 'app'], {
-          detached: true,
-          stdio: 'ignore',
-        });
-        child.unref();
-        launched = true;
-      } catch {
-        const child = spawn('ollama', ['serve'], {
-          detached: true,
-          stdio: 'ignore',
-          env: { ...process.env, OLLAMA_ORIGINS: '*' },
-        });
-        child.unref();
-        launched = true;
+        } catch {}
       }
     } else {
       // Linux

@@ -83,9 +83,9 @@ export default function RootLayout({
               <TauriExternalLinkHandler />
               <WavyBackground
                 isFixed={true}
-                waveOpacity={0.48}
-                darkWaveOpacity={0.28}
-                blur={10}
+                waveOpacity={0.50}
+                darkWaveOpacity={0.50}
+                blur={8}
                 speed="fast"
                 containerClassName="min-h-screen bg-[var(--color-paper)]"
               >

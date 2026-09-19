@@ -15,8 +15,8 @@ export const WavyBackground = ({
   backgroundFill = 'transparent',
   blur = 8,
   speed = 'fast',
-  waveOpacity = 0.45,
-  darkWaveOpacity = 0.30,
+  waveOpacity = 0.50,
+  darkWaveOpacity = 0.50,
   isFixed = false,
   ...props
 }: {

@@ -9,6 +9,8 @@ import {
   SlidersHorizontal,
   WarningCircle,
   ArrowsClockwise,
+  SpeakerHigh,
+  SpeakerSimpleSlash,
 } from '@phosphor-icons/react';
 import { formatTimestamp, decodeAudioFile } from '@/lib/audioProcessor';
 import { isTauriDesktop } from '@/lib/envDetector';
@@ -59,16 +61,35 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
   const recognitionRef = useRef<any>(null);
   const isPausedRef = useRef<boolean>(false);
 
-  // Test Mic Audio Nodes
+  // Test Mic Audio Nodes & Voice Loopback (Discord-Style Sidetone)
   const testStreamRef = useRef<MediaStream | null>(null);
   const testAudioCtxRef = useRef<AudioContext | null>(null);
   const testAnalyserRef = useRef<AnalyserNode | null>(null);
+  const testMonitorGainRef = useRef<GainNode | null>(null);
+  const [hearVoiceFeedback, setHearVoiceFeedback] = useState<boolean>(true);
+  const [feedbackVolume, setFeedbackVolume] = useState<number>(0.85);
 
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
 
+  // Dynamically update real-time voice feedback volume
+  useEffect(() => {
+    if (testMonitorGainRef.current && testAudioCtxRef.current) {
+      try {
+        testMonitorGainRef.current.gain.value = hearVoiceFeedback ? feedbackVolume : 0;
+      } catch {}
+    }
+  }, [hearVoiceFeedback, feedbackVolume]);
+
   const stopMicTest = useCallback(() => {
+    if (testMonitorGainRef.current) {
+      try {
+        testMonitorGainRef.current.gain.value = 0;
+        testMonitorGainRef.current.disconnect();
+      } catch {}
+      testMonitorGainRef.current = null;
+    }
     if (testStreamRef.current) {
       testStreamRef.current.getTracks().forEach((t) => t.stop());
       testStreamRef.current = null;
@@ -281,6 +302,13 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       analyser.fftSize = 64;
       source.connect(analyser);
       testAnalyserRef.current = analyser;
+
+      // Real-time audio feedback loopback (Discord-style voice sidetone)
+      const monitorGain = audioCtx.createGain();
+      monitorGain.gain.value = hearVoiceFeedback ? feedbackVolume : 0;
+      source.connect(monitorGain);
+      monitorGain.connect(audioCtx.destination);
+      testMonitorGainRef.current = monitorGain;
 
       setIsTestingMic(true);
 
@@ -682,6 +710,60 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Discord-Style Voice Audio Loopback Panel (Active while testing mic) */}
+      {isTestingMic && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-neutral-300 bg-neutral-100/90 p-3 text-xs dark:border-neutral-700 dark:bg-neutral-800/80 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setHearVoiceFeedback((prev) => !prev)}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
+                hearVoiceFeedback
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                  : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300'
+              }`}
+              title={hearVoiceFeedback ? 'Mute voice feedback' : 'Enable voice feedback to hear yourself'}
+            >
+              {hearVoiceFeedback ? (
+                <SpeakerHigh size={14} weight="bold" />
+              ) : (
+                <SpeakerSimpleSlash size={14} weight="bold" />
+              )}
+              <span>Hear Yourself: {hearVoiceFeedback ? 'On' : 'Muted'}</span>
+            </button>
+            <span className="hidden sm:inline text-neutral-400 dark:text-neutral-500">•</span>
+            <span className="text-[11px] text-neutral-600 dark:text-neutral-300">
+              Real-time voice feedback (headphones recommended)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+            <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 shrink-0">
+              Volume:
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={hearVoiceFeedback ? feedbackVolume : 0}
+              disabled={!hearVoiceFeedback}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setFeedbackVolume(val);
+                if (!hearVoiceFeedback && val > 0) {
+                  setHearVoiceFeedback(true);
+                }
+              }}
+              className="h-1.5 w-24 accent-neutral-900 dark:accent-white cursor-pointer"
+            />
+            <span className="font-mono text-[11px] text-neutral-600 dark:text-neutral-300 w-8 text-right">
+              {Math.round((hearVoiceFeedback ? feedbackVolume : 0) * 100)}%
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Main Recording Action Bar */}
       <div className="flex flex-wrap items-center justify-center gap-3">

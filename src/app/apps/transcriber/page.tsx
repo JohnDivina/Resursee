@@ -42,6 +42,9 @@ import {
   SupportedLanguage,
   SUPPORTED_LANGUAGES,
   BenchmarkResult,
+  CuratedModelTier,
+  CuratedSpeechModel,
+  CURATED_SPEECH_MODELS,
 } from '@/types/transcriber';
 import {
   decodeAudioFile,
@@ -148,6 +151,28 @@ export default function TranscriberPage() {
   const [rightPanelTab, setRightPanelTab] = useState<
     'notes' | 'speakers' | 'bookmarks' | 'search'
   >('notes');
+
+  // Curated OpenAI Whisper model state
+  const [curatedModelId, setCuratedModelId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('resursee_curated_whisper_model') || 'large-v3-turbo';
+      } catch {}
+    }
+    return 'large-v3-turbo';
+  });
+  const [selectedQualityTab, setSelectedQualityTab] = useState<CuratedModelTier | 'all'>('balanced');
+
+  const handleSelectCuratedModel = (modelId: string) => {
+    setCuratedModelId(modelId);
+    try {
+      localStorage.setItem('resursee_curated_whisper_model', modelId);
+    } catch {}
+  };
+
+  const activeCuratedModel =
+    CURATED_SPEECH_MODELS.find((m) => m.id === curatedModelId) ||
+    CURATED_SPEECH_MODELS[0];
 
   // Probe Ollama connection on mount
   useEffect(() => {
@@ -355,13 +380,14 @@ export default function TranscriberPage() {
       const result = await transcribeWithBrowser(
         channelData,
         session.language,
-        'tiny',
+        curatedModelId,
         liveDraftText,
         ({ status, percentage }) => {
           setProgressStatus(status);
           setProgressPercent(percentage);
         },
-        audioBlob || session.audioBlob
+        audioBlob || session.audioBlob,
+        curatedModelId
       );
 
       const speakers = extractSpeakers(result.segments);
@@ -376,8 +402,8 @@ export default function TranscriberPage() {
         modelUsed: liveDraftText
           ? 'Live Speech Recognition'
           : result.summary
-          ? 'AI Speech Engine (Gemini / Whisper)'
-          : 'Whisper Local (WebGPU/WASM)',
+          ? `OpenAI Whisper (${activeCuratedModel.name})`
+          : `Whisper (${activeCuratedModel.name})`,
       }));
 
       setProgressPercent(100);
@@ -667,10 +693,10 @@ export default function TranscriberPage() {
   );
 
   return (
-    <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden bg-neutral-100/50 text-neutral-900 antialiased dark:bg-[#0c0c0c] dark:text-neutral-100">
+    <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden bg-neutral-100/60 text-neutral-900 antialiased dark:bg-[#0c0c0c]/80 dark:text-neutral-100 backdrop-blur-xs">
       {/* LEFT APP SIDEBAR */}
       <Sidebar open={openSidebar} setOpen={setOpenSidebar} animate={true}>
-        <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#111111]">
+        <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 bg-white/90 dark:border-neutral-800 dark:bg-[#111111]/85 backdrop-blur-md">
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             {/* Back to Resursee Hub Link */}
             <div className="mb-4">
@@ -920,7 +946,7 @@ export default function TranscriberPage() {
         {/* MAIN APPLICATION WORKSPACE */}
         <div className="flex flex-1 flex-col overflow-hidden min-w-0">
           {/* TOP APP BAR */}
-          <header className="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4 sm:px-6 dark:border-neutral-800 dark:bg-[#121212] min-w-0">
+          <header className="flex h-14 items-center justify-between border-b border-neutral-200 bg-white/90 px-4 sm:px-6 dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md min-w-0">
             <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
               <input
                 type="text"
@@ -1010,7 +1036,7 @@ export default function TranscriberPage() {
             <main className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6 min-w-0">
               {/* SIDEBAR TAB SECTIONS */}
               {activeTab === 'record' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
                   <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
                       <h2 className="text-base font-bold text-neutral-900 dark:text-white">
@@ -1031,6 +1057,48 @@ export default function TranscriberPage() {
                       </button>
                     )}
                   </div>
+
+                  {/* Curated Model Selection Pill / Quality Bar */}
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-neutral-50/80 p-2.5 text-xs dark:border-neutral-800 dark:bg-neutral-900/50">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Cpu size={14} weight="bold" className="text-neutral-700 dark:text-neutral-300" />
+                      <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                        Whisper Model:
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-neutral-900 dark:text-white">
+                        {activeCuratedModel.name}
+                      </span>
+                      <span className="rounded-md border border-neutral-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                        {activeCuratedModel.tierLabel} • {activeCuratedModel.params}
+                      </span>
+                      <span className="hidden sm:inline rounded-md bg-neutral-200/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                        100% Free &amp; Local
+                      </span>
+                    </div>
+
+                    {/* Quick Tier Switcher */}
+                    <div className="flex items-center gap-1">
+                      {(['fast', 'balanced', 'accurate'] as const).map((tier) => {
+                        const targetModel = CURATED_SPEECH_MODELS.find((m) => m.tier === tier);
+                        const isActive = activeCuratedModel.tier === tier;
+                        return (
+                          <button
+                            key={tier}
+                            type="button"
+                            onClick={() => targetModel && handleSelectCuratedModel(targetModel.id)}
+                            className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
+                              isActive
+                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+                                : 'text-neutral-600 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-800'
+                            }`}
+                          >
+                            {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <RecordingControls
                     onRecordingComplete={handleRecordingComplete}
                     isProcessing={session.status === 'transcribing'}
@@ -1040,7 +1108,7 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'import' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
                   <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
                       <h2 className="text-base font-bold text-neutral-900 dark:text-white">
@@ -1061,6 +1129,48 @@ export default function TranscriberPage() {
                       </button>
                     )}
                   </div>
+
+                  {/* Curated Model Selection Pill / Quality Bar */}
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-neutral-50/80 p-2.5 text-xs dark:border-neutral-800 dark:bg-neutral-900/50">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Cpu size={14} weight="bold" className="text-neutral-700 dark:text-neutral-300" />
+                      <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                        Whisper Model:
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-neutral-900 dark:text-white">
+                        {activeCuratedModel.name}
+                      </span>
+                      <span className="rounded-md border border-neutral-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                        {activeCuratedModel.tierLabel} • {activeCuratedModel.params}
+                      </span>
+                      <span className="hidden sm:inline rounded-md bg-neutral-200/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                        100% Free &amp; Local
+                      </span>
+                    </div>
+
+                    {/* Quick Tier Switcher */}
+                    <div className="flex items-center gap-1">
+                      {(['fast', 'balanced', 'accurate'] as const).map((tier) => {
+                        const targetModel = CURATED_SPEECH_MODELS.find((m) => m.tier === tier);
+                        const isActive = activeCuratedModel.tier === tier;
+                        return (
+                          <button
+                            key={tier}
+                            type="button"
+                            onClick={() => targetModel && handleSelectCuratedModel(targetModel.id)}
+                            className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
+                              isActive
+                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+                                : 'text-neutral-600 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-800'
+                            }`}
+                          >
+                            {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <FileDropZone
                     onFileSelect={handleFileSelect}
                     isProcessing={session.status === 'transcribing'}
@@ -1069,7 +1179,7 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'history' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
                   <h2 className="mb-3 text-base font-bold text-neutral-900 dark:text-white">
                     Saved Sessions ({savedSessions.length})
                   </h2>
@@ -1119,7 +1229,7 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'export' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
                   <h2 className="mb-2 text-base font-bold text-neutral-900 dark:text-white">
                     Export Transcripts & Meeting Intelligence
                   </h2>
@@ -1155,76 +1265,224 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'models' && uiMode === 'advanced' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
-                  <h2 className="mb-2 text-base font-bold text-neutral-900 dark:text-white">
-                    Local Engines & Ollama Integration
-                  </h2>
-                  <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">
-                    100% private, on-device transcription and meeting note synthesis.
-                  </p>
-
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-4">
-                    <div
-                      onClick={() =>
-                        setSession((prev) => ({ ...prev, tier: 'browser' }))
-                      }
-                      className={`flex flex-col items-start rounded-xl border p-4 text-left cursor-pointer transition ${
-                        session.tier === 'browser'
-                          ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900'
-                          : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#141414]'
-                      }`}
-                    >
-                      <div className="mb-1 flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
-                        <span>🟢 Browser Engine (Transformers.js WebGPU)</span>
-                      </div>
-                      <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                        Runs Whisper ONNX in your browser tab with WebGPU hardware acceleration. Zero setup required.
+                <div className="mb-6 space-y-6">
+                  {/* Curated Speech Models Panel (Matching Notero Design) */}
+                  <div className="rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
+                    <div className="mb-6">
+                      <h2 className="text-lg font-bold text-neutral-900 dark:text-white mb-1">
+                        Speech-to-Text Models
+                      </h2>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        Curated OpenAI Whisper open-source models for on-device Filipino-English (Taglish) and multilingual conversations.
                       </p>
                     </div>
 
-                    <div
-                      onClick={() =>
-                        setSession((prev) => ({ ...prev, tier: 'local' }))
-                      }
-                      className={`flex flex-col items-start rounded-xl border p-4 text-left cursor-pointer transition ${
-                        session.tier === 'local'
-                          ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900'
-                          : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#141414]'
-                      }`}
-                    >
-                      <div className="mb-1 flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
-                        <span>🟡 Local Ollama Engine (localhost:11434)</span>
+                    {/* Quality Switcher */}
+                    <div className="mb-6 space-y-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                        Quality
+                      </h3>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50/70 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
+                        <span className="font-semibold text-xs text-neutral-900 dark:text-white">
+                          Model Preset
+                        </span>
+
+                        <div className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-100 p-1 dark:border-neutral-700 dark:bg-neutral-800">
+                          {(['fast', 'balanced', 'accurate'] as const).map((tier) => {
+                            const targetModel = CURATED_SPEECH_MODELS.find((m) => m.tier === tier);
+                            const isActive = activeCuratedModel.tier === tier;
+                            return (
+                              <button
+                                key={tier}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedQualityTab(tier);
+                                  if (targetModel) handleSelectCuratedModel(targetModel.id);
+                                }}
+                                className={`rounded-md px-3 py-1 text-xs font-semibold transition cursor-pointer ${
+                                  isActive
+                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+                                    : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
+                                }`}
+                              >
+                                {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                        Uses your local Ollama daemon for meeting intelligence, summaries, and action item synthesis.
-                      </p>
+
+                      {/* Active Model Description Card */}
+                      <div className="rounded-xl border border-neutral-200 bg-white p-3.5 text-xs dark:border-neutral-800 dark:bg-neutral-900/30">
+                        <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed mb-3">
+                          <span className="font-mono font-bold text-neutral-900 dark:text-white">
+                            {activeCuratedModel.name}
+                          </span>
+                          . {activeCuratedModel.description}
+                        </p>
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-2.5 dark:border-neutral-800">
+                          <div className="flex items-center gap-2">
+                            <span className="text-neutral-500 dark:text-neutral-400">Uses:</span>
+                            <span className="font-mono font-semibold text-neutral-900 dark:text-white">
+                              {activeCuratedModel.name}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
+                            <span className="font-mono text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
+                              Downloaded &amp; Ready • 100% Free &amp; Local
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* On this Mac / Device Section */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                          Curated Models on this Device
+                        </h3>
+                        <span className="font-mono text-[10px] text-neutral-400">
+                          Open-Source Weights (MIT License) • $0 API Cost
+                        </span>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {CURATED_SPEECH_MODELS.map((model) => {
+                          const isSelected = activeCuratedModel.id === model.id;
+                          return (
+                            <div
+                              key={model.id}
+                              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border p-3.5 transition ${
+                                isSelected
+                                  ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900/60'
+                                  : 'border-neutral-200 bg-white hover:border-neutral-300 dark:border-neutral-800 dark:bg-[#141414] dark:hover:border-neutral-700'
+                              }`}
+                            >
+                              <div className="space-y-1 min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {isSelected ? (
+                                    <CheckCircle size={15} weight="fill" className="text-neutral-900 dark:text-white shrink-0" />
+                                  ) : (
+                                    <div className="h-3.5 w-3.5 rounded-full border border-neutral-300 dark:border-neutral-700 shrink-0" />
+                                  )}
+                                  <span className="font-mono font-bold text-xs text-neutral-900 dark:text-white">
+                                    {model.name}
+                                  </span>
+                                  <span className="rounded-md border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                    {model.tierLabel}
+                                  </span>
+                                  <span className="rounded-md border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                    Taglish: {model.taglishCapability}
+                                  </span>
+                                </div>
+
+                                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 pl-5 leading-normal">
+                                  {model.description}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center sm:flex-col sm:items-end justify-between gap-2 shrink-0 sm:pl-4">
+                                <span className="font-mono text-xs text-neutral-500 dark:text-neutral-400">
+                                  {model.downloadSize}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleSelectCuratedModel(model.id)}
+                                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs'
+                                      : 'border border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'
+                                  }`}
+                                >
+                                  {isSelected ? 'Active' : 'Select'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Local Model Selector */}
-                  {installedModels.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
-                      <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                        Selected Ollama Model:
-                      </span>
-                      <select
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
+                  {/* Local LLM Engines & Ollama Integration */}
+                  <div className="rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
+                    <h2 className="mb-2 text-base font-bold text-neutral-900 dark:text-white">
+                      Meeting Intelligence &amp; Ollama Integration
+                    </h2>
+                    <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">
+                      Local LLM engines for meeting notes synthesis, summaries, action items, and speaker diarization.
+                    </p>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-4">
+                      <div
+                        onClick={() =>
+                          setSession((prev) => ({ ...prev, tier: 'browser' }))
+                        }
+                        className={`flex flex-col items-start rounded-xl border p-4 text-left cursor-pointer transition ${
+                          session.tier === 'browser'
+                            ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900'
+                            : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#141414]'
+                        }`}
                       >
-                        {installedModels.map((m) => (
-                          <option key={m.name} value={m.name}>
-                            {m.name} ({m.details?.parameter_size || 'LLM'})
-                          </option>
-                        ))}
-                      </select>
+                        <div className="mb-1 flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
+                          <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
+                          <span>Browser Web Audio &amp; WebGPU</span>
+                        </div>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                          Runs inference in your browser tab with WebGPU hardware acceleration. Zero external setup required.
+                        </p>
+                      </div>
+
+                      <div
+                        onClick={() =>
+                          setSession((prev) => ({ ...prev, tier: 'local' }))
+                        }
+                        className={`flex flex-col items-start rounded-xl border p-4 text-left cursor-pointer transition ${
+                          session.tier === 'local'
+                            ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900'
+                            : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#141414]'
+                        }`}
+                      >
+                        <div className="mb-1 flex items-center gap-2 font-bold text-xs text-neutral-900 dark:text-white">
+                          <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
+                          <span>Local Ollama Daemon (localhost:11434)</span>
+                        </div>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                          Uses your local Ollama headless daemon for meeting intelligence, summaries, and action item synthesis.
+                        </p>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Local Model Selector */}
+                    {installedModels.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
+                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                          Selected Ollama LLM:
+                        </span>
+                        <select
+                          value={selectedModel}
+                          onChange={(e) => setSelectedModel(e.target.value)}
+                          className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
+                        >
+                          {installedModels.map((m) => (
+                            <option key={m.name} value={m.name}>
+                              {m.name} ({m.details?.parameter_size || 'LLM'})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {activeTab === 'benchmark' && uiMode === 'advanced' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
                   <BenchmarkRunner
                     currentTier={session.tier}
                     onRunBenchmark={handleRunBenchmark}
@@ -1233,7 +1491,7 @@ export default function TranscriberPage() {
               )}
 
               {activeTab === 'settings' && uiMode === 'advanced' && (
-                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                <div className="mb-6 rounded-2xl border border-neutral-200 bg-white/90 p-5 sm:p-6 shadow-sm dark:border-neutral-800 dark:bg-[#121212]/85 backdrop-blur-md">
                   <h2 className="mb-3 text-base font-bold text-neutral-900 dark:text-white">
                     Spoken Language & Detection
                   </h2>
@@ -1320,7 +1578,7 @@ export default function TranscriberPage() {
             </main>
 
             {/* RIGHT SIDE PANEL (Desktop persistent column) */}
-            <aside className="hidden lg:flex w-80 2xl:w-96 flex-col border-l border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-[#111111] shrink-0 min-w-0">
+            <aside className="hidden lg:flex w-80 2xl:w-96 flex-col border-l border-neutral-200 bg-white/90 p-4 dark:border-neutral-800 dark:bg-[#111111]/85 backdrop-blur-md shrink-0 min-w-0">
               {/* Panel Tabs */}
               <div className="mb-4 flex items-center gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800 shrink-0">
                 <button
@@ -1457,7 +1715,7 @@ export default function TranscriberPage() {
                   className="fixed inset-0 bg-neutral-900/50 backdrop-blur-xs transition-opacity"
                   onClick={() => setRightPanelOpen(false)}
                 />
-                <aside className="relative ml-auto flex h-full w-full max-w-sm flex-col bg-white p-4 shadow-2xl dark:bg-[#121212] min-w-0 z-10">
+                <aside className="relative ml-auto flex h-full w-full max-w-sm flex-col bg-white/95 p-4 shadow-2xl dark:bg-[#121212]/90 backdrop-blur-md min-w-0 z-10">
                   {/* Drawer Header */}
                   <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-2 dark:border-neutral-800">
                     <span className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">

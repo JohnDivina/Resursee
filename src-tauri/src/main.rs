@@ -35,48 +35,42 @@ fn check_ollama_status() -> Result<bool, String> {
 fn start_ollama_daemon() -> Result<String, String> {
     #[cfg(target_os = "macos")]
     {
-        // 1. Try opening the macOS Ollama app first
-        if let Ok(output) = Command::new("open").arg("-a").arg("Ollama").output() {
-            if output.status.success() {
-                return Ok("Ollama launched via macOS Application bundle".to_string());
-            }
-        }
-        if let Ok(output) = Command::new("open").arg("/Applications/Ollama.app").output() {
-            if output.status.success() {
-                return Ok("Ollama launched via /Applications/Ollama.app".to_string());
-            }
-        }
-        // 2. Fallback to known CLI binary locations
+        // Headless CLI execution: do NOT launch GUI app window
         let candidate_paths = [
+            "/Applications/Ollama.app/Contents/Resources/ollama",
             "/usr/local/bin/ollama",
             "/opt/homebrew/bin/ollama",
             "ollama",
         ];
         for path in candidate_paths {
-            if let Ok(_) = Command::new(path).arg("serve").spawn() {
-                return Ok(format!("Ollama daemon spawned via {}", path));
+            if std::path::Path::new(path).exists() || path == "ollama" {
+                if let Ok(_) = Command::new(path)
+                    .arg("serve")
+                    .env("OLLAMA_ORIGINS", "*")
+                    .spawn()
+                {
+                    return Ok(format!("Ollama daemon started silently in background via {}", path));
+                }
             }
         }
-        Err("Failed to start Ollama. Ensure Ollama is installed in /Applications or in your PATH.".to_string())
+        Err("Failed to start Ollama headless daemon. Ensure Ollama is installed in /Applications or in your PATH.".to_string())
     }
 
     #[cfg(target_os = "windows")]
     {
-        // Try Windows start command
-        let win_res = Command::new("cmd")
-            .args(&["/C", "start", "", "ollama", "app"])
-            .output();
-        if let Ok(output) = win_res {
-            if output.status.success() {
-                return Ok("Ollama launched via Windows Start".to_string());
-            }
-        }
-        // Fallback to spawning binary
+        // Headless CLI execution on Windows
         Command::new("ollama.exe")
             .arg("serve")
+            .env("OLLAMA_ORIGINS", "*")
             .spawn()
-            .map_err(|e| format!("Failed to spawn ollama.exe: {}", e))?;
-        Ok("Ollama daemon spawned on Windows".to_string())
+            .or_else(|_| {
+                Command::new("ollama")
+                    .arg("serve")
+                    .env("OLLAMA_ORIGINS", "*")
+                    .spawn()
+            })
+            .map_err(|e| format!("Failed to spawn headless ollama daemon: {}", e))?;
+        Ok("Ollama daemon spawned silently on Windows".to_string())
     }
 
     #[cfg(target_os = "linux")]

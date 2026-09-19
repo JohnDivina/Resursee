@@ -5,6 +5,8 @@ import {
   TranscriptionTier,
   SupportedLanguage,
   BenchmarkResult,
+  CuratedSpeechModel,
+  CURATED_SPEECH_MODELS,
 } from '@/types/transcriber';
 import { streamOllamaChat, DEFAULT_OLLAMA_ENDPOINT } from '@/lib/ollamaClient';
 import { float32ArrayToWavBlob } from '@/lib/audioProcessor';
@@ -249,10 +251,11 @@ async function transcribeViaApi(
 export async function transcribeWithBrowser(
   audioSamples: Float32Array,
   language: SupportedLanguage = 'fil',
-  modelSize: 'tiny' | 'base' = 'tiny',
+  modelSize: 'tiny' | 'base' | string = 'tiny',
   liveDraftText?: string,
   onProgress?: TranscribeProgressCallback,
-  audioBlob?: Blob
+  audioBlob?: Blob,
+  curatedModelId?: string
 ): Promise<{
   segments: TranscriptSegment[];
   summary: string;
@@ -333,18 +336,22 @@ export async function transcribeWithBrowser(
     return apiResult;
   }
 
-  // Strategy 3: Client-side local Whisper Tiny ONNX fallback
+  // Strategy 3: Client-side local Whisper ONNX (Curated OpenAI Whisper Model)
+  const matchedCurated = CURATED_SPEECH_MODELS.find(
+    (m) => m.id === curatedModelId || m.id === modelSize
+  ) || CURATED_SPEECH_MODELS[0];
+
   onProgress?.({
-    status: 'Running local Whisper ONNX model...',
+    status: `Running ${matchedCurated.name} ONNX model...`,
     percentage: 65,
-    detail: 'Executing in-browser speech-to-text...',
+    detail: `Executing ${matchedCurated.tierLabel} model inference (${matchedCurated.downloadSize})...`,
   });
 
   let rawChunks: Array<{ text: string; start: number; end: number }> = [];
 
   try {
     const { pipeline } = await import('@huggingface/transformers');
-    const modelId = modelSize === 'base' ? 'onnx-community/whisper-base' : 'onnx-community/whisper-tiny';
+    const modelId = matchedCurated.huggingFaceRepo;
 
     const transcriber = await (pipeline as any)('automatic-speech-recognition', modelId, {
       dtype: 'fp32',
