@@ -9,6 +9,7 @@ import {
   BookmarkSimple,
   SpeakerHigh,
   SpeakerSlash,
+  DownloadSimple,
 } from '@phosphor-icons/react';
 import { formatTimestamp } from '@/lib/audioProcessor';
 
@@ -268,6 +269,19 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               <SpeakerHigh size={15} weight="bold" />
             )}
           </button>
+
+          {/* Download Audio Recording */}
+          {audioUrl && (
+            <a
+              href={audioUrl}
+              download="resursee-recording.wav"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 transition hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 cursor-pointer shrink-0"
+              title="Download recording as standard 16kHz WAV audio"
+            >
+              <DownloadSimple size={14} weight="bold" />
+              <span className="hidden sm:inline">Download</span>
+            </a>
+          )}
         </div>
       </div>
     </div>

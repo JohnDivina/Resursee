@@ -94,7 +94,7 @@ export default function NewsPage() {
             {/* Quick search */}
             <div className="w-full md:w-72">
               <div className="relative flex items-center">
-                <MagnifyingGlass size={16} className="absolute left-3 text-[var(--color-primary)]" />
+                <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-primary)]" />
                 <input
                   type="text"
                   value={newsQuery}

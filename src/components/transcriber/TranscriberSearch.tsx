@@ -49,7 +49,7 @@ export const TranscriberSearch: React.FC<TranscriberSearchProps> = ({
       <div className="relative flex items-center min-w-0">
         <MagnifyingGlass
           size={15}
-          className="pointer-events-none absolute left-3 text-neutral-400 shrink-0"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 shrink-0"
         />
         <input
           type="text"
@@ -62,7 +62,7 @@ export const TranscriberSearch: React.FC<TranscriberSearchProps> = ({
           <button
             type="button"
             onClick={() => onSearchQueryChange('')}
-            className="absolute right-2.5 p-0.5 text-neutral-400 hover:text-neutral-800 dark:hover:text-white"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center p-1 text-neutral-400 hover:text-neutral-800 dark:hover:text-white cursor-pointer"
             title="Clear search"
           >
             <X size={13} weight="bold" />

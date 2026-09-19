@@ -33,6 +33,7 @@ import {
   Stop,
   FileText,
   ArrowsClockwise,
+  DownloadSimple,
 } from '@phosphor-icons/react';
 import {
   TranscriberSession,
@@ -611,10 +612,29 @@ export default function TranscriberPage() {
   };
 
   // Export handlers
-  const handleExport = (format: 'txt' | 'md' | 'srt' | 'vtt' | 'json') => {
+  const handleExport = (format: 'txt' | 'md' | 'srt' | 'vtt' | 'json' | 'wav') => {
     const baseName =
       session.title.replace(/[^a-zA-Z0-9_-]/g, '_') || 'meeting_transcript';
     switch (format) {
+      case 'wav':
+        if (session.audioBlob) {
+          const url = URL.createObjectURL(session.audioBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${baseName}.wav`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } else if (session.audioUrl) {
+          const a = document.createElement('a');
+          a.href = session.audioUrl;
+          a.download = `${baseName}.wav`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+        break;
       case 'txt':
         downloadFile(exportToTXT(session), `${baseName}.txt`, 'text/plain');
         break;
@@ -1234,19 +1254,20 @@ export default function TranscriberPage() {
                   <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">
                     Download this session directly to your device:
                   </p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
                     {[
-                      { id: 'txt', title: 'Plain Text (.txt)', desc: 'Speaker turns & times' },
-                      { id: 'md', title: 'Markdown (.md)', desc: 'Summary + Notes + Dialog' },
-                      { id: 'srt', title: 'SubRip (.srt)', desc: 'Video subtitles' },
-                      { id: 'vtt', title: 'WebVTT (.vtt)', desc: 'Web video cues' },
-                      { id: 'json', title: 'JSON (.json)', desc: 'Lossless raw payload' },
+                      { id: 'wav', title: 'Audio (.wav)', desc: 'Universal 16kHz PCM audio', disabled: !session.audioBlob && !session.audioUrl },
+                      { id: 'txt', title: 'Plain Text (.txt)', desc: 'Speaker turns & times', disabled: session.segments.length === 0 },
+                      { id: 'md', title: 'Markdown (.md)', desc: 'Summary + Notes + Dialog', disabled: session.segments.length === 0 },
+                      { id: 'srt', title: 'SubRip (.srt)', desc: 'Video subtitles', disabled: session.segments.length === 0 },
+                      { id: 'vtt', title: 'WebVTT (.vtt)', desc: 'Web video cues', disabled: session.segments.length === 0 },
+                      { id: 'json', title: 'JSON (.json)', desc: 'Lossless raw payload', disabled: session.segments.length === 0 },
                     ].map((fmt) => (
                       <button
                         key={fmt.id}
                         type="button"
                         onClick={() => handleExport(fmt.id as any)}
-                        disabled={session.segments.length === 0}
+                        disabled={fmt.disabled}
                         className="flex flex-col items-start rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-left transition hover:border-neutral-900 disabled:opacity-40 dark:border-neutral-800 dark:bg-neutral-900/50 dark:hover:border-neutral-400 cursor-pointer"
                       >
                         <Export size={18} className="mb-1 text-neutral-700 dark:text-neutral-300" />
@@ -1601,6 +1622,49 @@ export default function TranscriberPage() {
                 </div>
               )}
 
+              {/* LIVE TRANSCRIBING / PROCESSING BANNER */}
+              {session.status === 'transcribing' && (
+                <div className="mb-6 rounded-2xl border border-neutral-300 bg-neutral-100/95 p-4 sm:p-5 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/90 backdrop-blur-md animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm shrink-0">
+                        <ArrowsClockwise size={20} weight="bold" className="animate-spin" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-neutral-900 dark:text-white">
+                            AI Model is Transcribing Audio...
+                          </span>
+                          <span className="rounded-md border border-neutral-300 bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                            Active Processing
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                          {progressStatus || 'Analyzing audio track and generating conversational turns...'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar & Stage Status */}
+                    <div className="flex flex-col items-end gap-1.5 shrink-0 sm:w-56">
+                      <div className="flex w-full justify-between font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
+                        <span>Progress</span>
+                        <span>{progressPercent > 0 ? `${progressPercent}%` : 'Processing'}</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+                        <div
+                          className="h-full rounded-full bg-neutral-900 transition-all duration-300 dark:bg-white"
+                          style={{ width: `${Math.max(15, progressPercent)}%` }}
+                        />
+                      </div>
+                      <span className="font-mono text-[10px] text-neutral-400">
+                        Neural model active • Not frozen
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* AUDIO PLAYER & WAVEFORM SCRUBBER */}
               {session.duration > 0 && (
                 <div className="mb-6">
@@ -1656,12 +1720,12 @@ export default function TranscriberPage() {
 
             {/* RIGHT SIDE PANEL (Desktop persistent column) */}
             <aside className="hidden lg:flex w-80 2xl:w-96 flex-col border-l border-neutral-200 bg-white/90 p-4 dark:border-neutral-800 dark:bg-[#111111]/85 backdrop-blur-md shrink-0 min-w-0">
-              {/* Panel Tabs */}
-              <div className="mb-4 flex items-center gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800 shrink-0">
+              {/* Panel Tabs (Equally Distributed so No Tab is Cut Off) */}
+              <div className="mb-4 flex items-center justify-between gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800 shrink-0">
                 <button
                   type="button"
                   onClick={() => setRightPanelTab('notes')}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
                     rightPanelTab === 'notes'
                       ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                       : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
@@ -1674,7 +1738,7 @@ export default function TranscriberPage() {
                 <button
                   type="button"
                   onClick={() => setRightPanelTab('speakers')}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
                     rightPanelTab === 'speakers'
                       ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                       : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
@@ -1687,7 +1751,7 @@ export default function TranscriberPage() {
                 <button
                   type="button"
                   onClick={() => setRightPanelTab('bookmarks')}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
                     rightPanelTab === 'bookmarks'
                       ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                       : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
@@ -1700,7 +1764,7 @@ export default function TranscriberPage() {
                 <button
                   type="button"
                   onClick={() => setRightPanelTab('search')}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
                     rightPanelTab === 'search'
                       ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                       : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
@@ -1807,12 +1871,12 @@ export default function TranscriberPage() {
                     </button>
                   </div>
 
-                  {/* Drawer Tabs */}
-                  <div className="mb-4 flex items-center gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800 shrink-0">
+                  {/* Drawer Header Tabs (Equally Distributed) */}
+                  <div className="flex items-center justify-between gap-1 border-b border-neutral-200 p-3 dark:border-neutral-800">
                     <button
                       type="button"
                       onClick={() => setRightPanelTab('notes')}
-                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
+                      className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
                         rightPanelTab === 'notes'
                           ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                           : 'text-neutral-500'
@@ -1824,7 +1888,7 @@ export default function TranscriberPage() {
                     <button
                       type="button"
                       onClick={() => setRightPanelTab('speakers')}
-                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
+                      className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
                         rightPanelTab === 'speakers'
                           ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                           : 'text-neutral-500'
@@ -1836,7 +1900,7 @@ export default function TranscriberPage() {
                     <button
                       type="button"
                       onClick={() => setRightPanelTab('bookmarks')}
-                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
+                      className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
                         rightPanelTab === 'bookmarks'
                           ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                           : 'text-neutral-500'
@@ -1848,7 +1912,7 @@ export default function TranscriberPage() {
                     <button
                       type="button"
                       onClick={() => setRightPanelTab('search')}
-                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
+                      className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
                         rightPanelTab === 'search'
                           ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                           : 'text-neutral-500'

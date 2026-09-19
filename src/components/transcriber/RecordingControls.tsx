@@ -771,6 +771,34 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
         </div>
       )}
 
+      {/* Active Transcription Processing Feedback */}
+      {isProcessing && (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-neutral-300 bg-neutral-100/90 p-5 text-center dark:border-neutral-700 dark:bg-neutral-800/80 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm shrink-0">
+              <ArrowsClockwise size={16} weight="bold" className="animate-spin" />
+            </div>
+            <div className="text-left">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-xs text-neutral-900 dark:text-white">
+                  AI Model is Transcribing Your Audio...
+                </span>
+                <span className="rounded-md border border-neutral-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                  Processing
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                Decoding audio track, detecting spoken dialogue, and identifying speakers. Please hold on.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[10px] text-neutral-500 dark:text-neutral-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse" />
+            <span>Active neural inference in progress • Website is not frozen</span>
+          </div>
+        </div>
+      )}
+
       {/* Main Recording Action Bar */}
       <div className="flex flex-wrap items-center justify-center gap-3">
         {!isRecording ? (
@@ -781,7 +809,7 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
             className="flex items-center gap-2.5 rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-800 active:scale-95 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 cursor-pointer"
           >
             <Microphone size={18} weight="bold" />
-            <span>Start Recording</span>
+            <span>{isProcessing ? 'Transcribing Recording...' : 'Start Recording'}</span>
           </button>
         ) : (
           <>
