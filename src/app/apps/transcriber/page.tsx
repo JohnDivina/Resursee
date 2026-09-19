@@ -6,8 +6,9 @@ import {
   Sidebar,
   SidebarBody,
   SidebarLink,
-  SidebarProvider,
 } from '@/components/ui/sidebar';
+import { motion } from 'motion/react';
+import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import {
   Microphone,
@@ -648,49 +649,71 @@ export default function TranscriberPage() {
     setErrorMessage(null);
   };
 
+  // Mobile Brand Header (for responsive mobile top navbar)
+  const mobileBrand = (
+    <div className="flex items-center gap-2.5">
+      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold text-xs shadow-xs">
+        <Microphone size={16} weight="bold" />
+      </div>
+      <div className="flex flex-col">
+        <span className="font-semibold text-xs text-neutral-900 dark:text-white leading-none">
+          AI Transcriber
+        </span>
+        <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+          100% Client-Side &amp; Local
+        </span>
+      </div>
+    </div>
+  );
+
   return (
-    <SidebarProvider open={openSidebar} setOpen={setOpenSidebar}>
-      <div className="flex h-screen w-screen overflow-hidden bg-neutral-100/50 text-neutral-900 antialiased dark:bg-[#0c0c0c] dark:text-neutral-100">
-        {/* LEFT APP SIDEBAR */}
-        <Sidebar>
-          <SidebarBody className="flex flex-col justify-between border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#111111]">
-            <div className="flex flex-1 flex-col overflow-y-auto">
-              {/* Back to Resursee Hub Link */}
-              <div className="mb-4">
-                <SidebarLink
-                  link={{
-                    label: 'Back to Apps',
-                    href: '/',
-                    icon: (
-                      <ArrowLeft
-                        size={18}
-                        weight="bold"
-                        className="text-neutral-600 dark:text-neutral-400"
-                      />
-                    ),
-                  }}
-                />
-              </div>
+    <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden bg-neutral-100/50 text-neutral-900 antialiased dark:bg-[#0c0c0c] dark:text-neutral-100">
+      {/* LEFT APP SIDEBAR */}
+      <Sidebar open={openSidebar} setOpen={setOpenSidebar} animate={true}>
+        <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#111111]">
+          <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+            {/* Back to Resursee Hub Link */}
+            <div className="mb-4">
+              <SidebarLink
+                link={{
+                  label: 'Back to Apps',
+                  href: '/',
+                  icon: (
+                    <ArrowLeft
+                      size={18}
+                      weight="bold"
+                      className="text-neutral-600 dark:text-neutral-400"
+                    />
+                  ),
+                }}
+              />
+            </div>
 
-              {/* App Brand Header */}
-              <div className="mb-6 px-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900">
-                    <Microphone size={16} weight="bold" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-xs text-neutral-900 dark:text-white">
-                      AI Transcriber
-                    </span>
-                    <span className="font-mono text-[10px] text-neutral-400">
-                      100% Client-Side & Local
-                    </span>
-                  </div>
+            {/* App Brand Header */}
+            <div className="mb-6 px-1">
+              <div className="flex items-center gap-2.5 py-1">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs">
+                  <Microphone size={16} weight="bold" />
                 </div>
+                <motion.div
+                  animate={{
+                    display: openSidebar ? 'flex' : 'none',
+                    opacity: openSidebar ? 1 : 0,
+                  }}
+                  className="flex flex-col truncate min-w-0"
+                >
+                  <span className="font-semibold text-xs text-neutral-900 dark:text-white truncate">
+                    AI Transcriber
+                  </span>
+                  <span className="font-mono text-[10px] text-neutral-400 truncate">
+                    100% Client-Side &amp; Local
+                  </span>
+                </motion.div>
               </div>
+            </div>
 
-              {/* Navigation Tabs */}
-              <div className="space-y-1">
+            {/* Navigation Tabs */}
+            <div className="space-y-1">
                 <SidebarLink
                   link={{
                     label: 'Record Mic',
@@ -801,7 +824,10 @@ export default function TranscriberPage() {
                     handleStartOllama();
                   }
                 }}
-                className="group flex cursor-pointer items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 p-2 transition-all hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-900/80"
+                className={cn(
+                  'group flex cursor-pointer items-center rounded-xl border border-neutral-200 bg-neutral-50 p-2 transition-all hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-900/80',
+                  openSidebar ? 'justify-between' : 'justify-center'
+                )}
                 title={
                   ollamaStatus === 'connected'
                     ? 'Click to stop local Ollama background daemon'
@@ -810,7 +836,7 @@ export default function TranscriberPage() {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                    className={`h-2 w-2 rounded-full shrink-0 ${
                       ollamaStatus === 'connected'
                         ? 'bg-neutral-900 dark:bg-white'
                         : isStartingOllama || isStoppingOllama || ollamaStatus === 'checking'
@@ -818,7 +844,13 @@ export default function TranscriberPage() {
                         : 'bg-neutral-400'
                     }`}
                   />
-                  <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200 truncate">
+                  <motion.span
+                    animate={{
+                      display: openSidebar ? 'inline-block' : 'none',
+                      opacity: openSidebar ? 1 : 0,
+                    }}
+                    className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200 truncate"
+                  >
                     {isStartingOllama
                       ? 'Starting...'
                       : isStoppingOllama
@@ -826,39 +858,60 @@ export default function TranscriberPage() {
                       : ollamaStatus === 'connected'
                       ? `Ollama (${installedModels.length} models)`
                       : 'Ollama Standby'}
-                  </span>
+                  </motion.span>
                 </div>
-                <span className="font-mono text-[10px] text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white">
+                <motion.span
+                  animate={{
+                    display: openSidebar ? 'inline-block' : 'none',
+                    opacity: openSidebar ? 1 : 0,
+                  }}
+                  className="font-mono text-[10px] text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white"
+                >
                   {ollamaStatus === 'connected' ? 'Stop' : 'Start'}
-                </span>
+                </motion.span>
               </div>
 
               {/* UI Mode Toggle: Simple vs Advanced */}
-              <div className="flex items-center justify-between px-1 text-xs">
+              <motion.div
+                animate={{
+                  display: openSidebar ? 'flex' : 'none',
+                  opacity: openSidebar ? 1 : 0,
+                }}
+                className="items-center justify-between px-1 text-xs"
+              >
                 <span className="text-neutral-500 dark:text-neutral-400">Mode:</span>
                 <button
                   type="button"
                   onClick={() =>
                     setUiMode(uiMode === 'simple' ? 'advanced' : 'simple')
                   }
-                  className="rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-neutral-800 transition hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+                  className="rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-neutral-800 transition hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 cursor-pointer"
                 >
                   {uiMode === 'simple' ? 'Simple' : 'Advanced'}
                 </button>
-              </div>
+              </motion.div>
 
               {/* Theme Toggle & New Session Button */}
-              <div className="flex items-center justify-between px-1">
+              <div
+                className={cn(
+                  'flex items-center px-1',
+                  openSidebar ? 'justify-between' : 'justify-center'
+                )}
+              >
                 <ThemeToggle />
-                <button
+                <motion.button
+                  animate={{
+                    display: openSidebar ? 'flex' : 'none',
+                    opacity: openSidebar ? 1 : 0,
+                  }}
                   type="button"
                   onClick={handleNewSession}
-                  className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                  className="items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 cursor-pointer"
                   title="Start New Session"
                 >
                   <Plus size={13} weight="bold" />
                   <span>New</span>
-                </button>
+                </motion.button>
               </div>
             </div>
           </SidebarBody>
@@ -1553,8 +1606,7 @@ export default function TranscriberPage() {
               </div>
             )}
           </div>
-        </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 }
