@@ -8,9 +8,15 @@ import {
   Stop,
   SlidersHorizontal,
   WarningCircle,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { formatTimestamp, decodeAudioFile } from '@/lib/audioProcessor';
 import { isTauriDesktop } from '@/lib/envDetector';
+
+interface AudioDeviceOption {
+  deviceId: string;
+  label: string;
+}
 
 interface RecordingControlsProps {
   onRecordingComplete: (
@@ -36,6 +42,11 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
   const [audioLevel, setAudioLevel] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Audio Device Selection & Live Testing States
+  const [availableDevices, setAvailableDevices] = useState<AudioDeviceOption[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  const [isTestingMic, setIsTestingMic] = useState(false);
+
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -48,18 +59,31 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
   const recognitionRef = useRef<any>(null);
   const isPausedRef = useRef<boolean>(false);
 
+  // Test Mic Audio Nodes
+  const testStreamRef = useRef<MediaStream | null>(null);
+  const testAudioCtxRef = useRef<AudioContext | null>(null);
+  const testAnalyserRef = useRef<AnalyserNode | null>(null);
+
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      cleanup();
-    };
+  const stopMicTest = useCallback(() => {
+    if (testStreamRef.current) {
+      testStreamRef.current.getTracks().forEach((t) => t.stop());
+      testStreamRef.current = null;
+    }
+    if (testAudioCtxRef.current && testAudioCtxRef.current.state !== 'closed') {
+      testAudioCtxRef.current.close().catch(() => {});
+      testAudioCtxRef.current = null;
+    }
+    testAnalyserRef.current = null;
+    setIsTestingMic(false);
+    setAudioLevel(0);
   }, []);
 
-  const cleanup = () => {
+  const cleanup = useCallback(() => {
+    stopMicTest();
     if (timerRef.current) clearInterval(timerRef.current);
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
@@ -85,47 +109,52 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       } catch {}
       recognitionRef.current = null;
     }
-  };
+  }, [stopMicTest]);
 
-  const updateAudioMeter = useCallback(() => {
-    if (!analyserRef.current || !isRecording || isPausedRef.current) {
-      setAudioLevel(0);
-      return;
-    }
-
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getByteFrequencyData(dataArray);
-
-    let sum = 0;
-    for (let i = 0; i < dataArray.length; i++) {
-      sum += dataArray[i];
-    }
-    const average = sum / dataArray.length;
-    const normalized = Math.min(1, average / 90);
-    setAudioLevel(normalized);
-
-    animFrameRef.current = requestAnimationFrame(updateAudioMeter);
-  }, [isRecording]);
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
 
   /**
-   * Resilient cross-platform media stream getter supporting macOS WKWebView and modern browsers
+   * Resilient cross-platform media stream getter supporting deviceId selection, macOS WKWebView, and modern browsers
    */
-  const requestAudioStream = async (): Promise<MediaStream> => {
+  const requestAudioStream = async (deviceIdOverride?: string): Promise<MediaStream> => {
+    const deviceIdToUse = deviceIdOverride || selectedDeviceId;
+    const audioConstraints: MediaTrackConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    };
+
+    if (deviceIdToUse && deviceIdToUse !== 'default') {
+      audioConstraints.deviceId = { ideal: deviceIdToUse };
+    }
+
     // 1. Standard modern navigator.mediaDevices
     if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
       try {
-        return await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: audioConstraints,
         });
+        return stream;
       } catch (err: any) {
-        // If standard getUserMedia threw with generic or permission error, handle gracefully
+        if (err.name === 'OverconstrainedError' && deviceIdToUse) {
+          console.warn('Selected device overconstrained, retrying with default microphone:', err);
+          return await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+          });
+        }
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           throw err;
         }
+        throw err;
       }
     }
 
@@ -151,7 +180,180 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
     throw new Error('Microphone access is not supported or blocked in this browser. Please check address bar permissions.');
   };
 
+  /**
+   * Enumerate available microphone devices and unlock labels
+   */
+  const loadAudioDevices = useCallback(async (requestPermission = false) => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
+      return;
+    }
+
+    try {
+      if (requestPermission && navigator.mediaDevices.getUserMedia) {
+        try {
+          const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          tempStream.getTracks().forEach((t) => t.stop());
+        } catch (permErr) {
+          console.warn('Microphone permission query note:', permErr);
+        }
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices
+        .filter((d) => d.kind === 'audioinput')
+        .map((d, index) => {
+          let label = d.label ? d.label.trim() : '';
+          if (!label) {
+            label = `Microphone ${index + 1}${d.deviceId ? ` (${d.deviceId.slice(0, 6)}...)` : ''}`;
+          }
+          return {
+            deviceId: d.deviceId,
+            label,
+          };
+        });
+
+      setAvailableDevices(audioInputs);
+
+      let savedMic = '';
+      try {
+        savedMic = localStorage.getItem('resursee_preferred_mic') || '';
+      } catch {}
+
+      setSelectedDeviceId((prev) => {
+        if (prev && audioInputs.some((d) => d.deviceId === prev)) {
+          return prev;
+        }
+        if (savedMic && audioInputs.some((d) => d.deviceId === savedMic)) {
+          return savedMic;
+        }
+        return audioInputs[0]?.deviceId || 'default';
+      });
+    } catch (err) {
+      console.warn('Could not enumerate audio devices:', err);
+    }
+  }, []);
+
+  // Listen to system audio device changes (e.g. plugging in USB mic or connecting AirPods)
+  useEffect(() => {
+    loadAudioDevices(false);
+
+    const handleDeviceChange = () => {
+      loadAudioDevices(false);
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+    }
+
+    return () => {
+      if (typeof navigator !== 'undefined' && navigator.mediaDevices?.removeEventListener) {
+        navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+      }
+    };
+  }, [loadAudioDevices]);
+
+  /**
+   * Start live microphone audio level preview for testing voice input
+   */
+  const startMicTestWithDevice = async (deviceIdToTest?: string) => {
+    setErrorMessage(null);
+    if (isRecording) return;
+
+    try {
+      const stream = await requestAudioStream(deviceIdToTest || selectedDeviceId);
+      testStreamRef.current = stream;
+
+      // Refresh devices list so human-readable labels populate if initially empty
+      loadAudioDevices(false);
+
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioCtx = new AudioCtx();
+      testAudioCtxRef.current = audioCtx;
+
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      testAnalyserRef.current = analyser;
+
+      setIsTestingMic(true);
+
+      const runTestMeter = () => {
+        if (!testAnalyserRef.current) return;
+        const dataArray = new Uint8Array(testAnalyserRef.current.frequencyBinCount);
+        testAnalyserRef.current.getByteFrequencyData(dataArray);
+
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / dataArray.length;
+        const normalized = Math.min(1, average / 90);
+        setAudioLevel(normalized);
+
+        animFrameRef.current = requestAnimationFrame(runTestMeter);
+      };
+
+      runTestMeter();
+    } catch (err: any) {
+      console.error('Failed to test microphone:', err);
+      let msg = 'Could not test microphone.';
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        msg = isTauriDesktop()
+          ? 'Microphone permission was denied. Please allow microphone access under macOS System Settings > Privacy & Security > Microphone.'
+          : 'Microphone permission was denied. Please allow microphone access in your browser address bar.';
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      setErrorMessage(msg);
+      stopMicTest();
+    }
+  };
+
+  const handleSelectDevice = (newDeviceId: string) => {
+    setSelectedDeviceId(newDeviceId);
+    try {
+      localStorage.setItem('resursee_preferred_mic', newDeviceId);
+    } catch {}
+
+    if (isTestingMic) {
+      stopMicTest();
+      setTimeout(() => {
+        startMicTestWithDevice(newDeviceId);
+      }, 150);
+    }
+  };
+
+  const updateAudioMeter = useCallback(() => {
+    if (!analyserRef.current || !isRecording || isPausedRef.current) {
+      setAudioLevel(0);
+      return;
+    }
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(dataArray);
+
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i];
+    }
+    const average = sum / dataArray.length;
+    const normalized = Math.min(1, average / 90);
+    setAudioLevel(normalized);
+
+    animFrameRef.current = requestAnimationFrame(updateAudioMeter);
+  }, [isRecording]);
+
   const startRecording = async () => {
+    if (isTestingMic) {
+      stopMicTest();
+    }
     setErrorMessage(null);
     recordedChunksRef.current = [];
     pcmChunksRef.current = [];
@@ -385,8 +587,10 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
                 isRecording && !isPaused
                   ? 'bg-neutral-900 animate-pulse dark:bg-white'
                   : isPaused
-                    ? 'bg-neutral-400 dark:bg-neutral-600'
-                    : 'bg-neutral-300 dark:bg-neutral-700'
+                  ? 'bg-neutral-400 dark:bg-neutral-600'
+                  : isTestingMic
+                  ? 'bg-neutral-800 dark:bg-neutral-200 animate-pulse'
+                  : 'bg-neutral-300 dark:bg-neutral-700'
               }`}
             />
             <span className="font-mono text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
@@ -394,6 +598,8 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
                 ? isPaused
                   ? 'Paused'
                   : 'Recording Live'
+                : isTestingMic
+                ? 'Testing Mic (Speak Now)'
                 : 'Mic Standby'}
             </span>
           </div>
@@ -408,7 +614,8 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
         <div className="flex items-center gap-1">
           {new Array(12).fill(0).map((_, i) => {
             const threshold = (i + 1) / 12;
-            const isActive = isRecording && !isPaused && audioLevel >= threshold;
+            const isActive =
+              ((isRecording && !isPaused) || isTestingMic) && audioLevel >= threshold;
             return (
               <div
                 key={i}
@@ -420,6 +627,59 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
               />
             );
           })}
+        </div>
+      </div>
+
+      {/* Audio Input Device Selector & Testing Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white p-3 text-xs dark:border-neutral-800 dark:bg-neutral-900/40">
+        <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300 shrink-0">
+          <Microphone size={15} weight="bold" />
+          <span className="font-semibold">Input Device:</span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-1 sm:max-w-md">
+          <select
+            value={selectedDeviceId}
+            disabled={isRecording || isProcessing}
+            onChange={(e) => handleSelectDevice(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 bg-neutral-50 px-2.5 py-1.5 text-xs font-medium text-neutral-900 focus:border-neutral-900 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-400 disabled:opacity-50 truncate cursor-pointer"
+          >
+            {availableDevices.length === 0 ? (
+              <option value="default">Default System Microphone</option>
+            ) : (
+              availableDevices.map((dev) => (
+                <option key={dev.deviceId} value={dev.deviceId}>
+                  {dev.label}
+                </option>
+              ))
+            )}
+          </select>
+
+          <button
+            type="button"
+            onClick={() => loadAudioDevices(true)}
+            disabled={isRecording || isProcessing}
+            title="Scan & detect connected audio devices"
+            className="shrink-0 rounded-lg border border-neutral-300 bg-neutral-100 px-2.5 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-200 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+          >
+            <ArrowsClockwise size={13} weight="bold" />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={isTestingMic ? stopMicTest : () => startMicTestWithDevice()}
+            disabled={isRecording || isProcessing}
+            title={isTestingMic ? 'Stop microphone test' : 'Test voice levels before recording'}
+            className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+              isTestingMic
+                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            <SlidersHorizontal size={13} weight="bold" />
+            <span>{isTestingMic ? 'Stop Test' : 'Test Mic'}</span>
+          </button>
         </div>
       </div>
 
