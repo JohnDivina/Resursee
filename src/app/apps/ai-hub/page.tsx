@@ -2739,6 +2739,23 @@ ${
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate={true}>
         <SidebarBody brand={mobileBrand} className="justify-between gap-6">
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+            {/* Back to Resursee Hub Link */}
+            <div className="mb-4">
+              <SidebarLink
+                link={{
+                  label: 'Back to Hub',
+                  href: '/#apps',
+                  icon: (
+                    <IconArrowLeft
+                      size={18}
+                      stroke={2}
+                      className="text-neutral-600 dark:text-neutral-400"
+                    />
+                  ),
+                }}
+              />
+            </div>
+
             {/* Header Brand */}
             <div className="flex items-center gap-3 py-1">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs font-bold select-none text-base">
@@ -2771,7 +2788,7 @@ ${
             </div>
           </div>
 
-          {/* Sidebar Footer: Engine Status & Back to Resursee */}
+          {/* Sidebar Footer: Engine Status */}
           <div className="border-t border-[var(--color-rule-subtle)] pt-3 mt-auto space-y-2">
             {/* Ollama Status Pill & Start/Stop Action */}
             <div
@@ -2823,15 +2840,6 @@ ${
                 {connectionStatus === 'connected' ? 'Stop' : 'Start'}
               </motion.span>
             </div>
-
-            {/* Return to Resursee */}
-            <SidebarLink
-              link={{
-                label: 'Back to Resursee',
-                href: '/#apps',
-                icon: <IconArrowLeft size={16} className="shrink-0 text-[var(--color-ink-muted)]" />,
-              }}
-            />
           </div>
         </SidebarBody>
       </Sidebar>

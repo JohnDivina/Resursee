@@ -795,6 +795,23 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate={true}>
         <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c]">
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+            {/* Back to Resursee Hub Link */}
+            <div className="mb-4">
+              <SidebarLink
+                link={{
+                  label: 'Back to Hub',
+                  href: '/#apps',
+                  icon: (
+                    <IconArrowLeft
+                      size={18}
+                      stroke={2}
+                      className="text-neutral-600 dark:text-neutral-400"
+                    />
+                  ),
+                }}
+              />
+            </div>
+
             {/* Header Brand */}
             <div className="flex items-center gap-3 py-1">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs font-mono font-bold select-none text-base">
@@ -869,9 +886,9 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
             </div>
           </div>
 
-          {/* Sidebar Footer: Ollama Status & Back to Resursee */}
+          {/* Sidebar Footer: Engine Status */}
           <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 mt-auto space-y-2">
-            {/* Ollama Status Pill & Start/Stop Action */}
+            {/* Ollama Status Pill & Quick Action */}
             <div
               onClick={() => {
                 if (ollamaStatus === 'connected') {
@@ -880,8 +897,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   handleStartOllama();
                 }
               }}
-              className="group flex items-center justify-between p-2 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 cursor-pointer transition-all"
-              title={ollamaStatus === 'connected' ? 'Click to stop Ollama daemon' : 'Click to start Ollama daemon'}
+              className="group flex items-center justify-between p-2 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 cursor-pointer transition-all"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span
@@ -889,9 +905,9 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     'h-1.5 w-1.5 rounded-full shrink-0',
                     ollamaStatus === 'connected'
                       ? 'bg-neutral-900 dark:bg-white'
-                      : ollamaStatus === 'checking' || isStartingOllama || isStoppingOllama
-                      ? 'bg-neutral-500 animate-pulse'
-                      : 'bg-neutral-400'
+                      : isStartingOllama || isStoppingOllama || ollamaStatus === 'checking'
+                      ? 'bg-neutral-500 dark:bg-neutral-400 animate-pulse'
+                      : 'bg-neutral-400 dark:bg-neutral-600'
                   )}
                 />
                 <motion.span
@@ -922,15 +938,6 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                 {ollamaStatus === 'connected' ? 'Stop' : 'Start'}
               </motion.span>
             </div>
-
-            {/* Return to Resursee */}
-            <SidebarLink
-              link={{
-                label: 'Back to Resursee',
-                href: '/#apps',
-                icon: <IconArrowLeft size={16} className="shrink-0 text-neutral-500" />,
-              }}
-            />
           </div>
         </SidebarBody>
       </Sidebar>
