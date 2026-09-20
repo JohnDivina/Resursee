@@ -272,6 +272,7 @@ export const SidebarLink = ({
       <button
         type="button"
         onClick={link.onClick}
+        title={link.label}
         className={containerClasses}
         {...props}
       >
@@ -283,6 +284,7 @@ export const SidebarLink = ({
   return (
     <a
       href={link.href || '#'}
+      title={link.label}
       className={containerClasses}
       {...props}
     >

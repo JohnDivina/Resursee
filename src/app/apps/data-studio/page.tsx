@@ -35,6 +35,7 @@ import {
   IconBulb,
   IconShieldCheck,
   IconX,
+  IconUpload,
 } from '@tabler/icons-react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import {
@@ -748,8 +749,8 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
   // Mobile Brand Header (Identical pattern to AI Studio)
   const mobileBrand = (
     <div className="flex items-center gap-2.5">
-      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-bold text-xs shadow-xs">
-        <IconMathFunction size={16} stroke={2} />
+      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-bold text-xs shadow-xs font-mono select-none">
+        R
       </div>
       <div className="flex flex-col">
         <span className="font-extrabold text-xs text-neutral-900 dark:text-white leading-none">
@@ -791,9 +792,9 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
 
   return (
     <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden bg-[var(--color-paper)] text-[var(--color-ink)] font-sans antialiased">
-      {/* 🧭 Collapsible Sidebar (Glitch-Free Animated Architecture from AI Studio) */}
+      {/* 🧭 Collapsible Sidebar */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate={true}>
-        <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c]">
+        <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 bg-white/90 dark:border-neutral-800 dark:bg-[#111111]/85 backdrop-blur-md">
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             {/* Back to Resursee Hub Link */}
             <div className="mb-4">
@@ -813,50 +814,58 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
             </div>
 
             {/* Header Brand */}
-            <div className="flex items-center gap-3 py-1">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs font-mono font-bold select-none text-base">
-                R
-              </div>
-              <motion.div
-                animate={{
-                  display: sidebarOpen ? 'flex' : 'none',
-                  opacity: sidebarOpen ? 1 : 0,
-                }}
-                className="flex flex-col truncate"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm text-[var(--color-ink)]">Data Studio</span>
-                  <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[11px] font-bold">
-                    R+AI
-                  </span>
+            <div className="mb-6 px-1">
+              <div className="flex items-center gap-2.5 py-1">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs font-mono font-bold text-xs select-none">
+                  R
                 </div>
-                <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
-                  Coding &amp; Statistical IDE
-                </span>
-              </motion.div>
+                <motion.div
+                  animate={{
+                    display: sidebarOpen ? 'flex' : 'none',
+                    opacity: sidebarOpen ? 1 : 0,
+                  }}
+                  className="flex flex-col truncate min-w-0"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-xs text-neutral-900 dark:text-white truncate">
+                      Data Studio
+                    </span>
+                    <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.2 font-mono text-[10px] font-bold">
+                      R+AI
+                    </span>
+                  </div>
+                  <span className="font-mono text-[10px] text-neutral-400 truncate">
+                    Coding &amp; Statistical IDE
+                  </span>
+                </motion.div>
+              </div>
             </div>
 
             {/* Sidebar Navigation Links */}
-            <div className="mt-6 flex flex-col gap-1">
+            <div className="space-y-1">
               {sidebarLinks.map((link, idx) => (
                 <SidebarLink key={idx} link={link} />
               ))}
             </div>
 
-            {/* Canonical Datasets Switcher */}
-            <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <motion.div
-                animate={{
-                  display: sidebarOpen ? 'flex' : 'none',
-                  opacity: sidebarOpen ? 1 : 0,
-                }}
-                className="flex items-center justify-between mb-2 px-1"
-              >
+            {/* Canonical Datasets Switcher - only visible when expanded */}
+            <motion.div
+              animate={{
+                display: sidebarOpen ? 'block' : 'none',
+                opacity: sidebarOpen ? 1 : 0,
+              }}
+              transition={{ duration: 0.15 }}
+              className={cn(
+                'mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800 overflow-hidden',
+                !sidebarOpen && 'hidden'
+              )}
+            >
+              <div className="flex items-center justify-between mb-2 px-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-mono">
                   Sample Datasets
                 </span>
                 <span className="text-[11px] text-neutral-400 font-mono">R Studio</span>
-              </motion.div>
+              </div>
 
               <div className="flex flex-col gap-1">
                 {SAMPLE_DATASETS.map((sample) => (
@@ -864,31 +873,25 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     key={sample.name}
                     type="button"
                     onClick={() => handleLoadSample(sample)}
-                    className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                    className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
                       currentDatasetName === sample.name
                         ? 'bg-neutral-200/70 dark:bg-neutral-800 font-bold text-neutral-900 dark:text-white'
                         : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900'
                     }`}
                   >
                     <span className="font-mono text-xs">{sample.name}</span>
-                    <motion.span
-                      animate={{
-                        display: sidebarOpen ? 'inline-block' : 'none',
-                        opacity: sidebarOpen ? 1 : 0,
-                      }}
-                      className="text-[11px] text-neutral-400 font-mono"
-                    >
+                    <span className="text-[11px] text-neutral-400 font-mono">
                       {sample.rows} × {sample.cols}
-                    </motion.span>
+                    </span>
                   </button>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Sidebar Footer: Engine Status */}
-          <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 mt-auto space-y-2">
-            {/* Ollama Status Pill & Quick Action */}
+          {/* Sidebar Bottom Controls */}
+          <div className="border-t border-neutral-200 pt-3 mt-auto space-y-2.5 dark:border-neutral-800">
+            {/* Ollama Status Strip (Click to Start / Stop) */}
             <div
               onClick={() => {
                 if (ollamaStatus === 'connected') {
@@ -897,17 +900,25 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   handleStartOllama();
                 }
               }}
-              className="group flex items-center justify-between p-2 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 cursor-pointer transition-all"
+              className={cn(
+                'group flex cursor-pointer items-center rounded-xl border border-neutral-200 bg-neutral-50 p-2 transition-all hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-900/80',
+                sidebarOpen ? 'justify-between' : 'justify-center'
+              )}
+              title={
+                ollamaStatus === 'connected'
+                  ? 'Click to stop local Ollama background daemon'
+                  : 'Click to start local Ollama background daemon'
+              }
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span
                   className={cn(
-                    'h-1.5 w-1.5 rounded-full shrink-0',
+                    'h-2 w-2 rounded-full shrink-0',
                     ollamaStatus === 'connected'
                       ? 'bg-neutral-900 dark:bg-white'
                       : isStartingOllama || isStoppingOllama || ollamaStatus === 'checking'
-                      ? 'bg-neutral-500 dark:bg-neutral-400 animate-pulse'
-                      : 'bg-neutral-400 dark:bg-neutral-600'
+                      ? 'bg-neutral-400 animate-pulse'
+                      : 'bg-neutral-400'
                   )}
                 />
                 <motion.span
@@ -915,17 +926,15 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     display: sidebarOpen ? 'inline-block' : 'none',
                     opacity: sidebarOpen ? 1 : 0,
                   }}
-                  className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate"
+                  className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200 truncate"
                 >
                   {isStartingOllama
-                    ? 'Starting Engine...'
+                    ? 'Starting...'
                     : isStoppingOllama
-                    ? 'Stopping Engine...'
+                    ? 'Stopping...'
                     : ollamaStatus === 'connected'
                     ? `Ollama (${installedModels.length} models)`
-                    : ollamaStatus === 'checking'
-                    ? 'Connecting...'
-                    : 'Ollama Standby (11434)'}
+                    : 'Ollama Standby'}
                 </motion.span>
               </div>
               <motion.span
@@ -933,10 +942,36 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   display: sidebarOpen ? 'inline-block' : 'none',
                   opacity: sidebarOpen ? 1 : 0,
                 }}
-                className="text-[11px] font-mono text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors"
+                className="font-mono text-[10px] text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white"
               >
                 {ollamaStatus === 'connected' ? 'Stop' : 'Start'}
               </motion.span>
+            </div>
+
+            {/* Theme Toggle & Quick Upload Action */}
+            <div
+              className={cn(
+                'flex items-center px-1',
+                sidebarOpen ? 'justify-between' : 'justify-center'
+              )}
+            >
+              <ThemeToggle />
+              <label
+                className={cn(
+                  'cursor-pointer items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800',
+                  sidebarOpen ? 'flex' : 'hidden'
+                )}
+                title="Upload Dataset"
+              >
+                <IconUpload size={13} stroke={2} />
+                <span>Upload</span>
+                <input
+                  type="file"
+                  accept=".csv,.tsv,.xlsx,.xls,.json,.txt"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
             </div>
           </div>
         </SidebarBody>
@@ -951,12 +986,27 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
               Data Studio — Coding &amp; Statistical IDE
             </h1>
 
-            {/* Active Data Frame Pill */}
-            <div className="hidden sm:flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 px-3 py-1 text-xs font-mono text-neutral-700 dark:text-neutral-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
-              <span className="font-bold">{currentDatasetName}</span>
-              <span className="text-neutral-400">
-                ({rawDataset.length} obs. of {allColumnNames.length} variables)
+            {/* Active Data Frame Selector Dropdown */}
+            <div className="hidden sm:flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 px-2.5 py-1 text-xs font-mono text-neutral-700 dark:text-neutral-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+              <select
+                value={currentDatasetName}
+                onChange={(e) => {
+                  const selected = SAMPLE_DATASETS.find((s) => s.name === e.target.value);
+                  if (selected) handleLoadSample(selected);
+                }}
+                className="bg-transparent font-bold text-neutral-900 dark:text-white focus:outline-none cursor-pointer text-xs font-mono"
+              >
+                <optgroup label="Sample Datasets">
+                  {SAMPLE_DATASETS.map((s) => (
+                    <option key={s.name} value={s.name} className="bg-white dark:bg-neutral-900">
+                      {s.name} ({s.rows}×{s.cols})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+              <span className="hidden lg:inline text-neutral-400 text-[11px]">
+                ({rawDataset.length} obs. of {allColumnNames.length} vars)
               </span>
             </div>
 
