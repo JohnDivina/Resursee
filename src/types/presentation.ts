@@ -72,11 +72,15 @@ export interface TechTheme {
   name: string;
   description: string;
   badge: string;
+  isDark: boolean;
   bgClass: string;
   canvasBg: string;
   surfaceClass: string;
   textClass: string;
   subtextClass: string;
+  bodyTextClass: string;
+  mutedTextClass: string;
+  dotClass: string;
   borderClass: string;
   accentColor: string;
   accentBadgeClass: string;
@@ -113,12 +117,25 @@ export interface TemplatePreset {
   slides: Slide[];
 }
 
+export type CopilotMode = 'textual' | 'full-design';
+
 export interface CuratedPresentationModel {
   id: string;
   name: string;
+  modelTag: string;
   parameterSize: string;
   role: string;
   strengths: string[];
   pullCommand: string;
+  isSub3B: boolean;
+  tagCategory: 'Sub-3B Lightweight' | 'Technical Engineering' | 'Storytelling & Pitch' | 'Deep Architecture';
   isInstalled?: boolean;
+}
+
+export interface SavedDeckMeta {
+  id: string;
+  title: string;
+  slidesCount: number;
+  themeId: TechThemeId;
+  updatedAt: number;
 }

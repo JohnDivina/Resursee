@@ -1,57 +1,51 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PresentationDeck, TechTheme, SlideTransition } from '@/types/presentation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { PresentationDeck, TechTheme } from '@/types/presentation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
+  X,
   CaretLeft,
   CaretRight,
-  X,
-  Notebook,
-  ArrowsOut,
   ArrowsIn,
+  ArrowsOut,
+  Notebook,
+  Moon,
   Play,
   Pause,
   ArrowCounterClockwise,
-  Moon,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 interface PresenterModeProps {
   deck: PresentationDeck;
   initialSlideIndex?: number;
-  onClose: () => void;
   theme: TechTheme;
+  onExit: () => void;
 }
 
 export default function PresenterMode({
   deck,
   initialSlideIndex = 0,
-  onClose,
   theme,
+  onExit,
 }: PresenterModeProps) {
   const [currentIndex, setCurrentIndex] = useState(initialSlideIndex);
-  const [isBlackout, setIsBlackout] = useState(false);
-  const [showNotes, setShowNotes] = useState(false);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
+  const [showNotes, setShowNotes] = useState(false);
+  const [isBlackout, setIsBlackout] = useState(false);
 
-  // Presenter Elapsed Timer
+  // Presenter Rehearsal Timer
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    let interval: NodeJS.Timeout;
     if (isTimerRunning) {
-      timerRef.current = setInterval(() => {
-        setTimerSeconds((prev) => prev + 1);
-      }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
+      interval = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => clearInterval(interval);
   }, [isTimerRunning]);
 
   const formatTimer = (totalSeconds: number) => {
@@ -76,75 +70,72 @@ export default function PresenterMode({
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+      document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
     }
   };
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter' || e.key === 'PageDown') {
         e.preventDefault();
         handleNext();
       } else if (e.key === 'ArrowLeft' || e.key === 'Backspace' || e.key === 'PageUp') {
         e.preventDefault();
         handlePrev();
       } else if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      } else if (e.key.toLowerCase() === 'b') {
-        e.preventDefault();
+        onExit();
+      } else if (e.key === 'b' || e.key === 'B') {
         setIsBlackout((prev) => !prev);
-      } else if (e.key.toLowerCase() === 'n') {
-        e.preventDefault();
+      } else if (e.key === 'n' || e.key === 'N') {
         setShowNotes((prev) => !prev);
-      } else if (e.key.toLowerCase() === 'f') {
-        e.preventDefault();
+      } else if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNext, handlePrev, onClose]);
+  }, [handleNext, handlePrev, onExit]);
 
-  const currentSlide = deck.slides[currentIndex];
-  const transitionType: SlideTransition = deck.transition || 'fade';
+  const currentSlide = deck.slides[currentIndex] || deck.slides[0];
 
-  // Animation variants mapped to transition prop
-  const getVariants = () => {
-    switch (transitionType) {
+  // Transition variants
+  const getTransitionVariants = () => {
+    switch (deck.transition) {
       case 'slide-horizontal':
         return {
-          initial: { x: direction > 0 ? 800 : -800, opacity: 0 },
+          initial: { x: direction * 80, opacity: 0 },
           animate: { x: 0, opacity: 1 },
-          exit: { x: direction > 0 ? -800 : 800, opacity: 0 },
+          exit: { x: direction * -80, opacity: 0 },
         };
       case 'slide-vertical':
         return {
-          initial: { y: direction > 0 ? 500 : -500, opacity: 0 },
+          initial: { y: direction * 60, opacity: 0 },
           animate: { y: 0, opacity: 1 },
-          exit: { y: direction > 0 ? -500 : 500, opacity: 0 },
+          exit: { y: direction * -60, opacity: 0 },
         };
       case 'zoom':
         return {
-          initial: { scale: 0.85, opacity: 0 },
+          initial: { scale: 0.92, opacity: 0 },
           animate: { scale: 1, opacity: 1 },
-          exit: { scale: 1.15, opacity: 0 },
+          exit: { scale: 1.05, opacity: 0 },
         };
       case 'flip':
         return {
-          initial: { rotateY: direction > 0 ? 90 : -90, opacity: 0 },
+          initial: { rotateY: direction * 40, opacity: 0 },
           animate: { rotateY: 0, opacity: 1 },
-          exit: { rotateY: direction > 0 ? -90 : 90, opacity: 0 },
+          exit: { rotateY: direction * -40, opacity: 0 },
         };
       case 'morph':
         return {
-          initial: { scale: 0.95, y: 30, opacity: 0 },
-          animate: { scale: 1, y: 0, opacity: 1 },
-          exit: { scale: 0.95, y: -30, opacity: 0 },
+          initial: { filter: 'blur(8px)', opacity: 0 },
+          animate: { filter: 'blur(0px)', opacity: 1 },
+          exit: { filter: 'blur(8px)', opacity: 0 },
         };
       case 'fade':
       default:
@@ -156,26 +147,27 @@ export default function PresenterMode({
     }
   };
 
-  const variants = getVariants();
+  const variants = getTransitionVariants();
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black text-white select-none overflow-hidden">
-      {/* Blackout Curtain Mode */}
+    <div className="fixed inset-0 z-50 bg-black text-white flex flex-col justify-between select-none overflow-hidden font-sans">
+      {/* Blackout Curtain (Toggled via 'B' key or HUD) */}
       {isBlackout && (
         <div
           onClick={() => setIsBlackout(false)}
-          className="absolute inset-0 z-[60] bg-black flex flex-col items-center justify-center cursor-pointer"
+          className="absolute inset-0 bg-black z-60 flex items-center justify-center cursor-pointer"
         >
-          <Moon size={36} className="text-neutral-700 animate-pulse" />
-          <span className="font-mono text-xs text-neutral-500 mt-3">
-            Presentation Paused • Click or press &apos;B&apos; to resume
-          </span>
+          <div className="text-center">
+            <span className="font-mono text-xs text-neutral-600 uppercase tracking-widest">
+              Stage Blackout Active • Press &apos;B&apos; or Click to Resume
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Main Slide Presentation Stage */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-12 relative overflow-hidden">
-        <AnimatePresence mode="wait">
+      {/* Main Slide Stage Area */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-10 relative overflow-hidden">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentSlide.id}
             initial={variants.initial}
@@ -190,11 +182,11 @@ export default function PresenterMode({
             )}
           >
             {/* Slide Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-700/40">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-neutral-400">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-500/20">
+              <span className={cn('font-mono text-xs font-bold uppercase tracking-wider', theme.mutedTextClass)}>
                 {currentSlide.tag || `SLIDE ${currentIndex + 1}`}
               </span>
-              <span className="font-mono text-xs text-neutral-400">
+              <span className={cn('font-mono text-xs font-bold', theme.mutedTextClass)}>
                 {currentIndex + 1} / {deck.slides.length}
               </span>
             </div>
@@ -232,8 +224,8 @@ export default function PresenterMode({
                   <ul className="space-y-4">
                     {currentSlide.bullets.map((b, bIdx) => (
                       <li key={bIdx} className="flex items-start gap-4 text-base sm:text-xl">
-                        <span className="h-2.5 w-2.5 rounded-full bg-white mt-2 shrink-0" />
-                        <span className={theme.textClass}>{b}</span>
+                        <span className={cn('h-2.5 w-2.5 rounded-full mt-2 shrink-0', theme.dotClass)} />
+                        <span className={theme.bodyTextClass}>{b}</span>
                       </li>
                     ))}
                   </ul>
@@ -244,12 +236,12 @@ export default function PresenterMode({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {currentSlide.columns.map((col, cIdx) => (
                       <div key={cIdx} className={cn('rounded-2xl p-6 border', theme.surfaceClass)}>
-                        <h3 className="font-bold text-lg mb-3">{col.heading}</h3>
+                        <h3 className={cn('font-bold text-lg mb-3', theme.textClass)}>{col.heading}</h3>
                         <ul className="space-y-2.5">
                           {col.content.map((item, iIdx) => (
-                            <li key={iIdx} className="flex items-start gap-2.5 text-sm text-neutral-300">
-                              <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 mt-1.5 shrink-0" />
-                              <span>{item}</span>
+                            <li key={iIdx} className="flex items-start gap-2.5 text-sm">
+                              <span className={cn('h-1.5 w-1.5 rounded-full mt-1.5 shrink-0', theme.dotClass)} />
+                              <span className={theme.bodyTextClass}>{item}</span>
                             </li>
                           ))}
                         </ul>
@@ -267,8 +259,8 @@ export default function PresenterMode({
                           key={mIdx}
                           className={cn('rounded-2xl p-5 text-center border', theme.surfaceClass)}
                         >
-                          <div className="text-3xl sm:text-4xl font-black">{m.value}</div>
-                          <div className="text-xs font-mono text-neutral-400 mt-2">{m.label}</div>
+                          <div className={cn('text-3xl sm:text-4xl font-black', theme.textClass)}>{m.value}</div>
+                          <div className={cn('text-xs font-mono mt-2', theme.subtextClass)}>{m.label}</div>
                           {m.change && (
                             <div className="text-xs font-mono font-bold text-emerald-400 mt-1">
                               {m.change}
@@ -281,9 +273,9 @@ export default function PresenterMode({
                     {currentSlide.bullets && (
                       <ul className="space-y-2 pt-2">
                         {currentSlide.bullets.map((b, bIdx) => (
-                          <li key={bIdx} className="flex items-center gap-2 text-sm text-neutral-300">
-                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
-                            <span>{b}</span>
+                          <li key={bIdx} className="flex items-center gap-2 text-sm">
+                            <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', theme.dotClass)} />
+                            <span className={theme.bodyTextClass}>{b}</span>
                           </li>
                         ))}
                       </ul>
@@ -293,11 +285,11 @@ export default function PresenterMode({
 
                 {/* 4. Code Architecture */}
                 {currentSlide.layout === 'code-architecture' && currentSlide.codeSnippet && (
-                  <div className="rounded-2xl overflow-hidden border border-neutral-800 bg-[#0c0d12]">
+                  <div className={cn('rounded-2xl overflow-hidden border', theme.isDark ? 'border-neutral-800 bg-[#0c0d12]' : 'border-neutral-300 bg-neutral-900 text-neutral-100')}>
                     <div className="flex items-center justify-between px-4 py-2 bg-neutral-900 border-b border-neutral-800 font-mono text-xs text-neutral-400">
                       <div className="flex items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-neutral-600" />
-                        <span className="font-bold uppercase">{currentSlide.codeSnippet.language}</span>
+                        <span className="font-bold uppercase text-neutral-200">{currentSlide.codeSnippet.language}</span>
                       </div>
                       <span>{currentSlide.codeSnippet.caption || ''}</span>
                     </div>
@@ -312,9 +304,9 @@ export default function PresenterMode({
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     {currentSlide.timeline.map((t, idx) => (
                       <div key={idx} className={cn('rounded-2xl p-5 border', theme.surfaceClass)}>
-                        <div className="font-mono text-xs font-bold text-neutral-400">{t.step}</div>
-                        <div className="font-bold text-base text-white my-2">{t.title}</div>
-                        <p className="text-xs text-neutral-300 leading-relaxed">{t.description}</p>
+                        <div className={cn('font-mono text-xs font-bold', theme.mutedTextClass)}>{t.step}</div>
+                        <div className={cn('font-bold text-base my-2', theme.textClass)}>{t.title}</div>
+                        <p className={cn('text-xs leading-relaxed', theme.bodyTextClass)}>{t.description}</p>
                       </div>
                     ))}
                   </div>
@@ -323,13 +315,13 @@ export default function PresenterMode({
                 {/* 6. Quote / Highlight */}
                 {currentSlide.layout === 'quote-highlight' && currentSlide.quote && (
                   <div className={cn('rounded-3xl p-8 sm:p-12 border', theme.surfaceClass)}>
-                    <blockquote className="text-xl sm:text-3xl font-serif italic font-bold leading-relaxed">
+                    <blockquote className={cn('text-xl sm:text-3xl font-serif italic font-bold leading-relaxed', theme.textClass)}>
                       “{currentSlide.quote.text}”
                     </blockquote>
-                    <div className="mt-6 font-mono text-sm">
-                      <span className="font-bold text-white">— {currentSlide.quote.author || ''}</span>
+                    <div className="mt-6 font-mono text-sm flex items-center gap-2">
+                      <span className={cn('font-bold', theme.textClass)}>— {currentSlide.quote.author || ''}</span>
                       {currentSlide.quote.role && (
-                        <span className="text-neutral-400 ml-2">• {currentSlide.quote.role}</span>
+                        <span className={theme.mutedTextClass}>• {currentSlide.quote.role}</span>
                       )}
                     </div>
                   </div>
@@ -338,9 +330,9 @@ export default function PresenterMode({
             </div>
 
             {/* Slide Footer */}
-            <div className="pt-3 border-t border-neutral-700/40 flex items-center justify-between text-xs text-neutral-400">
-              <span className="font-mono">{deck.title}</span>
-              <span className="font-mono">{theme.name}</span>
+            <div className="pt-3 border-t border-neutral-500/20 flex items-center justify-between text-xs">
+              <span className={cn('font-mono', theme.mutedTextClass)}>{deck.title}</span>
+              <span className={cn('font-mono', theme.mutedTextClass)}>{theme.name}</span>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -348,7 +340,7 @@ export default function PresenterMode({
 
       {/* Floating Speaker Notes Drawer (Toggled via 'N' or Notes Button) */}
       {showNotes && (
-        <div className="absolute top-6 left-6 max-w-sm rounded-2xl border border-neutral-800 bg-neutral-900/95 p-4 shadow-2xl backdrop-blur-md z-50">
+        <div className="absolute top-6 left-6 max-w-sm rounded-2xl border border-neutral-800 bg-neutral-900/95 p-4 shadow-2xl backdrop-blur-md z-50 animate-in fade-in">
           <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
             <span className="font-mono text-xs font-bold text-neutral-300">
               Speaker Notes (Private)
@@ -457,12 +449,11 @@ export default function PresenterMode({
 
           <button
             type="button"
-            onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-mono text-xs font-bold cursor-pointer transition-colors"
-            title="Exit Presentation Mode (Esc)"
+            onClick={onExit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-800 border border-neutral-700 text-xs font-mono font-bold text-neutral-300 hover:bg-red-950/40 hover:text-red-300 hover:border-red-900 cursor-pointer transition-colors ml-2"
           >
             <X size={14} weight="bold" />
-            <span>Exit</span>
+            <span>Exit (Esc)</span>
           </button>
         </div>
       </div>

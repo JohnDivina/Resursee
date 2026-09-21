@@ -3,16 +3,16 @@
 import React, { useState } from 'react';
 import { Slide, SlideLayout, TechTheme } from '@/types/presentation';
 import {
-  Layout,
   Plus,
   Trash,
   Notebook,
   Code,
   ChartBar,
-  ListBullets,
   Columns,
-  Clock,
+  ListBullets,
   Quotes,
+  ClockAfternoon,
+  Sparkle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +20,7 @@ interface SlideCanvasProps {
   slide: Slide;
   slideIndex: number;
   totalSlides: number;
-  onUpdateSlide: (updatedSlide: Slide) => void;
+  onUpdateSlide: (slide: Slide) => void;
   theme: TechTheme;
 }
 
@@ -33,70 +33,61 @@ export default function SlideCanvas({
 }: SlideCanvasProps) {
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
 
-  // Helper updaters
   const updateField = <K extends keyof Slide>(field: K, value: Slide[K]) => {
     onUpdateSlide({ ...slide, [field]: value });
   };
 
-  const handleAddBullet = () => {
-    const current = slide.bullets || [];
-    updateField('bullets', [...current, 'New key takeaway or technical specification point']);
+  const handleUpdateBullet = (index: number, val: string) => {
+    const bullets = [...(slide.bullets || [])];
+    bullets[index] = val;
+    updateField('bullets', bullets);
   };
 
-  const handleUpdateBullet = (index: number, val: string) => {
-    const current = [...(slide.bullets || [])];
-    current[index] = val;
-    updateField('bullets', current);
+  const handleAddBullet = () => {
+    const bullets = [...(slide.bullets || []), 'New key takeaway point'];
+    updateField('bullets', bullets);
   };
 
   const handleDeleteBullet = (index: number) => {
-    const current = [...(slide.bullets || [])];
-    current.splice(index, 1);
-    updateField('bullets', current);
+    const bullets = (slide.bullets || []).filter((_, i) => i !== index);
+    updateField('bullets', bullets);
   };
 
   const handleAddMetric = () => {
-    const current = slide.metrics || [];
-    updateField('metrics', [
-      ...current,
-      { label: 'New Metric KPI', value: '99.9%', change: '+12% Target' },
-    ]);
-  };
-
-  const handleUpdateMetric = (index: number, field: 'label' | 'value' | 'change', val: string) => {
-    const current = [...(slide.metrics || [])];
-    current[index] = { ...current[index], [field]: val };
-    updateField('metrics', current);
+    const metrics = [...(slide.metrics || []), { label: 'New Metric', value: '99.9%', change: '+10%' }];
+    updateField('metrics', metrics);
   };
 
   const handleDeleteMetric = (index: number) => {
-    const current = [...(slide.metrics || [])];
-    current.splice(index, 1);
-    updateField('metrics', current);
+    const metrics = (slide.metrics || []).filter((_, i) => i !== index);
+    updateField('metrics', metrics);
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto bg-neutral-100/70 dark:bg-black/80">
-      {/* 16:9 Presentation Slide Canvas */}
+    <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-neutral-100 dark:bg-neutral-950 p-3 sm:p-6 lg:p-8">
+      {/* 16:9 Aspect Ratio Slide Stage */}
       <div
         className={cn(
-          'w-full max-w-5xl aspect-video rounded-2xl p-6 sm:p-10 flex flex-col justify-between shadow-2xl relative transition-all duration-200 border',
+          'relative w-full max-w-5xl mx-auto aspect-[16/9] rounded-2xl shadow-2xl flex flex-col p-6 sm:p-10 transition-colors border duration-200 overflow-hidden select-text',
           theme.bgClass,
           theme.borderClass,
           theme.fontFamily
         )}
-        style={{
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-        }}
       >
-        {/* Slide Top Metadata Bar */}
-        <div className="flex items-center justify-between pb-3 border-b border-neutral-200/20 dark:border-neutral-800/80">
+        {/* Slide Top Navigation Strip */}
+        <div className="flex items-center justify-between pb-3 border-b border-neutral-500/20">
           <div className="flex items-center gap-2">
+            <span className={cn('font-mono text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded', theme.accentBadgeClass)}>
+              {slide.tag || `SLIDE ${slideIndex + 1}`}
+            </span>
             <input
               type="text"
               value={slide.tag || `SLIDE ${slideIndex + 1}`}
               onChange={(e) => updateField('tag', e.target.value)}
-              className="font-mono text-[11px] font-bold tracking-wider uppercase bg-transparent text-neutral-400 focus:text-white focus:outline-none px-1 rounded border-b border-transparent focus:border-neutral-500"
+              className={cn(
+                'font-mono text-[11px] font-bold tracking-wider uppercase bg-transparent px-1 rounded border-b border-transparent focus:border-neutral-500 focus:outline-none',
+                theme.mutedTextClass
+              )}
               placeholder="CATEGORY TAG"
             />
           </div>
@@ -106,7 +97,12 @@ export default function SlideCanvas({
             <select
               value={slide.layout}
               onChange={(e) => updateField('layout', e.target.value as SlideLayout)}
-              className="bg-neutral-800/80 text-neutral-200 border border-neutral-700 text-[11px] font-mono font-bold rounded-md px-2 py-0.5 cursor-pointer focus:outline-none"
+              className={cn(
+                'text-[11px] font-mono font-bold rounded-md px-2 py-0.5 cursor-pointer focus:outline-none border shadow-2xs',
+                theme.isDark
+                  ? 'bg-neutral-900 text-neutral-200 border-neutral-700'
+                  : 'bg-white text-neutral-900 border-neutral-300'
+              )}
             >
               <option value="bullets-points">Bullet List</option>
               <option value="split-columns">Split Columns</option>
@@ -117,7 +113,7 @@ export default function SlideCanvas({
               <option value="title-cover">Title Cover</option>
             </select>
 
-            <span className="font-mono text-xs font-bold text-neutral-400">
+            <span className={cn('font-mono text-xs font-bold', theme.mutedTextClass)}>
               {slideIndex + 1} / {totalSlides}
             </span>
           </div>
@@ -158,14 +154,14 @@ export default function SlideCanvas({
               <div className="space-y-2.5">
                 {(slide.bullets || []).map((bullet, bIdx) => (
                   <div key={bIdx} className="flex items-start gap-3 group">
-                    <span className="h-2 w-2 rounded-full bg-neutral-400 mt-2 shrink-0 group-hover:bg-white transition-colors" />
+                    <span className={cn('h-2 w-2 rounded-full mt-2 shrink-0 transition-colors', theme.dotClass)} />
                     <textarea
                       rows={1}
                       value={bullet}
                       onChange={(e) => handleUpdateBullet(bIdx, e.target.value)}
                       className={cn(
                         'flex-1 bg-transparent text-xs sm:text-sm resize-none focus:outline-none border-b border-transparent focus:border-neutral-500 transition-colors',
-                        theme.textClass
+                        theme.bodyTextClass
                       )}
                     />
                     <button
@@ -181,7 +177,11 @@ export default function SlideCanvas({
                 <button
                   type="button"
                   onClick={handleAddBullet}
-                  className="flex items-center gap-1.5 text-xs font-mono font-bold text-neutral-400 hover:text-white pt-2 cursor-pointer transition-colors"
+                  className={cn(
+                    'flex items-center gap-1.5 text-xs font-mono font-bold pt-2 cursor-pointer transition-colors',
+                    theme.mutedTextClass,
+                    'hover:opacity-100'
+                  )}
                 >
                   <Plus size={14} weight="bold" />
                   <span>Add Bullet Point</span>
@@ -208,12 +208,12 @@ export default function SlideCanvas({
                         newCols[cIdx] = { ...col, heading: e.target.value };
                         updateField('columns', newCols);
                       }}
-                      className="font-bold text-sm sm:text-base bg-transparent focus:outline-none mb-3 border-b border-transparent focus:border-neutral-500"
+                      className={cn('font-bold text-sm sm:text-base bg-transparent focus:outline-none mb-3 border-b border-transparent focus:border-neutral-500', theme.textClass)}
                     />
                     <div className="space-y-2">
                       {col.content.map((item, iIdx) => (
                         <div key={iIdx} className="flex items-start gap-2">
-                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 mt-1.5 shrink-0" />
+                          <span className={cn('h-1.5 w-1.5 rounded-full mt-1.5 shrink-0', theme.dotClass)} />
                           <input
                             type="text"
                             value={item}
@@ -224,7 +224,7 @@ export default function SlideCanvas({
                               newCols[cIdx] = { ...col, content: newContent };
                               updateField('columns', newCols);
                             }}
-                            className="w-full bg-transparent text-xs text-neutral-300 focus:text-white focus:outline-none"
+                            className={cn('w-full bg-transparent text-xs focus:outline-none', theme.bodyTextClass)}
                           />
                         </div>
                       ))}
@@ -249,25 +249,39 @@ export default function SlideCanvas({
                         className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 p-1 text-neutral-500 hover:text-red-400 cursor-pointer"
                         title="Delete Metric"
                       >
-                        <Trash size={11} />
+                        <Trash size={12} />
                       </button>
-                      <input
-                        type="text"
-                        value={m.value}
-                        onChange={(e) => handleUpdateMetric(mIdx, 'value', e.target.value)}
-                        className="text-lg sm:text-2xl font-black bg-transparent tracking-tight focus:outline-none"
-                      />
-                      <input
-                        type="text"
-                        value={m.label}
-                        onChange={(e) => handleUpdateMetric(mIdx, 'label', e.target.value)}
-                        className="text-[11px] font-mono text-neutral-400 bg-transparent focus:outline-none mt-1"
-                      />
+                      <div>
+                        <input
+                          type="text"
+                          value={m.value}
+                          onChange={(e) => {
+                            const newM = [...(slide.metrics || [])];
+                            newM[mIdx] = { ...m, value: e.target.value };
+                            updateField('metrics', newM);
+                          }}
+                          className={cn('font-extrabold text-xl sm:text-2xl bg-transparent focus:outline-none w-full', theme.textClass)}
+                        />
+                        <input
+                          type="text"
+                          value={m.label}
+                          onChange={(e) => {
+                            const newM = [...(slide.metrics || [])];
+                            newM[mIdx] = { ...m, label: e.target.value };
+                            updateField('metrics', newM);
+                          }}
+                          className={cn('text-xs font-medium bg-transparent focus:outline-none w-full mt-0.5', theme.subtextClass)}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={m.change || ''}
-                        onChange={(e) => handleUpdateMetric(mIdx, 'change', e.target.value)}
-                        className="text-[10px] font-mono font-bold text-emerald-400 bg-transparent focus:outline-none mt-0.5"
+                        onChange={(e) => {
+                          const newM = [...(slide.metrics || [])];
+                          newM[mIdx] = { ...m, change: e.target.value };
+                          updateField('metrics', newM);
+                        }}
+                        className={cn('text-[10px] font-mono font-bold bg-transparent focus:outline-none mt-1', theme.mutedTextClass)}
                       />
                     </div>
                   ))}
@@ -275,7 +289,12 @@ export default function SlideCanvas({
                     <button
                       type="button"
                       onClick={handleAddMetric}
-                      className="rounded-xl border border-dashed border-neutral-700 flex flex-col items-center justify-center p-3 text-neutral-400 hover:text-white hover:border-neutral-500 cursor-pointer transition-colors"
+                      className={cn(
+                        'rounded-xl border border-dashed flex flex-col items-center justify-center p-3 cursor-pointer transition-colors',
+                        theme.borderClass,
+                        theme.mutedTextClass,
+                        'hover:opacity-100'
+                      )}
                     >
                       <Plus size={16} weight="bold" />
                       <span className="text-[10px] font-mono font-bold mt-1">Add Metric</span>
@@ -287,9 +306,9 @@ export default function SlideCanvas({
                 {slide.bullets && (
                   <div className="space-y-1.5 pt-2">
                     {slide.bullets.map((b, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs text-neutral-300">
-                        <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 shrink-0" />
-                        <span>{b}</span>
+                      <div key={idx} className="flex items-center gap-2 text-xs">
+                        <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', theme.dotClass)} />
+                        <span className={theme.bodyTextClass}>{b}</span>
                       </div>
                     ))}
                   </div>
@@ -299,7 +318,7 @@ export default function SlideCanvas({
 
             {/* 4. Code Architecture */}
             {slide.layout === 'code-architecture' && (
-              <div className="h-full flex flex-col rounded-xl overflow-hidden border border-neutral-800 bg-[#0c0d12]">
+              <div className={cn('h-full flex flex-col rounded-xl overflow-hidden border', theme.isDark ? 'border-neutral-800 bg-[#0c0d12]' : 'border-neutral-300 bg-neutral-900 text-neutral-100')}>
                 <div className="flex items-center justify-between px-3 py-1.5 bg-neutral-900 border-b border-neutral-800 text-[10px] font-mono text-neutral-400">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-neutral-600" />
@@ -310,7 +329,7 @@ export default function SlideCanvas({
                         const current = slide.codeSnippet || { code: '', language: 'typescript' };
                         updateField('codeSnippet', { ...current, language: e.target.value });
                       }}
-                      className="bg-transparent focus:outline-none font-bold uppercase"
+                      className="bg-transparent focus:outline-none font-bold uppercase text-neutral-200"
                     />
                   </div>
                   <input
@@ -321,7 +340,7 @@ export default function SlideCanvas({
                       updateField('codeSnippet', { ...current, caption: e.target.value });
                     }}
                     placeholder="Optional caption..."
-                    className="bg-transparent focus:outline-none text-right"
+                    className="bg-transparent focus:outline-none text-right text-neutral-400"
                   />
                 </div>
                 <textarea
@@ -353,7 +372,7 @@ export default function SlideCanvas({
                         newT[idx] = { ...t, step: e.target.value };
                         updateField('timeline', newT);
                       }}
-                      className="font-mono text-[10px] font-bold text-neutral-400 bg-transparent focus:outline-none"
+                      className={cn('font-mono text-[10px] font-bold bg-transparent focus:outline-none', theme.mutedTextClass)}
                     />
                     <input
                       type="text"
@@ -363,7 +382,7 @@ export default function SlideCanvas({
                         newT[idx] = { ...t, title: e.target.value };
                         updateField('timeline', newT);
                       }}
-                      className="font-bold text-xs sm:text-sm text-white bg-transparent focus:outline-none my-1"
+                      className={cn('font-bold text-xs sm:text-sm bg-transparent focus:outline-none my-1', theme.textClass)}
                     />
                     <textarea
                       rows={3}
@@ -373,7 +392,7 @@ export default function SlideCanvas({
                         newT[idx] = { ...t, description: e.target.value };
                         updateField('timeline', newT);
                       }}
-                      className="text-[11px] text-neutral-400 bg-transparent focus:outline-none resize-none"
+                      className={cn('text-[11px] bg-transparent focus:outline-none resize-none', theme.bodyTextClass)}
                     />
                   </div>
                 ))}
@@ -392,9 +411,9 @@ export default function SlideCanvas({
                       updateField('quote', { ...current, text: e.target.value });
                     }}
                     placeholder="Enter inspiring quote or bold technical conclusion..."
-                    className="w-full bg-transparent text-base sm:text-xl italic font-bold focus:outline-none resize-none leading-relaxed"
+                    className={cn('w-full bg-transparent text-base sm:text-xl italic font-bold focus:outline-none resize-none leading-relaxed', theme.textClass)}
                   />
-                  <div className="mt-4 flex items-center gap-3 pt-3 border-t border-neutral-700/60">
+                  <div className="mt-4 flex items-center gap-3 pt-3 border-t border-neutral-500/30">
                     <input
                       type="text"
                       value={slide.quote?.author || ''}
@@ -403,9 +422,9 @@ export default function SlideCanvas({
                         updateField('quote', { ...current, author: e.target.value });
                       }}
                       placeholder="Author Name"
-                      className="font-bold text-xs bg-transparent focus:outline-none"
+                      className={cn('font-bold text-xs bg-transparent focus:outline-none', theme.textClass)}
                     />
-                    <span className="text-neutral-500">•</span>
+                    <span className={theme.mutedTextClass}>•</span>
                     <input
                       type="text"
                       value={slide.quote?.role || ''}
@@ -414,7 +433,7 @@ export default function SlideCanvas({
                         updateField('quote', { ...current, role: e.target.value });
                       }}
                       placeholder="Title / Organization"
-                      className="text-xs text-neutral-400 bg-transparent focus:outline-none flex-1"
+                      className={cn('text-xs bg-transparent focus:outline-none flex-1', theme.subtextClass)}
                     />
                   </div>
                 </div>
@@ -424,12 +443,12 @@ export default function SlideCanvas({
             {/* 7. Title Cover */}
             {slide.layout === 'title-cover' && (
               <div className="mt-8 flex flex-col items-center justify-center text-center">
-                <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 max-w-md w-full">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                <div className={cn('rounded-xl border p-4 max-w-md w-full', theme.surfaceClass)}>
+                  <span className={cn('font-mono text-[10px] font-bold uppercase tracking-wider', theme.mutedTextClass)}>
                     Resursee Presentation Studio
                   </span>
-                  <p className="text-xs text-neutral-300 mt-1">
-                    Press <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 font-mono text-[10px]">Present</kbd> in top right to launch fullscreen theater mode
+                  <p className={cn('text-xs mt-1', theme.bodyTextClass)}>
+                    Press <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-white font-mono text-[10px]">Present</kbd> in top right to launch fullscreen theater mode
                   </p>
                 </div>
               </div>
@@ -438,42 +457,45 @@ export default function SlideCanvas({
         </div>
 
         {/* Slide Bottom Bar: Speaker Notes Drawer Toggle */}
-        <div className="pt-2 border-t border-neutral-200/20 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
+        <div className="pt-2 border-t border-neutral-500/20 flex items-center justify-between text-xs">
           <button
             type="button"
             onClick={() => setShowNotesDrawer(!showNotesDrawer)}
-            className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            className={cn(
+              'flex items-center gap-1.5 font-mono text-[11px] font-bold transition-colors cursor-pointer',
+              theme.mutedTextClass,
+              'hover:opacity-100'
+            )}
           >
             <Notebook size={14} />
             <span>Speaker Notes {slide.notes ? '(1)' : '(Empty)'}</span>
           </button>
-          <span className="font-mono text-[10px] text-neutral-500">
-            {theme.name} • 16:9 Aspect Ratio
+          <span className={cn('font-mono text-[10px]', theme.mutedTextClass)}>
+            {theme.name} • 16:9 HD Stage
           </span>
         </div>
       </div>
 
-      {/* Expandable Speaker Notes Drawer */}
+      {/* Collapsible Speaker Notes Drawer */}
       {showNotesDrawer && (
-        <div className="w-full max-w-5xl mt-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 shadow-lg animate-in slide-in-from-top-2 duration-150">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="font-mono text-[11px] font-bold text-neutral-700 dark:text-neutral-300">
-              Speaker Notes (Visible only during Presenter Mode)
+        <div className="w-full max-w-5xl mx-auto mt-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-md animate-in fade-in duration-150">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Notebook size={16} className="text-neutral-500" />
+              <span className="font-bold text-xs text-neutral-800 dark:text-neutral-200">
+                Presenter Notes for Slide #{slideIndex + 1}
+              </span>
+            </div>
+            <span className="text-[10px] font-mono text-neutral-400">
+              Only visible to you during rehearsal &amp; Presenter Mode (Shortcut: N)
             </span>
-            <button
-              type="button"
-              onClick={() => setShowNotesDrawer(false)}
-              className="font-mono text-[10px] text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
-            >
-              Close
-            </button>
           </div>
           <textarea
-            rows={2}
+            rows={3}
             value={slide.notes || ''}
             onChange={(e) => updateField('notes', e.target.value)}
-            placeholder="Add talking points, prompts, or rehearsal cues for this slide..."
-            className="w-full bg-transparent text-xs text-neutral-800 dark:text-neutral-200 focus:outline-none resize-none font-mono"
+            placeholder="Type cue cards, talking points, timing checkpoints, or audience QA references..."
+            className="w-full bg-neutral-50 dark:bg-black/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-2.5 text-xs text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-neutral-400 resize-none font-sans"
           />
         </div>
       )}
