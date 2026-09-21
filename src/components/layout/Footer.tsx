@@ -78,11 +78,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/apps/ebook-reader" className="transition-colors hover:text-[var(--color-primary)] dark:hover:text-white font-medium text-[var(--color-ink)]">
-                  Ebook Reader &amp; Lore (App #7)
-                </Link>
-              </li>
-              <li>
                 <Link href="/about" className="transition-colors hover:text-[var(--color-primary)]">
                   Developer Portfolio
                 </Link>
