@@ -1,9 +1,24 @@
 import JSZip from 'jszip';
-import { Slide, PresentationDeck, TechThemeId } from '@/types/presentation';
+import { Slide, SlideLayout, PresentationDeck, TechThemeId } from '@/types/presentation';
+
+interface ExtractedShape {
+  title?: string;
+  isTitle: boolean;
+  isSubtitle: boolean;
+  paragraphs: {
+    text: string;
+    level: number;
+    isBullet: boolean;
+  }[];
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /**
- * Parses an uploaded .pptx (Microsoft PowerPoint) file directly in the browser using JSZip.
- * Extracts slides, titles, subtitles, and bullet points.
+ * Parses an uploaded .pptx (Microsoft PowerPoint) file directly in the browser using JSZip and XML DOM parsing.
+ * Preserves shape positions, multi-column layouts, hierarchical bullet indentation, and applies the selected theme.
  */
 export async function parsePPTXFile(
   file: File,
@@ -40,47 +55,216 @@ export async function parsePPTXFile(
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlContent, 'application/xml');
 
-    // Extract all paragraphs (<a:p>)
-    const paragraphs = doc.getElementsByTagName('a:p');
-    const lines: string[] = [];
+    // Parse slide shapes (<p:sp>)
+    const shapeNodes = doc.getElementsByTagName('p:sp');
+    const shapes: ExtractedShape[] = [];
 
-    for (let pIdx = 0; pIdx < paragraphs.length; pIdx++) {
-      const p = paragraphs[pIdx];
-      const textNodes = p.getElementsByTagName('a:t');
-      let pText = '';
-      for (let tIdx = 0; tIdx < textNodes.length; tIdx++) {
-        pText += textNodes[tIdx].textContent || '';
+    for (let sIdx = 0; sIdx < shapeNodes.length; sIdx++) {
+      const sp = shapeNodes[sIdx];
+
+      // Check placeholder type (<p:ph type="title" | "ctrTitle" | "subTitle" | "body" />)
+      const ph = sp.getElementsByTagName('p:ph')[0];
+      const phType = ph ? ph.getAttribute('type') || 'body' : null;
+      const isTitle = phType === 'title' || phType === 'ctrTitle';
+      const isSubtitle = phType === 'subTitle';
+
+      // Check spatial coordinates (<a:off x=".." y=".."/> <a:ext cx=".." cy=".."/>)
+      const off = sp.getElementsByTagName('a:off')[0];
+      const ext = sp.getElementsByTagName('a:ext')[0];
+      const x = off ? parseInt(off.getAttribute('x') || '0', 10) : 0;
+      const y = off ? parseInt(off.getAttribute('y') || '0', 10) : 0;
+      const width = ext ? parseInt(ext.getAttribute('cx') || '0', 10) : 0;
+      const height = ext ? parseInt(ext.getAttribute('cy') || '0', 10) : 0;
+
+      // Extract paragraphs within this shape
+      const paragraphs: { text: string; level: number; isBullet: boolean }[] = [];
+      const pNodes = sp.getElementsByTagName('a:p');
+
+      for (let pIdx = 0; pIdx < pNodes.length; pIdx++) {
+        const p = pNodes[pIdx];
+        const textNodes = p.getElementsByTagName('a:t');
+        let fullPText = '';
+        for (let tIdx = 0; tIdx < textNodes.length; tIdx++) {
+          fullPText += textNodes[tIdx].textContent || '';
+        }
+        const trimmed = fullPText.trim();
+        if (!trimmed) continue;
+
+        // Check indentation level (<a:pPr lvl="1">)
+        const pPr = p.getElementsByTagName('a:pPr')[0];
+        const lvl = pPr ? parseInt(pPr.getAttribute('lvl') || '0', 10) : 0;
+        const buChar = pPr?.getElementsByTagName('a:buChar')[0];
+        const buAuto = pPr?.getElementsByTagName('a:buAutoNum')[0];
+        const isBullet = Boolean(buChar || buAuto || lvl > 0);
+
+        paragraphs.push({ text: trimmed, level: lvl, isBullet });
       }
-      const trimmed = pText.trim();
-      if (trimmed) {
-        lines.push(trimmed);
+
+      if (paragraphs.length > 0) {
+        shapes.push({
+          isTitle,
+          isSubtitle,
+          paragraphs,
+          x,
+          y,
+          width,
+          height,
+        });
       }
     }
 
-    const title = lines[0] || `Slide ${i + 1}`;
+    // Try to extract speaker notes if available for this slide
+    let speakerNotes: string | undefined = undefined;
+    const slideNumber = path.match(/slide(\d+)\.xml/i)?.[1];
+    if (slideNumber) {
+      const notesFile = zip.file(`ppt/notesSlides/notesSlide${slideNumber}.xml`);
+      if (notesFile) {
+        try {
+          const notesXml = await notesFile.async('text');
+          const notesDoc = new DOMParser().parseFromString(notesXml, 'application/xml');
+          const noteParas = notesDoc.getElementsByTagName('a:p');
+          const noteTexts: string[] = [];
+          for (let nIdx = 0; nIdx < noteParas.length; nIdx++) {
+            const tNodes = noteParas[nIdx].getElementsByTagName('a:t');
+            let txt = '';
+            for (let t = 0; t < tNodes.length; t++) txt += tNodes[t].textContent || '';
+            const tr = txt.trim();
+            if (tr && !tr.match(/^\d+$/)) noteTexts.push(tr);
+          }
+          if (noteTexts.length > 0) speakerNotes = noteTexts.join('\n\n');
+        } catch {
+          // ignore notes extraction error
+        }
+      }
+    }
+
+    // Identify Slide Title and Subtitle
+    let title = '';
     let subtitle: string | undefined = undefined;
-    let bullets: string[] = [];
+    const contentShapes: ExtractedShape[] = [];
 
-    if (lines.length === 2 && lines[1].length < 120) {
-      subtitle = lines[1];
-    } else if (lines.length > 1) {
-      if (lines[1].length < 80 && lines.length > 2) {
-        subtitle = lines[1];
-        bullets = lines.slice(2);
+    for (const sh of shapes) {
+      if (sh.isTitle && !title) {
+        title = sh.paragraphs.map((p) => p.text).join(' ');
+      } else if (sh.isSubtitle && !subtitle) {
+        subtitle = sh.paragraphs.map((p) => p.text).join(' ');
       } else {
-        bullets = lines.slice(1);
+        contentShapes.push(sh);
       }
     }
 
-    const isCover = i === 0 && (!bullets || bullets.length === 0);
+    // Fallback: if no placeholder title was found, use the first non-empty shape
+    if (!title && shapes.length > 0) {
+      const firstShape = shapes[0];
+      title = firstShape.paragraphs[0]?.text || `Slide ${i + 1}`;
+      if (firstShape.paragraphs.length > 1 && !subtitle) {
+        subtitle = firstShape.paragraphs[1].text;
+      }
+      contentShapes.shift();
+    }
+
+    if (!title) title = `Slide ${i + 1}`;
+
+    // Layout Intelligence: Detect structure from shapes
+    let detectedLayout: SlideLayout = 'bullets-points';
+    let bullets: string[] | undefined = undefined;
+    let columns: { heading: string; content: string[] }[] | undefined = undefined;
+    let metrics: { label: string; value: string; change?: string }[] | undefined = undefined;
+    let codeSnippet: { language: string; code: string } | undefined = undefined;
+    let timeline: { step: string; title: string; description: string }[] | undefined = undefined;
+    let quote: { text: string; author: string } | undefined = undefined;
+
+    // Check 1: Title Cover (first slide with subtitle and no heavy bullet lists)
+    if (i === 0 && contentShapes.length === 0) {
+      detectedLayout = 'title-cover';
+    }
+    // Check 2: Split Columns (two side-by-side content shapes with horizontal separation)
+    else if (contentShapes.length === 2 && Math.abs(contentShapes[0].x - contentShapes[1].x) > 1500000) {
+      detectedLayout = 'split-columns';
+      // Sort left to right
+      const sortedCols = [...contentShapes].sort((a, b) => a.x - b.x);
+      columns = sortedCols.map((col, cIdx) => {
+        const h = col.paragraphs[0]?.text || `Pillar ${cIdx + 1}`;
+        const c = col.paragraphs.slice(1).map((p) => (p.level > 0 ? `  • ${p.text}` : p.text));
+        return {
+          heading: h,
+          content: c.length > 0 ? c : [h],
+        };
+      });
+    }
+    // Check 3: Metrics / KPIs (shapes containing numbers, currency, or percentages)
+    else {
+      const allParas = contentShapes.flatMap((s) => s.paragraphs);
+      const metricCandidates = allParas.filter((p) =>
+        /^[+$€£¥]?\d+(?:\.\d+)?[%kMBTG+]?$/i.test(p.text.trim()) ||
+        /^\d+(?:\.\d+)?%$/.test(p.text.trim())
+      );
+
+      if (metricCandidates.length >= 2) {
+        detectedLayout = 'stats-metrics';
+        metrics = [];
+        for (let mIdx = 0; mIdx < Math.min(metricCandidates.length, 4); mIdx++) {
+          const val = metricCandidates[mIdx].text;
+          const neighbor = allParas.find((p) => p.text !== val && p.text.length < 50);
+          metrics.push({
+            value: val,
+            label: neighbor?.text || `Metric ${mIdx + 1}`,
+          });
+        }
+      }
+      // Check 4: Code block detection (shapes containing syntax keywords)
+      else if (allParas.some((p) => /^(import |export |const |function |def |class |async )/.test(p.text))) {
+        detectedLayout = 'code-architecture';
+        codeSnippet = {
+          language: 'typescript',
+          code: allParas.map((p) => p.text).join('\n'),
+        };
+      }
+      // Check 5: Timeline / Steps detection
+      else if (allParas.some((p) => /^(Phase \d|Step \d|Q[1-4]|Sprint \d)/i.test(p.text))) {
+        detectedLayout = 'timeline-roadmap';
+        timeline = [];
+        let stepIdx = 1;
+        for (const p of allParas) {
+          if (/^(Phase \d|Step \d|Q[1-4]|Sprint \d)/i.test(p.text) || timeline.length < 4) {
+            timeline.push({
+              step: `Phase ${stepIdx}`,
+              title: p.text,
+              description: 'Key execution objective and implementation milestones',
+            });
+            stepIdx++;
+          }
+        }
+      }
+      // Default: Bullets points with hierarchical preservation
+      else {
+        detectedLayout = 'bullets-points';
+        bullets = allParas.map((p) => {
+          if (p.level > 0) {
+            return `${'  '.repeat(p.level)}• ${p.text}`;
+          }
+          return p.text;
+        });
+
+        if (bullets.length === 0) {
+          bullets = ['Key presentation takeaway point'];
+        }
+      }
+    }
 
     slides.push({
       id: `imported_slide_${i + 1}_${Date.now()}`,
-      layout: isCover ? 'title-cover' : 'bullets-points',
+      layout: detectedLayout,
       title,
       subtitle,
-      bullets: bullets.length > 0 ? bullets : isCover ? undefined : ['Key takeaway point from presentation'],
-      tag: isCover ? 'OVERVIEW' : `SECTION ${i + 1}`,
+      bullets,
+      columns,
+      metrics,
+      codeSnippet,
+      timeline,
+      quote,
+      notes: speakerNotes,
+      tag: i === 0 ? 'OVERVIEW' : `SLIDE ${i + 1}`,
     });
   }
 
@@ -89,8 +273,8 @@ export async function parsePPTXFile(
   return {
     id: `deck_pptx_${Date.now()}`,
     title: cleanName || 'Imported PowerPoint Deck',
-    description: `Converted from ${file.name} to Resursee Presentation Studio.`,
-    author: 'Local Author',
+    description: `Cleanly imported from "${file.name}" with formatting preserved under ${themeId} theme.`,
+    author: 'Imported Deck',
     createdAt: Date.now(),
     updatedAt: Date.now(),
     themeId,
@@ -152,8 +336,9 @@ export function parseMarkdownToDeck(
       {
         id: `slide_empty_${Date.now()}`,
         layout: 'title-cover',
-        title: fileName,
-        subtitle: 'Empty presentation document',
+        title: 'Empty Presentation',
+        subtitle: 'Add slides to begin presentation',
+        tag: 'START',
       },
     ],
   };

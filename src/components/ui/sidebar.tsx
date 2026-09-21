@@ -231,7 +231,7 @@ export const SidebarLink = ({
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
         className={cn(
-          'text-xs font-semibold transition-transform duration-150 whitespace-pre inline-block !p-0 !m-0 truncate flex-1 text-left',
+          'text-xs font-semibold transition-colors duration-150 whitespace-pre inline-block !p-0 !m-0 truncate flex-1 text-left',
           link.isActive
             ? 'text-neutral-900 dark:text-neutral-100 font-bold'
             : 'text-neutral-600 dark:text-neutral-400 group-hover/sidebar:text-neutral-900 dark:group-hover/sidebar:text-neutral-100'

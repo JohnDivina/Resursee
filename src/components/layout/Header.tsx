@@ -22,6 +22,7 @@ import {
   ChartBar,
   Microphone,
   Presentation,
+  BookOpen,
 } from '@phosphor-icons/react';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import SoundToggle from '@/components/sound/SoundToggle';
@@ -407,6 +408,15 @@ export default function Header({ onOpenSearch }: HeaderProps) {
                     >
                       <Presentation size={15} className="text-[var(--color-ink)]" />
                       <span>Presentation Studio</span>
+                    </Link>
+
+                    <Link
+                      href="/apps/ebook-reader"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-[var(--color-ink)] hover:bg-[var(--color-paper-muted)] transition-colors"
+                    >
+                      <BookOpen size={15} className="text-[var(--color-ink)]" />
+                      <span>Ebook Reader &amp; Lore</span>
                     </Link>
 
                     {(session.role === 'master_admin' || session.role === 'moderator') && (
