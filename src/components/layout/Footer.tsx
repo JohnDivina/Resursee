@@ -73,6 +73,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/apps/presentation-studio" className="transition-colors hover:text-[var(--color-primary)] dark:hover:text-white font-medium text-[var(--color-ink)]">
+                  Presentation Studio (App #6)
+                </Link>
+              </li>
+              <li>
                 <Link href="/about" className="transition-colors hover:text-[var(--color-primary)]">
                   Developer Portfolio
                 </Link>

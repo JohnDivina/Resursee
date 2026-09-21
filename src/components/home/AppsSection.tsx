@@ -9,6 +9,7 @@ import {
   Sparkle,
   ChartBar,
   Microphone,
+  Presentation,
 } from '@phosphor-icons/react';
 
 export default function AppsSection() {
@@ -151,7 +152,30 @@ const SolidGraphicTranscriber = () => {
   );
 };
 
+// 7. Solid Neutral Graphic: Presentation Studio
+const SolidGraphicPresentationStudio = () => {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center p-4 sm:p-6 bg-neutral-50 dark:bg-neutral-900/40 rounded-2xl border border-neutral-200/60 dark:border-neutral-800">
+      <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-neutral-700 shadow-2xs transition-transform duration-200 group-hover/bento:scale-105">
+        <Presentation size={30} weight="regular" />
+      </div>
+
+      <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2.5 sm:px-3 py-1 font-mono text-[11px] sm:text-xs font-bold text-neutral-800 dark:text-neutral-200 max-w-full">
+        <span className="h-1.5 w-1.5 rounded-full bg-neutral-600 dark:bg-neutral-400 shrink-0" />
+        <span className="truncate">Slide Builder &amp; Live Presenter</span>
+      </div>
+    </div>
+  );
+};
+
 const items = [
+  {
+    title: 'Presentation Studio',
+    description: 'Build technical slide decks with custom tech themes, free template library, PPTX export, and local Ollama AI copilot with live presenter mode.',
+    header: <SolidGraphicPresentationStudio />,
+    className: 'md:col-span-1 lg:col-span-1',
+    href: '/apps/presentation-studio',
+  },
   {
     title: 'AI Transcriber',
     description: 'Record meetings or drop audio files for speech transcription with speaker identification, Taglish support, and structured meeting notes.',
