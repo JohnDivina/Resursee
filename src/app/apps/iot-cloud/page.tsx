@@ -11,6 +11,8 @@ import TelemetryChart from '@/components/iot/TelemetryChart';
 import RelaySwitch from '@/components/iot/RelaySwitch';
 import VirtualSimulator from '@/components/iot/VirtualSimulator';
 import DeviceWizardModal from '@/components/iot/DeviceWizardModal';
+import EnergyFlowTopology from '@/components/iot/EnergyFlowTopology';
+import SystemArchitectureView from '@/components/iot/SystemArchitectureView';
 import { IoTDevice, IoTTelemetry, IoTActuator } from '@/types/iotCloud';
 import { UserSession } from '@/lib/sessionCrypto';
 import {
@@ -42,9 +44,10 @@ import {
   WarningCircle,
   PlugsConnected,
   SlidersHorizontal,
+  Graph,
 } from '@phosphor-icons/react';
 
-type IoTTab = 'dashboard' | 'actuators' | 'devices' | 'firmware' | 'guide';
+type IoTTab = 'dashboard' | 'actuators' | 'devices' | 'firmware' | 'guide' | 'architecture';
 
 function getValidCachedSession(): UserSession | null {
   if (typeof window === 'undefined') return null;
@@ -74,6 +77,34 @@ export default function IoTCloudPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [copiedSketch, setCopiedSketch] = useState(false);
+
+  // Switch tab with URL state synchronizer
+  const switchTab = (tab: IoTTab) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+    }
+  };
+
+  // Sync initial tab from URL query if provided
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab') as IoTTab | null;
+        if (
+          tabParam &&
+          ['dashboard', 'actuators', 'devices', 'firmware', 'guide', 'architecture'].includes(tabParam)
+        ) {
+          setActiveTab(tabParam);
+        }
+      } catch {}
+    }
+  }, []);
 
   // Authentication State
   const [session, setSession] = useState<UserSession | null>(getValidCachedSession);
@@ -137,13 +168,13 @@ export default function IoTCloudPage() {
               setSession(data.user);
               try {
                 localStorage.setItem('resursee_user_session_cache', JSON.stringify(data.user));
-              } catch {}
+              } catch { }
             } else {
               setSession(null);
               try {
                 localStorage.removeItem('resursee_user_session_cache');
                 localStorage.removeItem('resursee_last_active_time');
-              } catch {}
+              } catch { }
             }
           }
         } else {
@@ -152,7 +183,7 @@ export default function IoTCloudPage() {
             try {
               localStorage.removeItem('resursee_user_session_cache');
               localStorage.removeItem('resursee_last_active_time');
-            } catch {}
+            } catch { }
           }
         }
       } catch (err) {
@@ -162,7 +193,7 @@ export default function IoTCloudPage() {
           try {
             localStorage.removeItem('resursee_user_session_cache');
             localStorage.removeItem('resursee_last_active_time');
-          } catch {}
+          } catch { }
         }
       } finally {
         if (isMounted) setAuthLoading(false);
@@ -287,7 +318,7 @@ export default function IoTCloudPage() {
     const actuatorKey = `resursee_iot_actuators_${userId}_${selectedDevice.id}`;
     try {
       localStorage.setItem(actuatorKey, JSON.stringify(updated));
-    } catch {}
+    } catch { }
 
     try {
       await fetch('/api/iot/ingest', {
@@ -300,7 +331,7 @@ export default function IoTCloudPage() {
           state: newState,
         }),
       });
-    } catch {}
+    } catch { }
   };
 
   // Handle New Device Creation
@@ -313,7 +344,7 @@ export default function IoTCloudPage() {
     const storageKey = `resursee_iot_devices_${userId}`;
     try {
       localStorage.setItem(storageKey, JSON.stringify(updated));
-    } catch {}
+    } catch { }
 
     loadDeviceState(userId, newDevice.id);
     setActiveTab('dashboard');
@@ -323,11 +354,11 @@ export default function IoTCloudPage() {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {}
+    } catch { }
     try {
       localStorage.removeItem('resursee_user_session_cache');
       localStorage.removeItem('resursee_last_active_time');
-    } catch {}
+    } catch { }
     setSession(null);
     setDevices([]);
     setSelectedDevice(null);
@@ -419,7 +450,7 @@ export default function IoTCloudPage() {
               <SidebarLink
                 link={{
                   label: 'Live Telemetry',
-                  onClick: () => setActiveTab('dashboard'),
+                  onClick: () => switchTab('dashboard'),
                   icon: (
                     <Gauge
                       size={18}
@@ -433,7 +464,7 @@ export default function IoTCloudPage() {
               <SidebarLink
                 link={{
                   label: 'Relay Controls',
-                  onClick: () => setActiveTab('actuators'),
+                  onClick: () => switchTab('actuators'),
                   icon: (
                     <ToggleRight
                       size={18}
@@ -448,7 +479,7 @@ export default function IoTCloudPage() {
               <SidebarLink
                 link={{
                   label: 'Device Fleet',
-                  onClick: () => setActiveTab('devices'),
+                  onClick: () => switchTab('devices'),
                   icon: (
                     <PlugsConnected
                       size={18}
@@ -463,7 +494,7 @@ export default function IoTCloudPage() {
               <SidebarLink
                 link={{
                   label: 'C++ Firmware',
-                  onClick: () => setActiveTab('firmware'),
+                  onClick: () => switchTab('firmware'),
                   icon: (
                     <Code
                       size={18}
@@ -477,7 +508,7 @@ export default function IoTCloudPage() {
               <SidebarLink
                 link={{
                   label: 'Hardware Guide',
-                  onClick: () => setActiveTab('guide'),
+                  onClick: () => switchTab('guide'),
                   icon: (
                     <BookOpen
                       size={18}
@@ -485,6 +516,20 @@ export default function IoTCloudPage() {
                     />
                   ),
                   isActive: activeTab === 'guide',
+                }}
+              />
+
+              <SidebarLink
+                link={{
+                  label: 'Architecture & Flow',
+                  onClick: () => switchTab('architecture'),
+                  icon: (
+                    <Graph
+                      size={18}
+                      weight={activeTab === 'architecture' ? 'bold' : 'regular'}
+                    />
+                  ),
+                  isActive: activeTab === 'architecture',
                 }}
               />
             </div>
@@ -608,12 +653,14 @@ export default function IoTCloudPage() {
               {activeTab === 'dashboard'
                 ? 'Telemetry Dashboard'
                 : activeTab === 'actuators'
-                ? 'Relay Controls'
-                : activeTab === 'devices'
-                ? 'Device Fleet'
-                : activeTab === 'firmware'
-                ? 'Arduino C++ Firmware'
-                : 'Hardware Guide'}
+                  ? 'Relay Controls'
+                  : activeTab === 'devices'
+                    ? 'Device Fleet'
+                    : activeTab === 'firmware'
+                      ? 'Arduino C++ Firmware'
+                      : activeTab === 'architecture'
+                        ? 'Architecture & Data Flow'
+                        : 'Hardware Guide'}
             </span>
 
             {/* Quick Device Switcher */}
@@ -642,6 +689,21 @@ export default function IoTCloudPage() {
 
           {/* Top Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => switchTab('architecture')}
+              className={cn(
+                'hidden sm:flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition cursor-pointer',
+                activeTab === 'architecture'
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-transparent'
+                  : 'border-neutral-200 bg-neutral-50 text-neutral-800 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800'
+              )}
+              title="View End-to-End System Architecture & Flow"
+            >
+              <Graph size={14} weight="bold" />
+              <span>Architecture</span>
+            </button>
+
             {selectedDevice && (
               <span className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-100 px-2.5 py-1 font-mono text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-[#1a1a1a] dark:text-neutral-300">
                 <span
@@ -660,7 +722,7 @@ export default function IoTCloudPage() {
               <>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('firmware')}
+                  onClick={() => switchTab('firmware')}
                   className="hidden sm:flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 cursor-pointer"
                   title="View ready-to-flash Arduino C++ firmware"
                 >
@@ -700,64 +762,80 @@ export default function IoTCloudPage() {
               </div>
             )}
 
-            {/* 2. UNAUTHENTICATED STATE: Google Sign-In Gate */}
+            {/* 2. UNAUTHENTICATED STATE: Google Sign-In Gate OR Public Architecture View */}
             {!authLoading && !session && (
-              <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
-                <div className="p-8 sm:p-14 text-center max-w-2xl mx-auto space-y-6">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm">
-                    <Cpu size={28} weight="bold" />
-                  </div>
+              activeTab === 'architecture' ? (
+                <SystemArchitectureView
+                  onBackToDashboard={() => switchTab('dashboard')}
+                  onOpenFirmware={() => switchTab('firmware')}
+                />
+              ) : (
+                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-[#121212]">
+                  <div className="p-8 sm:p-14 text-center max-w-2xl mx-auto space-y-6">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm">
+                      <Cpu size={28} weight="bold" />
+                    </div>
 
-                  <div className="space-y-2">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-                      Sign in to Access Your ESP32 IoT Cloud
-                    </h1>
-                    <p className="text-xs sm:text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
-                      Each user receives their own isolated IoT telemetry dashboard. Sign in with your Google account to connect ESP32 microcontrollers, generate ready-to-flash C++ firmware, and toggle physical GPIO relays.
-                    </p>
-                  </div>
-
-                  <div className="pt-2 flex justify-center">
-                    <a
-                      href={`/api/auth/google?returnTo=${encodeURIComponent('/apps/iot-cloud')}`}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-6 py-3 text-xs font-bold shadow-sm hover:opacity-90 active:scale-95 transition"
-                    >
-                      <GoogleLogo size={16} weight="bold" />
-                      <span>Continue with Google</span>
-                      <ArrowRight size={14} weight="bold" />
-                    </a>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-800 text-left sm:grid-cols-3">
-                    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-1">
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
-                        Private Space
-                      </h4>
-                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                        Isolated telemetry data, tokens, and hardware configs strictly scoped to your account.
+                    <div className="space-y-2">
+                      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                        Sign in to Access Your ESP32 IoT Cloud
+                      </h1>
+                      <p className="text-xs sm:text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
+                        Each user receives their own isolated IoT telemetry dashboard. Sign in with your Google account to connect ESP32 microcontrollers, generate ready-to-flash C++ firmware, and toggle physical GPIO relays.
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-1">
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
-                        Bi-Directional Relays
-                      </h4>
-                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                        Instant GPIO relay toggling with real-time feedback over HTTP/WebSockets.
-                      </p>
+                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <a
+                        href={`/api/auth/google?returnTo=${encodeURIComponent('/apps/iot-cloud')}`}
+                        className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-6 py-3 text-xs font-bold shadow-sm hover:opacity-90 active:scale-95 transition"
+                      >
+                        <GoogleLogo size={16} weight="bold" />
+                        <span>Continue with Google</span>
+                        <ArrowRight size={14} weight="bold" />
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => switchTab('architecture')}
+                        className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-5 py-3 text-xs font-bold text-neutral-800 shadow-xs hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 transition cursor-pointer"
+                      >
+                        <Graph size={16} weight="bold" />
+                        <span>Explore System Architecture</span>
+                      </button>
                     </div>
 
-                    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-1">
-                      <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
-                        Instant Firmware
-                      </h4>
-                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                        Auto-generated Arduino sketches configured with your device credentials.
-                      </p>
+                    <div className="grid grid-cols-1 gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-800 text-left sm:grid-cols-3">
+                      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-1">
+                        <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
+                          Private Space
+                        </h4>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          Isolated telemetry data, tokens, and hardware configs strictly scoped to your account.
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-1">
+                        <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
+                          Bi-Directional Relays
+                        </h4>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          Instant GPIO relay toggling with real-time feedback over HTTP/WebSockets.
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-1">
+                        <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
+                          Instant Firmware
+                        </h4>
+                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          Auto-generated Arduino sketches configured with your device credentials.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* 3. AUTHENTICATED WORKSPACE */}
@@ -862,6 +940,13 @@ export default function IoTCloudPage() {
                         color="currentColor"
                       />
                     </div>
+
+                    {/* Live Energy & Power Flow Topology (Solar, Battery, Inverter, Load, Grid) */}
+                    <EnergyFlowTopology
+                      telemetry={latestTelemetry}
+                      actuators={actuators}
+                      deviceName={selectedDevice.name}
+                    />
 
                     {/* Live Time-Series Chart */}
                     <TelemetryChart
@@ -1140,6 +1225,16 @@ export default function IoTCloudPage() {
                       </ul>
                     </div>
                   </div>
+                )}
+
+                {/* TAB 6: SYSTEM ARCHITECTURE & DATA FLOW */}
+                {activeTab === 'architecture' && (
+                  <SystemArchitectureView
+                    onBackToDashboard={() => switchTab('dashboard')}
+                    onOpenFirmware={() => switchTab('firmware')}
+                    deviceToken={selectedDevice?.deviceToken}
+                    deviceId={selectedDevice?.id}
+                  />
                 )}
               </>
             )}
