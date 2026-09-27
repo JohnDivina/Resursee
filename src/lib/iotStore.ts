@@ -5,7 +5,7 @@ const STORAGE_KEY_TELEMETRY = 'resursee_iot_telemetry';
 const STORAGE_KEY_ACTUATORS = 'resursee_iot_actuators';
 const STORAGE_KEY_WIDGETS = 'resursee_iot_widgets';
 
-// Generate default initial sample device if user is new
+// Generate default initial device entry awaiting hardware provisioning
 export function getInitialDevices(userId: string, userName?: string): IoTDevice[] {
   const shortName = userName ? `${userName.split(' ')[0]}'s Greenhouse` : 'Smart Greenhouse Station';
   return [
@@ -13,15 +13,15 @@ export function getInitialDevices(userId: string, userName?: string): IoTDevice[
       id: `dev-${userId.substring(0, 8)}-gh`,
       userId,
       name: shortName,
-      description: `ESP32 Node configured for ${userName || 'User'} monitoring ambient temp, humidity, and soil moisture with automated pump relay.`,
+      description: `ESP32 Node configured for ${userName || 'User'} awaiting physical hardware pairing.`,
       deviceType: 'esp32',
       deviceToken: `sk_esp32_${userId.substring(0, 6)}_${Math.random().toString(36).substring(2, 8)}`,
-      status: 'online',
-      lastSeenAt: new Date().toISOString(),
+      status: 'offline',
+      lastSeenAt: undefined,
       createdAt: new Date().toISOString(),
-      rssi: -58,
-      ipAddress: '192.168.1.142',
-      firmwareVersion: '1.2.0',
+      rssi: -95,
+      ipAddress: 'Awaiting Hardware',
+      firmwareVersion: 'Pending Setup',
     },
   ];
 }
@@ -41,7 +41,7 @@ export function getInitialActuators(deviceId: string): IoTActuator[] {
       name: 'LED Grow Lights (GPIO 4)',
       deviceId,
       pin: 4,
-      state: true,
+      state: false,
       updatedAt: new Date().toISOString(),
     },
     {

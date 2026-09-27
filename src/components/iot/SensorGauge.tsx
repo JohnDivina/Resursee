@@ -6,12 +6,13 @@ import { Thermometer, Drop, Sun, Sparkle, BatteryHigh } from '@phosphor-icons/re
 
 interface SensorGaugeProps {
   title: string;
-  value: number;
+  value?: number | null;
   unit: string;
   minVal?: number;
   maxVal?: number;
   metricKey: 'temperature' | 'humidity' | 'light' | 'soilMoisture' | 'battery';
   color?: string;
+  isOnline?: boolean;
 }
 
 export default function SensorGauge({
@@ -22,13 +23,20 @@ export default function SensorGauge({
   maxVal = 100,
   metricKey,
   color = 'currentColor',
+  isOnline = true,
 }: SensorGaugeProps) {
-  const percentage = Math.min(100, Math.max(0, ((value - minVal) / (maxVal - minVal)) * 100));
+  const hasValue = value !== undefined && value !== null && isOnline;
+  const numericVal = hasValue ? value : minVal;
+  const percentage = hasValue
+    ? Math.min(100, Math.max(0, ((numericVal - minVal) / (maxVal - minVal)) * 100))
+    : 0;
 
   // Circular gauge geometry
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * (circumference * 0.75); // 270 deg arc
+  const strokeDashoffset = hasValue
+    ? circumference - (percentage / 100) * (circumference * 0.75) // 270 deg arc
+    : circumference;
 
   const getMetricIcon = () => {
     switch (metricKey) {
@@ -58,7 +66,9 @@ export default function SensorGauge({
             {title}
           </span>
         </div>
-        <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">Live</span>
+        <span className="font-mono text-[11px] text-[var(--color-ink-muted)]">
+          {hasValue ? 'Live' : 'Standby'}
+        </span>
       </div>
 
       {/* Circular Gauge Graphic */}
@@ -83,7 +93,7 @@ export default function SensorGauge({
             cy="64"
             r={radius}
             fill="transparent"
-            stroke={color}
+            stroke={hasValue ? color : 'transparent'}
             strokeWidth="10"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
@@ -96,16 +106,16 @@ export default function SensorGauge({
         {/* Center Digital Display */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <motion.span
-            key={value}
+            key={hasValue ? value : 'empty'}
             initial={{ scale: 0.9, opacity: 0.8 }}
             animate={{ scale: 1, opacity: 1 }}
             className="font-mono text-2xl font-black text-[var(--color-ink)] tracking-tight"
           >
-            {value}
-            <span className="ml-0.5 text-xs font-semibold text-[var(--color-ink-muted)]">{unit}</span>
+            {hasValue ? value : '--'}
+            {hasValue && <span className="ml-0.5 text-xs font-semibold text-[var(--color-ink-muted)]">{unit}</span>}
           </motion.span>
           <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
-            Range {minVal}–{maxVal}
+            {hasValue ? `Range ${minVal}–${maxVal}` : 'No signal'}
           </span>
         </div>
       </div>
@@ -113,7 +123,9 @@ export default function SensorGauge({
       {/* Footer Range Bar */}
       <div className="flex w-full items-center justify-between border-t border-[var(--color-rule-subtle)] pt-2 text-[11px] font-mono text-[var(--color-ink-muted)]">
         <span>Min {minVal}{unit}</span>
-        <span className="font-bold text-[var(--color-ink)]">{percentage.toFixed(0)}% Capacity</span>
+        <span className="font-bold text-[var(--color-ink)]">
+          {hasValue ? `${percentage.toFixed(0)}% Capacity` : 'Awaiting Data'}
+        </span>
         <span>Max {maxVal}{unit}</span>
       </div>
     </div>

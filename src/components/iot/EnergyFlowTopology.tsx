@@ -44,7 +44,7 @@ export default function EnergyFlowTopology({
   telemetryHistory = [],
   actuators = [],
   onToggleActuator,
-  isSimulating = true,
+  isSimulating = false,
   onToggleSimulator,
   telemetry: legacyTelemetry,
   deviceName: legacyDeviceName,
@@ -55,9 +55,15 @@ export default function EnergyFlowTopology({
   const latestTelem = latestTelemetryProp || legacyTelemetry || telemetryHistory[telemetryHistory.length - 1];
 
   // 1. Real Hardware Telemetry Freshness & Watchdog Tracker
-  const lastPacketReceivedRef = useRef<number>(Date.now());
-  const [secondsSinceLastPacket, setSecondsSinceLastPacket] = useState<number>(0);
-  const [totalPacketsReceived, setTotalPacketsReceived] = useState<number>(telemetryHistory.length || 1);
+  const lastPacketReceivedRef = useRef<number | null>(
+    telemetryHistory.length > 0 && latestTelem ? Date.now() : null
+  );
+  const [secondsSinceLastPacket, setSecondsSinceLastPacket] = useState<number | null>(
+    telemetryHistory.length > 0 && latestTelem ? 0 : null
+  );
+  const [totalPacketsReceived, setTotalPacketsReceived] = useState<number>(
+    telemetryHistory.length
+  );
   const [prevTelem, setPrevTelem] = useState<IoTTelemetry | undefined>(latestTelem);
   const [packetFlash, setPacketFlash] = useState<boolean>(false);
 
@@ -75,7 +81,7 @@ export default function EnergyFlowTopology({
 
   // Monitor incoming telemetry points in real time
   useEffect(() => {
-    if (latestTelem) {
+    if (latestTelem && (latestTelem.temperature !== undefined || latestTelem.id)) {
       lastPacketReceivedRef.current = Date.now();
       setSecondsSinceLastPacket(0);
       setTotalPacketsReceived((prev) => prev + 1);
@@ -93,33 +99,28 @@ export default function EnergyFlowTopology({
   // Real-time second ticker for packet age / timeout watchdog
   useEffect(() => {
     const interval = setInterval(() => {
-      const diffSec = Math.floor((Date.now() - lastPacketReceivedRef.current) / 1000);
-      setSecondsSinceLastPacket(diffSec);
+      if (lastPacketReceivedRef.current !== null) {
+        const diffSec = Math.floor((Date.now() - lastPacketReceivedRef.current) / 1000);
+        setSecondsSinceLastPacket(diffSec);
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Real HTTP Ping Probe Function
+  // Real HTTP Ping Probe Function - Queries cloud without polluting fake telemetry
   const probeCloudEndpoint = async () => {
     setIsProbing(true);
     setPingStatus('PROBING');
     const startTime = performance.now();
 
     try {
-      const token = device?.deviceToken || 'sk_probe_token';
-      const res = await fetch('/api/iot/ingest', {
-        method: 'POST',
+      const token = device?.deviceToken;
+      const url = token ? `/api/iot/ingest?deviceToken=${encodeURIComponent(token)}` : '/api/iot/ingest';
+      const res = await fetch(url, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'x-device-token': token,
+          Accept: 'application/json',
         },
-        body: JSON.stringify({
-          deviceToken: token,
-          temperature: latestTelem?.temperature ?? 25.4,
-          humidity: latestTelem?.humidity ?? 63.8,
-          soilMoisture: latestTelem?.soilMoisture ?? 58,
-          light: latestTelem?.light ?? 720,
-        }),
       });
 
       const elapsed = Math.round(performance.now() - startTime);
@@ -127,6 +128,12 @@ export default function EnergyFlowTopology({
 
       if (res.ok) {
         setPingStatus('200 OK');
+        const data = await res.json();
+        // If a physical ESP32 has actually ingested telemetry, update watchdog
+        if (data.deviceOnline && data.lastSeenMsAgo !== null) {
+          lastPacketReceivedRef.current = Date.now() - data.lastSeenMsAgo;
+          setSecondsSinceLastPacket(Math.floor(data.lastSeenMsAgo / 1000));
+        }
       } else if (res.status === 429) {
         setPingStatus('429');
       } else {
@@ -150,11 +157,13 @@ export default function EnergyFlowTopology({
   }, [device?.deviceToken]);
 
   // Derived Real Connection States ("Live to see where the connection is alive and is not")
-  const isEsp32Alive = !manualWifiCut && secondsSinceLastPacket <= 12;
-  const isSensorsAlive = !manualSensorsCut && latestTelem?.temperature !== undefined;
-  const isInternetAlive = !manualWifiCut && pingStatus !== 'ERROR';
-  const isCloudAlive = !manualCloudCut && (pingStatus === '200 OK' || pingStatus === '429');
-  const isRelaysAlive = !manualRelaysCut;
+  const hasHardwarePackets = totalPacketsReceived > 0 || isSimulating;
+  const isPacketFresh = secondsSinceLastPacket !== null && secondsSinceLastPacket <= 15;
+  const isEsp32Alive = Boolean(device && hasHardwarePackets && isPacketFresh && !manualWifiCut);
+  const isSensorsAlive = Boolean(isEsp32Alive && latestTelem?.temperature !== undefined && !manualSensorsCut);
+  const isRelaysAlive = Boolean(isEsp32Alive && !manualRelaysCut);
+  const isInternetAlive = Boolean(!manualWifiCut && pingStatus !== 'ERROR');
+  const isCloudAlive = Boolean(!manualCloudCut && (pingStatus === '200 OK' || pingStatus === '429'));
 
   // Active path evaluation
   const sensorsToEsp32Active = isSensorsAlive && isEsp32Alive;
@@ -166,13 +175,13 @@ export default function EnergyFlowTopology({
   const payloadObj = {
     deviceId: device?.id || 'dev-esp32',
     deviceToken: device?.deviceToken || 'sk_esp32_token',
-    temperature: latestTelem?.temperature ?? 25.4,
-    humidity: latestTelem?.humidity ?? 63.8,
-    soilMoisture: latestTelem?.soilMoisture ?? 58,
-    light: latestTelem?.light ?? 720,
+    temperature: latestTelem?.temperature ?? 0,
+    humidity: latestTelem?.humidity ?? 0,
+    soilMoisture: latestTelem?.soilMoisture ?? 0,
+    light: latestTelem?.light ?? 0,
     timestamp: latestTelem?.timestamp || new Date().toISOString(),
   };
-  const livePayloadBytes = new Blob([JSON.stringify(payloadObj)]).size;
+  const livePayloadBytes = isEsp32Alive ? new Blob([JSON.stringify(payloadObj)]).size : 0;
 
   // Real actuator states
   const pumpActuator = actuators.find(
@@ -188,6 +197,7 @@ export default function EnergyFlowTopology({
   const activeRelaysCount = actuators.filter((a) => a.state).length;
 
   const handleToggleRelayDirect = async (actuator?: IoTActuator) => {
+    if (!isRelaysAlive) return;
     if (!actuator || !onToggleActuator) return;
     setCommandPulseActive(true);
     setTimeout(() => setCommandPulseActive(false), 2200);
@@ -213,7 +223,7 @@ export default function EnergyFlowTopology({
                   isEsp32Alive ? 'bg-neutral-900 dark:bg-white animate-pulse' : 'bg-neutral-400'
                 )}
               />
-              <span>{isEsp32Alive ? 'LIVE STREAMING' : 'STREAM STALLED'}</span>
+              <span>{isEsp32Alive ? 'HARDWARE STREAMING' : 'HARDWARE OFFLINE · CLOUD READY'}</span>
             </span>
           </div>
           <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
@@ -244,10 +254,10 @@ export default function EnergyFlowTopology({
                   ? 'border-neutral-300 bg-neutral-100 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
                   : 'border-neutral-200 bg-neutral-50 text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400'
               )}
-              title={isSimulating ? 'Pause telemetry stream to test watchdog timeout' : 'Resume telemetry stream'}
+              title={isSimulating ? 'Stop virtual ESP32 simulator' : 'Start virtual ESP32 simulator for testing'}
             >
               {isSimulating ? <Pause size={12} weight="fill" /> : <Play size={12} weight="fill" />}
-              <span>{isSimulating ? 'Stream: Running' : 'Stream: Paused'}</span>
+              <span>{isSimulating ? 'Virtual ESP32: Active' : 'Start Virtual ESP32'}</span>
             </button>
           )}
 
@@ -439,7 +449,7 @@ export default function EnergyFlowTopology({
                   : 'border-neutral-200 bg-neutral-100 text-neutral-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500'
               )}
             >
-              {esp32ToInternetActive ? `RSSI: ${device?.rssi || -58} dBm` : 'CARRIER LOST'}
+              {esp32ToInternetActive ? `RSSI: ${device?.rssi || -58} dBm` : 'ESP32 LINK INACTIVE'}
             </span>
           </div>
 
@@ -491,7 +501,7 @@ export default function EnergyFlowTopology({
                       isEsp32Alive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
                     )}
                   />
-                  <span>{isEsp32Alive ? 'ALIVE' : 'STALE'}</span>
+                  <span>{isEsp32Alive ? 'ALIVE' : (totalPacketsReceived > 0 ? 'STALE' : 'DISCONNECTED')}</span>
                 </span>
               </div>
 
@@ -502,12 +512,12 @@ export default function EnergyFlowTopology({
                     {isEsp32Alive ? `${device?.ipAddress || '192.168.1.142'}` : 'OFFLINE'}
                   </span>
                   <span className="text-[10px] text-neutral-400">
-                    {secondsSinceLastPacket === 0 ? 'NOW' : `${secondsSinceLastPacket}s AGO`}
+                    {secondsSinceLastPacket === null ? 'NO HARDWARE' : secondsSinceLastPacket === 0 ? 'NOW' : `${secondsSinceLastPacket}s AGO`}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
-                  <span>PKT #{totalPacketsReceived}</span>
-                  <span>{isSimulating ? '2.5s SYNC' : 'HARDWARE'}</span>
+                  <span>{totalPacketsReceived > 0 ? `PKT #${totalPacketsReceived}` : '0 PACKETS'}</span>
+                  <span>{isSimulating ? 'SIMULATOR' : isEsp32Alive ? 'HARDWARE' : 'AWAITING PAIR'}</span>
                 </div>
               </div>
             </div>
@@ -544,10 +554,10 @@ export default function EnergyFlowTopology({
                   <span
                     className={cn(
                       'h-1.5 w-1.5 rounded-full shrink-0',
-                      isCloudAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
+                      isCloudAlive ? 'bg-neutral-900 dark:bg-white animate-pulse' : 'bg-neutral-400'
                     )}
                   />
-                  <span>{isCloudAlive ? 'INGESTING' : 'ERR'}</span>
+                  <span>{isCloudAlive ? 'ONLINE' : 'ERR'}</span>
                 </span>
               </div>
 
@@ -563,7 +573,7 @@ export default function EnergyFlowTopology({
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
                   <span>/api/iot/ingest</span>
-                  <span>RATE: OK</span>
+                  <span>ENGINE: ACTIVE</span>
                 </div>
               </div>
             </div>
@@ -585,7 +595,9 @@ export default function EnergyFlowTopology({
                   {isInternetAlive ? `${livePingMs ?? 38} ms RTT` : 'CARRIER LOST'}
                 </div>
                 <div className="opacity-75">
-                  {isInternetAlive ? `${livePayloadBytes} B · 24 PKT/M` : '0 B/S TRANSIT'}
+                  {isEsp32Alive
+                    ? `${livePayloadBytes} B · 24 PKT/M`
+                    : 'CLOUD READY · ESP32 DORMANT'}
                 </div>
               </div>
 
@@ -594,17 +606,15 @@ export default function EnergyFlowTopology({
                 <span
                   className={cn(
                     'h-1.5 w-1.5 rounded-full shrink-0',
-                    isInternetAlive && isEsp32Alive
+                    isInternetAlive
                       ? 'bg-white dark:bg-neutral-900 animate-pulse'
                       : 'bg-neutral-400'
                   )}
                 />
                 <span>
-                  {isInternetAlive && isEsp32Alive
+                  {isEsp32Alive
                     ? 'ESP32 ⇄ CLOUD'
-                    : isEsp32Alive
-                      ? 'NO INTERNET'
-                      : 'ESP32 OFFLINE'}
+                    : 'CLOUD ONLINE'}
                 </span>
               </div>
             </div>
@@ -644,7 +654,7 @@ export default function EnergyFlowTopology({
                       isSensorsAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
                     )}
                   />
-                  <span>{isSensorsAlive ? 'READING' : 'FAULT'}</span>
+                  <span>{isSensorsAlive ? 'READING' : 'NO SIGNAL'}</span>
                 </span>
               </div>
 
@@ -652,15 +662,15 @@ export default function EnergyFlowTopology({
               <div className="space-y-1 font-mono text-xs">
                 <div className="flex items-baseline justify-between">
                   <span className="font-bold text-sm text-neutral-900 dark:text-white">
-                    {latestTelem?.temperature ?? 25.4}°C
+                    {isSensorsAlive && latestTelem?.temperature !== undefined ? `${latestTelem.temperature}°C` : '-- °C'}
                   </span>
                   <span className="text-[10px] text-neutral-400">
-                    {latestTelem?.humidity ?? 63.8}% HUM
+                    {isSensorsAlive && latestTelem?.humidity !== undefined ? `${latestTelem.humidity}% HUM` : '-- % HUM'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
-                  <span>SOIL: {latestTelem?.soilMoisture ?? 58}%</span>
-                  <span>LUX: {latestTelem?.light ?? 720}</span>
+                  <span>SOIL: {isSensorsAlive && latestTelem?.soilMoisture !== undefined ? `${latestTelem.soilMoisture}%` : '-- %'}</span>
+                  <span>LUX: {isSensorsAlive && latestTelem?.light !== undefined ? `${latestTelem.light}` : '--'}</span>
                 </div>
               </div>
             </div>
@@ -687,7 +697,7 @@ export default function EnergyFlowTopology({
                 </div>
 
                 <span className="font-mono text-[10px] text-neutral-500">
-                  {activeRelaysCount}/3 ON
+                  {isRelaysAlive ? `${activeRelaysCount}/3 ON` : 'STANDBY'}
                 </span>
               </div>
 
@@ -695,52 +705,58 @@ export default function EnergyFlowTopology({
               <div className="space-y-1.5 pt-1 font-mono text-[11px]">
                 {/* Relay 1: Pump */}
                 <div
-                  onClick={() => handleToggleRelayDirect(pumpActuator)}
+                  onClick={() => isRelaysAlive && handleToggleRelayDirect(pumpActuator)}
                   className={cn(
-                    'flex items-center justify-between px-2 py-1 rounded-lg border transition cursor-pointer',
-                    pumpActuator?.state
-                      ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
-                      : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300'
+                    'flex items-center justify-between px-2 py-1 rounded-lg border transition',
+                    isRelaysAlive
+                      ? (pumpActuator?.state
+                          ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900 cursor-pointer'
+                          : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 cursor-pointer')
+                      : 'border-neutral-200 bg-neutral-100 text-neutral-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500 cursor-not-allowed opacity-60'
                   )}
-                  title="Click to toggle Water Pump relay"
+                  title={isRelaysAlive ? "Click to toggle Water Pump relay" : "ESP32 offline - relay actuation unavailable"}
                 >
                   <span className="truncate">Pump (GPIO 26)</span>
                   <span className="font-bold text-[10px]">
-                    {pumpActuator?.state ? 'ON' : 'OFF'}
+                    {isRelaysAlive ? (pumpActuator?.state ? 'ON' : 'OFF') : 'OFFLINE'}
                   </span>
                 </div>
 
                 {/* Relay 2: Lights */}
                 <div
-                  onClick={() => handleToggleRelayDirect(lightActuator)}
+                  onClick={() => isRelaysAlive && handleToggleRelayDirect(lightActuator)}
                   className={cn(
-                    'flex items-center justify-between px-2 py-1 rounded-lg border transition cursor-pointer',
-                    lightActuator?.state
-                      ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
-                      : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300'
+                    'flex items-center justify-between px-2 py-1 rounded-lg border transition',
+                    isRelaysAlive
+                      ? (lightActuator?.state
+                          ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900 cursor-pointer'
+                          : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 cursor-pointer')
+                      : 'border-neutral-200 bg-neutral-100 text-neutral-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500 cursor-not-allowed opacity-60'
                   )}
-                  title="Click to toggle Grow Lights relay"
+                  title={isRelaysAlive ? "Click to toggle Grow Lights relay" : "ESP32 offline - relay actuation unavailable"}
                 >
                   <span className="truncate">Lights (GPIO 27)</span>
                   <span className="font-bold text-[10px]">
-                    {lightActuator?.state ? 'ON' : 'OFF'}
+                    {isRelaysAlive ? (lightActuator?.state ? 'ON' : 'OFF') : 'OFFLINE'}
                   </span>
                 </div>
 
                 {/* Relay 3: Fan */}
                 <div
-                  onClick={() => handleToggleRelayDirect(fanActuator)}
+                  onClick={() => isRelaysAlive && handleToggleRelayDirect(fanActuator)}
                   className={cn(
-                    'flex items-center justify-between px-2 py-1 rounded-lg border transition cursor-pointer',
-                    fanActuator?.state
-                      ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
-                      : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300'
+                    'flex items-center justify-between px-2 py-1 rounded-lg border transition',
+                    isRelaysAlive
+                      ? (fanActuator?.state
+                          ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900 cursor-pointer'
+                          : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 cursor-pointer')
+                      : 'border-neutral-200 bg-neutral-100 text-neutral-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500 cursor-not-allowed opacity-60'
                   )}
-                  title="Click to toggle Ventilation Fan relay"
+                  title={isRelaysAlive ? "Click to toggle Ventilation Fan relay" : "ESP32 offline - relay actuation unavailable"}
                 >
                   <span className="truncate">Fan (GPIO 14)</span>
                   <span className="font-bold text-[10px]">
-                    {fanActuator?.state ? 'ON' : 'OFF'}
+                    {isRelaysAlive ? (fanActuator?.state ? 'ON' : 'OFF') : 'OFFLINE'}
                   </span>
                 </div>
               </div>
@@ -755,23 +771,21 @@ export default function EnergyFlowTopology({
           <span
             className={cn(
               'h-2 w-2 rounded-full shrink-0',
-              isEsp32Alive && isInternetAlive && isCloudAlive
-                ? 'bg-neutral-900 dark:bg-white animate-pulse'
-                : 'bg-neutral-400'
+              isCloudAlive ? 'bg-neutral-900 dark:bg-white animate-pulse' : 'bg-neutral-400'
             )}
           />
           <span>
             {isEsp32Alive && isInternetAlive && isCloudAlive
               ? `Live Channel Active: ESP32 (${device?.ipAddress || '192.168.1.142'}) ⇄ Internet ⇄ Resursee Ingest`
-              : secondsSinceLastPacket > 12
-                ? `Hardware Heartbeat Lost (${secondsSinceLastPacket}s elapsed) · Check Wi-Fi or resume simulator`
+              : !isEsp32Alive
+                ? 'Resursee Cloud is live & listening on /api/iot/ingest · ESP32 hardware is inactive / awaiting setup'
                 : 'Connection Degraded · Packet stalled'}
           </span>
         </div>
         <div className="flex items-center gap-3 text-[11px] text-neutral-500">
-          <span>Payload: {livePayloadBytes} bytes</span>
+          <span>Payload: {isEsp32Alive ? `${livePayloadBytes} bytes` : '0 B (dormant)'}</span>
           <span>•</span>
-          <span>Cadence: 2.5s</span>
+          <span>Cadence: {isEsp32Alive ? (isSimulating ? '2.5s (Sim)' : 'Hardware') : 'Standby'}</span>
           <span>•</span>
           <span>Total Packets: {totalPacketsReceived}</span>
         </div>

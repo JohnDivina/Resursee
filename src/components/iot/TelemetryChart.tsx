@@ -183,22 +183,37 @@ export default function TelemetryChart({
           {/* Pulse on the latest data point */}
           {points.length > 0 && (
             <g transform={`translate(${points[points.length - 1].x}, ${points[points.length - 1].y})`}>
-              <circle r="6" fill={metricColors.stroke} opacity="0.3" className="animate-ping" />
               <circle r="4" fill={metricColors.stroke} />
               <circle r="2" fill="#ffffff" />
             </g>
           )}
         </svg>
+
+        {/* Empty State Overlay when no telemetry exists */}
+        {points.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-[var(--color-paper-card)]/80 backdrop-blur-xs">
+            <div className="text-xs font-bold text-[var(--color-ink)] mb-1">
+              Awaiting Hardware Telemetry Stream
+            </div>
+            <div className="text-[11px] text-[var(--color-ink-muted)] max-w-sm">
+              No packets received yet. Connect your ESP32 or toggle the Virtual Hardware Simulator below to start streaming.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer Status */}
       <div className="flex items-center justify-between border-t border-[var(--color-rule-subtle)] pt-3 text-[11px] font-mono text-[var(--color-ink-muted)]">
         <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white" />
-          <span>Polling stream every 2000ms</span>
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              points.length > 0 ? 'bg-neutral-900 dark:bg-white animate-pulse' : 'bg-neutral-400'
+            }`}
+          />
+          <span>{points.length > 0 ? 'Live stream active' : 'Stream idle · Waiting for hardware'}</span>
         </span>
         <span>
-          Latest: <strong className="text-[var(--color-ink)]">{values[values.length - 1] ?? 0}</strong>
+          Latest: <strong className="text-[var(--color-ink)]">{values.length > 0 ? values[values.length - 1] : '--'}</strong>
         </span>
       </div>
     </div>

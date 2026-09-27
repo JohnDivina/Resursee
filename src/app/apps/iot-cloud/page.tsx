@@ -115,7 +115,7 @@ export default function IoTCloudPage() {
   const [selectedDevice, setSelectedDevice] = useState<IoTDevice | null>(null);
   const [telemetry, setTelemetry] = useState<IoTTelemetry[]>([]);
   const [actuators, setActuators] = useState<IoTActuator[]>([]);
-  const [isSimulating, setIsSimulating] = useState(true);
+  const [isSimulating, setIsSimulating] = useState(false);
   const [selectedChartMetric, setSelectedChartMetric] = useState<
     'temperature' | 'humidity' | 'soilMoisture' | 'light'
   >('temperature');
@@ -266,11 +266,79 @@ export default function IoTCloudPage() {
       setActuators(initialActuators);
     }
 
-    const initialTelem = generateSeedTelemetry(deviceId, 20);
-    setTelemetry(initialTelem);
+    const telemKey = `resursee_iot_telemetry_${uid}_${deviceId}`;
+    try {
+      const savedTelem = localStorage.getItem(telemKey);
+      if (savedTelem) {
+        const parsed = JSON.parse(savedTelem);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTelemetry(parsed);
+          return;
+        }
+      }
+    } catch {}
+    setTelemetry([]);
   };
 
-  // Virtual Telemetry Emitter (Simulates live ESP32 broadcasting every 2.5s)
+  // 🛰️ Real Hardware Telemetry Poller: Queries /api/iot/ingest for actual ESP32 packets
+  useEffect(() => {
+    if (!selectedDevice?.deviceToken) return;
+
+    let isMounted = true;
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/iot/ingest?deviceToken=${encodeURIComponent(selectedDevice.deviceToken)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (isMounted) {
+          if (data.deviceOnline) {
+            // Mark device online if real hardware packets are arriving
+            if (selectedDevice.status !== 'online') {
+              setSelectedDevice((prev) => prev ? { ...prev, status: 'online', lastSeenAt: new Date().toISOString() } : null);
+              setDevices((prev) => prev.map((d) => d.id === selectedDevice.id ? { ...d, status: 'online', lastSeenAt: new Date().toISOString() } : d));
+            }
+
+            // Ingest incoming packet if newer
+            if (data.latestTelemetry && data.latestTelemetry.temperature !== undefined) {
+              const packet: IoTTelemetry = {
+                id: crypto.randomUUID(),
+                deviceId: selectedDevice.id,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                temperature: Number(data.latestTelemetry.temperature),
+                humidity: Number(data.latestTelemetry.humidity ?? 0),
+                soilMoisture: Number(data.latestTelemetry.soilMoisture ?? 0),
+                light: Number(data.latestTelemetry.light ?? 0),
+              };
+
+              setTelemetry((prev) => {
+                const last = prev[prev.length - 1];
+                if (last && last.temperature === packet.temperature && last.humidity === packet.humidity) {
+                  return prev; // duplicate packet
+                }
+                const updated = [...prev.slice(-29), packet];
+                try {
+                  localStorage.setItem(`resursee_iot_telemetry_${userId}_${selectedDevice.id}`, JSON.stringify(updated));
+                } catch {}
+                return updated;
+              });
+            }
+          } else if (!isSimulating && selectedDevice.status === 'online') {
+            // Hardware dropped offline
+            setSelectedDevice((prev) => prev ? { ...prev, status: 'offline' } : null);
+            setDevices((prev) => prev.map((d) => d.id === selectedDevice.id ? { ...d, status: 'offline' } : d));
+          }
+        }
+      } catch {}
+    }, 3500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+    };
+  }, [selectedDevice?.id, selectedDevice?.deviceToken, isSimulating, userId]);
+
+  // Virtual Telemetry Emitter (Only active when user explicitly clicks 'Start Virtual ESP32')
   useEffect(() => {
     if (!isSimulating || !selectedDevice || !userId) return;
 
@@ -278,9 +346,9 @@ export default function IoTCloudPage() {
       const now = new Date();
       const lastPoint = telemetry[telemetry.length - 1];
 
-      const baseTemp = lastPoint?.temperature ?? 25.4;
-      const baseHum = lastPoint?.humidity ?? 64.0;
-      const baseSoil = lastPoint?.soilMoisture ?? 58;
+      const baseTemp = lastPoint?.temperature ?? 24.5;
+      const baseHum = lastPoint?.humidity ?? 62.0;
+      const baseSoil = lastPoint?.soilMoisture ?? 55;
 
       const nextTemp = parseFloat((baseTemp + (Math.random() * 0.6 - 0.3)).toFixed(1));
       const nextHum = parseFloat((baseHum + (Math.random() * 1.2 - 0.6)).toFixed(1));
@@ -299,8 +367,24 @@ export default function IoTCloudPage() {
 
       setTelemetry((prev) => {
         const updated = [...prev.slice(-29), newPoint];
+        try {
+          localStorage.setItem(`resursee_iot_telemetry_${userId}_${selectedDevice.id}`, JSON.stringify(updated));
+        } catch {}
         return updated;
       });
+
+      // Synchronize with backend ingest endpoint so cloud topology probes register it
+      fetch('/api/iot/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceToken: selectedDevice.deviceToken,
+          temperature: nextTemp,
+          humidity: nextHum,
+          soilMoisture: nextSoil,
+          light: nextLight,
+        }),
+      }).catch(() => {});
     }, 2500);
 
     return () => clearInterval(interval);
@@ -376,12 +460,7 @@ export default function IoTCloudPage() {
     URL.revokeObjectURL(url);
   };
 
-  const latestTelemetry = telemetry[telemetry.length - 1] || {
-    temperature: 24.8,
-    humidity: 62.5,
-    soilMoisture: 60,
-    light: 710,
-  };
+  const latestTelemetry = telemetry.length > 0 ? telemetry[telemetry.length - 1] : undefined;
 
   const mobileBrand = (
     <div className="flex items-center gap-2.5">
@@ -859,14 +938,35 @@ export default function IoTCloudPage() {
                             <span className="rounded-md border border-neutral-200 bg-neutral-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-300">
                               {selectedDevice.deviceType.toUpperCase()}
                             </span>
+                            <span className="rounded-md border border-neutral-200 bg-neutral-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-300 flex items-center gap-1.5">
+                              <span
+                                className={cn(
+                                  'h-1.5 w-1.5 rounded-full',
+                                  selectedDevice.status === 'online' || isSimulating
+                                    ? 'bg-neutral-900 dark:bg-white animate-pulse'
+                                    : 'bg-neutral-400'
+                                )}
+                              />
+                              <span>
+                                {selectedDevice.status === 'online' || isSimulating ? 'ONLINE' : 'HARDWARE OFFLINE'}
+                              </span>
+                            </span>
                           </div>
 
                           <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
-                            <span>IP: {selectedDevice.ipAddress || '192.168.1.142'}</span>
+                            <span>
+                              IP: {selectedDevice.status === 'online' || isSimulating
+                                ? (selectedDevice.ipAddress || '192.168.1.142')
+                                : 'Awaiting Connection'}
+                            </span>
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <WifiHigh size={13} />
-                              <span>{selectedDevice.rssi || -58} dBm</span>
+                              <span>
+                                {selectedDevice.status === 'online' || isSimulating
+                                  ? `${selectedDevice.rssi || -58} dBm`
+                                  : 'No Carrier'}
+                              </span>
                             </span>
                             <span>•</span>
                             <span>User: {session.name.split(' ')[0]}</span>
@@ -905,39 +1005,43 @@ export default function IoTCloudPage() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <SensorGauge
                         title="Temperature"
-                        value={latestTelemetry.temperature ?? 24.5}
+                        value={latestTelemetry?.temperature ?? null}
                         unit="°C"
                         minVal={0}
                         maxVal={50}
                         metricKey="temperature"
                         color="currentColor"
+                        isOnline={selectedDevice.status === 'online' || isSimulating}
                       />
                       <SensorGauge
                         title="Relative Humidity"
-                        value={latestTelemetry.humidity ?? 62}
+                        value={latestTelemetry?.humidity ?? null}
                         unit="%"
                         minVal={0}
                         maxVal={100}
                         metricKey="humidity"
                         color="currentColor"
+                        isOnline={selectedDevice.status === 'online' || isSimulating}
                       />
                       <SensorGauge
                         title="Soil Moisture"
-                        value={latestTelemetry.soilMoisture ?? 58}
+                        value={latestTelemetry?.soilMoisture ?? null}
                         unit="%"
                         minVal={0}
                         maxVal={100}
                         metricKey="soilMoisture"
                         color="currentColor"
+                        isOnline={selectedDevice.status === 'online' || isSimulating}
                       />
                       <SensorGauge
                         title="Ambient Light"
-                        value={latestTelemetry.light ?? 720}
+                        value={latestTelemetry?.light ?? null}
                         unit="lux"
                         minVal={0}
                         maxVal={1200}
                         metricKey="light"
                         color="currentColor"
+                        isOnline={selectedDevice.status === 'online' || isSimulating}
                       />
                     </div>
 
@@ -949,7 +1053,13 @@ export default function IoTCloudPage() {
                       actuators={actuators}
                       onToggleActuator={handleToggleActuator}
                       isSimulating={isSimulating}
-                      onToggleSimulator={() => setIsSimulating(!isSimulating)}
+                      onToggleSimulator={() => {
+                        const next = !isSimulating;
+                        setIsSimulating(next);
+                        if (next) {
+                          setSelectedDevice((prev) => prev ? { ...prev, status: 'online' } : null);
+                        }
+                      }}
                     />
 
                     {/* Live Time-Series Chart */}

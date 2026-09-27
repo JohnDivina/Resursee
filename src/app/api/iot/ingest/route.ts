@@ -26,6 +26,40 @@ function checkRateLimit(token: string): boolean {
 // In-Memory state of actuators per device (shared for instant relay sync)
 const activeActuators = new Map<string, Record<string, boolean>>();
 
+// Real-time tracking of hardware packets received per device token
+const deviceLastSeen = new Map<string, { timestamp: number; payload: Partial<IngestPayload> }>();
+
+// Lightweight GET endpoint for live cloud ping probing and device presence checks
+export async function GET(request: NextRequest) {
+  try {
+    const url = new URL(request.url);
+    const token = url.searchParams.get('deviceToken');
+
+    if (token) {
+      const record = deviceLastSeen.get(token);
+      const isOnline = record ? Date.now() - record.timestamp < 15000 : false;
+      return NextResponse.json({
+        success: true,
+        cloudOnline: true,
+        deviceOnline: isOnline,
+        lastSeenMsAgo: record ? Date.now() - record.timestamp : null,
+        latestTelemetry: record ? record.payload : null,
+        actuatorStates: activeActuators.get(token) || { pin_2: false, pin_4: false, pin_15: false },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      cloudOnline: true,
+      service: 'Resursee IoT Cloud Ingest Engine',
+      status: 'LISTENING',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return NextResponse.json({ error: 'Health check failed' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const tokenHeader = request.headers.get('x-device-token');
@@ -56,6 +90,9 @@ export async function POST(request: NextRequest) {
     }
 
     const currentActuators = activeActuators.get(token) || {};
+
+    // Record hardware packet arrival for real-time presence verification
+    deviceLastSeen.set(token, { timestamp: Date.now(), payload: body });
 
     const responseData: IngestResponse = {
       success: true,
