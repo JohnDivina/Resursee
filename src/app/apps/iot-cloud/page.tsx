@@ -941,11 +941,15 @@ export default function IoTCloudPage() {
                       />
                     </div>
 
-                    {/* Live Energy & Power Flow Topology (Solar, Battery, Inverter, Load, Grid) */}
+                    {/* Live ESP32 ⇄ Internet ⇄ Cloud Flow Topology */}
                     <EnergyFlowTopology
-                      telemetry={latestTelemetry}
+                      device={selectedDevice}
+                      latestTelemetry={latestTelemetry}
+                      telemetryHistory={telemetry}
                       actuators={actuators}
-                      deviceName={selectedDevice.name}
+                      onToggleActuator={handleToggleActuator}
+                      isSimulating={isSimulating}
+                      onToggleSimulator={() => setIsSimulating(!isSimulating)}
                     />
 
                     {/* Live Time-Series Chart */}
