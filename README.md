@@ -119,34 +119,34 @@ flowchart TD
 
 ## ⚡ ESP32 IoT Cloud Platform
 
-### Real-Time Solar & Energy Flow Topology
+### Real-Time Hardware, Internet & Cloud Flow Topology
 
-Inspired by advanced micro-inverter and solar monitoring systems, Resursee features a real-time vector topology engine located directly on the **Live Telemetry** dashboard:
+Adapted from interactive distribution topology models, Resursee features an animated vector flow matrix on the **Live Telemetry** dashboard reflecting live connection states across **ESP32 Microcontroller**, **Hardware Sensor Ring**, **Internet & WAN Gateway**, **Resursee Cloud Edge Ingest**, and **Physical Relay Actuators**:
 
 ```text
        ┌──────────────┐                  ┌──────────────┐
-       │   SOLAR PV   │                  │  HOME LOAD   │
-       │  2030 W · 68%│                  │ 1878 W · 82% │
+       │  ESP32 MCU   │                  │  IoT CLOUD   │
+       │ 240MHz · IP  │                  │  200 OK · API│
        └──────┬───────┘                  └──────▲───────┘
-              │ 49.9 Hz                         │ 230.2 V
+              │ RSSI: -58 dBm                   │ TLS 1.3 · 443
               │                                 │
               ▼          ┌──────────────┐       │
-              └─────────►│ HYBRID INVERT├───────┘
-                         │  CENTRAL HUB │
-              ┌─────────►│  ESP32 BUS   │◄──────┐
+              └─────────►│ INTERNET HUB ├───────┘
+                         │   TRANSIT    │
+              ┌─────────►│ 38ms · 180B  │◄──────┐
               │          └──────────────┘       │
               │                                 │
        ┌──────┴───────┐                  ┌──────┴───────┐
-       │   BATTERY    │                  │  GRID MAINS  │
-       │ 51.2V · 96%  │                  │  227.7V · 0W │
-       │   CHARGING   │                  │ ZERO-EXPORT  │
+       │ SENSORS (ADC)│                  │ RELAY OUTPUTS│
+       │ DHT22 · SOIL │                  │ PUMP · LIGHT │
+       │ 2.5s POLL    │                  │ BI-DIRECT SYNC│
        └──────────────┘                  └──────────────┘
 ```
 
 #### Diagnostic Indicators:
-- **Alive Connections (`ALIVE`)**: Crisp dashed paths with smooth animated SVG particles flowing in the exact direction of energy transfer.
-- **Disconnected Links (`CUT` / `OFFLINE`)**: Inactive paths dim with particles paused, state dots muted, and power readings zeroed out.
-- **Interactive Scenarios**: Instant simulation presets for **All Active**, **Grid Islanded (Blackout)**, **Night Mode (Battery Discharge)**, and **Mains Direct**.
+- **Alive Connections (`ALIVE`)**: Crisp dashed paths with smooth animated SVG particles flowing in the exact direction of telemetry and command transfer.
+- **Disconnected Links (`CUT` / `OFFLINE`)**: Inactive paths dim with particles paused, state dots muted, and status showing carrier loss.
+- **Interactive Scenarios**: Instant simulation presets for **All Active**, **Wi-Fi Dropped**, **Sensor Fault**, **Cloud Offline**, and **Relays Cut**.
 
 ---
 

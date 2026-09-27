@@ -1,24 +1,23 @@
 'use client';
 
 import React, { useState, useId } from 'react';
-import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { IoTTelemetry, IoTActuator } from '@/types/iotCloud';
 import {
-  Sun,
-  BatteryCharging,
-  BatteryFull,
-  BatteryHigh,
-  House,
-  Lightning,
   Cpu,
   Broadcast,
+  WifiHigh,
+  WifiSlash,
+  CloudArrowUp,
+  ToggleRight,
+  Gauge,
+  SlidersHorizontal,
+  PlugsConnected,
+  ArrowsLeftRight,
   CheckCircle,
   WarningCircle,
-  PlugsConnected,
-  Power,
-  SlidersHorizontal,
-  ArrowsLeftRight,
+  ShieldCheck,
+  Globe,
 } from '@phosphor-icons/react';
 
 interface EnergyFlowTopologyProps {
@@ -34,130 +33,83 @@ export default function EnergyFlowTopology({
 }: EnergyFlowTopologyProps) {
   const uid = useId().replace(/:/g, '');
 
-  // Connection Alive / Disconnected states
-  const [solarAlive, setSolarAlive] = useState(true);
-  const [batteryAlive, setBatteryAlive] = useState(true);
-  const [gridAlive, setGridAlive] = useState(true);
-  const [loadAlive, setLoadAlive] = useState(true);
+  // Connection Alive / Disconnected states for each tier
+  const [esp32Alive, setEsp32Alive] = useState(true);
+  const [sensorsAlive, setSensorsAlive] = useState(true);
+  const [internetAlive, setInternetAlive] = useState(true);
+  const [cloudAlive, setCloudAlive] = useState(true);
+  const [actuatorsAlive, setActuatorsAlive] = useState(true);
 
   // Link simulation preset active indicator
-  const [activePreset, setActivePreset] = useState<'normal' | 'islanded' | 'night' | 'grid_direct'>('normal');
+  const [activePreset, setActivePreset] = useState<
+    'all_active' | 'wifi_cut' | 'sensor_fault' | 'cloud_maint' | 'relays_cut'
+  >('all_active');
 
-  // Compute live values derived from current telemetry and actuator states
-  const ambientLight = telemetry?.light ?? 720; // lux
-  const lightFactor = Math.min(1.2, Math.max(0.05, ambientLight / 1000));
+  // Compute live readings derived from real telemetry
+  const temp = sensorsAlive && telemetry?.temperature !== undefined ? telemetry.temperature : 25.4;
+  const hum = sensorsAlive && telemetry?.humidity !== undefined ? telemetry.humidity : 63.8;
+  const soil = sensorsAlive && telemetry?.soilMoisture !== undefined ? telemetry.soilMoisture : 58;
+  const light = sensorsAlive && telemetry?.light !== undefined ? telemetry.light : 720;
 
-  // 1. Solar Generation (scaled realistically around ~2000W like reference or based on light)
-  const baseSolarWatts = Math.round(2030 * lightFactor);
-  const solarWatts = solarAlive ? Math.max(0, baseSolarWatts) : 0;
-  const solarVolts = solarAlive ? (138.7 + (Math.sin(Date.now() / 4000) * 1.4)).toFixed(1) : '0.0';
-  const solarAmps = solarAlive && parseFloat(solarVolts) > 0
-    ? (solarWatts / parseFloat(solarVolts)).toFixed(1)
-    : '0.0';
-  const solarYieldPercent = Math.min(100, Math.round((solarWatts / 2400) * 100));
+  // Active actuator statuses
+  const pumpActuator = actuators.find(
+    (a) => a.name.toLowerCase().includes('pump') || a.pin === 2 || a.pin === 26
+  );
+  const lightActuator = actuators.find(
+    (a) => a.name.toLowerCase().includes('light') || a.pin === 4 || a.pin === 27
+  );
+  const fanActuator = actuators.find(
+    (a) => a.name.toLowerCase().includes('fan') || a.pin === 15 || a.pin === 14
+  );
 
-  // 2. Load Calculation (base ESP32 setup + active relays)
-  // Check active actuators:
-  const activeRelayCount = actuators.filter((a) => a.state).length;
-  // Actuator power additions: Pump ~650W, Lights ~450W, Fan ~280W (typical agricultural greenhouse scale)
-  let actuatorWatts = 0;
-  actuators.forEach((a) => {
-    if (a.state) {
-      if (a.name.toLowerCase().includes('pump') || a.pin === 2 || a.pin === 26) actuatorWatts += 650;
-      else if (a.name.toLowerCase().includes('light') || a.pin === 4 || a.pin === 27) actuatorWatts += 450;
-      else if (a.name.toLowerCase().includes('fan') || a.pin === 15 || a.pin === 14) actuatorWatts += 280;
-      else actuatorWatts += 200;
-    }
-  });
+  const pumpState = actuatorsAlive && pumpActuator ? pumpActuator.state : false;
+  const lightState = actuatorsAlive && lightActuator ? lightActuator.state : true;
+  const fanState = actuatorsAlive && fanActuator ? fanActuator.state : false;
+  const activeRelayCount = [pumpState, lightState, fanState].filter(Boolean).length;
 
-  const baseHouseWatts = 498;
-  const totalLoadDemand = baseHouseWatts + actuatorWatts;
-  const loadWatts = loadAlive ? totalLoadDemand : 0;
-  const loadVA = Math.round(loadWatts * 1.08);
-  const loadAmps = loadAlive ? (loadWatts / 230).toFixed(1) : '0.0';
-  const loadFactorPercent = Math.min(150, Math.round((loadWatts / 2000) * 100));
-
-  // 3. Power balance & Battery / Grid distribution
-  // Net surplus or deficit
-  const netPower = solarWatts - loadWatts;
-
-  // Battery behavior
-  let batteryMode: 'charging' | 'discharging' | 'idle' = 'idle';
-  let batteryWatts = 0;
-  let gridWatts = 0;
-  let gridAmps = '0.0';
-
-  if (batteryAlive) {
-    if (netPower > 0) {
-      // Surplus solar charges battery
-      batteryMode = 'charging';
-      batteryWatts = Math.min(1200, netPower);
-      gridWatts = 0; // Self-sufficient
-    } else if (netPower < 0) {
-      // Deficit: battery supplies load up to its limit
-      batteryMode = 'discharging';
-      const deficit = Math.abs(netPower);
-      if (deficit <= 1500) {
-        batteryWatts = deficit;
-        gridWatts = 0;
-      } else {
-        // Battery supplies 1500W, remainder imported from Grid
-        batteryWatts = 1500;
-        gridWatts = gridAlive ? deficit - 1500 : 0;
-      }
-    } else {
-      batteryMode = 'idle';
-      batteryWatts = 0;
-      gridWatts = 0;
-    }
-  } else {
-    // Battery disconnected
-    batteryMode = 'idle';
-    batteryWatts = 0;
-    if (netPower < 0 && gridAlive) {
-      gridWatts = Math.abs(netPower);
-    }
-  }
-
-  if (gridWatts > 0) {
-    gridAmps = (gridWatts / 230).toFixed(1);
-  }
-
-  const batteryVolts = batteryAlive ? (51.2 + (batteryMode === 'charging' ? 0.6 : -0.4)).toFixed(2) : '0.00';
-  const batteryAmps = batteryAlive && batteryWatts > 0
-    ? (batteryWatts / parseFloat(batteryVolts)).toFixed(1)
-    : '0.0';
-  const batterySOC = batteryAlive ? 96 : 0;
-
-  // Grid metrics
-  const gridVolts = gridAlive ? '227.7' : '0.0';
-  const gridFreq = gridAlive ? '49.7' : '0.0';
-
-  // Apply quick presets
-  const handleApplyPreset = (preset: 'normal' | 'islanded' | 'night' | 'grid_direct') => {
+  // Apply scenario presets
+  const handleApplyPreset = (
+    preset: 'all_active' | 'wifi_cut' | 'sensor_fault' | 'cloud_maint' | 'relays_cut'
+  ) => {
     setActivePreset(preset);
-    if (preset === 'normal') {
-      setSolarAlive(true);
-      setBatteryAlive(true);
-      setGridAlive(true);
-      setLoadAlive(true);
-    } else if (preset === 'islanded') {
-      setSolarAlive(true);
-      setBatteryAlive(true);
-      setGridAlive(false); // Outage / Off-grid
-      setLoadAlive(true);
-    } else if (preset === 'night') {
-      setSolarAlive(false); // Night / shaded
-      setBatteryAlive(true);
-      setGridAlive(true);
-      setLoadAlive(true);
-    } else if (preset === 'grid_direct') {
-      setSolarAlive(false);
-      setBatteryAlive(false);
-      setGridAlive(true);
-      setLoadAlive(true);
+    if (preset === 'all_active') {
+      setEsp32Alive(true);
+      setSensorsAlive(true);
+      setInternetAlive(true);
+      setCloudAlive(true);
+      setActuatorsAlive(true);
+    } else if (preset === 'wifi_cut') {
+      setEsp32Alive(true);
+      setSensorsAlive(true);
+      setInternetAlive(false); // Wi-Fi / Internet disconnected
+      setCloudAlive(true);
+      setActuatorsAlive(true);
+    } else if (preset === 'sensor_fault') {
+      setEsp32Alive(true);
+      setSensorsAlive(false); // Sensor lines disconnected
+      setInternetAlive(true);
+      setCloudAlive(true);
+      setActuatorsAlive(true);
+    } else if (preset === 'cloud_maint') {
+      setEsp32Alive(true);
+      setSensorsAlive(true);
+      setInternetAlive(true);
+      setCloudAlive(false); // Cloud API returns 503 / unreachable
+      setActuatorsAlive(true);
+    } else if (preset === 'relays_cut') {
+      setEsp32Alive(true);
+      setSensorsAlive(true);
+      setInternetAlive(true);
+      setCloudAlive(true);
+      setActuatorsAlive(false); // Actuator relay disconnected
     }
   };
+
+  // Determine line activity based on node states
+  const sensorToEsp32Active = sensorsAlive && esp32Alive;
+  const esp32ToInternetActive = esp32Alive && internetAlive;
+  const internetToCloudActive = internetAlive && cloudAlive;
+  const internetToActuatorsActive = internetAlive && actuatorsAlive && esp32Alive;
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-[#121212] space-y-6">
@@ -166,17 +118,17 @@ export default function EnergyFlowTopology({
         <div>
           <div className="flex items-center gap-2.5">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900">
-              <Lightning size={16} weight="bold" />
+              <Broadcast size={16} weight="bold" />
             </div>
             <h3 className="font-bold text-sm text-neutral-900 dark:text-white">
-              Live Energy &amp; Power Flow Topology
+              ESP32 · Internet · Cloud Flow Topology
             </h3>
             <span className="rounded-md border border-neutral-200 bg-neutral-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-300">
               REAL-TIME SVG BUS
             </span>
           </div>
           <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-            Real-time power routing across Solar PV, Battery, Hybrid Controller, Household Load, and Utility Grid.
+            Real-time connection topology and telemetry flow between ESP32 Hardware, Local Internet Gateway, and Resursee IoT Cloud.
           </p>
         </div>
 
@@ -187,10 +139,15 @@ export default function EnergyFlowTopology({
           </span>
           <button
             type="button"
-            onClick={() => handleApplyPreset('normal')}
+            onClick={() => handleApplyPreset('all_active')}
             className={cn(
               'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer border',
-              activePreset === 'normal' && solarAlive && batteryAlive && gridAlive
+              activePreset === 'all_active' &&
+                esp32Alive &&
+                sensorsAlive &&
+                internetAlive &&
+                cloudAlive &&
+                actuatorsAlive
                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-transparent'
                 : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800'
             )}
@@ -199,47 +156,59 @@ export default function EnergyFlowTopology({
           </button>
           <button
             type="button"
-            onClick={() => handleApplyPreset('islanded')}
+            onClick={() => handleApplyPreset('wifi_cut')}
             className={cn(
               'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer border',
-              activePreset === 'islanded' && !gridAlive
+              activePreset === 'wifi_cut' && !internetAlive
                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-transparent'
                 : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800'
             )}
           >
-            Grid Islanded
+            Wi-Fi Dropped
           </button>
           <button
             type="button"
-            onClick={() => handleApplyPreset('night')}
+            onClick={() => handleApplyPreset('sensor_fault')}
             className={cn(
               'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer border',
-              activePreset === 'night' && !solarAlive
+              activePreset === 'sensor_fault' && !sensorsAlive
                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-transparent'
                 : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800'
             )}
           >
-            Night Mode
+            Sensor Fault
           </button>
           <button
             type="button"
-            onClick={() => handleApplyPreset('grid_direct')}
+            onClick={() => handleApplyPreset('cloud_maint')}
             className={cn(
               'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer border',
-              activePreset === 'grid_direct' && !batteryAlive
+              activePreset === 'cloud_maint' && !cloudAlive
                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-transparent'
                 : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800'
             )}
           >
-            Mains Direct
+            Cloud Offline
+          </button>
+          <button
+            type="button"
+            onClick={() => handleApplyPreset('relays_cut')}
+            className={cn(
+              'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer border',
+              activePreset === 'relays_cut' && !actuatorsAlive
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-transparent'
+                : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800'
+            )}
+          >
+            Relays Cut
           </button>
         </div>
       </div>
 
-      {/* 2. Visual Topology Grid matching the Solar Diagram */}
+      {/* 2. Visual Topology Grid (Adapted to ESP32 - Internet - Cloud) */}
       <div className="relative mx-auto max-w-4xl py-2 select-none">
-        {/* SVG Flow Connections Overlay */}
         <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[520px]">
+          {/* SVG Animated Flow Connections Overlay */}
           <svg
             className="absolute inset-0 h-full w-full pointer-events-none"
             viewBox="0 0 800 500"
@@ -247,34 +216,44 @@ export default function EnergyFlowTopology({
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              {/* Path 1: Solar (Top-Left 210, 110) to Central Hub (400, 250) */}
+              {/* Path 1: Sensors (Bottom-Left 220, 380) to ESP32 (Top-Left 220, 120) */}
               <path
-                id={`${uid}-path-solar-to-hub`}
+                id={`${uid}-path-sensors-to-esp32`}
+                d="M 220 380 L 220 120"
+              />
+              {/* Path 2: ESP32 (Top-Left 220, 120) to Internet Gateway (Center 330, 250) */}
+              <path
+                id={`${uid}-path-esp32-to-internet`}
                 d="M 220 120 L 220 250 L 330 250"
               />
-              {/* Path 2: Central Hub (400, 250) to Load (Top-Right 590, 110) */}
+              {/* Path 3: Internet Gateway (470, 250) to Resursee Cloud (Top-Right 580, 120) */}
               <path
-                id={`${uid}-path-hub-to-load`}
+                id={`${uid}-path-internet-to-cloud`}
                 d="M 470 250 L 580 250 L 580 120"
               />
-              {/* Path 3: Battery (Bottom-Left 220, 390) to Central Hub (330, 250) */}
+              {/* Path 4: Internet Gateway (470, 250) to Actuators (Bottom-Right 580, 380) */}
               <path
-                id={`${uid}-path-hub-to-battery`}
-                d="M 330 250 L 220 250 L 220 380"
-              />
-              <path
-                id={`${uid}-path-battery-to-hub`}
-                d="M 220 380 L 220 250 L 330 250"
-              />
-              {/* Path 4: Grid (Bottom-Right 580, 390) to Central Hub */}
-              <path
-                id={`${uid}-path-grid-to-hub`}
-                d="M 580 380 L 580 250 L 470 250"
+                id={`${uid}-path-internet-to-actuators`}
+                d="M 470 250 L 580 250 L 580 380"
               />
             </defs>
 
             {/* Base Dashed Connection Lines */}
-            {/* 1. Solar Line */}
+            {/* 1. Sensors -> ESP32 Line */}
+            <path
+              d="M 220 380 L 220 120"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeDasharray="6 6"
+              className={cn(
+                'transition-colors duration-500',
+                sensorToEsp32Active
+                  ? 'text-neutral-800 dark:text-neutral-200'
+                  : 'text-neutral-300 dark:text-neutral-700 opacity-40'
+              )}
+            />
+
+            {/* 2. ESP32 -> Internet Line */}
             <path
               d="M 220 120 L 220 250 L 330 250"
               stroke="currentColor"
@@ -282,13 +261,13 @@ export default function EnergyFlowTopology({
               strokeDasharray="6 6"
               className={cn(
                 'transition-colors duration-500',
-                solarAlive && solarWatts > 0
+                esp32ToInternetActive
                   ? 'text-neutral-800 dark:text-neutral-200'
                   : 'text-neutral-300 dark:text-neutral-700 opacity-40'
               )}
             />
 
-            {/* 2. Load Line */}
+            {/* 3. Internet -> Cloud Line */}
             <path
               d="M 470 250 L 580 250 L 580 120"
               stroke="currentColor"
@@ -296,43 +275,40 @@ export default function EnergyFlowTopology({
               strokeDasharray="6 6"
               className={cn(
                 'transition-colors duration-500',
-                loadAlive && loadWatts > 0
+                internetToCloudActive
                   ? 'text-neutral-800 dark:text-neutral-200'
                   : 'text-neutral-300 dark:text-neutral-700 opacity-40'
               )}
             />
 
-            {/* 3. Battery Line */}
+            {/* 4. Internet -> Actuators Line */}
             <path
-              d="M 220 380 L 220 250 L 330 250"
+              d="M 470 250 L 580 250 L 580 380"
               stroke="currentColor"
               strokeWidth="2.5"
               strokeDasharray="6 6"
               className={cn(
                 'transition-colors duration-500',
-                batteryAlive
-                  ? 'text-neutral-800 dark:text-neutral-200'
-                  : 'text-neutral-300 dark:text-neutral-700 opacity-40'
-              )}
-            />
-
-            {/* 4. Grid Line */}
-            <path
-              d="M 580 380 L 580 250 L 470 250"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeDasharray="6 6"
-              className={cn(
-                'transition-colors duration-500',
-                gridAlive
+                internetToActuatorsActive
                   ? 'text-neutral-800 dark:text-neutral-200'
                   : 'text-neutral-300 dark:text-neutral-700 opacity-40'
               )}
             />
 
             {/* Animated Flow Particles (Showing WHERE connection is alive) */}
-            {/* Solar -> Hub Flow */}
-            {solarAlive && solarWatts > 0 && (
+            {/* 1. Sensors -> ESP32 Signal Flow */}
+            {sensorToEsp32Active && (
+              <circle r="4.5" className="fill-neutral-900 dark:fill-white">
+                <animateMotion
+                  dur="2.0s"
+                  repeatCount="indefinite"
+                  path="M 220 380 L 220 120"
+                />
+              </circle>
+            )}
+
+            {/* 2. ESP32 -> Internet Gateway Wi-Fi Packets */}
+            {esp32ToInternetActive && (
               <>
                 <circle r="4.5" className="fill-neutral-900 dark:fill-white">
                   <animateMotion
@@ -352,8 +328,8 @@ export default function EnergyFlowTopology({
               </>
             )}
 
-            {/* Hub -> Load Flow */}
-            {loadAlive && loadWatts > 0 && (
+            {/* 3. Internet Gateway -> Resursee Cloud Ingest Stream */}
+            {internetToCloudActive && (
               <>
                 <circle r="4.5" className="fill-neutral-900 dark:fill-white">
                   <animateMotion
@@ -373,62 +349,37 @@ export default function EnergyFlowTopology({
               </>
             )}
 
-            {/* Hub <-> Battery Flow */}
-            {batteryAlive && batteryWatts > 0 && (
-              <>
-                {batteryMode === 'charging' ? (
-                  // Flowing into battery
-                  <circle r="4.5" className="fill-neutral-900 dark:fill-white">
-                    <animateMotion
-                      dur="2.5s"
-                      repeatCount="indefinite"
-                      path="M 330 250 L 220 250 L 220 380"
-                    />
-                  </circle>
-                ) : (
-                  // Flowing out of battery into hub
-                  <circle r="4.5" className="fill-neutral-900 dark:fill-white">
-                    <animateMotion
-                      dur="2.5s"
-                      repeatCount="indefinite"
-                      path="M 220 380 L 220 250 L 330 250"
-                    />
-                  </circle>
-                )}
-              </>
-            )}
-
-            {/* Grid Flow (if importing backup power) */}
-            {gridAlive && gridWatts > 0 && (
+            {/* 4. Cloud Commands -> Internet -> Actuator Relays */}
+            {internetToActuatorsActive && (
               <circle r="4.5" className="fill-neutral-900 dark:fill-white">
                 <animateMotion
-                  dur="2.5s"
+                  dur="2.6s"
                   repeatCount="indefinite"
-                  path="M 580 380 L 580 250 L 470 250"
+                  path="M 470 250 L 580 250 L 580 380"
                 />
               </circle>
             )}
           </svg>
 
-          {/* Bus Metric Labels on Connecting Segments (matching reference image) */}
+          {/* Metric Callouts on Connecting Segments */}
           <div className="absolute top-[50%] left-[24%] -translate-y-1/2 -translate-x-1/2 pointer-events-none">
             <span className="font-mono text-[11px] font-bold text-neutral-800 dark:text-neutral-200 bg-white/95 dark:bg-[#121212]/95 px-2 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 shadow-2xs">
-              49.9 Hz
+              {internetAlive ? 'RSSI: -58 dBm' : 'NO CARRIER'}
             </span>
           </div>
 
           <div className="absolute top-[50%] right-[24%] -translate-y-1/2 translate-x-1/2 pointer-events-none">
             <span className="font-mono text-[11px] font-bold text-neutral-800 dark:text-neutral-200 bg-white/95 dark:bg-[#121212]/95 px-2 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 shadow-2xs">
-              230.2 V
+              {cloudAlive && internetAlive ? 'TLS 1.3 / 443' : 'UNREACHABLE'}
             </span>
           </div>
 
-          {/* 🌟 1. TOP-LEFT NODE: SOLAR PV ARRAY */}
+          {/* 💻 1. TOP-LEFT NODE: ESP32 MICROCONTROLLER */}
           <div className="absolute top-2 left-2 sm:left-4 sm:top-4 z-10 w-[42%] max-w-[210px]">
             <div
               className={cn(
                 'rounded-xl border p-3 transition-all',
-                solarAlive
+                esp32Alive
                   ? 'border-neutral-300 bg-white shadow-xs dark:border-neutral-700 dark:bg-[#181818]'
                   : 'border-neutral-200 bg-neutral-100/70 opacity-60 dark:border-neutral-800 dark:bg-neutral-900/60'
               )}
@@ -436,20 +387,20 @@ export default function EnergyFlowTopology({
               <div className="flex items-center justify-between gap-1.5 mb-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shrink-0">
-                    <Sun size={16} weight="bold" />
+                    <Cpu size={16} weight="bold" />
                   </div>
                   <span className="font-bold text-xs text-neutral-900 dark:text-white">
-                    Solar PV
+                    ESP32 MCU
                   </span>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setSolarAlive(!solarAlive)}
-                  title={solarAlive ? 'Click to disconnect Solar PV' : 'Click to reconnect Solar PV'}
+                  onClick={() => setEsp32Alive(!esp32Alive)}
+                  title={esp32Alive ? 'Click to cut ESP32' : 'Click to reconnect ESP32'}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[9px] font-semibold border cursor-pointer transition',
-                    solarAlive
+                    esp32Alive
                       ? 'border-neutral-300 bg-neutral-100 text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
                       : 'border-neutral-300 bg-neutral-200 text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400'
                   )}
@@ -457,10 +408,10 @@ export default function EnergyFlowTopology({
                   <span
                     className={cn(
                       'h-1.5 w-1.5 rounded-full shrink-0',
-                      solarAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
+                      esp32Alive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
                     )}
                   />
-                  <span>{solarAlive ? 'ALIVE' : 'CUT'}</span>
+                  <span>{esp32Alive ? 'ALIVE' : 'CUT'}</span>
                 </button>
               </div>
 
@@ -468,26 +419,26 @@ export default function EnergyFlowTopology({
               <div className="space-y-1 font-mono text-xs">
                 <div className="flex items-baseline justify-between">
                   <span className="font-bold text-sm text-neutral-900 dark:text-white">
-                    {solarWatts} W
+                    {esp32Alive ? '240 MHz' : 'OFFLINE'}
                   </span>
                   <span className="text-[10px] text-neutral-400">
-                    {solarYieldPercent}% YIELD
+                    CORE 0/1
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
-                  <span>{solarVolts} V</span>
-                  <span>{solarAmps} A</span>
+                  <span>{esp32Alive ? '192.168.1.142' : '0.0.0.0'}</span>
+                  <span>2.5s POLL</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 🏠 2. TOP-RIGHT NODE: HOME & ACTUATOR LOAD */}
+          {/* ☁️ 2. TOP-RIGHT NODE: RESURSEE IOT CLOUD PLATFORM */}
           <div className="absolute top-2 right-2 sm:right-4 sm:top-4 z-10 w-[42%] max-w-[210px]">
             <div
               className={cn(
                 'rounded-xl border p-3 transition-all',
-                loadAlive
+                cloudAlive
                   ? 'border-neutral-300 bg-white shadow-xs dark:border-neutral-700 dark:bg-[#181818]'
                   : 'border-neutral-200 bg-neutral-100/70 opacity-60 dark:border-neutral-800 dark:bg-neutral-900/60'
               )}
@@ -495,20 +446,20 @@ export default function EnergyFlowTopology({
               <div className="flex items-center justify-between gap-1.5 mb-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shrink-0">
-                    <House size={16} weight="bold" />
+                    <CloudArrowUp size={16} weight="bold" />
                   </div>
                   <span className="font-bold text-xs text-neutral-900 dark:text-white">
-                    Home Load
+                    IoT Cloud
                   </span>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setLoadAlive(!loadAlive)}
-                  title={loadAlive ? 'Click to trip/disconnect Load' : 'Click to reconnect Load'}
+                  onClick={() => setCloudAlive(!cloudAlive)}
+                  title={cloudAlive ? 'Click to cut Cloud Ingest' : 'Click to reconnect Cloud Ingest'}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[9px] font-semibold border cursor-pointer transition',
-                    loadAlive
+                    cloudAlive
                       ? 'border-neutral-300 bg-neutral-100 text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
                       : 'border-neutral-300 bg-neutral-200 text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400'
                   )}
@@ -516,10 +467,10 @@ export default function EnergyFlowTopology({
                   <span
                     className={cn(
                       'h-1.5 w-1.5 rounded-full shrink-0',
-                      loadAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
+                      cloudAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
                     )}
                   />
-                  <span>{loadAlive ? 'ALIVE' : 'OFF'}</span>
+                  <span>{cloudAlive ? 'ALIVE' : 'OFF'}</span>
                 </button>
               </div>
 
@@ -527,54 +478,61 @@ export default function EnergyFlowTopology({
               <div className="space-y-1 font-mono text-xs">
                 <div className="flex items-baseline justify-between">
                   <span className="font-bold text-sm text-neutral-900 dark:text-white">
-                    {loadWatts} W
+                    {cloudAlive ? '200 OK' : '503 ERR'}
                   </span>
                   <span className="text-[10px] text-neutral-400">
-                    {loadVA} VA
+                    /api/iot/ingest
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
-                  <span>{loadAmps} A</span>
-                  <span>{loadFactorPercent}% LOAD</span>
+                  <span>TOKEN: OK</span>
+                  <span>18/60 RATE</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ⚡ 3. CENTER HUB: ESP32 HYBRID INVERTER & CONTROLLER */}
+          {/* 🌐 3. CENTER HUB: INTERNET GATEWAY & TRANSIT */}
           <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 z-20">
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-neutral-900 dark:border-neutral-100 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 p-3 sm:p-4 shadow-lg min-w-[124px] sm:min-w-[150px] text-center">
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-neutral-900 dark:border-neutral-100 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 p-3 sm:p-4 shadow-lg min-w-[130px] sm:min-w-[160px] text-center">
               <div className="flex items-center gap-1.5 mb-1.5">
-                <Cpu size={18} weight="bold" />
+                <Globe size={18} weight="bold" />
                 <span className="font-bold text-[11px] sm:text-xs uppercase tracking-wider">
-                  Inverter Hub
+                  Internet Hub
                 </span>
               </div>
 
               {/* Live Hub Readout */}
               <div className="space-y-0.5 font-mono text-[10px] sm:text-[11px]">
                 <div className="font-bold text-xs sm:text-sm">
-                  {solarAlive && solarWatts > 0 ? `${solarWatts}W IN` : 'STANDBY'}
+                  {internetAlive ? '38 ms PING' : 'DISCONNECTED'}
                 </div>
                 <div className="opacity-75">
-                  {loadAlive && loadWatts > 0 ? `${loadWatts}W OUT` : '0W LOAD'}
+                  {internetAlive ? '180 B · 24 PKT/M' : 'PACKET LOSS'}
                 </div>
               </div>
 
               {/* Discrete State Pill */}
               <div className="mt-2 flex items-center gap-1.5 rounded-full bg-white/20 dark:bg-neutral-900/10 px-2 py-0.5 text-[9px] font-mono font-semibold">
-                <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-900 shrink-0 animate-pulse" />
-                <span>ESP32 BUS</span>
+                <span
+                  className={cn(
+                    'h-1.5 w-1.5 rounded-full shrink-0',
+                    internetAlive
+                      ? 'bg-white dark:bg-neutral-900 animate-pulse'
+                      : 'bg-neutral-400'
+                  )}
+                />
+                <span>{internetAlive ? 'ESP32 ⇄ CLOUD' : 'NO CARRIER'}</span>
               </div>
             </div>
           </div>
 
-          {/* 🔋 4. BOTTOM-LEFT NODE: BATTERY STORAGE */}
+          {/* 📊 4. BOTTOM-LEFT NODE: HARDWARE SENSORS & ADC */}
           <div className="absolute bottom-2 left-2 sm:left-4 sm:bottom-4 z-10 w-[42%] max-w-[210px]">
             <div
               className={cn(
                 'rounded-xl border p-3 transition-all',
-                batteryAlive
+                sensorsAlive
                   ? 'border-neutral-300 bg-white shadow-xs dark:border-neutral-700 dark:bg-[#181818]'
                   : 'border-neutral-200 bg-neutral-100/70 opacity-60 dark:border-neutral-800 dark:bg-neutral-900/60'
               )}
@@ -582,24 +540,20 @@ export default function EnergyFlowTopology({
               <div className="flex items-center justify-between gap-1.5 mb-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shrink-0">
-                    {batteryMode === 'charging' ? (
-                      <BatteryCharging size={16} weight="bold" />
-                    ) : (
-                      <BatteryHigh size={16} weight="bold" />
-                    )}
+                    <SlidersHorizontal size={16} weight="bold" />
                   </div>
                   <span className="font-bold text-xs text-neutral-900 dark:text-white">
-                    Battery
+                    Sensors (ADC)
                   </span>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setBatteryAlive(!batteryAlive)}
-                  title={batteryAlive ? 'Click to disconnect Battery' : 'Click to reconnect Battery'}
+                  onClick={() => setSensorsAlive(!sensorsAlive)}
+                  title={sensorsAlive ? 'Click to cut Sensors' : 'Click to reconnect Sensors'}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[9px] font-semibold border cursor-pointer transition',
-                    batteryAlive
+                    sensorsAlive
                       ? 'border-neutral-300 bg-neutral-100 text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
                       : 'border-neutral-300 bg-neutral-200 text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400'
                   )}
@@ -607,10 +561,10 @@ export default function EnergyFlowTopology({
                   <span
                     className={cn(
                       'h-1.5 w-1.5 rounded-full shrink-0',
-                      batteryAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
+                      sensorsAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
                     )}
                   />
-                  <span>{batteryAlive ? 'ALIVE' : 'CUT'}</span>
+                  <span>{sensorsAlive ? 'ALIVE' : 'CUT'}</span>
                 </button>
               </div>
 
@@ -618,29 +572,29 @@ export default function EnergyFlowTopology({
               <div className="space-y-1 font-mono text-xs">
                 <div className="flex items-baseline justify-between">
                   <span className="font-bold text-sm text-neutral-900 dark:text-white">
-                    {batteryWatts} W
+                    {sensorsAlive ? `${temp}°C · ${hum}%` : 'NO DATA'}
                   </span>
                   <span className="text-[10px] text-neutral-400">
-                    {batterySOC}% SOC
+                    DHT22
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
-                  <span>{batteryVolts} V</span>
-                  <span>{batteryAmps} A</span>
+                  <span>SOIL: {sensorsAlive ? `${soil}%` : '--'}</span>
+                  <span>LUX: {sensorsAlive ? `${light}` : '--'}</span>
                 </div>
                 <div className="text-[10px] font-semibold text-neutral-500 uppercase pt-0.5">
-                  {batteryAlive ? batteryMode : 'OFFLINE'}
+                  {sensorsAlive ? 'GPIO 4 · GPIO 34 · GPIO 35' : 'ADC DISCONNECTED'}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 🗼 5. BOTTOM-RIGHT NODE: UTILITY GRID */}
+          {/* ⚡ 5. BOTTOM-RIGHT NODE: RELAY ACTUATORS */}
           <div className="absolute bottom-2 right-2 sm:right-4 sm:bottom-4 z-10 w-[42%] max-w-[210px]">
             <div
               className={cn(
                 'rounded-xl border p-3 transition-all',
-                gridAlive
+                actuatorsAlive
                   ? 'border-neutral-300 bg-white shadow-xs dark:border-neutral-700 dark:bg-[#181818]'
                   : 'border-neutral-200 bg-neutral-100/70 opacity-60 dark:border-neutral-800 dark:bg-neutral-900/60'
               )}
@@ -648,20 +602,20 @@ export default function EnergyFlowTopology({
               <div className="flex items-center justify-between gap-1.5 mb-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shrink-0">
-                    <PlugsConnected size={16} weight="bold" />
+                    <ToggleRight size={16} weight="bold" />
                   </div>
                   <span className="font-bold text-xs text-neutral-900 dark:text-white">
-                    Grid Mains
+                    Actuator Relays
                   </span>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setGridAlive(!gridAlive)}
-                  title={gridAlive ? 'Click to cut Grid connection' : 'Click to restore Grid connection'}
+                  onClick={() => setActuatorsAlive(!actuatorsAlive)}
+                  title={actuatorsAlive ? 'Click to cut Relays' : 'Click to reconnect Relays'}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[9px] font-semibold border cursor-pointer transition',
-                    gridAlive
+                    actuatorsAlive
                       ? 'border-neutral-300 bg-neutral-100 text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
                       : 'border-neutral-300 bg-neutral-200 text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400'
                   )}
@@ -669,10 +623,10 @@ export default function EnergyFlowTopology({
                   <span
                     className={cn(
                       'h-1.5 w-1.5 rounded-full shrink-0',
-                      gridAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
+                      actuatorsAlive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'
                     )}
                   />
-                  <span>{gridAlive ? 'ALIVE' : 'CUT'}</span>
+                  <span>{actuatorsAlive ? 'ALIVE' : 'CUT'}</span>
                 </button>
               </div>
 
@@ -680,18 +634,18 @@ export default function EnergyFlowTopology({
               <div className="space-y-1 font-mono text-xs">
                 <div className="flex items-baseline justify-between">
                   <span className="font-bold text-sm text-neutral-900 dark:text-white">
-                    {gridWatts} W
+                    {actuatorsAlive ? `${activeRelayCount}/3 ON` : 'ISOLATED'}
                   </span>
                   <span className="text-[10px] text-neutral-400">
-                    {gridFreq} HZ
+                    GPIO PINS
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
-                  <span>{gridVolts} V</span>
-                  <span>{gridAmps} A</span>
+                  <span>PUMP: {pumpState ? 'ON' : 'OFF'}</span>
+                  <span>LIGHT: {lightState ? 'ON' : 'OFF'}</span>
                 </div>
                 <div className="text-[10px] font-semibold text-neutral-500 uppercase pt-0.5">
-                  {gridAlive ? (gridWatts > 0 ? 'IMPORTING' : 'ZERO-EXPORT') : 'ISLANDED'}
+                  {actuatorsAlive ? 'GPIO 26 · GPIO 27 · GPIO 14' : 'RELAYS DISARMED'}
                 </div>
               </div>
             </div>
@@ -702,9 +656,16 @@ export default function EnergyFlowTopology({
       {/* 3. Real-Time Hardware Relay Dependency Callout */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 text-xs text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300 font-mono">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
+          <span
+            className={cn(
+              'h-2 w-2 rounded-full shrink-0',
+              internetAlive && cloudAlive && esp32Alive
+                ? 'bg-neutral-900 dark:bg-white'
+                : 'bg-neutral-400'
+            )}
+          />
           <span>
-            Connected Actuators: {activeRelayCount} of {actuators.length} active (+{actuatorWatts}W dynamic load)
+            Connection Bus: {esp32ToInternetActive && internetToCloudActive ? 'End-to-End Online (ESP32 → Wi-Fi → Resursee Ingest)' : 'Degraded / Link Interrupted'}
           </span>
         </div>
         <div className="flex items-center gap-2 text-[11px] text-neutral-500">
