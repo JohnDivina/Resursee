@@ -101,103 +101,103 @@ export default function TelemetryChart({
         </div>
       </div>
 
-      {/* SVG Chart */}
-      <div className="mt-4 w-full overflow-hidden text-[var(--color-ink)]">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48 sm:h-56">
-          <defs>
-            <linearGradient id="grad-metric" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="currentColor" stopOpacity="0.20" />
-              <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
+      {/* SVG Chart or Inactive Standby State */}
+      <div className="relative mt-4 w-full h-48 sm:h-56 overflow-hidden text-[var(--color-ink)]">
+        {points.length > 0 ? (
+          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
+            <defs>
+              <linearGradient id="grad-metric" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="currentColor" stopOpacity="0.20" />
+                <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
 
-          {/* Grid Lines */}
-          <line
-            x1={paddingX}
-            y1={paddingY}
-            x2={width - paddingX}
-            y2={paddingY}
-            stroke="currentColor"
-            strokeDasharray="4 4"
-            className="text-black/5 dark:text-white/10"
-          />
-          <line
-            x1={paddingX}
-            y1={paddingY + chartHeight / 2}
-            x2={width - paddingX}
-            y2={paddingY + chartHeight / 2}
-            stroke="currentColor"
-            strokeDasharray="4 4"
-            className="text-black/5 dark:text-white/10"
-          />
-          <line
-            x1={paddingX}
-            y1={height - paddingY}
-            x2={width - paddingX}
-            y2={height - paddingY}
-            stroke="currentColor"
-            className="text-black/10 dark:text-white/15"
-          />
-
-          {/* Y Axis Labels */}
-          <text
-            x={paddingX - 8}
-            y={paddingY + 4}
-            textAnchor="end"
-            className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
-          >
-            {maxVal}
-          </text>
-          <text
-            x={paddingX - 8}
-            y={paddingY + chartHeight / 2 + 3}
-            textAnchor="end"
-            className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
-          >
-            {((maxVal + minVal) / 2).toFixed(1)}
-          </text>
-          <text
-            x={paddingX - 8}
-            y={height - paddingY}
-            textAnchor="end"
-            className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
-          >
-            {minVal}
-          </text>
-
-          {/* Gradient Area */}
-          {areaD && <path d={areaD} fill={metricColors.fill} />}
-
-          {/* Animated Line */}
-          {pathD && (
-            <path
-              d={pathD}
-              fill="transparent"
-              stroke={metricColors.stroke}
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            {/* Grid Lines */}
+            <line
+              x1={paddingX}
+              y1={paddingY}
+              x2={width - paddingX}
+              y2={paddingY}
+              stroke="currentColor"
+              strokeDasharray="4 4"
+              className="text-black/5 dark:text-white/10"
             />
-          )}
+            <line
+              x1={paddingX}
+              y1={paddingY + chartHeight / 2}
+              x2={width - paddingX}
+              y2={paddingY + chartHeight / 2}
+              stroke="currentColor"
+              strokeDasharray="4 4"
+              className="text-black/5 dark:text-white/10"
+            />
+            <line
+              x1={paddingX}
+              y1={height - paddingY}
+              x2={width - paddingX}
+              y2={height - paddingY}
+              stroke="currentColor"
+              className="text-black/10 dark:text-white/15"
+            />
 
-          {/* Pulse on the latest data point */}
-          {points.length > 0 && (
+            {/* Y Axis Labels */}
+            <text
+              x={paddingX - 8}
+              y={paddingY + 4}
+              textAnchor="end"
+              className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
+            >
+              {maxVal}
+            </text>
+            <text
+              x={paddingX - 8}
+              y={paddingY + chartHeight / 2 + 3}
+              textAnchor="end"
+              className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
+            >
+              {((maxVal + minVal) / 2).toFixed(1)}
+            </text>
+            <text
+              x={paddingX - 8}
+              y={height - paddingY}
+              textAnchor="end"
+              className="text-[11px] font-mono fill-[var(--color-ink-muted)]"
+            >
+              {minVal}
+            </text>
+
+            {/* Gradient Area */}
+            {areaD && <path d={areaD} fill={metricColors.fill} />}
+
+            {/* Animated Line */}
+            {pathD && (
+              <path
+                d={pathD}
+                fill="transparent"
+                stroke={metricColors.stroke}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+
+            {/* Pulse on the latest data point */}
             <g transform={`translate(${points[points.length - 1].x}, ${points[points.length - 1].y})`}>
               <circle r="4" fill={metricColors.stroke} />
               <circle r="2" fill="#ffffff" />
             </g>
-          )}
-        </svg>
-
-        {/* Empty State Overlay when no telemetry exists */}
-        {points.length === 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-[var(--color-paper-card)]/80 backdrop-blur-xs">
+          </svg>
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-rule)] bg-neutral-50/50 dark:bg-neutral-900/30 p-6 text-center">
+            <span className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+              <ChartLineUp size={20} weight="bold" />
+            </span>
             <div className="text-xs font-bold text-[var(--color-ink)] mb-1">
               Awaiting Hardware Telemetry Stream
             </div>
-            <div className="text-[11px] text-[var(--color-ink-muted)] max-w-sm">
-              No packets received yet. Connect your ESP32 or toggle the Virtual Hardware Simulator below to start streaming.
-            </div>
+            <p className="max-w-md text-[11px] text-[var(--color-ink-muted)]">
+              No live packets recorded. Connect physical ESP32 hardware or start the Virtual Simulator to view real-time time-series telemetry.
+            </p>
           </div>
         )}
       </div>
