@@ -9,14 +9,14 @@ const FLAP_CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$()-+&=;:'\"%,./?°"
 const BOARD_ROWS = 6;
 const BOARD_COLS = 22;
 
-const BASE_COL_DELAY = 30;
-const BASE_ROW_DELAY = 20;
-const BASE_STEP_MS = 55;
-const BASE_FLIP_S = 0.35;
+const BASE_COL_DELAY = 14;
+const BASE_ROW_DELAY = 10;
+const BASE_STEP_MS = 32;
+const BASE_FLIP_S = 0.08;
 const BASE_TOTAL_S =
   ((BOARD_COLS - 1) * BASE_COL_DELAY +
     (BOARD_ROWS - 1) * BASE_ROW_DELAY +
-    8 * BASE_STEP_MS) /
+    6 * BASE_STEP_MS) /
   1000;
 
 type AccentColor = {
@@ -80,8 +80,8 @@ const FlapCell = React.memo(function FlapCell({
 
     const scrambleCount =
       normalized === " "
-        ? 8 + Math.floor(Math.random() * 8)
-        : 25 + Math.floor(Math.random() * 15);
+        ? 2 + Math.floor(Math.random() * 2)
+        : 5 + Math.floor(Math.random() * 4);
 
     const runStep = (i: number) => {
       const isLast = i === scrambleCount;
@@ -91,7 +91,7 @@ const FlapCell = React.memo(function FlapCell({
 
       const newAccent = isLast
         ? null
-        : Math.random() < 0.2
+        : Math.random() < 0.15
           ? ACCENT_COLORS[Math.floor(Math.random() * ACCENT_COLORS.length)]
           : null;
 
@@ -131,7 +131,9 @@ const FlapCell = React.memo(function FlapCell({
   const flapTopBg = prevAccent?.top ?? "bg-neutral-100 dark:bg-neutral-800";
   const flapTextColor = prevAccent?.text ?? "text-neutral-800 dark:text-white";
 
-  const bottomDelay = flipDuration * 0.5;
+  const isFinalSnap = current === tgtRef.current;
+  const activeFlipDur = isFinalSnap ? flipDuration * 1.25 : flipDuration;
+  const bottomDelay = activeFlipDur * 0.45;
 
   return (
     <div className="flex aspect-3/6 flex-col overflow-hidden rounded-[2px] border border-neutral-300 md:rounded-[3px] md:border-2 dark:border-black">
@@ -175,9 +177,9 @@ const FlapCell = React.memo(function FlapCell({
             <motion.div
               key={`s${flipId}`}
               className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.8),transparent_60%)] dark:bg-[linear-gradient(to_bottom,rgba(0,0,0,0.8),transparent_60%)]"
-              initial={{ opacity: 0.5 }}
+              initial={{ opacity: 0.4 }}
               animate={{ opacity: 0 }}
-              transition={{ duration: flipDuration * 1.3, ease: "easeOut" }}
+              transition={{ duration: activeFlipDur * 1.2, ease: "easeOut" }}
             />
           )}
         </div>
@@ -187,14 +189,14 @@ const FlapCell = React.memo(function FlapCell({
           <motion.div
             key={flipId}
             className={cn(
-              "absolute inset-x-0 top-0 z-10 h-[calc(50%-0.5px)] origin-bottom overflow-hidden rounded-t-[3px] backface-hidden transform-3d",
+              "absolute inset-x-0 top-0 z-10 h-[calc(50%-0.5px)] origin-bottom overflow-hidden rounded-t-[3px] backface-hidden transform-3d will-change-transform",
               flapTopBg,
             )}
             initial={{ rotateX: 0 }}
-            animate={{ rotateX: -100 }}
+            animate={{ rotateX: -95 }}
             transition={{
-              duration: flipDuration,
-              ease: [0.55, 0.055, 0.675, 0.19],
+              duration: activeFlipDur,
+              ease: [0.4, 0, 0.2, 1],
             }}
           >
             <div
@@ -206,8 +208,8 @@ const FlapCell = React.memo(function FlapCell({
             <motion.div
               className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0),rgba(255,255,255,1))] dark:bg-[linear-gradient(to_bottom,rgba(0,0,0,0),rgba(0,0,0,1))]"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.6 }}
-              transition={{ duration: flipDuration }}
+              animate={{ opacity: 0.5 }}
+              transition={{ duration: activeFlipDur }}
             />
           </motion.div>
         )}
@@ -217,15 +219,15 @@ const FlapCell = React.memo(function FlapCell({
           <motion.div
             key={`b${flipId}`}
             className={cn(
-              "absolute inset-x-0 bottom-0 z-10 h-[calc(50%-0.5px)] origin-top overflow-hidden rounded-b-[3px] backface-hidden transform-3d",
+              "absolute inset-x-0 bottom-0 z-10 h-[calc(50%-0.5px)] origin-top overflow-hidden rounded-b-[3px] backface-hidden transform-3d will-change-transform",
               bottomBg,
             )}
             initial={{ rotateX: 90 }}
             animate={{ rotateX: 0 }}
             transition={{
-              duration: flipDuration * 0.85,
+              duration: activeFlipDur * 0.85,
               delay: bottomDelay,
-              ease: [0.33, 1.55, 0.64, 1],
+              ease: isFinalSnap ? [0.16, 1, 0.3, 1] : [0.33, 1.3, 0.64, 1],
             }}
           >
             <div
@@ -236,10 +238,10 @@ const FlapCell = React.memo(function FlapCell({
             </div>
             <motion.div
               className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(255,255,255,0),rgba(255,255,255,0.6))] dark:bg-[linear-gradient(to_top,rgba(0,0,0,0),rgba(0,0,0,0.6))]"
-              initial={{ opacity: 0.4 }}
+              initial={{ opacity: 0.35 }}
               animate={{ opacity: 0 }}
               transition={{
-                duration: flipDuration * 0.85,
+                duration: activeFlipDur * 0.85,
                 delay: bottomDelay,
               }}
             />
@@ -366,7 +368,7 @@ export function TextFlippingBoard({
   const colDelay = BASE_COL_DELAY * scale;
   const rowDelay = BASE_ROW_DELAY * scale;
   const stepMs = BASE_STEP_MS * scale;
-  const flipDur = Math.min(0.6, Math.max(0.15, BASE_FLIP_S * scale));
+  const flipDur = Math.min(0.25, Math.max(0.06, BASE_FLIP_S * scale));
 
   const board = useMemo(() => {
     const grid: ParsedCell[][] = Array.from({ length: BOARD_ROWS }, () =>
