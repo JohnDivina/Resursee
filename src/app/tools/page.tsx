@@ -15,6 +15,7 @@ import {
   FileArrowUp,
   Files,
   HouseLine,
+  Scissors,
 } from '@phosphor-icons/react';
 
 export default function ToolsPage() {
@@ -65,6 +66,15 @@ export default function ToolsPage() {
       icon: <Files size={26} className="text-white dark:text-neutral-900" weight="bold" />,
       iconBg: 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900',
       href: '/tools/merge-pdf',
+    },
+    {
+      id: 'split-pdf',
+      name: 'Split PDF',
+      category: 'PDF',
+      description: 'Extract specific pages, partition by custom ranges, or separate every page into a ZIP archive.',
+      icon: <Scissors size={26} className="text-white dark:text-neutral-900" weight="bold" />,
+      iconBg: 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900',
+      href: '/tools/split-pdf',
     },
     {
       id: 'pdf-to-image',

@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Sparkle,
   FileImage,
+  Scissors,
 } from '@phosphor-icons/react';
 import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid';
 import { cn } from '@/lib/utils';
@@ -313,6 +314,64 @@ const SkeletonImageToPdf = () => {
   );
 };
 
+/** 8. Skeleton: Split PDF (Extract Pages & Partition PDF) */
+const SkeletonSplitPdf = () => {
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="hover"
+      className="flex items-center justify-center gap-2.5 w-full h-full p-2"
+    >
+      {/* Source PDF */}
+      <motion.div
+        variants={{
+          initial: { scale: 1 },
+          hover: { scale: 0.96 },
+        }}
+        className="h-18 w-14 rounded-[12px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-sm flex flex-col items-center justify-center"
+      >
+        <FilePdf size={20} weight="fill" />
+        <span className="font-mono text-[10px] font-bold mt-0.5">8 Pgs</span>
+      </motion.div>
+
+      {/* Cutting Action Indicator */}
+      <motion.div
+        variants={{
+          initial: { rotate: 0 },
+          hover: { rotate: 25, scale: 1.15 },
+        }}
+        className="text-[var(--color-ink)]"
+      >
+        <Scissors size={18} weight="bold" />
+      </motion.div>
+
+      {/* Split Output Documents */}
+      <div className="flex -space-x-2">
+        <motion.div
+          variants={{
+            initial: { y: 0, rotate: -4 },
+            hover: { y: -4, rotate: -8, x: -2 },
+          }}
+          className="h-16 w-13 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 shadow-xs flex flex-col items-center justify-center text-neutral-800 dark:text-neutral-200 font-mono text-[10px] font-bold"
+        >
+          <span className="text-[9px] text-[var(--color-ink-muted)]">Part 1</span>
+          <span>1-4</span>
+        </motion.div>
+        <motion.div
+          variants={{
+            initial: { y: 0, rotate: 4 },
+            hover: { y: -4, rotate: 8, x: 2 },
+          }}
+          className="h-16 w-13 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 shadow-sm flex flex-col items-center justify-center text-neutral-800 dark:text-neutral-200 font-mono text-[10px] font-bold"
+        >
+          <span className="text-[9px] text-[var(--color-ink-muted)]">Part 2</span>
+          <span>5-8</span>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
 // =========================================================================
 // Bento Grid Tools Preview
 // =========================================================================
@@ -363,15 +422,23 @@ export default function ToolsPreview() {
       title: 'Merge PDF',
       description: 'Combine multiple PDF documents, syllabi, or clearances into a single organized file with custom ordering.',
       header: <SkeletonMergePdf />,
-      className: 'md:col-span-2 lg:col-span-2',
+      className: 'md:col-span-1 lg:col-span-1',
       icon: <Files size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/merge-pdf',
+    },
+    {
+      title: 'Split PDF',
+      description: 'Extract specific pages, partition by custom ranges, or separate into standalone PDF files.',
+      header: <SkeletonSplitPdf />,
+      className: 'md:col-span-1 lg:col-span-1',
+      icon: <Scissors size={18} weight="bold" className="text-[var(--color-ink)]" />,
+      href: '/tools/split-pdf',
     },
     {
       title: 'Image to PDF',
       description: 'Combine scanned clearance slips, IDs, and certificates into a single unified PDF.',
       header: <SkeletonImageToPdf />,
-      className: 'md:col-span-2 lg:col-span-1',
+      className: 'md:col-span-1 lg:col-span-1',
       icon: <FileArrowUp size={18} weight="bold" className="text-[var(--color-ink)]" />,
       href: '/tools/image-to-pdf',
     },

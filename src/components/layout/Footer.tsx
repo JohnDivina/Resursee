@@ -97,6 +97,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/tools/split-pdf" className="transition-colors hover:text-[var(--color-primary)]">
+                  Split PDF
+                </Link>
+              </li>
+              <li>
                 <Link href="/tools/image-to-pdf" className="transition-colors hover:text-[var(--color-primary)]">
                   Image to PDF
                 </Link>
