@@ -163,8 +163,11 @@ export default function Esp32CodeStudio({
   const refreshSerialPorts = async () => {
     const ports = await tauriListSerialPorts();
     setAvailablePorts(ports);
-    if (ports.length > 0 && !selectedPort) {
-      setSelectedPort(ports[0]);
+    if (ports.length > 0) {
+      const preferred = ports.find((p) => /usb|usbmodem|usbserial|wch|slab|ttyACM|ttyUSB|COM/i.test(p));
+      if (!selectedPort || /bluetooth|debug/i.test(selectedPort) || !ports.includes(selectedPort)) {
+        setSelectedPort(preferred || ports[0]);
+      }
     }
   };
 
@@ -726,11 +729,14 @@ void loop() {
               className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2.5 py-1.5 text-xs text-neutral-900 dark:text-white outline-none cursor-pointer"
             >
               <option value="">-- Select Port --</option>
-              {availablePorts.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
+              {availablePorts.map((p) => {
+                const isUsb = /usb|usbmodem|usbserial|wch|slab|ttyACM|ttyUSB/i.test(p);
+                return (
+                  <option key={p} value={p}>
+                    {p} {isUsb ? ' • (USB Hardware)' : ''}
+                  </option>
+                );
+              })}
             </select>
           ) : (
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2.5 py-1.5 text-[11px] text-neutral-500 dark:text-neutral-400 truncate">

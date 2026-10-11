@@ -359,38 +359,40 @@ fn get_arduino_cli_version() -> Result<String, String> {
 /// Lists detected serial ports and connected hardware boards
 #[tauri::command]
 fn list_serial_ports() -> Result<Vec<String>, String> {
-    let mut ports = Vec::new();
+    let mut usb_ports = Vec::new();
+    let mut other_ports = Vec::new();
 
-    // 1. Try arduino-cli board list if available
+    // 1. Try arduino-cli board list --format json if available
     if let Some(cli_path) = find_arduino_cli() {
-        if let Ok(output) = Command::new(&cli_path).args(&["board", "list"]).output() {
-            let text = String::from_utf8_lossy(&output.stdout);
-            for line in text.lines().skip(1) {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if let Some(port) = parts.first() {
-                    if !port.is_empty() && !ports.contains(&port.to_string()) {
-                        ports.push(port.to_string());
-                    }
-                }
-            }
-        }
-    }
+        if let Ok(output) = Command::new(&cli_path).args(&["board", "list", "--format", "json"]).output() {
+            if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&output.stdout) {
+                if let Some(detected) = val.get("detected_ports").and_then(|v| v.as_array()) {
+                    for item in detected {
+                        if let Some(addr) = item.get("port").and_then(|p| p.get("address")).and_then(|a| a.as_str()) {
+                            let proto_label = item.get("port").and_then(|p| p.get("protocol_label")).and_then(|l| l.as_str()).unwrap_or("");
+                            let addr_lower = addr.to_lowercase();
+                            let is_virtual = addr_lower.contains("bluetooth")
+                                || addr_lower.contains("debug")
+                                || addr_lower.contains("wlan")
+                                || addr.ends_with("/dev/cu.F9");
 
-    // 2. Fallback to scanning /dev on macOS / Linux
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        if let Ok(entries) = std::fs::read_dir("/dev") {
-            for entry in entries.flatten() {
-                if let Ok(name) = entry.file_name().into_string() {
-                    if name.starts_with("cu.usb")
-                        || name.starts_with("cu.wch")
-                        || name.starts_with("cu.SLAB")
-                        || name.starts_with("ttyUSB")
-                        || name.starts_with("ttyACM")
-                    {
-                        let full_path = format!("/dev/{}", name);
-                        if !ports.contains(&full_path) {
-                            ports.push(full_path);
+                            let is_usb = proto_label.to_lowercase().contains("usb")
+                                || addr_lower.contains("usbmodem")
+                                || addr_lower.contains("usbserial")
+                                || addr_lower.contains("wch")
+                                || addr_lower.contains("slab")
+                                || addr_lower.contains("ttyusb")
+                                || addr_lower.contains("ttyacm");
+
+                            if is_usb {
+                                if !usb_ports.contains(&addr.to_string()) {
+                                    usb_ports.push(addr.to_string());
+                                }
+                            } else if !is_virtual {
+                                if !other_ports.contains(&addr.to_string()) {
+                                    other_ports.push(addr.to_string());
+                                }
+                            }
                         }
                     }
                 }
@@ -398,7 +400,32 @@ fn list_serial_ports() -> Result<Vec<String>, String> {
         }
     }
 
-    Ok(ports)
+    // 2. Scan /dev on macOS / Linux for USB hardware serial devices
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        if let Ok(entries) = std::fs::read_dir("/dev") {
+            for entry in entries.flatten() {
+                if let Ok(name) = entry.file_name().into_string() {
+                    if name.starts_with("cu.usbmodem")
+                        || name.starts_with("cu.usbserial")
+                        || name.starts_with("cu.wch")
+                        || name.starts_with("cu.SLAB")
+                        || name.starts_with("ttyUSB")
+                        || name.starts_with("ttyACM")
+                    {
+                        let full_path = format!("/dev/{}", name);
+                        if !usb_ports.contains(&full_path) {
+                            usb_ports.push(full_path);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Prioritize USB hardware ports first
+    usb_ports.extend(other_ports);
+    Ok(usb_ports)
 }
 
 /// Compiles an Arduino sketch in a sandboxed temporary directory
@@ -457,9 +484,11 @@ fn upload_arduino_sketch(
     std::fs::write(&sketch_path, code)
         .map_err(|e| format!("Failed to write sketch file: {}", e))?;
 
+    // Use compile --upload so the sketch is compiled and immediately uploaded to the hardware port
     let output = Command::new(&cli_path)
         .args(&[
-            "upload",
+            "compile",
+            "--upload",
             "-p",
             &port,
             "--fqbn",
@@ -467,7 +496,7 @@ fn upload_arduino_sketch(
             temp_dir.to_str().unwrap_or(""),
         ])
         .output()
-        .map_err(|e| format!("Failed to execute arduino-cli upload: {}", e))?;
+        .map_err(|e| format!("Failed to execute arduino-cli compile --upload: {}", e))?;
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
