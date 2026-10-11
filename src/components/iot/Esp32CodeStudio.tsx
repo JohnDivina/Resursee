@@ -20,6 +20,7 @@ import {
   Desktop,
   Globe,
   Broadcast,
+  Package,
 } from '@phosphor-icons/react';
 import { isTauriDesktop } from '@/lib/envDetector';
 import {
@@ -28,6 +29,7 @@ import {
   tauriListSerialPorts,
   tauriCompileSketch,
   tauriUploadSketch,
+  tauriInstallLibrary,
 } from '@/lib/tauriBridge';
 import { generateArduinoSketch } from '@/lib/arduinoSketchGenerator';
 import { IoTDevice } from '@/types/iotCloud';
@@ -45,6 +47,54 @@ const SUPPORTED_BOARDS = [
 ];
 
 const BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
+
+const COMMON_LIBRARIES = [
+  {
+    name: 'ArduinoJson',
+    author: 'Benoit Blanchon',
+    version: 'v6 / v7',
+    required: true,
+    description: 'Zero-copy JSON parser and serializer. Required for telemetry payloads and actuator state synchronization.',
+    builtin: false,
+    header: '<ArduinoJson.h>',
+  },
+  {
+    name: 'DHT sensor library',
+    author: 'Adafruit',
+    version: 'v1.4.6',
+    required: false,
+    description: 'Decodes proprietary 1-wire timing pulses for DHT11 and DHT22 digital temperature & humidity probes.',
+    builtin: false,
+    header: '<DHT.h>',
+  },
+  {
+    name: 'Adafruit Unified Sensor',
+    author: 'Adafruit',
+    version: 'v1.1.14',
+    required: false,
+    description: 'Hardware abstraction layer required as the underlying driver foundation for Adafruit sensors.',
+    builtin: false,
+    header: '<Adafruit_Sensor.h>',
+  },
+  {
+    name: 'WiFi (ESP32 Core)',
+    author: 'Espressif Systems',
+    version: 'Built-in Core',
+    required: true,
+    description: 'ESP32 802.11 b/g/n station and AP mode networking, DHCP connection, and RSSI tracking. Zero download required.',
+    builtin: true,
+    header: '<WiFi.h>',
+  },
+  {
+    name: 'HTTPClient (ESP32 Core)',
+    author: 'Espressif Systems',
+    version: 'Built-in Core',
+    required: true,
+    description: 'Native HTTP/1.1 client for RESTful POST requests hitting /api/iot/ingest and reading server responses.',
+    builtin: true,
+    header: '<HTTPClient.h>',
+  },
+];
 
 export default function Esp32CodeStudio({
   device,
@@ -74,6 +124,10 @@ export default function Esp32CodeStudio({
 
   // --- Setup Modal State ---
   const [cliModalOpen, setCliModalOpen] = useState<boolean>(false);
+
+  // --- Libraries Manager State ---
+  const [librariesOpen, setLibrariesOpen] = useState<boolean>(false);
+  const [installingLib, setInstallingLib] = useState<string | null>(null);
 
   // --- Web Serial Monitor State ---
   const [serialOpen, setSerialOpen] = useState<boolean>(false);
@@ -385,6 +439,29 @@ void loop() {
     }
   };
 
+  // --- Library Install Handler ---
+  const handleInstallLib = async (libName: string) => {
+    if (!isDesktop || !cliDetected) {
+      setCliModalOpen(true);
+      return;
+    }
+
+    setInstallingLib(libName);
+    setConsoleOpen(true);
+    setConsoleStatus('idle');
+    setConsoleLogs((prev) => `${prev}\n[Library Manager] Running: arduino-cli lib install "${libName}"...\n`);
+
+    const result = await tauriInstallLibrary(libName);
+    setInstallingLib(null);
+    if (result.success) {
+      setConsoleStatus('success');
+      setConsoleLogs((prev) => `${prev}${result.output}\n✓ "${libName}" installed successfully!\n`);
+    } else {
+      setConsoleStatus('error');
+      setConsoleLogs((prev) => `${prev}✗ ${result.output}\n`);
+    }
+  };
+
   // --- Web Serial API Handlers ---
   const handleConnectSerial = async () => {
     if (!serialSupported) {
@@ -552,6 +629,20 @@ void loop() {
           >
             <TerminalWindow size={13} weight="bold" />
             <span>Serial Monitor</span>
+          </button>
+
+          {/* Toggle Libraries Reference */}
+          <button
+            type="button"
+            onClick={() => setLibrariesOpen(!librariesOpen)}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+              librariesOpen
+                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                : 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+            }`}
+          >
+            <Package size={13} weight="bold" />
+            <span>Libraries</span>
           </button>
 
           {/* Copy */}
@@ -782,6 +873,84 @@ void loop() {
           </div>
         )}
       </div>
+
+      {/* LIBRARIES REFERENCE & 1-CLICK INSTALLER DRAWER */}
+      {librariesOpen && (
+        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#111111] p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Package size={16} weight="bold" className="text-neutral-800 dark:text-neutral-200" />
+              <h3 className="text-xs font-bold text-neutral-900 dark:text-white">
+                ESP32 Hardware &amp; Sensor Libraries
+              </h3>
+              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                {COMMON_LIBRARIES.length} Recognized Packages
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    'arduino-cli lib install "ArduinoJson" "DHT sensor library" "Adafruit Unified Sensor"'
+                  );
+                }}
+                className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
+              >
+                Copy CLI Install Command
+              </button>
+              <button
+                type="button"
+                onClick={() => setLibrariesOpen(false)}
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer p-1"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            {COMMON_LIBRARIES.map((lib) => (
+              <div
+                key={lib.name}
+                className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#161616] p-3 space-y-1.5 flex flex-col justify-between"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-neutral-900 dark:text-white text-xs">{lib.name}</span>
+                    {lib.builtin ? (
+                      <span className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 text-[9px] font-mono font-medium text-neutral-700 dark:text-neutral-300">
+                        Built-in Core
+                      </span>
+                    ) : isDesktop && cliDetected ? (
+                      <button
+                        type="button"
+                        disabled={installingLib === lib.name}
+                        onClick={() => handleInstallLib(lib.name)}
+                        className="rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2 py-0.5 text-[10px] font-semibold hover:opacity-90 cursor-pointer disabled:opacity-50"
+                      >
+                        {installingLib === lib.name ? 'Installing...' : '1-Click Install'}
+                      </button>
+                    ) : (
+                      <span className="rounded-md border border-neutral-300 dark:border-neutral-700 px-1.5 py-0.5 text-[9px] font-mono text-neutral-600 dark:text-neutral-400">
+                        External Lib
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-neutral-500 font-mono">{lib.header}</div>
+                  <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                    {lib.description}
+                  </p>
+                </div>
+                <div className="text-[10px] text-neutral-400 dark:text-neutral-500 pt-1 border-t border-neutral-200/60 dark:border-neutral-800">
+                  By {lib.author} · {lib.version}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* WEB SERIAL MONITOR DRAWER */}
       {serialOpen && (

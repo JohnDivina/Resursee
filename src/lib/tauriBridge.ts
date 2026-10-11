@@ -280,3 +280,22 @@ export async function tauriUploadSketch(
   }
 }
 
+/**
+ * Installs an Arduino library via arduino-cli lib install.
+ */
+export async function tauriInstallLibrary(
+  libraryName: string
+): Promise<{ success: boolean; output: string }> {
+  try {
+    const output = await safeTauriInvoke<string>('install_arduino_library', {
+      libraryName,
+    });
+    return { success: true, output };
+  } catch (err: any) {
+    return {
+      success: false,
+      output: err?.message || String(err),
+    };
+  }
+}
+

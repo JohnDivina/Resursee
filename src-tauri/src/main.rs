@@ -479,6 +479,28 @@ fn upload_arduino_sketch(
     }
 }
 
+/// Installs an Arduino library natively via arduino-cli
+#[tauri::command]
+fn install_arduino_library(library_name: String) -> Result<String, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH.".to_string()
+    })?;
+
+    let output = Command::new(&cli_path)
+        .args(&["lib", "install", &library_name])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli lib install: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        Ok(format!("{}\n{}", stdout, stderr).trim().to_string())
+    } else {
+        Err(format!("Library installation failed:\n{}\n{}", stderr, stdout).trim().to_string())
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -495,7 +517,8 @@ fn main() {
             get_arduino_cli_version,
             list_serial_ports,
             compile_arduino_sketch,
-            upload_arduino_sketch
+            upload_arduino_sketch,
+            install_arduino_library
         ])
         .run(tauri::generate_context!())
         .expect("error while running Resursee desktop application");
