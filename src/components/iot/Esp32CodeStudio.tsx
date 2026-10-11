@@ -27,6 +27,9 @@ import {
   Robot,
   Lightning,
   Plus,
+  CaretLeft,
+  CaretRight,
+  Eye,
 } from '@phosphor-icons/react';
 import { isTauriDesktop } from '@/lib/envDetector';
 import {
@@ -39,6 +42,7 @@ import {
   tauriStopSerialMonitor,
   tauriSendSerialInput,
   tauriResetBoard,
+  tauriListInstalledLibraries,
 } from '@/lib/tauriBridge';
 import {
   checkOllamaConnection,
@@ -51,6 +55,7 @@ import { OllamaModel, OllamaChatMessage } from '@/types/aiHub';
 import { generateArduinoSketch } from '@/lib/arduinoSketchGenerator';
 import { IoTDevice } from '@/types/iotCloud';
 import { getInstalledCoreIds } from '@/components/iot/BoardsManager';
+import { computeLineDiff, DiffResult } from '@/lib/diffHelper';
 
 export interface Esp32CodeStudioProps {
   device: IoTDevice;
@@ -215,22 +220,120 @@ export default function Esp32CodeStudio({
   const [serialInput, setSerialInput] = useState<string>('');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
 
-  // --- Local AI Assistant State ---
+  // --- Antigravity-Style Review Changes State ---
+  const [proposedCode, setProposedCode] = useState<string | null>(null);
+  const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
+  const [reviewMode, setReviewMode] = useState<boolean>(false);
+
+  const handleStartReview = (newCodeSnippet: string) => {
+    setProposedCode(newCodeSnippet);
+    const diff = computeLineDiff(code, newCodeSnippet);
+    setDiffResult(diff);
+    setReviewMode(true);
+  };
+
+  const handleAcceptChanges = () => {
+    if (proposedCode) {
+      setCode(proposedCode);
+    }
+    setReviewMode(false);
+    setProposedCode(null);
+    setDiffResult(null);
+  };
+
+  const handleDenyChanges = () => {
+    setReviewMode(false);
+    setProposedCode(null);
+    setDiffResult(null);
+  };
+
+  // --- Local AI Assistant & Saved Conversations State ---
   const [ollamaStatus, setOllamaStatus] = useState<'connected' | 'checking' | 'offline'>('checking');
   const [installedModels, setInstalledModels] = useState<OllamaModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('qwen2.5-coder:7b');
   const [isStartingOllama, setIsStartingOllama] = useState<boolean>(false);
   const [isStoppingOllama, setIsStoppingOllama] = useState<boolean>(false);
   const [aiCopilotOpen, setAiCopilotOpen] = useState<boolean>(false);
-  const [chatMessages, setChatMessages] = useState<OllamaChatMessage[]>([
-    {
-      role: 'assistant',
-      content: `👋 Hello! I am your local AI hardware & firmware assistant. I have direct context of this **${device.name}** board, its sensors, and the C++ sketch in the editor. Ask me to add sensors, implement relays, optimize loops, or fix compiler errors.`,
-    },
-  ]);
+  const [installedArduinoLibs, setInstalledArduinoLibs] = useState<any[]>([]);
+
+  // Saved Conversations
+  const [savedConversations, setSavedConversations] = useState<Array<{
+    id: string;
+    title: string;
+    createdAt: number;
+    updatedAt: number;
+    messages: OllamaChatMessage[];
+  }>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_ai_chats_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [
+      {
+        id: 'default',
+        title: 'Firmware Assistant',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: [
+          {
+            role: 'assistant',
+            content: `👋 Hello! I am your local AI hardware & firmware assistant. I have direct context of this **${device.name}** board, installed libraries, and the C++ sketch in the editor. Ask me to add sensors, implement relays, optimize loops, or fix compiler errors.`,
+          },
+        ],
+      },
+    ];
+  });
+
+  const [activeChatId, setActiveChatId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const lastId = localStorage.getItem(`resursee_firmware_ai_active_chat_${device.id}`);
+        if (lastId) return lastId;
+      } catch {}
+    }
+    return 'default';
+  });
+
+  // Auto-persist saved conversations
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`resursee_firmware_ai_chats_${device.id}`, JSON.stringify(savedConversations));
+        localStorage.setItem(`resursee_firmware_ai_active_chat_${device.id}`, activeChatId);
+      } catch {}
+    }
+  }, [savedConversations, activeChatId, device.id]);
+
+  const activeChat =
+    savedConversations.find((c) => c.id === activeChatId) ||
+    savedConversations[0] || {
+      id: 'default',
+      title: 'Firmware Assistant',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [],
+    };
+  const activeChatIndex = Math.max(0, savedConversations.findIndex((c) => c.id === activeChat.id));
+  const chatMessages = activeChat.messages;
+
   const [chatInput, setChatInput] = useState<string>('');
   const [isStreamingAi, setIsStreamingAi] = useState<boolean>(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Load installed libraries via Tauri
+  const loadInstalledLibraries = async () => {
+    try {
+      const libs = await tauriListInstalledLibraries();
+      if (Array.isArray(libs)) {
+        setInstalledArduinoLibs(libs);
+      }
+    } catch {}
+  };
 
   // Probe Ollama connection
   const probeOllama = async () => {
@@ -294,6 +397,7 @@ export default function Esp32CodeStudio({
 
   useEffect(() => {
     probeOllama();
+    loadInstalledLibraries();
   }, []);
 
   useEffect(() => {
@@ -301,6 +405,60 @@ export default function Esp32CodeStudio({
       chatBottomRef.current.scrollTop = chatBottomRef.current.scrollHeight;
     }
   }, [chatMessages, isStreamingAi]);
+
+  // Conversation Management Helpers
+  const handleNewConversation = () => {
+    const newId = `chat_${Date.now()}`;
+    const newChat = {
+      id: newId,
+      title: `Chat ${savedConversations.length + 1}`,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [
+        {
+          role: 'assistant' as const,
+          content: `👋 New conversation started. Ask me anything about your **${device.name}** firmware, pinouts, or C++ code.`,
+        },
+      ],
+    };
+    setSavedConversations((prev) => [newChat, ...prev]);
+    setActiveChatId(newId);
+  };
+
+  const handleCycleConversation = (direction: 'prev' | 'next') => {
+    if (savedConversations.length <= 1) return;
+    const currentIdx = savedConversations.findIndex((c) => c.id === activeChat.id);
+    const nextIdx =
+      direction === 'next'
+        ? (currentIdx + 1) % savedConversations.length
+        : (currentIdx - 1 + savedConversations.length) % savedConversations.length;
+    setActiveChatId(savedConversations[nextIdx].id);
+  };
+
+  const handleDeleteConversation = (idToDelete: string) => {
+    if (savedConversations.length <= 1) {
+      const resetChat = {
+        id: `chat_${Date.now()}`,
+        title: 'Firmware Assistant',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: [
+          {
+            role: 'assistant' as const,
+            content: `👋 Chat reset. Ask me anything about your **${device.name}** firmware, pinouts, or C++ code.`,
+          },
+        ],
+      };
+      setSavedConversations([resetChat]);
+      setActiveChatId(resetChat.id);
+      return;
+    }
+    const remaining = savedConversations.filter((c) => c.id !== idToDelete);
+    setSavedConversations(remaining);
+    if (activeChatId === idToDelete) {
+      setActiveChatId(remaining[0].id);
+    }
+  };
 
   const handleSendAiMessage = async (overridePrompt?: string) => {
     const text = (overridePrompt || chatInput).trim();
@@ -311,37 +469,96 @@ export default function Esp32CodeStudio({
       return;
     }
 
+    const currentChatId = activeChat.id;
     const userMsg: OllamaChatMessage = { role: 'user', content: text };
-    const newChatHistory = [...chatMessages, userMsg];
-    setChatMessages(newChatHistory);
+    const updatedMessages = [...activeChat.messages, userMsg];
+
+    // Auto-derive a concise topic title for the conversation from the first user inquiry
+    let newTitle = activeChat.title;
+    if (activeChat.title === 'Firmware Assistant' || activeChat.title.startsWith('Chat ')) {
+      newTitle = text.slice(0, 24) + (text.length > 24 ? '...' : '');
+    }
+
+    setSavedConversations((prev) =>
+      prev.map((c) =>
+        c.id === currentChatId
+          ? { ...c, title: newTitle, updatedAt: Date.now(), messages: updatedMessages }
+          : c
+      )
+    );
+
     if (!overridePrompt) setChatInput('');
     setIsStreamingAi(true);
 
+    // Identify target microcontroller architecture and board configuration
+    const activeBoard = ALL_SUPPORTED_BOARDS.find((b) => b.fqbn === boardFqbn) || {
+      label: 'ESP32 Dev Module',
+      fqbn: boardFqbn,
+      coreId: 'esp32:esp32',
+    };
+    const isEsp32 = boardFqbn.includes('esp32');
+    const isEsp8266 = boardFqbn.includes('esp8266');
+    const isAvr = boardFqbn.includes('avr') || boardFqbn.includes('uno');
+    const isS3 = boardFqbn.includes('esp32s3') || boardFqbn.includes('esp32c3');
+
+    // Extract list of locally installed Arduino libraries
+    const libNames = installedArduinoLibs
+      .map((l) => l?.library?.name || l?.name || (typeof l === 'string' ? l : ''))
+      .filter(Boolean);
+    const libContext =
+      libNames.length > 0
+        ? `Installed Arduino Libraries on this Machine:\n${libNames.map((n) => `- ${n}`).join('\n')}`
+        : `Installed Arduino Libraries:\n- ArduinoJson (v7.4.3)\n- ArduinoHttpClient (v0.6.2)\n- Arduino_ESP32_OTA\n- Arduino_DebugUtils`;
+
     const systemPrompt: OllamaChatMessage = {
       role: 'system',
-      content: `You are an expert embedded systems and ESP32 C++/Arduino firmware developer assistant inside Resursee IoT Cloud.
-Context:
-- Target Microcontroller: ${device.deviceType} (${boardFqbn})
-- Target Device Name: ${device.name} (ID: ${device.id})
-- Ingest Endpoint: ${serverOrigin}/api/iot/ingest
+      content: `You are an expert embedded C++/Arduino firmware developer assistant inside Resursee IoT Cloud.
+Context & Hardware Configuration:
+- Target Board: ${activeBoard.label} (FQBN: ${boardFqbn})
+- Architecture: ${isEsp32 ? 'ESP32 (Xtensa 32-bit)' : isEsp8266 ? 'ESP8266 (Tensilica 32-bit)' : isAvr ? 'Arduino AVR (ATmega328P 8-bit)' : 'RP2040'}
+- Device Name: ${device.name} (ID: ${device.id})
+- Cloud Ingest Endpoint: ${serverOrigin}/api/iot/ingest
 - Device Token: ${device.deviceToken}
-- Active Sketch in Editor:
+- Configured WiFi SSID: ${wifiSsid || 'YOUR_WIFI_SSID'}
+
+${libContext}
+
+MANDATORY HARDWARE & LIBRARY RULES:
+1. TARGET NETWORKING HEADERS:
+${isEsp32 ? '   - Networking: MUST use #include <WiFi.h> and #include <HTTPClient.h>. NEVER use <ESP8266WiFi.h> or <Ethernet.h>.' : ''}
+${isEsp8266 ? '   - Networking: MUST use #include <ESP8266WiFi.h> and #include <ESP8266HTTPClient.h>. NEVER use <WiFi.h>.' : ''}
+${isS3 ? '   - USB CDC Serial: Initialize Serial with Serial.begin(115200); unsigned long _s=millis(); while(!Serial && millis()-_s<3000);' : ''}
+2. ARDUINOJSON VERSION 7 STRICT SYNTAX:
+   - ArduinoJson 7.x is installed. StaticJsonDocument and DynamicJsonDocument were REMOVED in v7 and will fail compilation.
+   - ALWAYS use "JsonDocument doc;" for constructing and deserializing JSON.
+   - Example: JsonDocument doc; doc["key"] = value; serializeJson(doc, requestBody);
+3. THIRD-PARTY LIBRARIES:
+   - DO NOT hallucinate or #include third-party libraries not listed in the installed libraries above. Only use installed libraries or standard Arduino core headers.
+4. Active Sketch in Editor:
 \`\`\`cpp
 ${code}
 \`\`\`
 ${consoleStatus === 'error' && consoleLogs ? `\nRecent Compiler Output / Errors:\n${consoleLogs}\n` : ''}
 
-Instructions:
-1. Provide concise, clean, working Arduino C++ code compatible with ESP32 Xtensa GCC.
-2. When proposing complete firmware or code blocks, wrap them in triple backticks with \`\`\`cpp.
-3. Keep explanation brief and developer-focused.`,
+Output instructions:
+- Provide clean, working, compilable C++ code wrapped in \`\`\`cpp.
+- Keep explanations brief and embedded-developer focused.`,
     };
 
-    const messagesToSend = [systemPrompt, ...newChatHistory.slice(-8)];
+    const messagesToSend = [systemPrompt, ...updatedMessages.slice(-8)];
 
     let currentResponse = '';
-    const tempAssistantMsg: OllamaChatMessage = { role: 'assistant', content: '' };
-    setChatMessages([...newChatHistory, tempAssistantMsg]);
+    // Append placeholder assistant message to active chat
+    setSavedConversations((prev) =>
+      prev.map((c) =>
+        c.id === currentChatId
+          ? {
+              ...c,
+              messages: [...updatedMessages, { role: 'assistant', content: '' }],
+            }
+          : c
+      )
+    );
 
     try {
       await streamOllamaChat(
@@ -353,26 +570,33 @@ Instructions:
         },
         (_fullText, newChunk) => {
           currentResponse += newChunk;
-          setChatMessages((prev) => {
-            const updated = [...prev];
-            if (updated.length > 0) {
-              updated[updated.length - 1] = {
-                role: 'assistant',
-                content: currentResponse,
-              };
-            }
-            return updated;
-          });
+          setSavedConversations((prev) =>
+            prev.map((c) => {
+              if (c.id !== currentChatId) return c;
+              const msgs = [...c.messages];
+              if (msgs.length > 0) {
+                msgs[msgs.length - 1] = {
+                  role: 'assistant',
+                  content: currentResponse,
+                };
+              }
+              return { ...c, messages: msgs };
+            })
+          );
         }
       );
     } catch (err: any) {
-      setChatMessages((prev) => [
-        ...prev.slice(0, -1),
-        {
-          role: 'assistant',
-          content: `⚠️ Error from Local Ollama (${err?.message || err}). Ensure Ollama is running and model "${selectedModel}" is downloaded.`,
-        },
-      ]);
+      setSavedConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== currentChatId) return c;
+          const msgs = [...c.messages.slice(0, -1)];
+          msgs.push({
+            role: 'assistant',
+            content: `⚠️ Error from Local Ollama (${err?.message || err}). Ensure Ollama is running and model "${selectedModel}" is downloaded.`,
+          });
+          return { ...c, messages: msgs };
+        })
+      );
     } finally {
       setIsStreamingAi(false);
     }
@@ -1305,63 +1529,144 @@ void loop() {
 
       {/* EDITOR & LOCAL AI WORKSPACE (SPLIT LAYOUT) */}
       <div className={`grid gap-4 items-start ${aiCopilotOpen ? 'grid-cols-1 xl:grid-cols-12' : 'grid-cols-1'}`}>
-        {/* Left Column: Code Editor */}
+        {/* Left Column: Code Editor / Diff Review */}
         <div className={`rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-[#0d0d0d] overflow-hidden text-neutral-200 font-mono text-xs shadow-sm flex flex-col ${aiCopilotOpen ? 'xl:col-span-7 2xl:col-span-8' : 'w-full'}`}>
-          {/* Editor Tab Bar */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800 bg-[#141414] text-[11px]">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-neutral-300">
-                {device.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_firmware.ino
-              </span>
-              <span className="text-neutral-500">· C++ / Wiring</span>
-            </div>
+          {/* Editor Tab Bar: Normal vs Review Mode */}
+          {reviewMode && diffResult ? (
+            <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800 bg-[#161616] text-[11px]">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-neutral-200">
+                  Review Proposed Changes
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-800 text-[10px] font-mono text-neutral-300 border border-neutral-700">
+                  <span className="text-white font-bold">+{diffResult.additions}</span>
+                  <span className="text-neutral-500">/</span>
+                  <span className="text-neutral-400 font-bold">-{diffResult.deletions}</span>
+                  <span className="text-neutral-400">lines</span>
+                </span>
+              </div>
 
-            <div className="flex items-center gap-3 text-neutral-400">
-              <span>{lineCount} lines</span>
-              <span>UTF-8</span>
-              <button
-                type="button"
-                onClick={() => handleTemplateChange(template)}
-                className="hover:text-white cursor-pointer"
-                title="Reset code to selected template"
-              >
-                Reset
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAcceptChanges}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white text-neutral-950 dark:bg-white dark:text-neutral-950 hover:opacity-90 font-semibold text-xs transition cursor-pointer"
+                  title="Accept all changes and apply to sketch editor"
+                >
+                  <Check size={13} weight="bold" />
+                  <span>Accept Changes</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDenyChanges}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700 text-xs transition cursor-pointer"
+                  title="Deny changes and keep current sketch intact"
+                >
+                  <X size={13} weight="bold" />
+                  <span>Deny Changes</span>
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800 bg-[#141414] text-[11px]">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-neutral-300">
+                  {device.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_firmware.ino
+                </span>
+                <span className="text-neutral-500">· C++ / Wiring</span>
+              </div>
 
-          {/* Editor Body: Line numbers + Monospace Textarea */}
-          <div className="flex max-h-[540px] min-h-[420px] overflow-hidden">
-            {/* Line Numbers */}
-            <div className="w-12 select-none py-3 pr-3 pl-2 text-right text-[11px] text-neutral-600 bg-[#111111] border-r border-neutral-800/80 overflow-hidden font-mono leading-relaxed">
-              {Array.from({ length: lineCount }).map((_, i) => (
-                <div key={i}>{i + 1}</div>
-              ))}
+              <div className="flex items-center gap-3 text-neutral-400">
+                <span>{lineCount} lines</span>
+                <span>UTF-8</span>
+                <button
+                  type="button"
+                  onClick={() => handleTemplateChange(template)}
+                  className="hover:text-white cursor-pointer"
+                  title="Reset code to selected template"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
+          )}
 
-            {/* Code Textarea */}
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              spellCheck={false}
-              wrap="off"
-              onKeyDown={(e) => {
-                // Handle Tab key for clean 2-space indentation
-                if (e.key === 'Tab') {
-                  e.preventDefault();
-                  const target = e.currentTarget;
-                  const start = target.selectionStart;
-                  const end = target.selectionEnd;
-                  const newCode = code.substring(0, start) + '  ' + code.substring(end);
-                  setCode(newCode);
-                  setTimeout(() => {
-                    target.selectionStart = target.selectionEnd = start + 2;
-                  }, 0);
+          {/* Editor Body: Diff View or Code Textarea */}
+          {reviewMode && diffResult ? (
+            <div className="max-h-[540px] min-h-[420px] overflow-auto font-mono text-[11px] leading-relaxed select-text bg-[#0a0a0a]">
+              {diffResult.lines.map((line, lIdx) => {
+                if (line.type === 'unchanged') {
+                  return (
+                    <div key={lIdx} className="flex hover:bg-neutral-900/40">
+                      <div className="w-12 select-none py-0.5 pr-2 pl-2 text-right text-neutral-600 bg-[#111111] border-r border-neutral-800/80 font-mono">
+                        {line.oldLineNumber}
+                      </div>
+                      <div className="w-6 select-none py-0.5 text-center text-neutral-600 font-mono"> </div>
+                      <div className="flex-1 py-0.5 px-2 text-neutral-400 whitespace-pre font-mono">
+                        {line.content}
+                      </div>
+                    </div>
+                  );
                 }
-              }}
-              className="flex-1 resize-none bg-transparent p-3 text-[12px] font-mono leading-relaxed text-neutral-200 outline-none overflow-auto border-none focus:ring-0 whitespace-pre"
-            />
-          </div>
+                if (line.type === 'removed') {
+                  return (
+                    <div key={lIdx} className="flex bg-neutral-900/90 border-l-2 border-neutral-400 hover:bg-neutral-900">
+                      <div className="w-12 select-none py-0.5 pr-2 pl-2 text-right text-neutral-500 bg-[#151515] border-r border-neutral-800 font-mono">
+                        {line.oldLineNumber}
+                      </div>
+                      <div className="w-6 select-none py-0.5 text-center text-neutral-400 font-bold font-mono">-</div>
+                      <div className="flex-1 py-0.5 px-2 text-neutral-300 line-through opacity-80 whitespace-pre font-mono">
+                        {line.content}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={lIdx} className="flex bg-[#161d18] border-l-2 border-neutral-200 hover:bg-[#1a241c]">
+                    <div className="w-12 select-none py-0.5 pr-2 pl-2 text-right text-neutral-400 bg-[#131a15] border-r border-neutral-800 font-mono">
+                      {line.newLineNumber}
+                    </div>
+                    <div className="w-6 select-none py-0.5 text-center text-neutral-200 font-bold font-mono">+</div>
+                    <div className="flex-1 py-0.5 px-2 text-white font-semibold whitespace-pre font-mono">
+                      {line.content}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex max-h-[540px] min-h-[420px] overflow-hidden">
+              {/* Line Numbers */}
+              <div className="w-12 select-none py-3 pr-3 pl-2 text-right text-[11px] text-neutral-600 bg-[#111111] border-r border-neutral-800/80 overflow-hidden font-mono leading-relaxed">
+                {Array.from({ length: lineCount }).map((_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
+
+              {/* Code Textarea */}
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                spellCheck={false}
+                wrap="off"
+                onKeyDown={(e) => {
+                  // Handle Tab key for clean 2-space indentation
+                  if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const target = e.currentTarget;
+                    const start = target.selectionStart;
+                    const end = target.selectionEnd;
+                    const newCode = code.substring(0, start) + '  ' + code.substring(end);
+                    setCode(newCode);
+                    setTimeout(() => {
+                      target.selectionStart = target.selectionEnd = start + 2;
+                    }, 0);
+                  }
+                }}
+                className="flex-1 resize-none bg-transparent p-3 text-[12px] font-mono leading-relaxed text-neutral-200 outline-none overflow-auto border-none focus:ring-0 whitespace-pre"
+              />
+            </div>
+          )}
 
           {/* Collapsible Console Drawer */}
           {consoleOpen && (
@@ -1389,7 +1694,7 @@ void loop() {
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-neutral-800 text-neutral-100 hover:bg-neutral-700 text-[10px] font-semibold border border-neutral-700 cursor-pointer"
                       title="Send error log to Local AI for automatic debugging"
                     >
-                      <Robot size={11} weight="bold" />
+                      <Sparkle size={11} weight="bold" />
                       <span>Fix with Local AI</span>
                     </button>
                   )}
@@ -1421,56 +1726,112 @@ void loop() {
         {/* Right Column: Local AI Copilot Chatbox */}
         {aiCopilotOpen && (
           <div className="xl:col-span-5 2xl:col-span-4 rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-[#0d0d0d] overflow-hidden text-neutral-200 flex flex-col shadow-sm max-h-[620px] min-h-[520px]">
-            {/* Header */}
-            <div className="flex items-center justify-between px-3.5 py-2 border-b border-neutral-800 bg-[#141414] text-[11px]">
-              <div className="flex items-center gap-2">
-                <Robot size={14} weight="bold" className="text-neutral-300" />
-                <span className="font-semibold text-neutral-200">Local AI Firmware Copilot</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-800 px-2 py-0.5 text-[9px] font-mono text-neutral-300 border border-neutral-700 truncate max-w-[110px]">
+            {/* Header: Responsive, No Robot Icon, Conversation Cycler */}
+            <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-neutral-800 bg-[#141414] text-[11px] shrink-0 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-semibold text-neutral-200 truncate">Local AI Copilot</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-800 px-2 py-0.5 text-[9px] font-mono text-neutral-300 border border-neutral-700 shrink-0">
                   <span className={`h-1.5 w-1.5 rounded-full ${ollamaStatus === 'connected' ? 'bg-neutral-300' : 'bg-neutral-600'}`} />
                   {selectedModel.split(':')[0]}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* Conversation Cycler & Actions */}
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setChatMessages([
-                    {
-                      role: 'assistant',
-                      content: `👋 Chat reset. Ask me anything about your **${device.name}** firmware, pinouts, or C++ code.`
-                    }
-                  ])}
-                  className="text-neutral-500 hover:text-neutral-300 cursor-pointer text-[10px]"
-                  title="Clear chat history"
+                  onClick={() => handleCycleConversation('prev')}
+                  disabled={savedConversations.length <= 1}
+                  className="p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition"
+                  title="Previous saved conversation"
+                >
+                  <CaretLeft size={12} weight="bold" />
+                </button>
+
+                <span className="text-[10px] text-neutral-400 font-mono select-none px-0.5">
+                  {activeChatIndex + 1}/{savedConversations.length}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => handleCycleConversation('next')}
+                  disabled={savedConversations.length <= 1}
+                  className="p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition"
+                  title="Next saved conversation"
+                >
+                  <CaretRight size={12} weight="bold" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNewConversation}
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-[10px] font-medium border border-neutral-700 cursor-pointer transition ml-1"
+                  title="Start a new chat conversation"
+                >
+                  <Plus size={11} weight="bold" />
+                  <span>New</span>
+                </button>
+
+                {savedConversations.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteConversation(activeChat.id)}
+                    className="p-1 rounded text-neutral-500 hover:text-rose-400 hover:bg-neutral-800 cursor-pointer transition"
+                    title="Delete this conversation"
+                  >
+                    <Trash size={12} />
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cleared = {
+                      ...activeChat,
+                      title: 'Firmware Assistant',
+                      messages: [
+                        {
+                          role: 'assistant' as const,
+                          content: `👋 Chat cleared. Ask me anything about your **${device.name}** firmware, pinouts, or C++ code.`,
+                        },
+                      ],
+                    };
+                    setSavedConversations((prev) =>
+                      prev.map((c) => (c.id === activeChat.id ? cleared : c))
+                    );
+                  }}
+                  className="text-neutral-500 hover:text-neutral-300 cursor-pointer text-[10px] px-1"
+                  title="Clear messages in active conversation"
                 >
                   Clear
                 </button>
+
                 <button
                   type="button"
                   onClick={() => setAiCopilotOpen(false)}
-                  className="text-neutral-500 hover:text-white cursor-pointer"
-                  title="Close AI panel"
+                  className="p-1 rounded text-neutral-500 hover:text-white hover:bg-neutral-800 cursor-pointer transition"
+                  title="Close Local AI panel"
                 >
                   <X size={12} />
                 </button>
               </div>
             </div>
 
-            {/* Quick Suggestion Chips */}
-            <div className="px-3 py-1.5 border-b border-neutral-800 bg-[#101010] flex items-center gap-1.5 overflow-x-auto text-[10px]">
+            {/* Quick Suggestion Chips: Fixed Vertical Collapse & Padding */}
+            <div className="px-3 py-2 border-b border-neutral-800 bg-[#101010] flex items-center gap-1.5 overflow-x-auto text-[10px] shrink-0 min-h-[36px]">
               <span className="text-neutral-500 shrink-0 font-medium">Quick:</span>
               {[
                 { label: 'Deep Sleep', prompt: 'Add low power deep sleep logic to this ESP32 sketch between sensor reads.' },
                 { label: 'WiFi Reconnect', prompt: 'Add robust auto-reconnection handling for WiFi and HTTP telemetry.' },
                 { label: 'Optimize Memory', prompt: 'Review this sketch and optimize heap allocation and string handling.' },
-                { label: 'Explain Code', prompt: 'Explain how this sketch connects to Resursee IoT and sends telemetry.' }
+                { label: 'Explain Code', prompt: 'Explain how this sketch connects to Resursee IoT and sends telemetry.' },
               ].map((chip) => (
                 <button
                   key={chip.label}
                   type="button"
                   disabled={isStreamingAi}
                   onClick={() => handleSendAiMessage(chip.prompt)}
-                  className="shrink-0 px-2 py-0.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 hover:border-neutral-700 transition cursor-pointer text-[10px]"
+                  className="shrink-0 px-2.5 py-1 rounded-md bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 hover:border-neutral-700 transition cursor-pointer text-[10px]"
                 >
                   {chip.label}
                 </button>
@@ -1519,13 +1880,12 @@ void loop() {
                                 <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setCode(codeSnippet);
-                                    }}
-                                    className="px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-[9px] font-semibold transition cursor-pointer"
-                                    title="Replace existing sketch in editor with this snippet"
+                                    onClick={() => handleStartReview(codeSnippet)}
+                                    className="px-2 py-0.5 rounded bg-white text-neutral-950 dark:bg-white dark:text-neutral-950 font-semibold text-[9px] transition cursor-pointer flex items-center gap-1 hover:opacity-90"
+                                    title="Review proposed changes before applying to editor (Antigravity mode)"
                                   >
-                                    Replace in Editor
+                                    <Eye size={10} weight="bold" />
+                                    <span>Review Changes</span>
                                   </button>
                                   <button
                                     type="button"
