@@ -435,7 +435,12 @@ fn compile_arduino_sketch(code: String, fqbn: Option<String>) -> Result<String, 
         "arduino-cli is not installed or not in PATH. Install via 'brew install arduino-cli' or official installer.".to_string()
     })?;
 
-    let board_fqbn = fqbn.unwrap_or_else(|| "esp32:esp32:esp32".to_string());
+    let mut board_fqbn = fqbn.unwrap_or_else(|| "esp32:esp32:esp32".to_string());
+    // Auto-enable Native USB CDC on ESP32-S3 and ESP32-C3 if not already set
+    if (board_fqbn.contains("esp32s3") || board_fqbn.contains("esp32c3")) && !board_fqbn.contains("CDCOnBoot") {
+        board_fqbn = format!("{}:CDCOnBoot=cdc", board_fqbn);
+    }
+
     let temp_dir = std::env::temp_dir().join("resursee_esp32_sketch");
     std::fs::create_dir_all(&temp_dir)
         .map_err(|e| format!("Failed to create sketch directory: {}", e))?;
@@ -475,7 +480,15 @@ fn upload_arduino_sketch(
         "arduino-cli is not installed or not in PATH. Install via 'brew install arduino-cli' or official installer.".to_string()
     })?;
 
-    let board_fqbn = fqbn.unwrap_or_else(|| "esp32:esp32:esp32".to_string());
+    // Release port from any active serial monitor session before uploading
+    let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
+
+    let mut board_fqbn = fqbn.unwrap_or_else(|| "esp32:esp32:esp32".to_string());
+    // Auto-enable Native USB CDC on ESP32-S3 and ESP32-C3 if not already set
+    if (board_fqbn.contains("esp32s3") || board_fqbn.contains("esp32c3")) && !board_fqbn.contains("CDCOnBoot") {
+        board_fqbn = format!("{}:CDCOnBoot=cdc", board_fqbn);
+    }
+
     let temp_dir = std::env::temp_dir().join("resursee_esp32_sketch");
     std::fs::create_dir_all(&temp_dir)
         .map_err(|e| format!("Failed to create sketch directory: {}", e))?;
@@ -506,6 +519,57 @@ fn upload_arduino_sketch(
     } else {
         Err(format!("Upload failed:\n{}\n{}", stderr, stdout).trim().to_string())
     }
+}
+
+/// Natively streams serial monitor lines via arduino-cli monitor
+#[tauri::command]
+fn start_serial_monitor(
+    port: String,
+    baudrate: Option<u32>,
+    on_line: tauri::ipc::Channel<String>,
+) -> Result<(), String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH.".to_string()
+    })?;
+
+    // Stop any existing monitor before starting a new one
+    let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
+
+    let baud = baudrate.unwrap_or(115200);
+    let baud_config = format!("baudrate={}", baud);
+
+    std::thread::spawn(move || {
+        use std::io::BufRead;
+        if let Ok(mut child) = Command::new(&cli_path)
+            .args(&[
+                "monitor",
+                "-p",
+                &port,
+                "-c",
+                &baud_config,
+                "-q",
+            ])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+        {
+            if let Some(stdout) = child.stdout.take() {
+                let reader = std::io::BufReader::new(stdout);
+                for line in reader.lines().flatten() {
+                    let _ = on_line.send(line);
+                }
+            }
+        }
+    });
+
+    Ok(())
+}
+
+/// Stops the native serial monitor process
+#[tauri::command]
+fn stop_serial_monitor() -> Result<(), String> {
+    let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
+    Ok(())
 }
 
 /// Installs an Arduino library natively via arduino-cli
@@ -683,7 +747,9 @@ fn main() {
             list_installed_cores,
             install_arduino_core,
             uninstall_arduino_core,
-            list_installed_libraries
+            list_installed_libraries,
+            start_serial_monitor,
+            stop_serial_monitor
         ])
         .run(tauri::generate_context!())
         .expect("error while running Resursee desktop application");

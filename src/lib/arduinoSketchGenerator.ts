@@ -46,6 +46,9 @@ unsigned long lastSendTime = 0;
 void setup() {
   Serial.begin(115200);
   delay(1000);
+  // Wait up to 3s for USB Serial Monitor to attach (ESP32-S3/C3 Native USB CDC)
+  unsigned long _sInit = millis();
+  while (!Serial && (millis() - _sInit < 3000));
   Serial.println();
   Serial.println("=========================================");
   Serial.println("   Resursee IoT Cloud · Initializing...  ");

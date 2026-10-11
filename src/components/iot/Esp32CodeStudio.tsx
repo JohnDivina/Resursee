@@ -30,6 +30,8 @@ import {
   tauriListSerialPorts,
   tauriCompileSketch,
   tauriUploadSketch,
+  tauriStartSerialMonitor,
+  tauriStopSerialMonitor,
 } from '@/lib/tauriBridge';
 import { generateArduinoSketch } from '@/lib/arduinoSketchGenerator';
 import { IoTDevice } from '@/types/iotCloud';
@@ -42,8 +44,8 @@ export interface Esp32CodeStudioProps {
 
 export const ALL_SUPPORTED_BOARDS = [
   { fqbn: 'esp32:esp32:esp32', label: 'ESP32 Dev Module (WROOM-32)', coreId: 'esp32:esp32' },
-  { fqbn: 'esp32:esp32:esp32s3', label: 'ESP32-S3 Dev Module', coreId: 'esp32:esp32' },
-  { fqbn: 'esp32:esp32:esp32c3', label: 'ESP32-C3 RISC-V Module', coreId: 'esp32:esp32' },
+  { fqbn: 'esp32:esp32:esp32s3:CDCOnBoot=cdc', label: 'ESP32-S3 Dev Module (Native USB CDC)', coreId: 'esp32:esp32' },
+  { fqbn: 'esp32:esp32:esp32c3:CDCOnBoot=cdc', label: 'ESP32-C3 RISC-V (Native USB CDC)', coreId: 'esp32:esp32' },
   { fqbn: 'esp8266:esp8266:generic', label: 'ESP8266 Generic Module', coreId: 'esp8266:esp8266' },
   { fqbn: 'arduino:avr:uno', label: 'Arduino Uno (AVR)', coreId: 'arduino:avr' },
   { fqbn: 'arduino:avr:nano', label: 'Arduino Nano (AVR)', coreId: 'arduino:avr' },
@@ -145,7 +147,7 @@ export default function Esp32CodeStudio({
     if (typeof window === 'undefined') return;
 
     const hasSerial = typeof navigator !== 'undefined' && 'serial' in navigator;
-    setSerialSupported(hasSerial);
+    setSerialSupported(hasSerial || isDesktop);
 
     checkCli();
 
@@ -448,8 +450,33 @@ void loop() {
   };
 
 
-  // --- Web Serial API Handlers ---
+  // --- Serial Monitor Handlers ---
   const handleConnectSerial = async () => {
+    const appendLog = (line: string) => {
+      const time = new Date().toLocaleTimeString();
+      setSerialLogs((prev) => [...prev.slice(-300), { id: Date.now() + Math.random(), time, text: line }]);
+    };
+
+    // If running in Resursee Desktop, stream serial monitor natively
+    if (isDesktop) {
+      if (!selectedPort) {
+        alert('Please select a hardware serial port first in the top bar.');
+        return;
+      }
+      try {
+        appendLog(`--- Native Serial Port Opened (${selectedPort} @ ${baudRate} baud) ---`);
+        setSerialConnected(true);
+        await tauriStartSerialMonitor(selectedPort, baudRate, (line) => {
+          appendLog(line);
+        });
+      } catch (err: any) {
+        appendLog(`✗ Error opening serial port: ${err?.message || err}`);
+        setSerialConnected(false);
+      }
+      return;
+    }
+
+    // Otherwise in web browser, use Web Serial API
     if (!serialSupported) {
       alert('Web Serial API is not supported in this browser. Please use Google Chrome, Edge, Brave, or Resursee Desktop.');
       return;
@@ -459,13 +486,16 @@ void loop() {
       const nav = navigator as any;
       const port = await nav.serial.requestPort();
       await port.open({ baudRate });
+
+      // Assert DTR for ESP32-S3/C3 native USB CDC
+      try {
+        await port.setSignals({ dataTerminalReady: true, requestToSend: false });
+      } catch {
+        // Ignored if device doesn't support setSignals
+      }
+
       portRef.current = port;
       setSerialConnected(true);
-
-      const appendLog = (line: string) => {
-        const time = new Date().toLocaleTimeString();
-        setSerialLogs((prev) => [...prev.slice(-300), { id: Date.now() + Math.random(), time, text: line }]);
-      };
 
       appendLog(`--- Serial Port Opened (${baudRate} baud) ---`);
 
@@ -503,6 +533,14 @@ void loop() {
   };
 
   const handleDisconnectSerial = async () => {
+    if (isDesktop) {
+      try {
+        await tauriStopSerialMonitor();
+      } catch {}
+      setSerialConnected(false);
+      return;
+    }
+
     try {
       if (readerRef.current) {
         await readerRef.current.cancel();

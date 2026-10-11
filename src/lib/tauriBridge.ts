@@ -400,3 +400,29 @@ export async function tauriListInstalledLibraries(): Promise<any[]> {
   }
 }
 
+/**
+ * Natively streams lines from serial port via arduino-cli monitor
+ */
+export async function tauriStartSerialMonitor(
+  port: string,
+  baudrate = 115200,
+  onLine: (line: string) => void
+): Promise<void> {
+  const { Channel } = await import('@tauri-apps/api/core');
+  const channel = new Channel<string>();
+  channel.onmessage = onLine;
+  await safeTauriInvoke('start_serial_monitor', {
+    port,
+    baudrate,
+    onLine: channel,
+  });
+}
+
+/**
+ * Stops the native serial monitor
+ */
+export async function tauriStopSerialMonitor(): Promise<void> {
+  await safeTauriInvoke('stop_serial_monitor');
+}
+
+
