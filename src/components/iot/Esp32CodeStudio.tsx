@@ -32,6 +32,7 @@ import {
   tauriUploadSketch,
   tauriStartSerialMonitor,
   tauriStopSerialMonitor,
+  tauriResetBoard,
 } from '@/lib/tauriBridge';
 import { generateArduinoSketch } from '@/lib/arduinoSketchGenerator';
 import { IoTDevice } from '@/types/iotCloud';
@@ -107,6 +108,7 @@ export default function Esp32CodeStudio({
   const [serialOpen, setSerialOpen] = useState<boolean>(false);
   const [serialSupported, setSerialSupported] = useState<boolean>(false);
   const [serialConnected, setSerialConnected] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
   const [baudRate, setBaudRate] = useState<number>(115200);
   const [serialLogs, setSerialLogs] = useState<Array<{ id: number; time: string; text: string }>>([]);
   const [serialInput, setSerialInput] = useState<string>('');
@@ -116,6 +118,7 @@ export default function Esp32CodeStudio({
   const portRef = useRef<any>(null);
   const readerRef = useRef<any>(null);
   const serialOutputRef = useRef<HTMLDivElement>(null);
+  const consoleOutputRef = useRef<HTMLPreElement>(null);
 
   // Line numbering
   const lineCount = Math.max(code.split('\n').length, 1);
@@ -161,6 +164,13 @@ export default function Esp32CodeStudio({
       serialOutputRef.current.scrollTop = serialOutputRef.current.scrollHeight;
     }
   }, [serialLogs, autoScroll]);
+
+  // Auto-scroll compiler terminal output
+  useEffect(() => {
+    if (consoleOutputRef.current) {
+      consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+    }
+  }, [consoleLogs]);
 
   const refreshSerialPorts = async () => {
     const ports = await tauriListSerialPorts();
@@ -398,14 +408,16 @@ void loop() {
     setConsoleStatus('idle');
     setConsoleLogs(`[Resursee Compiler] Starting Xtensa GCC build for board: ${boardFqbn}...\n`);
 
-    const result = await tauriCompileSketch(code, boardFqbn);
+    const result = await tauriCompileSketch(code, boardFqbn, (line) => {
+      setConsoleLogs((prev) => `${prev}${line}\n`);
+    });
     setIsCompiling(false);
     if (result.success) {
       setConsoleStatus('success');
-      setConsoleLogs((prev) => `${prev}${result.output}\n\n✓ Compilation successful! Firmware binary ready for flashing.`);
+      setConsoleLogs((prev) => `${prev}\n✓ Compilation successful! Ready to upload.`);
     } else {
       setConsoleStatus('error');
-      setConsoleLogs((prev) => `${prev}✗ ${result.output}`);
+      setConsoleLogs((prev) => `${prev}\n✗ ${result.output}`);
     }
   };
 
@@ -438,25 +450,52 @@ void loop() {
     setConsoleStatus('idle');
     setConsoleLogs(`[Resursee Flasher] Compiling & Flashing onto ${selectedPort} (${boardFqbn})...\n`);
 
-    const result = await tauriUploadSketch(selectedPort, code, boardFqbn);
+    const result = await tauriUploadSketch(selectedPort, code, boardFqbn, (line) => {
+      setConsoleLogs((prev) => `${prev}${line}\n`);
+    });
     setIsUploading(false);
     if (result.success) {
       setConsoleStatus('success');
-      setConsoleLogs((prev) => `${prev}${result.output}\n\n✓ Upload complete! ESP32 reset and running new firmware.`);
+      setConsoleLogs((prev) => `${prev}\n✓ Upload complete! ESP32 reset and running new firmware.`);
     } else {
       setConsoleStatus('error');
-      setConsoleLogs((prev) => `${prev}✗ ${result.output}`);
+      setConsoleLogs((prev) => `${prev}\n✗ ${result.output}`);
     }
   };
 
 
   // --- Serial Monitor Handlers ---
-  const handleConnectSerial = async () => {
-    const appendLog = (line: string) => {
-      const time = new Date().toLocaleTimeString();
-      setSerialLogs((prev) => [...prev.slice(-300), { id: Date.now() + Math.random(), time, text: line }]);
-    };
+  const appendSerialLog = (line: string) => {
+    const time = new Date().toLocaleTimeString();
+    setSerialLogs((prev) => [...prev.slice(-300), { id: Date.now() + Math.random(), time, text: line }]);
+  };
 
+  const handleResetBoard = async () => {
+    if (!isDesktop) {
+      alert('Hardware board reset is supported in Resursee Desktop via native USB DTR/RTS pulse.');
+      return;
+    }
+    if (!selectedPort) {
+      alert('Please select a hardware serial port first in the top bar.');
+      return;
+    }
+    setIsResetting(true);
+    appendSerialLog('--- Pulsing hardware RST / esptool run ---');
+    try {
+      const res = await tauriResetBoard(selectedPort);
+      if (res.success) {
+        appendSerialLog('✓ Board reset signal sent. Booting firmware...');
+      } else {
+        appendSerialLog(`✗ Reset warning: ${res.output}`);
+      }
+    } catch (err: any) {
+      appendSerialLog(`✗ Reset error: ${err?.message || err}`);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleConnectSerial = async () => {
     // If running in Resursee Desktop, stream serial monitor natively
     if (isDesktop) {
       if (!selectedPort) {
@@ -464,13 +503,31 @@ void loop() {
         return;
       }
       try {
-        appendLog(`--- Native Serial Port Opened (${selectedPort} @ ${baudRate} baud) ---`);
+        appendSerialLog(`--- Native Serial Port Opened (${selectedPort} @ ${baudRate} baud) ---`);
         setSerialConnected(true);
-        await tauriStartSerialMonitor(selectedPort, baudRate, (line) => {
-          appendLog(line);
+
+        let lineBuffer = '';
+        let flushTimeout: any = null;
+
+        await tauriStartSerialMonitor(selectedPort, baudRate, (chunk) => {
+          lineBuffer += chunk;
+          if (lineBuffer.includes('\n')) {
+            const parts = lineBuffer.split('\n');
+            lineBuffer = parts.pop() || '';
+            for (const l of parts) {
+              appendSerialLog(l.replace(/\r/g, ''));
+            }
+          }
+          clearTimeout(flushTimeout);
+          flushTimeout = setTimeout(() => {
+            if (lineBuffer) {
+              appendSerialLog(lineBuffer.replace(/\r/g, ''));
+              lineBuffer = '';
+            }
+          }, 150);
         });
       } catch (err: any) {
-        appendLog(`✗ Error opening serial port: ${err?.message || err}`);
+        appendSerialLog(`✗ Error opening serial port: ${err?.message || err}`);
         setSerialConnected(false);
       }
       return;
@@ -497,7 +554,7 @@ void loop() {
       portRef.current = port;
       setSerialConnected(true);
 
-      appendLog(`--- Serial Port Opened (${baudRate} baud) ---`);
+      appendSerialLog(`--- Serial Port Opened (${baudRate} baud) ---`);
 
       // Read loop
       const textDecoder = new TextDecoderStream();
@@ -516,14 +573,14 @@ void loop() {
               const lines = buffer.split('\n');
               buffer = lines.pop() || '';
               for (const l of lines) {
-                appendLog(l.replace(/\r/g, ''));
+                appendSerialLog(l.replace(/\r/g, ''));
               }
             }
           }
         } catch {
           // Closed or disconnected
         } finally {
-          appendLog('--- Serial Port Disconnected ---');
+          appendSerialLog('--- Serial Port Disconnected ---');
           setSerialConnected(false);
         }
       })();
@@ -906,7 +963,7 @@ void loop() {
                 </button>
               </div>
             </div>
-            <pre className="p-3 text-[11px] text-neutral-300 font-mono max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+            <pre ref={consoleOutputRef} className="p-3 text-[11px] text-neutral-300 font-mono max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
               {consoleLogs || 'No compiler messages.'}
             </pre>
           </div>
@@ -938,7 +995,7 @@ void loop() {
                   value={baudRate}
                   disabled={serialConnected}
                   onChange={(e) => setBaudRate(Number(e.target.value))}
-                  className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-900 dark:text-white outline-none cursor-pointer disabled:opacity-50"
+                  className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2.5 py-1 text-xs text-neutral-900 dark:text-white outline-none cursor-pointer disabled:opacity-50"
                 >
                   {BAUD_RATES.map((rate) => (
                     <option key={rate} value={rate}>
@@ -967,6 +1024,20 @@ void loop() {
                 </button>
               )}
 
+              {/* Reset Board button */}
+              {isDesktop && (
+                <button
+                  type="button"
+                  onClick={handleResetBoard}
+                  disabled={isResetting || !selectedPort}
+                  className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                  title="Send hardware RTS reset pulse to restart ESP32 and capture setup() logs"
+                >
+                  <ArrowsClockwise size={12} className={isResetting ? 'animate-spin' : ''} />
+                  <span>{isResetting ? 'Resetting...' : 'Reset Board'}</span>
+                </button>
+              )}
+
               {/* Clear */}
               <button
                 type="button"
@@ -985,8 +1056,17 @@ void loop() {
             className="rounded-xl border border-neutral-300 dark:border-neutral-800 bg-[#090909] p-3 text-xs font-mono text-neutral-200 h-64 overflow-y-auto space-y-1"
           >
             {serialLogs.length === 0 ? (
-              <div className="text-neutral-500 text-xs py-10 text-center">
-                Serial monitor idle. Click &quot;Connect Serial Port&quot; to inspect real-time ESP32 Serial.println() logs.
+              <div className="text-neutral-500 text-xs py-10 text-center space-y-1.5">
+                <div>
+                  {serialConnected
+                    ? 'Serial monitor connected & listening.'
+                    : 'Serial monitor idle. Click "Connect Serial Port" to inspect real-time ESP32 Serial.println() logs.'}
+                </div>
+                {serialConnected && (
+                  <div className="text-[11px] text-neutral-400">
+                    If your ESP32 only prints during <code>setup()</code> on boot, click <strong>Reset Board</strong> above (or press the physical RST button on the board) to view boot output.
+                  </div>
+                )}
               </div>
             ) : (
               serialLogs.map((log) => (

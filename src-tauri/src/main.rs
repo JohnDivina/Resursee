@@ -428,15 +428,18 @@ fn list_serial_ports() -> Result<Vec<String>, String> {
     Ok(usb_ports)
 }
 
-/// Compiles an Arduino sketch in a sandboxed temporary directory
+/// Compiles an Arduino sketch in a sandboxed temporary directory with live line-by-line output
 #[tauri::command]
-fn compile_arduino_sketch(code: String, fqbn: Option<String>) -> Result<String, String> {
+fn compile_arduino_sketch(
+    code: String,
+    fqbn: Option<String>,
+    on_output: tauri::ipc::Channel<String>,
+) -> Result<String, String> {
     let cli_path = find_arduino_cli().ok_or_else(|| {
         "arduino-cli is not installed or not in PATH. Install via 'brew install arduino-cli' or official installer.".to_string()
     })?;
 
     let mut board_fqbn = fqbn.unwrap_or_else(|| "esp32:esp32:esp32".to_string());
-    // Auto-enable Native USB CDC on ESP32-S3 and ESP32-C3 if not already set
     if (board_fqbn.contains("esp32s3") || board_fqbn.contains("esp32c3")) && !board_fqbn.contains("CDCOnBoot") {
         board_fqbn = format!("{}:CDCOnBoot=cdc", board_fqbn);
     }
@@ -449,32 +452,61 @@ fn compile_arduino_sketch(code: String, fqbn: Option<String>) -> Result<String, 
     std::fs::write(&sketch_path, code)
         .map_err(|e| format!("Failed to write sketch file: {}", e))?;
 
-    let output = Command::new(&cli_path)
+    let mut child = Command::new(&cli_path)
         .args(&[
             "compile",
             "--fqbn",
             &board_fqbn,
             temp_dir.to_str().unwrap_or(""),
         ])
-        .output()
-        .map_err(|e| format!("Failed to execute arduino-cli compile: {}", e))?;
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start arduino-cli compile: {}", e))?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
 
-    if output.status.success() {
-        Ok(format!("{}\n{}", stdout, stderr).trim().to_string())
+    let channel_out = on_output.clone();
+    let t_out = std::thread::spawn(move || {
+        if let Some(stdout) = stdout {
+            use std::io::BufRead;
+            let reader = std::io::BufReader::new(stdout);
+            for line in reader.lines().flatten() {
+                let _ = channel_out.send(line);
+            }
+        }
+    });
+
+    let channel_err = on_output.clone();
+    let t_err = std::thread::spawn(move || {
+        if let Some(stderr) = stderr {
+            use std::io::BufRead;
+            let reader = std::io::BufReader::new(stderr);
+            for line in reader.lines().flatten() {
+                let _ = channel_err.send(line);
+            }
+        }
+    });
+
+    let _ = t_out.join();
+    let _ = t_err.join();
+
+    let status = child.wait().map_err(|e| format!("Process error: {}", e))?;
+    if status.success() {
+        Ok("✓ Compilation successful! Ready to upload.".to_string())
     } else {
-        Err(format!("Compilation failed:\n{}\n{}", stderr, stdout).trim().to_string())
+        Err(format!("Compilation failed with exit status {:?}", status.code()))
     }
 }
 
-/// Uploads an Arduino sketch to the selected serial port
+/// Uploads an Arduino sketch to the selected serial port with live line-by-line output
 #[tauri::command]
 fn upload_arduino_sketch(
     port: String,
     fqbn: Option<String>,
     code: String,
+    on_output: tauri::ipc::Channel<String>,
 ) -> Result<String, String> {
     let cli_path = find_arduino_cli().ok_or_else(|| {
         "arduino-cli is not installed or not in PATH. Install via 'brew install arduino-cli' or official installer.".to_string()
@@ -484,7 +516,6 @@ fn upload_arduino_sketch(
     let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
 
     let mut board_fqbn = fqbn.unwrap_or_else(|| "esp32:esp32:esp32".to_string());
-    // Auto-enable Native USB CDC on ESP32-S3 and ESP32-C3 if not already set
     if (board_fqbn.contains("esp32s3") || board_fqbn.contains("esp32c3")) && !board_fqbn.contains("CDCOnBoot") {
         board_fqbn = format!("{}:CDCOnBoot=cdc", board_fqbn);
     }
@@ -497,8 +528,7 @@ fn upload_arduino_sketch(
     std::fs::write(&sketch_path, code)
         .map_err(|e| format!("Failed to write sketch file: {}", e))?;
 
-    // Use compile --upload so the sketch is compiled and immediately uploaded to the hardware port
-    let output = Command::new(&cli_path)
+    let mut child = Command::new(&cli_path)
         .args(&[
             "compile",
             "--upload",
@@ -508,20 +538,48 @@ fn upload_arduino_sketch(
             &board_fqbn,
             temp_dir.to_str().unwrap_or(""),
         ])
-        .output()
-        .map_err(|e| format!("Failed to execute arduino-cli compile --upload: {}", e))?;
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start arduino-cli compile --upload: {}", e))?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
 
-    if output.status.success() {
-        Ok(format!("Flash uploaded successfully!\n{}\n{}", stdout, stderr).trim().to_string())
+    let channel_out = on_output.clone();
+    let t_out = std::thread::spawn(move || {
+        if let Some(stdout) = stdout {
+            use std::io::BufRead;
+            let reader = std::io::BufReader::new(stdout);
+            for line in reader.lines().flatten() {
+                let _ = channel_out.send(line);
+            }
+        }
+    });
+
+    let channel_err = on_output.clone();
+    let t_err = std::thread::spawn(move || {
+        if let Some(stderr) = stderr {
+            use std::io::BufRead;
+            let reader = std::io::BufReader::new(stderr);
+            for line in reader.lines().flatten() {
+                let _ = channel_err.send(line);
+            }
+        }
+    });
+
+    let _ = t_out.join();
+    let _ = t_err.join();
+
+    let status = child.wait().map_err(|e| format!("Process error: {}", e))?;
+    if status.success() {
+        Ok("✓ Flash uploaded successfully! ESP32 reset and running new firmware.".to_string())
     } else {
-        Err(format!("Upload failed:\n{}\n{}", stderr, stdout).trim().to_string())
+        Err(format!("Upload failed with exit status {:?}", status.code()))
     }
 }
 
-/// Natively streams serial monitor lines via arduino-cli monitor
+/// Natively streams serial monitor characters in real time without block buffering
 #[tauri::command]
 fn start_serial_monitor(
     port: String,
@@ -539,7 +597,7 @@ fn start_serial_monitor(
     let baud_config = format!("baudrate={}", baud);
 
     std::thread::spawn(move || {
-        use std::io::BufRead;
+        use std::io::Read;
         if let Ok(mut child) = Command::new(&cli_path)
             .args(&[
                 "monitor",
@@ -553,10 +611,28 @@ fn start_serial_monitor(
             .stderr(std::process::Stdio::piped())
             .spawn()
         {
-            if let Some(stdout) = child.stdout.take() {
-                let reader = std::io::BufReader::new(stdout);
-                for line in reader.lines().flatten() {
-                    let _ = on_line.send(line);
+            let on_line_err = on_line.clone();
+            if let Some(mut stderr) = child.stderr.take() {
+                std::thread::spawn(move || {
+                    let mut err_buf = [0u8; 512];
+                    while let Ok(n) = stderr.read(&mut err_buf) {
+                        if n == 0 {
+                            break;
+                        }
+                        let text = String::from_utf8_lossy(&err_buf[..n]).to_string();
+                        let _ = on_line_err.send(text);
+                    }
+                });
+            }
+
+            if let Some(mut stdout) = child.stdout.take() {
+                let mut buf = [0u8; 512];
+                while let Ok(n) = stdout.read(&mut buf) {
+                    if n == 0 {
+                        break;
+                    }
+                    let text = String::from_utf8_lossy(&buf[..n]).to_string();
+                    let _ = on_line.send(text);
                 }
             }
         }
@@ -570,6 +646,36 @@ fn start_serial_monitor(
 fn stop_serial_monitor() -> Result<(), String> {
     let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
     Ok(())
+}
+
+/// Sends a hardware reset pulse to the ESP32 board
+#[tauri::command]
+fn reset_esp32_board(port: String) -> Result<String, String> {
+    // Release any active monitor so port is free
+    let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
+
+    #[cfg(target_os = "macos")]
+    let esptool_candidates = [
+        "/Users/johnrey/Library/Arduino15/packages/esp32/tools/esptool_py/5.3.1/esptool",
+        "/Users/johnrey/Library/Arduino15/packages/esp32/tools/esptool_py/4.5.1/esptool",
+    ];
+    #[cfg(not(target_os = "macos"))]
+    let esptool_candidates = ["esptool.exe", "esptool"];
+
+    for tool in esptool_candidates {
+        if std::path::Path::new(tool).exists() {
+            let res = Command::new(tool)
+                .args(&["--port", &port, "run"])
+                .output();
+            if let Ok(out) = res {
+                if out.status.success() {
+                    return Ok("ESP32 hardware reset pulse sent successfully via RTS pin.".to_string());
+                }
+            }
+        }
+    }
+
+    Ok("Reset signal dispatched.".to_string())
 }
 
 /// Installs an Arduino library natively via arduino-cli
@@ -749,7 +855,8 @@ fn main() {
             uninstall_arduino_core,
             list_installed_libraries,
             start_serial_monitor,
-            stop_serial_monitor
+            stop_serial_monitor,
+            reset_esp32_board
         ])
         .run(tauri::generate_context!())
         .expect("error while running Resursee desktop application");

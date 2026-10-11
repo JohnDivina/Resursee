@@ -237,16 +237,23 @@ export async function tauriListSerialPorts(): Promise<string[]> {
 }
 
 /**
- * Compiles an Arduino sketch natively via arduino-cli.
+ * Compiles an Arduino sketch natively via arduino-cli with live line-by-line output.
  */
 export async function tauriCompileSketch(
   code: string,
-  fqbn = 'esp32:esp32:esp32'
+  fqbn = 'esp32:esp32:esp32',
+  onProgress?: (line: string) => void
 ): Promise<{ success: boolean; output: string }> {
   try {
+    const { Channel } = await import('@tauri-apps/api/core');
+    const channel = new Channel<string>();
+    if (onProgress) {
+      channel.onmessage = onProgress;
+    }
     const output = await safeTauriInvoke<string>('compile_arduino_sketch', {
       code,
       fqbn,
+      onOutput: channel,
     });
     return { success: true, output };
   } catch (err: any) {
@@ -258,18 +265,25 @@ export async function tauriCompileSketch(
 }
 
 /**
- * Uploads an Arduino sketch to the selected serial port via arduino-cli.
+ * Uploads an Arduino sketch to the selected serial port via arduino-cli with live line-by-line output.
  */
 export async function tauriUploadSketch(
   port: string,
   code: string,
-  fqbn = 'esp32:esp32:esp32'
+  fqbn = 'esp32:esp32:esp32',
+  onProgress?: (line: string) => void
 ): Promise<{ success: boolean; output: string }> {
   try {
+    const { Channel } = await import('@tauri-apps/api/core');
+    const channel = new Channel<string>();
+    if (onProgress) {
+      channel.onmessage = onProgress;
+    }
     const output = await safeTauriInvoke<string>('upload_arduino_sketch', {
       port,
       code,
       fqbn,
+      onOutput: channel,
     });
     return { success: true, output };
   } catch (err: any) {
@@ -423,6 +437,20 @@ export async function tauriStartSerialMonitor(
  */
 export async function tauriStopSerialMonitor(): Promise<void> {
   await safeTauriInvoke('stop_serial_monitor');
+}
+
+/**
+ * Sends a hardware reset pulse to the ESP32 board
+ */
+export async function tauriResetBoard(
+  port: string
+): Promise<{ success: boolean; output: string }> {
+  try {
+    const output = await safeTauriInvoke<string>('reset_esp32_board', { port });
+    return { success: true, output };
+  } catch (err: any) {
+    return { success: false, output: err?.message || String(err) };
+  }
 }
 
 
