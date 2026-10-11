@@ -440,6 +440,13 @@ export async function tauriStopSerialMonitor(): Promise<void> {
 }
 
 /**
+ * Sends a raw ASCII line directly to the running native serial monitor
+ */
+export async function tauriSendSerialInput(input: string): Promise<void> {
+  await safeTauriInvoke('send_serial_monitor_input', { input });
+}
+
+/**
  * Sends a hardware reset pulse to the ESP32 board
  */
 export async function tauriResetBoard(

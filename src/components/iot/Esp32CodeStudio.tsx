@@ -22,6 +22,11 @@ import {
   Broadcast,
   Package,
   MagnifyingGlass,
+  Sparkle,
+  PaperPlaneRight,
+  Robot,
+  Lightning,
+  Plus,
 } from '@phosphor-icons/react';
 import { isTauriDesktop } from '@/lib/envDetector';
 import {
@@ -32,8 +37,17 @@ import {
   tauriUploadSketch,
   tauriStartSerialMonitor,
   tauriStopSerialMonitor,
+  tauriSendSerialInput,
   tauriResetBoard,
 } from '@/lib/tauriBridge';
+import {
+  checkOllamaConnection,
+  startOllamaDaemon,
+  stopOllamaDaemon,
+  streamOllamaChat,
+  DEFAULT_OLLAMA_ENDPOINT,
+} from '@/lib/ollamaClient';
+import { OllamaModel, OllamaChatMessage } from '@/types/aiHub';
 import { generateArduinoSketch } from '@/lib/arduinoSketchGenerator';
 import { IoTDevice } from '@/types/iotCloud';
 import { getInstalledCoreIds } from '@/components/iot/BoardsManager';
@@ -200,6 +214,181 @@ export default function Esp32CodeStudio({
   const [serialLogs, setSerialLogs] = useState<Array<{ id: number; time: string; text: string }>>([]);
   const [serialInput, setSerialInput] = useState<string>('');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
+
+  // --- Local AI Assistant State ---
+  const [ollamaStatus, setOllamaStatus] = useState<'connected' | 'checking' | 'offline'>('checking');
+  const [installedModels, setInstalledModels] = useState<OllamaModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('qwen2.5-coder:7b');
+  const [isStartingOllama, setIsStartingOllama] = useState<boolean>(false);
+  const [isStoppingOllama, setIsStoppingOllama] = useState<boolean>(false);
+  const [aiCopilotOpen, setAiCopilotOpen] = useState<boolean>(false);
+  const [chatMessages, setChatMessages] = useState<OllamaChatMessage[]>([
+    {
+      role: 'assistant',
+      content: `👋 Hello! I am your local AI hardware & firmware assistant. I have direct context of this **${device.name}** board, its sensors, and the C++ sketch in the editor. Ask me to add sensors, implement relays, optimize loops, or fix compiler errors.`,
+    },
+  ]);
+  const [chatInput, setChatInput] = useState<string>('');
+  const [isStreamingAi, setIsStreamingAi] = useState<boolean>(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Probe Ollama connection
+  const probeOllama = async () => {
+    setOllamaStatus('checking');
+    try {
+      const res = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 2000);
+      if (res.status) {
+        setOllamaStatus('connected');
+        setInstalledModels(res.models || []);
+        if (res.models && res.models.length > 0) {
+          if (!selectedModel || !res.models.some((m) => m.name === selectedModel)) {
+            const preferred = res.models.find((m) => /coder|code|qwen/i.test(m.name));
+            setSelectedModel(preferred ? preferred.name : res.models[0].name);
+          }
+        }
+      } else {
+        setOllamaStatus('offline');
+      }
+    } catch {
+      setOllamaStatus('offline');
+    }
+  };
+
+  const handleStartOllama = async () => {
+    setIsStartingOllama(true);
+    try {
+      await startOllamaDaemon();
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        const check = await checkOllamaConnection(DEFAULT_OLLAMA_ENDPOINT, 800);
+        if (check.status || attempts > 10) {
+          clearInterval(interval);
+          setIsStartingOllama(false);
+          setOllamaStatus(check.status ? 'connected' : 'offline');
+          if (check.status) {
+            setInstalledModels(check.models || []);
+            if (check.models.length > 0) {
+              const preferred = check.models.find((m) => /coder|code|qwen/i.test(m.name));
+              setSelectedModel(preferred ? preferred.name : check.models[0].name);
+            }
+          }
+        }
+      }, 1000);
+    } catch {
+      setIsStartingOllama(false);
+      probeOllama();
+    }
+  };
+
+  const handleStopOllama = async () => {
+    setIsStoppingOllama(true);
+    try {
+      await stopOllamaDaemon();
+      setOllamaStatus('offline');
+    } catch {} finally {
+      setIsStoppingOllama(false);
+      setTimeout(probeOllama, 800);
+    }
+  };
+
+  useEffect(() => {
+    probeOllama();
+  }, []);
+
+  useEffect(() => {
+    if (chatBottomRef.current) {
+      chatBottomRef.current.scrollTop = chatBottomRef.current.scrollHeight;
+    }
+  }, [chatMessages, isStreamingAi]);
+
+  const handleSendAiMessage = async (overridePrompt?: string) => {
+    const text = (overridePrompt || chatInput).trim();
+    if (!text || isStreamingAi) return;
+
+    if (ollamaStatus !== 'connected') {
+      alert('Local Ollama daemon is currently offline. Click "Start Local AI" first in the toolbar.');
+      return;
+    }
+
+    const userMsg: OllamaChatMessage = { role: 'user', content: text };
+    const newChatHistory = [...chatMessages, userMsg];
+    setChatMessages(newChatHistory);
+    if (!overridePrompt) setChatInput('');
+    setIsStreamingAi(true);
+
+    const systemPrompt: OllamaChatMessage = {
+      role: 'system',
+      content: `You are an expert embedded systems and ESP32 C++/Arduino firmware developer assistant inside Resursee IoT Cloud.
+Context:
+- Target Microcontroller: ${device.deviceType} (${boardFqbn})
+- Target Device Name: ${device.name} (ID: ${device.id})
+- Ingest Endpoint: ${serverOrigin}/api/iot/ingest
+- Device Token: ${device.deviceToken}
+- Active Sketch in Editor:
+\`\`\`cpp
+${code}
+\`\`\`
+${consoleStatus === 'error' && consoleLogs ? `\nRecent Compiler Output / Errors:\n${consoleLogs}\n` : ''}
+
+Instructions:
+1. Provide concise, clean, working Arduino C++ code compatible with ESP32 Xtensa GCC.
+2. When proposing complete firmware or code blocks, wrap them in triple backticks with \`\`\`cpp.
+3. Keep explanation brief and developer-focused.`,
+    };
+
+    const messagesToSend = [systemPrompt, ...newChatHistory.slice(-8)];
+
+    let currentResponse = '';
+    const tempAssistantMsg: OllamaChatMessage = { role: 'assistant', content: '' };
+    setChatMessages([...newChatHistory, tempAssistantMsg]);
+
+    try {
+      await streamOllamaChat(
+        DEFAULT_OLLAMA_ENDPOINT,
+        {
+          model: selectedModel,
+          messages: messagesToSend,
+          temperature: 0.2,
+        },
+        (_fullText, newChunk) => {
+          currentResponse += newChunk;
+          setChatMessages((prev) => {
+            const updated = [...prev];
+            if (updated.length > 0) {
+              updated[updated.length - 1] = {
+                role: 'assistant',
+                content: currentResponse,
+              };
+            }
+            return updated;
+          });
+        }
+      );
+    } catch (err: any) {
+      setChatMessages((prev) => [
+        ...prev.slice(0, -1),
+        {
+          role: 'assistant',
+          content: `⚠️ Error from Local Ollama (${err?.message || err}). Ensure Ollama is running and model "${selectedModel}" is downloaded.`,
+        },
+      ]);
+    } finally {
+      setIsStreamingAi(false);
+    }
+  };
+
+  const extractCodeBlocks = (markdown: string): string[] => {
+    const regex = /```(?:cpp|c\+\+|c|arduino)?\s*([\s\S]*?)```/gi;
+    const blocks: string[] = [];
+    let match;
+    while ((match = regex.exec(markdown)) !== null) {
+      if (match[1].trim()) {
+        blocks.push(match[1].trim());
+      }
+    }
+    return blocks;
+  };
 
   // Auto-persist sketch code and configs whenever they change
   useEffect(() => {
@@ -762,21 +951,32 @@ void loop() {
 
   const handleSendSerialCommand = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!serialInput.trim() || !portRef.current || !portRef.current.writable) return;
+    const cmd = serialInput.trim();
+    if (!cmd) return;
 
+    const time = new Date().toLocaleTimeString();
+    setSerialLogs((prev) => [
+      ...prev.slice(-300),
+      { id: Date.now() + Math.random(), time, text: `> ${cmd}` },
+    ]);
+    setSerialInput('');
+
+    if (isDesktop) {
+      try {
+        await tauriSendSerialInput(cmd);
+      } catch (err: any) {
+        appendSerialLog(`✗ Error sending serial command: ${err?.message || err}`);
+      }
+      return;
+    }
+
+    if (!portRef.current || !portRef.current.writable) return;
     try {
       const textEncoder = new TextEncoderStream();
       textEncoder.readable.pipeTo(portRef.current.writable).catch(() => {});
       const writer = textEncoder.writable.getWriter();
-      await writer.write(serialInput + '\n');
+      await writer.write(cmd + '\n');
       writer.releaseLock();
-
-      const time = new Date().toLocaleTimeString();
-      setSerialLogs((prev) => [
-        ...prev.slice(-300),
-        { id: Date.now() + Math.random(), time, text: `> ${serialInput}` },
-      ]);
-      setSerialInput('');
     } catch (err) {
       console.warn('Failed to send serial data:', err);
     }
@@ -792,7 +992,7 @@ void loop() {
               ESP32 Code Studio &amp; Compiler
             </h2>
             {/* AGENTS.md Solid Grey Bubble without pastel wash or neon */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span
                 onClick={checkCli}
                 className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-medium text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition"
@@ -815,6 +1015,61 @@ void loop() {
                   <ArrowsClockwise size={12} className={isCheckingCli ? 'animate-spin' : ''} />
                 </button>
               )}
+
+              {/* Start/Stop Local AI Daemon */}
+              <button
+                type="button"
+                onClick={ollamaStatus === 'connected' ? handleStopOllama : handleStartOllama}
+                disabled={isStartingOllama || isStoppingOllama}
+                className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-medium text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition cursor-pointer disabled:opacity-50"
+                title={ollamaStatus === 'connected' ? 'Stop local Ollama background daemon' : 'Start local Ollama background daemon'}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    ollamaStatus === 'connected'
+                      ? 'bg-neutral-900 dark:bg-white'
+                      : isStartingOllama || isStoppingOllama || ollamaStatus === 'checking'
+                      ? 'bg-neutral-400 animate-pulse'
+                      : 'bg-neutral-400'
+                  }`}
+                />
+                <span>
+                  {isStartingOllama
+                    ? 'Starting AI...'
+                    : isStoppingOllama
+                    ? 'Stopping AI...'
+                    : ollamaStatus === 'connected'
+                    ? 'Stop Local AI'
+                    : 'Start Local AI'}
+                </span>
+              </button>
+
+              {/* Model Selector Dropdown */}
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="h-6 max-w-[150px] truncate rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 px-2 text-[11px] font-mono text-neutral-800 dark:text-neutral-200 outline-none cursor-pointer"
+                title="Select active local LLM model"
+              >
+                {installedModels.length > 0 ? (
+                  installedModels.map((m) => (
+                    <option key={m.name} value={m.name}>
+                      {m.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="qwen2.5-coder:7b">qwen2.5-coder:7b</option>
+                )}
+              </select>
+
+              <button
+                type="button"
+                onClick={probeOllama}
+                className="rounded-full p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                title="Refresh local Ollama models"
+              >
+                <ArrowsClockwise size={12} className={ollamaStatus === 'checking' ? 'animate-spin' : ''} />
+              </button>
             </div>
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 pt-0.5">
@@ -826,7 +1081,7 @@ void loop() {
           </p>
         </div>
 
-        {/* PRIMARY ACTIONS: VERIFY, UPLOAD, SERIAL, DOWNLOAD */}
+        {/* PRIMARY ACTIONS: VERIFY, UPLOAD, SERIAL, LOCAL AI COPILOT, DOWNLOAD */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Verify (Compile) */}
           <button
@@ -872,6 +1127,21 @@ void loop() {
           >
             <TerminalWindow size={13} weight="bold" />
             <span>Serial Monitor</span>
+          </button>
+
+          {/* Toggle Local AI Copilot */}
+          <button
+            type="button"
+            onClick={() => setAiCopilotOpen(!aiCopilotOpen)}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+              aiCopilotOpen
+                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                : 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+            }`}
+            title="Toggle Local AI Coding Copilot"
+          >
+            <Sparkle size={13} weight="bold" />
+            <span>Local AI Copilot</span>
           </button>
 
 
@@ -1033,99 +1303,308 @@ void loop() {
         </div>
       </div>
 
-      {/* CODE EDITOR CONTAINER */}
-      <div className="rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-[#0d0d0d] overflow-hidden text-neutral-200 font-mono text-xs shadow-sm">
-        {/* Editor Tab Bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800 bg-[#141414] text-[11px]">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-neutral-300">
-              {device.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_firmware.ino
-            </span>
-            <span className="text-neutral-500">· C++ / Wiring</span>
+      {/* EDITOR & LOCAL AI WORKSPACE (SPLIT LAYOUT) */}
+      <div className={`grid gap-4 items-start ${aiCopilotOpen ? 'grid-cols-1 xl:grid-cols-12' : 'grid-cols-1'}`}>
+        {/* Left Column: Code Editor */}
+        <div className={`rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-[#0d0d0d] overflow-hidden text-neutral-200 font-mono text-xs shadow-sm flex flex-col ${aiCopilotOpen ? 'xl:col-span-7 2xl:col-span-8' : 'w-full'}`}>
+          {/* Editor Tab Bar */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800 bg-[#141414] text-[11px]">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-neutral-300">
+                {device.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_firmware.ino
+              </span>
+              <span className="text-neutral-500">· C++ / Wiring</span>
+            </div>
+
+            <div className="flex items-center gap-3 text-neutral-400">
+              <span>{lineCount} lines</span>
+              <span>UTF-8</span>
+              <button
+                type="button"
+                onClick={() => handleTemplateChange(template)}
+                className="hover:text-white cursor-pointer"
+                title="Reset code to selected template"
+              >
+                Reset
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 text-neutral-400">
-            <span>{lineCount} lines</span>
-            <span>UTF-8</span>
-            <button
-              type="button"
-              onClick={() => handleTemplateChange(template)}
-              className="hover:text-white cursor-pointer"
-              title="Reset code to selected template"
-            >
-              Reset
-            </button>
+          {/* Editor Body: Line numbers + Monospace Textarea */}
+          <div className="flex max-h-[540px] min-h-[420px] overflow-hidden">
+            {/* Line Numbers */}
+            <div className="w-12 select-none py-3 pr-3 pl-2 text-right text-[11px] text-neutral-600 bg-[#111111] border-r border-neutral-800/80 overflow-hidden font-mono leading-relaxed">
+              {Array.from({ length: lineCount }).map((_, i) => (
+                <div key={i}>{i + 1}</div>
+              ))}
+            </div>
+
+            {/* Code Textarea */}
+            <textarea
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              spellCheck={false}
+              wrap="off"
+              onKeyDown={(e) => {
+                // Handle Tab key for clean 2-space indentation
+                if (e.key === 'Tab') {
+                  e.preventDefault();
+                  const target = e.currentTarget;
+                  const start = target.selectionStart;
+                  const end = target.selectionEnd;
+                  const newCode = code.substring(0, start) + '  ' + code.substring(end);
+                  setCode(newCode);
+                  setTimeout(() => {
+                    target.selectionStart = target.selectionEnd = start + 2;
+                  }, 0);
+                }
+              }}
+              className="flex-1 resize-none bg-transparent p-3 text-[12px] font-mono leading-relaxed text-neutral-200 outline-none overflow-auto border-none focus:ring-0 whitespace-pre"
+            />
           </div>
+
+          {/* Collapsible Console Drawer */}
+          {consoleOpen && (
+            <div className="border-t border-neutral-800 bg-[#080808]">
+              <div className="flex items-center justify-between px-4 py-1.5 border-b border-neutral-800 text-[11px] text-neutral-400">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-neutral-300">Terminal &amp; Compiler Output</span>
+                  {consoleStatus === 'success' && (
+                    <span className="text-neutral-300 font-bold">✓ Ready</span>
+                  )}
+                  {consoleStatus === 'error' && (
+                    <span className="text-neutral-400 font-bold">✗ Error</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {consoleStatus === 'error' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiCopilotOpen(true);
+                        handleSendAiMessage(
+                          `The sketch failed to compile with the following compiler error:\n\`\`\`\n${consoleLogs.slice(-1500)}\n\`\`\`\nPlease analyze this error, explain what caused it, and provide the complete fixed Arduino C++ code for my ${device.name}.`
+                        );
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-neutral-800 text-neutral-100 hover:bg-neutral-700 text-[10px] font-semibold border border-neutral-700 cursor-pointer"
+                      title="Send error log to Local AI for automatic debugging"
+                    >
+                      <Robot size={11} weight="bold" />
+                      <span>Fix with Local AI</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setConsoleLogs('')}
+                    className="hover:text-white cursor-pointer"
+                    title="Clear console"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConsoleOpen(false)}
+                    className="hover:text-white cursor-pointer"
+                    title="Close console"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              </div>
+              <pre ref={consoleOutputRef} className="p-3 text-[11px] text-neutral-300 font-mono max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                {consoleLogs || 'No compiler messages.'}
+              </pre>
+            </div>
+          )}
         </div>
 
-        {/* Editor Body: Line numbers + Monospace Textarea */}
-        <div className="flex max-h-[520px] min-h-[380px] overflow-hidden">
-          {/* Line Numbers */}
-          <div className="w-12 select-none py-3 pr-3 pl-2 text-right text-[11px] text-neutral-600 bg-[#111111] border-r border-neutral-800/80 overflow-hidden font-mono leading-relaxed">
-            {Array.from({ length: lineCount }).map((_, i) => (
-              <div key={i}>{i + 1}</div>
-            ))}
-          </div>
-
-          {/* Code Textarea */}
-          <textarea
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            spellCheck={false}
-            wrap="off"
-            onKeyDown={(e) => {
-              // Handle Tab key for clean 2-space indentation
-              if (e.key === 'Tab') {
-                e.preventDefault();
-                const target = e.currentTarget;
-                const start = target.selectionStart;
-                const end = target.selectionEnd;
-                const newCode = code.substring(0, start) + '  ' + code.substring(end);
-                setCode(newCode);
-                setTimeout(() => {
-                  target.selectionStart = target.selectionEnd = start + 2;
-                }, 0);
-              }
-            }}
-            className="flex-1 resize-none bg-transparent p-3 text-[12px] font-mono leading-relaxed text-neutral-200 outline-none overflow-auto border-none focus:ring-0 whitespace-pre"
-          />
-        </div>
-
-        {/* Collapsible Console Drawer */}
-        {consoleOpen && (
-          <div className="border-t border-neutral-800 bg-[#080808]">
-            <div className="flex items-center justify-between px-4 py-1.5 border-b border-neutral-800 text-[11px] text-neutral-400">
+        {/* Right Column: Local AI Copilot Chatbox */}
+        {aiCopilotOpen && (
+          <div className="xl:col-span-5 2xl:col-span-4 rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-[#0d0d0d] overflow-hidden text-neutral-200 flex flex-col shadow-sm max-h-[620px] min-h-[520px]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-3.5 py-2 border-b border-neutral-800 bg-[#141414] text-[11px]">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-neutral-300">Terminal &amp; Compiler Output</span>
-                {consoleStatus === 'success' && (
-                  <span className="text-neutral-300 font-bold">✓ Ready</span>
-                )}
-                {consoleStatus === 'error' && (
-                  <span className="text-neutral-400 font-bold">✗ Error</span>
-                )}
+                <Robot size={14} weight="bold" className="text-neutral-300" />
+                <span className="font-semibold text-neutral-200">Local AI Firmware Copilot</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-800 px-2 py-0.5 text-[9px] font-mono text-neutral-300 border border-neutral-700 truncate max-w-[110px]">
+                  <span className={`h-1.5 w-1.5 rounded-full ${ollamaStatus === 'connected' ? 'bg-neutral-300' : 'bg-neutral-600'}`} />
+                  {selectedModel.split(':')[0]}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setConsoleLogs('')}
-                  className="hover:text-white cursor-pointer"
-                  title="Clear console"
+                  onClick={() => setChatMessages([
+                    {
+                      role: 'assistant',
+                      content: `👋 Chat reset. Ask me anything about your **${device.name}** firmware, pinouts, or C++ code.`
+                    }
+                  ])}
+                  className="text-neutral-500 hover:text-neutral-300 cursor-pointer text-[10px]"
+                  title="Clear chat history"
                 >
                   Clear
                 </button>
                 <button
                   type="button"
-                  onClick={() => setConsoleOpen(false)}
-                  className="hover:text-white cursor-pointer"
-                  title="Close console"
+                  onClick={() => setAiCopilotOpen(false)}
+                  className="text-neutral-500 hover:text-white cursor-pointer"
+                  title="Close AI panel"
                 >
                   <X size={12} />
                 </button>
               </div>
             </div>
-            <pre ref={consoleOutputRef} className="p-3 text-[11px] text-neutral-300 font-mono max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
-              {consoleLogs || 'No compiler messages.'}
-            </pre>
+
+            {/* Quick Suggestion Chips */}
+            <div className="px-3 py-1.5 border-b border-neutral-800 bg-[#101010] flex items-center gap-1.5 overflow-x-auto text-[10px]">
+              <span className="text-neutral-500 shrink-0 font-medium">Quick:</span>
+              {[
+                { label: 'Deep Sleep', prompt: 'Add low power deep sleep logic to this ESP32 sketch between sensor reads.' },
+                { label: 'WiFi Reconnect', prompt: 'Add robust auto-reconnection handling for WiFi and HTTP telemetry.' },
+                { label: 'Optimize Memory', prompt: 'Review this sketch and optimize heap allocation and string handling.' },
+                { label: 'Explain Code', prompt: 'Explain how this sketch connects to Resursee IoT and sends telemetry.' }
+              ].map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  disabled={isStreamingAi}
+                  onClick={() => handleSendAiMessage(chip.prompt)}
+                  className="shrink-0 px-2 py-0.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 hover:border-neutral-700 transition cursor-pointer text-[10px]"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Chat Messages Stream */}
+            <div
+              ref={chatBottomRef}
+              className="flex-1 p-3 overflow-y-auto space-y-3 font-sans text-xs bg-[#0b0b0b]"
+            >
+              {chatMessages.map((msg, idx) => {
+                const isUser = msg.role === 'user';
+                const codeBlocks = !isUser ? extractCodeBlocks(msg.content) : [];
+
+                return (
+                  <div
+                    key={idx}
+                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] text-neutral-500">
+                      <span>{isUser ? 'You' : `Local AI (${selectedModel.split(':')[0]})`}</span>
+                    </div>
+
+                    <div
+                      className={`max-w-[95%] rounded-xl p-3 text-xs leading-relaxed ${
+                        isUser
+                          ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
+                          : 'bg-[#151515] border border-neutral-800 text-neutral-200'
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap font-sans text-[11px] leading-relaxed break-words">
+                        {msg.content}
+                      </div>
+
+                      {/* Code Block Action Triggers */}
+                      {codeBlocks.length > 0 && (
+                        <div className="mt-2.5 pt-2 border-t border-neutral-800 space-y-2">
+                          {codeBlocks.map((codeSnippet, bIdx) => (
+                            <div
+                              key={bIdx}
+                              className="rounded-lg bg-[#0d0d0d] border border-neutral-800 p-2 font-mono text-[10px]"
+                            >
+                              <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-neutral-800/80 text-[10px] text-neutral-400">
+                                <span>C++ / Arduino ({codeSnippet.split('\n').length} lines)</span>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCode(codeSnippet);
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-[9px] font-semibold transition cursor-pointer"
+                                    title="Replace existing sketch in editor with this snippet"
+                                  >
+                                    Replace in Editor
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCode((prev) => prev + '\n\n' + codeSnippet);
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[9px] font-semibold transition cursor-pointer"
+                                    title="Append this snippet to the bottom of editor"
+                                  >
+                                    Append
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(codeSnippet);
+                                    }}
+                                    className="p-1 hover:text-white cursor-pointer"
+                                    title="Copy code snippet"
+                                  >
+                                    <Copy size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                              <pre className="text-[10px] text-neutral-300 overflow-x-auto max-h-36 whitespace-pre">
+                                {codeSnippet.slice(0, 300)}{codeSnippet.length > 300 ? '...' : ''}
+                              </pre>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {isStreamingAi && (
+                <div className="flex items-center gap-2 text-[11px] text-neutral-400 pl-1 pt-1 font-sans">
+                  <ArrowsClockwise size={12} className="animate-spin text-neutral-300" />
+                  <span>Local AI is generating firmware code...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Input Footer */}
+            <div className="p-2.5 border-t border-neutral-800 bg-[#121212]">
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendAiMessage();
+                    }
+                  }}
+                  disabled={isStreamingAi}
+                  placeholder={
+                    ollamaStatus === 'connected'
+                      ? 'Ask AI to write code, add sensors, or edit sketch...'
+                      : 'Ollama is offline. Click "Start Local AI" above.'
+                  }
+                  className="w-full rounded-xl border border-neutral-700 bg-[#181818] pl-3 pr-9 py-2 text-xs text-neutral-100 placeholder-neutral-500 outline-none focus:border-neutral-500 transition font-sans"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSendAiMessage()}
+                  disabled={!chatInput.trim() || isStreamingAi || ollamaStatus !== 'connected'}
+                  className="absolute right-1.5 rounded-lg p-1.5 text-neutral-300 hover:text-white hover:bg-neutral-700 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Send message to Local AI"
+                >
+                  <PaperPlaneRight size={13} weight="bold" />
+                </button>
+              </div>
+              <div className="flex items-center justify-between pt-1 px-1 text-[9px] text-neutral-500 font-sans">
+                <span>Model: {selectedModel}</span>
+                <span>Context: Active Sketch &amp; {device.name}</span>
+              </div>
+            </div>
           </div>
         )}
       </div>

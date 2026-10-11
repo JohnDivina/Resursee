@@ -579,6 +579,8 @@ fn upload_arduino_sketch(
     }
 }
 
+static ACTIVE_MONITOR_STDIN: std::sync::Mutex<Option<std::process::ChildStdin>> = std::sync::Mutex::new(None);
+
 /// Natively streams serial monitor characters in real time without block buffering
 #[tauri::command]
 fn start_serial_monitor(
@@ -591,6 +593,10 @@ fn start_serial_monitor(
     })?;
 
     // Stop any existing monitor before starting a new one
+    {
+        let mut stdin_guard = ACTIVE_MONITOR_STDIN.lock().unwrap();
+        *stdin_guard = None;
+    }
     let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
 
     let baud = baudrate.unwrap_or(115200);
@@ -607,10 +613,17 @@ fn start_serial_monitor(
                 &baud_config,
                 "-q",
             ])
+            .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn()
         {
+            // Hold stdin handle in static Mutex so it is never closed/EOF'd
+            if let Some(stdin) = child.stdin.take() {
+                let mut stdin_guard = ACTIVE_MONITOR_STDIN.lock().unwrap();
+                *stdin_guard = Some(stdin);
+            }
+
             let on_line_err = on_line.clone();
             if let Some(mut stderr) = child.stderr.take() {
                 std::thread::spawn(move || {
@@ -644,14 +657,36 @@ fn start_serial_monitor(
 /// Stops the native serial monitor process
 #[tauri::command]
 fn stop_serial_monitor() -> Result<(), String> {
+    {
+        let mut stdin_guard = ACTIVE_MONITOR_STDIN.lock().unwrap();
+        *stdin_guard = None;
+    }
     let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
     Ok(())
+}
+
+/// Sends raw ASCII input directly to the running serial monitor's stdin
+#[tauri::command]
+fn send_serial_monitor_input(input: String) -> Result<(), String> {
+    let mut stdin_guard = ACTIVE_MONITOR_STDIN.lock().map_err(|e| e.to_string())?;
+    if let Some(ref mut stdin) = *stdin_guard {
+        use std::io::Write;
+        stdin.write_all(format!("{}\n", input).as_bytes()).map_err(|e| e.to_string())?;
+        stdin.flush().map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Serial monitor is not currently running".to_string())
+    }
 }
 
 /// Sends a hardware reset pulse to the ESP32 board
 #[tauri::command]
 fn reset_esp32_board(port: String) -> Result<String, String> {
     // Release any active monitor so port is free
+    {
+        let mut stdin_guard = ACTIVE_MONITOR_STDIN.lock().unwrap();
+        *stdin_guard = None;
+    }
     let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
 
     #[cfg(target_os = "macos")]
@@ -856,6 +891,7 @@ fn main() {
             list_installed_libraries,
             start_serial_monitor,
             stop_serial_monitor,
+            send_serial_monitor_input,
             reset_esp32_board
         ])
         .run(tauri::generate_context!())
