@@ -10,6 +10,7 @@ import {
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/theme/ThemeToggle';
+import LocalOnlyNotice from '@/components/desktop/LocalOnlyNotice';
 import {
   Microphone,
   UploadSimple,
@@ -715,7 +716,7 @@ export default function TranscriberPage() {
   );
 
   return (
-    <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden bg-neutral-100/60 text-neutral-900 antialiased dark:bg-[#0c0c0c]/80 dark:text-neutral-100 backdrop-blur-xs">
+    <div className="flex h-dvh w-full flex-col lg:flex-row overflow-hidden bg-neutral-100/60 text-neutral-900 antialiased dark:bg-[#0c0c0c]/80 dark:text-neutral-100 backdrop-blur-xs">
       {/* LEFT APP SIDEBAR */}
       <Sidebar open={openSidebar} setOpen={setOpenSidebar} animate={true}>
         <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 bg-white/90 dark:border-neutral-800 dark:bg-[#111111]/85 backdrop-blur-md">
@@ -2005,7 +2006,26 @@ export default function TranscriberPage() {
               </div>
             )}
           </div>
-      </div>
+        </div>
+
+      {/* Local-Only Notice for AI Transcriber */}
+      <LocalOnlyNotice
+        appName="AI Transcriber"
+        sessionKey="resursee_transcriber_local_notice_dismissed"
+        title="Local AI Engine Notice"
+        badgeText="Whisper & Ollama • Private Speech Pipeline"
+        description="In-browser audio transcription via WebGPU and cloud AI are available on the website preview. However, Local High-Precision Whisper models and local Ollama meeting summaries require Resursee running directly on your local device."
+        localFeatures={[
+          'Local Ollama Meeting Summaries & Action Items (localhost:11434)',
+          'High-Precision Local Whisper models without WebAssembly memory limits',
+          'Zero audio recording egress to external third-party cloud servers',
+        ]}
+        webFeatures={[
+          'In-browser microphone recording and audio playback',
+          'Client-side Whisper WebGPU/WASM speech transcription',
+          'Export to SubRip (.srt), VTT, PDF, and Markdown notes',
+        ]}
+      />
     </div>
   );
 }

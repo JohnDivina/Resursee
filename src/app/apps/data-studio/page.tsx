@@ -77,6 +77,7 @@ import {
 } from '@/lib/ollamaClient';
 import { isLocalEnvironment, isTauriDesktop } from '@/lib/envDetector';
 import { OllamaModel, OllamaChatMessage } from '@/types/aiHub';
+import LocalOnlyNotice from '@/components/desktop/LocalOnlyNotice';
 import { cn } from '@/lib/utils';
 
 // High-contrast, crystal-clear tooltip component for charts (replaces unreadable dark-on-dark default)
@@ -113,7 +114,7 @@ const StudioCustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-type ActiveViewTab = 'ide' | 'table' | 'visualizer' | 'export';
+type ActiveViewTab = 'ide' | 'table' | 'visualizer' | 'export' | 'guide';
 type OutputMode = 'console' | 'plot' | 'model' | 'table';
 
 interface PlotConfig {
@@ -744,6 +745,13 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
       onClick: () => setActiveTab('export'),
       badge: '.R',
     },
+    {
+      label: 'How to Use',
+      icon: <IconBulb size={18} stroke={2} className="shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      isActive: activeTab === 'guide',
+      onClick: () => setActiveTab('guide'),
+      badge: 'Guide',
+    },
   ];
 
   // Mobile Brand Header (Identical pattern to AI Studio)
@@ -791,7 +799,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
   }
 
   return (
-    <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden bg-[var(--color-paper)] text-[var(--color-ink)] font-sans antialiased">
+    <div className="flex h-dvh w-full flex-col lg:flex-row overflow-hidden bg-[var(--color-paper)] text-[var(--color-ink)] font-sans antialiased">
       {/* 🧭 Collapsible Sidebar */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate={true}>
         <SidebarBody brand={mobileBrand} className="justify-between gap-6 border-r border-neutral-200 bg-white/90 dark:border-neutral-800 dark:bg-[#111111]/85 backdrop-blur-md">
@@ -872,7 +880,10 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   <button
                     key={sample.name}
                     type="button"
-                    onClick={() => handleLoadSample(sample)}
+                    onClick={() => {
+                      handleLoadSample(sample);
+                      setSidebarOpen(false);
+                    }}
                     className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
                       currentDatasetName === sample.name
                         ? 'bg-neutral-200/70 dark:bg-neutral-800 font-bold text-neutral-900 dark:text-white'
@@ -980,14 +991,15 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
       {/* 🖥️ Main Studio Canvas */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-neutral-100/70 dark:bg-black">
         {/* Top Header Bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-neutral-900 dark:text-white">
-              Data Studio — Coding &amp; Statistical IDE
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] px-3 sm:px-6 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <h1 className="text-xs sm:text-base font-extrabold tracking-tight text-neutral-900 dark:text-white truncate">
+              <span className="inline sm:hidden">Data Studio</span>
+              <span className="hidden sm:inline">Data Studio — Coding &amp; Statistical IDE</span>
             </h1>
 
             {/* Active Data Frame Selector Dropdown */}
-            <div className="hidden sm:flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 px-2.5 py-1 text-xs font-mono text-neutral-700 dark:text-neutral-300">
+            <div className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 px-2 sm:px-2.5 py-1 text-xs font-mono text-neutral-700 dark:text-neutral-300 shrink-0">
               <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0" />
               <select
                 value={currentDatasetName}
@@ -995,7 +1007,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                   const selected = SAMPLE_DATASETS.find((s) => s.name === e.target.value);
                   if (selected) handleLoadSample(selected);
                 }}
-                className="bg-transparent font-bold text-neutral-900 dark:text-white focus:outline-none cursor-pointer text-xs font-mono"
+                className="bg-transparent font-bold text-neutral-900 dark:text-white focus:outline-none cursor-pointer text-xs font-mono max-w-[85px] sm:max-w-none"
               >
                 <optgroup label="Sample Datasets">
                   {SAMPLE_DATASETS.map((s) => (
@@ -1092,6 +1104,22 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
               <span className="hidden sm:inline">R Script</span>
             </button>
 
+            {/* How to Use Guide Button */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('guide')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer shadow-2xs shrink-0',
+                activeTab === 'guide'
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white'
+                  : 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+              )}
+              title="How to Use Data Studio Instructions"
+            >
+              <IconBulb size={15} />
+              <span className="hidden sm:inline">Guide</span>
+            </button>
+
             {/* Run Code Primary Button */}
             <button
               type="button"
@@ -1169,7 +1197,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     onKeyDown={handleKeyDown}
                     placeholder="// Write your data analysis script here... Press Cmd+Enter to run"
                     spellCheck={false}
-                    className="w-full h-full p-3.5 font-mono text-xs text-neutral-900 dark:text-neutral-100 bg-transparent resize-none focus:outline-hidden leading-relaxed"
+                    className="w-full h-full p-3.5 font-mono text-base sm:text-xs text-neutral-900 dark:text-neutral-100 bg-transparent resize-none focus:outline-hidden leading-relaxed"
                   />
                 </div>
               </div>
@@ -1178,7 +1206,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
               <div className="flex-1 min-h-[260px] rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3.5 py-2 bg-neutral-50 dark:bg-neutral-900">
                   {/* Output Tabs */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 flex-wrap">
                     <button
                       type="button"
                       onClick={() => setOutputMode('console')}
@@ -1319,7 +1347,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
             <div className="lg:col-span-5 flex flex-col min-h-[500px] lg:h-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs overflow-hidden">
               {/* Right Header Navigation Tabs */}
               <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3.5 py-2 bg-neutral-50 dark:bg-neutral-900">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   <button
                     type="button"
                     onClick={() => setRightPanelTab('assistant')}
@@ -1456,7 +1484,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                           handleSendChatMessage();
                         }
                       }}
-                      className="flex-1 h-9 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-hidden"
+                      className="flex-1 h-9 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 text-base sm:text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-hidden"
                     />
                     <button
                       type="button"
@@ -1556,7 +1584,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                       setTableSearch(e.target.value);
                       setTablePage(1);
                     }}
-                    className="h-8 w-full sm:w-56 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 pl-8 pr-3 text-xs text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
+                    className="h-8 w-full sm:w-56 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 pl-8 pr-3 text-base sm:text-xs text-neutral-900 dark:text-neutral-100 focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -1567,7 +1595,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
                     <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400">
                       <th className="px-4 py-2.5 w-12 text-center text-neutral-400">#</th>
                       {allColumnNames.map((col) => (
-                        <th key={col} className="px-4 py-2.5 font-bold">
+                        <th key={col} className="px-4 py-2.5 font-bold whitespace-nowrap">
                           {col}
                         </th>
                       ))}
@@ -1620,21 +1648,21 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
 
         {/* VIEW 3: DEDICATED VISUALIZER (ggplot2) */}
         {activeTab === 'visualizer' && (
-          <div className="flex-1 p-4 sm:p-6 overflow-hidden flex flex-col">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto flex flex-col">
             <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] shadow-xs flex-1 flex flex-col p-5">
-              <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4">
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-4 gap-2 flex-wrap">
                 <div>
                   <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
                     Grammar of Graphics Plot Studio
                   </h2>
-                  <span className="text-xs text-neutral-400 font-mono">
+                  <span className="text-xs text-neutral-400 font-mono break-all">
                     ggplot(df, aes(x = {activePlot?.x}, y = {activePlot?.y})) + geom_{activePlot?.type}()
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowRScriptModal(true)}
-                  className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
                 >
                   <IconCode size={14} />
                   <span>Get ggplot2 Code</span>
@@ -1665,7 +1693,7 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
         {/* VIEW 4: REPRODUCIBLE R EXPORT */}
         {activeTab === 'export' && (
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] flex flex-col justify-between">
                 <div>
                   <span className="text-xs font-mono font-bold text-neutral-400">.R</span>
@@ -1766,6 +1794,240 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
             </div>
           </div>
         )}
+
+        {/* VIEW 5: HOW TO USE DATA STUDIO (Interactive Guide & Docs) */}
+        {activeTab === 'guide' && (
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6 max-w-6xl mx-auto w-full">
+            {/* Guide Header Banner */}
+            <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 sm:p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-5 mb-5">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold">
+                      <IconBulb size={16} />
+                    </span>
+                    <h2 className="text-base sm:text-lg font-extrabold text-neutral-900 dark:text-white">
+                      How to Use Data Studio
+                    </h2>
+                    <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 px-2 py-0.5 font-mono text-[11px] font-bold">
+                      Documentation &amp; API Reference
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
+                    A zero-setup, in-browser statistical IDE combining R-style data analysis, Grammar of Graphics visualization, and local private AI assistance.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('ide')}
+                    className="flex items-center gap-1.5 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black px-3.5 py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <IconTerminal2 size={15} />
+                    <span>Open Code IDE</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('table')}
+                    className="flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 px-3.5 py-2 text-xs font-bold hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <IconTable size={15} />
+                    <span>View Data Table</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3-Step Quick Start Workflow */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-bold font-mono">
+                      1
+                    </span>
+                    <h3 className="text-xs font-bold text-neutral-900 dark:text-white">
+                      Load or Upload Data
+                    </h3>
+                  </div>
+                  <p className="text-[11.5px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                    Choose from built-in canonical datasets (<code className="font-mono text-[11px] bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded">iris</code>, <code className="font-mono text-[11px] bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded">mtcars</code>, <code className="font-mono text-[11px] bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded">penguins</code>, <code className="font-mono text-[11px] bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded">diamonds</code>) or drop your custom CSV, Excel, or JSON spreadsheet.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-bold font-mono">
+                      2
+                    </span>
+                    <h3 className="text-xs font-bold text-neutral-900 dark:text-white">
+                      Write Scripts &amp; Run Tests
+                    </h3>
+                  </div>
+                  <p className="text-[11.5px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                    Write lightweight analysis scripts using intuitive R-like functions (<code className="font-mono text-[11px] bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded">summary(df)</code>, <code className="font-mono text-[11px] bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded">fitLinearModel()</code>, <code className="font-mono text-[11px] bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded">plot()</code>) and execute instantly with <strong>Cmd+Enter</strong>.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-bold font-mono">
+                      3
+                    </span>
+                    <h3 className="text-xs font-bold text-neutral-900 dark:text-white">
+                      Export to Desktop RStudio
+                    </h3>
+                  </div>
+                  <p className="text-[11.5px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                    Data Studio automatically generates ready-to-run, reproducible <strong>.R</strong> scripts formatted with Tidyverse &amp; ggplot2 syntax, plus cleaned CSV and Excel files.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Script API Reference Table */}
+            <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                    Data Studio Script API Reference
+                  </h3>
+                  <p className="text-xs text-neutral-500 font-mono">
+                    Global functions and objects available in the execution environment
+                  </p>
+                </div>
+                <span className="text-xs font-mono text-neutral-400">
+                  JavaScript Runtime
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-mono border-collapse">
+                  <thead>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400">
+                      <th className="p-3 font-bold whitespace-nowrap">Function / Symbol</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Parameters</th>
+                      <th className="p-3 font-bold">Description</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Example</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 text-neutral-800 dark:text-neutral-200">
+                    <tr>
+                      <td className="p-3 font-bold text-neutral-900 dark:text-white"><code>df</code></td>
+                      <td className="p-3 text-neutral-500">—</td>
+                      <td className="p-3 font-sans">The active in-memory dataset array of records.</td>
+                      <td className="p-3"><code>df.length</code></td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-neutral-900 dark:text-white"><code>summary(data)</code></td>
+                      <td className="p-3 text-neutral-500"><code>data? = df</code></td>
+                      <td className="p-3 font-sans">Prints 5-number summary (Min, Q1, Median, Mean, Q3, Max, StdDev) for all numeric columns.</td>
+                      <td className="p-3"><code>summary(df);</code></td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-neutral-900 dark:text-white"><code>glimpse(data)</code></td>
+                      <td className="p-3 text-neutral-500"><code>data? = df</code></td>
+                      <td className="p-3 font-sans">Compact preview of all column names, types (numeric/categorical), and first sample values.</td>
+                      <td className="p-3"><code>glimpse(df);</code></td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-neutral-900 dark:text-white"><code>fitLinearModel(y, [x])</code></td>
+                      <td className="p-3 text-neutral-500"><code>y: string, x: string[]</code></td>
+                      <td className="p-3 font-sans">Fits an Ordinary Least Squares (OLS) multiple regression. Computes R², F-statistic, t-tests, and p-values.</td>
+                      <td className="p-3"><code>fitLinearModel(&apos;mpg&apos;, [&apos;wt&apos;, &apos;hp&apos;]);</code></td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-neutral-900 dark:text-white"><code>plot(config)</code></td>
+                      <td className="p-3 text-neutral-500"><code>config: PlotConfig</code></td>
+                      <td className="p-3 font-sans">Renders an interactive chart in the Plot canvas. Supported types: scatter, bar, line.</td>
+                      <td className="p-3"><code>plot(&#123; type: &apos;scatter&apos;, x: &apos;hp&apos;, y: &apos;mpg&apos; &#125;);</code></td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-neutral-900 dark:text-white"><code>cor(data)</code></td>
+                      <td className="p-3 text-neutral-500"><code>data? = df</code></td>
+                      <td className="p-3 font-sans">Calculates pairwise Pearson correlation coefficient matrix between numeric variables.</td>
+                      <td className="p-3"><code>cor(df);</code></td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-neutral-900 dark:text-white"><code>anova(valCol, groupCol)</code></td>
+                      <td className="p-3 text-neutral-500"><code>val: string, grp: string</code></td>
+                      <td className="p-3 font-sans">Performs One-Way Analysis of Variance across categorical groups.</td>
+                      <td className="p-3"><code>anova(&apos;sepal_length&apos;, &apos;species&apos;);</code></td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold text-neutral-900 dark:text-white"><code>ttest(colA, colB)</code></td>
+                      <td className="p-3 text-neutral-500"><code>colA: string, colB: string</code></td>
+                      <td className="p-3 font-sans">Performs Welch&apos;s two-sample independent t-test for difference in means.</td>
+                      <td className="p-3"><code>ttest(&apos;petal_length&apos;, &apos;sepal_length&apos;);</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Studio Workspaces Overview & Local AI Instructions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Studio Tabs & Features */}
+              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 space-y-3">
+                <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2.5">
+                  <IconTable size={16} />
+                  <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                    Core Studio Workspaces
+                  </h3>
+                </div>
+
+                <div className="space-y-3 text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                  <div>
+                    <strong className="text-neutral-900 dark:text-white font-mono text-[11px]">1. Code IDE:</strong>
+                    <p>Split-screen workspace with live script editor, execution output (Console / Plot / Model), and the Local LLM Copilot panel.</p>
+                  </div>
+                  <div>
+                    <strong className="text-neutral-900 dark:text-white font-mono text-[11px]">2. Data Table Browser:</strong>
+                    <p>Full spreadsheet inspection (<code className="font-mono text-[11px]">View(df)</code>) with live multi-column substring search and fast pagination.</p>
+                  </div>
+                  <div>
+                    <strong className="text-neutral-900 dark:text-white font-mono text-[11px]">3. Grammar of Graphics:</strong>
+                    <p>Dedicated visualizer for inspecting relationships, distributions, and scatter trends with custom high-contrast tooltips.</p>
+                  </div>
+                  <div>
+                    <strong className="text-neutral-900 dark:text-white font-mono text-[11px]">4. Reproducible R Export:</strong>
+                    <p>One-click download of companion <code className="font-mono text-[11px]">.R</code> scripts ready to execute in desktop RStudio, plus CSV and XLSX files.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Local LLM Copilot & Privacy */}
+              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-5 space-y-3">
+                <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2.5">
+                  <IconSparkles size={16} />
+                  <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                    Local AI Copilot &amp; Ollama
+                  </h3>
+                </div>
+
+                <div className="space-y-3 text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                  <p>
+                    The <strong>Local LLM Copilot</strong> has direct context of your active dataset, column names, and data types to help you write scripts, interpret regression p-values, or craft custom plots.
+                  </p>
+
+                  <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-3 space-y-2 font-mono text-[11px] text-neutral-800 dark:text-neutral-200">
+                    <div className="flex items-start gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
+                      <span><strong>Device Prerequisite:</strong> The AI copilot runs on your machine via Ollama (<code className="bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded">http://localhost:11434</code>). It is enabled in Resursee desktop or when running locally.</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
+                      <span><strong>Recommended Models:</strong> <code className="font-bold">qwen2.5-coder:7b</code>, <code className="font-bold">qwen2.5-coder:1.5b</code>, or <code className="font-bold">llama3.2:3b</code>.</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
+                      <span><strong>100% Privacy:</strong> Your data never touches any remote cloud servers or third-party AI APIs. Everything runs in your local hardware memory.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* R Script Modal */}
@@ -1826,91 +2088,32 @@ Always wrap executable code in \`\`\`javascript or \`\`\`js code blocks so the u
           </div>
         </div>
       )}
-      {/* Local-Only Feature Notice Modal (Similar to AI Studio) */}
-      <AnimatePresence>
-        {showLocalNoticeModal && (
-          <div
-            onClick={() => handleDismissNotice()}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-lg rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] p-6 shadow-2xl space-y-4 text-left"
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-xs">
-                    <IconShieldCheck size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-neutral-900 dark:text-white">
-                      100% Local &amp; Private Feature
-                    </h3>
-                    <p className="text-[11px] font-mono text-neutral-500">
-                      Zero cloud data transfer • Client-side compute
-                    </p>
-                  </div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleDismissNotice()}
-                  className="p-1 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
-                >
-                  <IconX size={18} />
-                </button>
-              </div>
-
-              {/* Explanatory Body */}
-              <div className="space-y-2.5 text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                <p>
-                  <strong>Data Studio</strong> is designed to run entirely on your physical hardware. Your datasets, spreadsheets, and scripts never touch an external cloud server.
-                </p>
-
-                <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-3.5 space-y-2 font-mono text-[11px] text-neutral-800 dark:text-neutral-200">
-                  <div className="flex items-start gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
-                    <span><strong>Browser Sandbox:</strong> All data parsing (PapaParse, SheetJS), computations (jStat), and charts (Recharts) run 100% in your browser memory.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
-                    <span><strong>Local LLM Copilot:</strong> Inference runs directly on your local GPU/CPU via Ollama (<code className="bg-neutral-200 dark:bg-neutral-800 px-1 py-0.5 rounded text-[11px]">http://localhost:11434</code>) with zero subscription fees or data egress.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white shrink-0 mt-1.5" />
-                    <span><strong>R Studio Bridge:</strong> Export reproducible R/Tidyverse scripts anytime to run directly on desktop RStudio.</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Checkbox: Don't show again */}
-              <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-800">
-                <label className="flex items-center gap-2 text-xs text-neutral-500 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={dontShowAgainNotice}
-                    onChange={(e) => setDontShowAgainNotice(e.target.checked)}
-                    className="rounded border-neutral-300 text-neutral-900 dark:text-white cursor-pointer"
-                  />
-                  <span>Don&apos;t show again this session</span>
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => handleDismissNotice()}
-                  className="rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-bold hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
-                >
-                  Got It, Start Coding
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Local-Only Feature Notice Modal */}
+      <LocalOnlyNotice
+        appName="Data Studio"
+        sessionKey="resursee_datastudio_local_notice_dismissed"
+        isOpen={showLocalNoticeModal}
+        onClose={() => setShowLocalNoticeModal(false)}
+        title="AI Features Require Local Device"
+        badgeText="Local Ollama Engine • 100% Private Offline Compute"
+        description="Data Studio's core in-memory tables, file parsing (CSV, Excel, JSON), statistical functions (summary, regression, ANOVA), and grammar-of-graphics charts run entirely inside your browser. However, AI features (Local LLM Copilot, automated code generation, and AI output explanations) require Resursee running on your local device with Ollama (http://localhost:11434)."
+        localFeatures={[
+          'Local LLM Copilot & AI Code Generation (via Ollama on localhost:11434)',
+          'One-click AI script explanations and model interpretations',
+          'Zero cloud data egress and zero recurring API fees',
+        ]}
+        webFeatures={[
+          'Interactive Code IDE with live JavaScript/R runtime',
+          'Data Table view with multi-column filtering and pagination',
+          'Grammar of Graphics (ggplot2) scatter, bar, and line plots',
+          'Reproducible RStudio (.R), CSV, and Excel exports',
+        ]}
+        secondaryAction={{
+          label: 'View Instructions & Guide',
+          onClick: () => setActiveTab('guide'),
+        }}
+      />
     </div>
   );
 }

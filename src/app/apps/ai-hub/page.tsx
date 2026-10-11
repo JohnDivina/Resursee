@@ -2734,7 +2734,7 @@ ${
   );
 
   return (
-    <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden bg-[var(--color-paper)] text-[var(--color-ink)] font-sans antialiased">
+    <div className="flex h-dvh w-full flex-col lg:flex-row overflow-hidden bg-[var(--color-paper)] text-[var(--color-ink)] font-sans antialiased">
       {/* 🧭 Aceternity Collapsible Sidebar */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate={true}>
         <SidebarBody brand={mobileBrand} className="justify-between gap-6">

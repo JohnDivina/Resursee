@@ -71,6 +71,8 @@ export const Sidebar = ({
   );
 };
 
+const MobileSidebarContext = createContext<boolean>(false);
+
 export const SidebarBody = ({
   brand,
   collapseDelay = 2000,
@@ -122,7 +124,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        'h-screen sticky top-0 px-3.5 py-4 hidden md:flex md:flex-col border-r border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)]/95 backdrop-blur-md w-[260px] shrink-0 z-30',
+        'h-screen sticky top-0 px-3.5 py-4 hidden lg:flex lg:flex-col border-r border-[var(--color-rule-subtle)] bg-[var(--color-paper-surface)]/95 backdrop-blur-md w-[260px] shrink-0 z-30',
         className
       )}
       animate={{
@@ -151,7 +153,7 @@ export const MobileSidebar = ({
   return (
     <div
       className={cn(
-        'h-14 px-4 flex flex-row md:hidden items-center justify-between border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] w-full sticky top-0 z-40'
+        'h-14 px-4 flex flex-row lg:hidden items-center justify-between border-b border-[var(--color-rule-subtle)] bg-[var(--color-paper-card)] w-full sticky top-0 z-40'
       )}
       {...props}
     >
@@ -196,7 +198,9 @@ export const MobileSidebar = ({
             >
               <X size={22} weight="bold" />
             </div>
-            {children}
+            <MobileSidebarContext.Provider value={true}>
+              {children}
+            </MobileSidebarContext.Provider>
           </motion.div>
         )}
       </AnimatePresence>
@@ -212,7 +216,15 @@ export const SidebarLink = ({
   link: Links;
   className?: string;
 }) => {
-  const { open, animate } = useSidebar();
+  const { open, setOpen, animate } = useSidebar();
+  const isMobileNav = useContext(MobileSidebarContext);
+
+  const handleClick = () => {
+    if (isMobileNav) {
+      setOpen(false);
+    }
+    link.onClick?.();
+  };
 
   const content = (
     <>
@@ -271,7 +283,7 @@ export const SidebarLink = ({
     return (
       <button
         type="button"
-        onClick={link.onClick}
+        onClick={handleClick}
         title={link.label}
         className={containerClasses}
         {...props}
@@ -284,6 +296,11 @@ export const SidebarLink = ({
   return (
     <a
       href={link.href || '#'}
+      onClick={() => {
+        if (isMobileNav) {
+          setOpen(false);
+        }
+      }}
       title={link.label}
       className={containerClasses}
       {...props}

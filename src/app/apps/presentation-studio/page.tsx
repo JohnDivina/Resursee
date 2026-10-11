@@ -19,6 +19,7 @@ import SlideRail from '@/components/presentation/SlideRail';
 import SlideCanvas from '@/components/presentation/SlideCanvas';
 import PresenterMode from '@/components/presentation/PresenterMode';
 import FloatingAIChat from '@/components/presentation/FloatingAIChat';
+import LocalOnlyNotice from '@/components/desktop/LocalOnlyNotice';
 import {
   Sidebar,
   SidebarBody,
@@ -583,7 +584,7 @@ export default function PresentationStudioPage() {
   ];
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-[#0c0c0e] font-sans antialiased text-neutral-900 dark:text-neutral-100">
+    <div className="flex h-dvh w-full flex-col lg:flex-row overflow-hidden bg-white dark:bg-[#0c0c0e] font-sans antialiased text-neutral-900 dark:text-neutral-100">
       {/* Hidden File Input for PPTX Upload */}
       <input
         type="file"
@@ -1649,6 +1650,25 @@ export default function PresentationStudioPage() {
           theme={currentTheme}
         />
       )}
+
+      {/* Local-Only Notice for Presentation Studio */}
+      <LocalOnlyNotice
+        appName="Presentation Studio"
+        sessionKey="resursee_presentation_studio_local_notice_dismissed"
+        title="AI Slide Features Require Local Device"
+        badgeText="Local Ollama Engine • 100% Private Offline Compute"
+        description="Presentation Studio's core deck editor, slide themes, PPTX importing, and PowerPoint exports work directly inside your browser. However, AI slide generation and the floating AI Copilot require Resursee running on your local device connected to Ollama (http://localhost:11434)."
+        localFeatures={[
+          'AI Slide Copilot & automatic deck generation (via Ollama on localhost:11434)',
+          'Natural language slide formatting and content restructuring',
+          'Zero data transfer of presentation content to remote clouds',
+        ]}
+        webFeatures={[
+          'Interactive slide canvas, presenter mode, and rich typography',
+          'Export to formatted Microsoft PowerPoint (.pptx) and JSON',
+          'Import existing .pptx, Markdown, and text outlines',
+        ]}
+      />
     </div>
   );
 }
