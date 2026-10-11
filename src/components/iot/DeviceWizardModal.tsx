@@ -15,11 +15,14 @@ import {
   WifiHigh,
 } from '@phosphor-icons/react';
 
+import { getInstalledCoreIds } from '@/components/iot/BoardsManager';
+
 interface DeviceWizardModalProps {
   isOpen: boolean;
   onClose: () => void;
   userId: string;
   onDeviceCreated: (newDevice: IoTDevice) => void;
+  onOpenBoardsManager?: () => void;
 }
 
 export default function DeviceWizardModal({
@@ -27,13 +30,31 @@ export default function DeviceWizardModal({
   onClose,
   userId,
   onDeviceCreated,
+  onOpenBoardsManager,
 }: DeviceWizardModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [deviceName, setDeviceName] = useState('');
   const [description, setDescription] = useState('');
-  const [deviceType, setDeviceType] = useState<'esp32' | 'esp8266'>('esp32');
+  const [deviceType, setDeviceType] = useState<'esp32' | 'esp8266' | 'arduino' | 'raspberry_pi'>('esp32');
   const [createdDevice, setCreatedDevice] = useState<IoTDevice | null>(null);
   const [copied, setCopied] = useState(false);
+  const [installedCoreIds, setInstalledCoreIds] = useState<string[]>(['esp32:esp32']);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      const ids = getInstalledCoreIds();
+      setInstalledCoreIds(ids);
+      if (ids.includes('esp32:esp32')) {
+        setDeviceType('esp32');
+      } else if (ids.includes('esp8266:esp8266')) {
+        setDeviceType('esp8266');
+      } else if (ids.includes('arduino:avr')) {
+        setDeviceType('arduino');
+      } else if (ids.includes('rp2040:rp2040')) {
+        setDeviceType('raspberry_pi');
+      }
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -124,28 +145,57 @@ export default function DeviceWizardModal({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[var(--color-ink)] uppercase tracking-wider font-mono">
-                Hardware Microcontroller
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-[var(--color-ink)] uppercase tracking-wider font-mono">
+                  Hardware Microcontroller
+                </label>
+                <span className="text-[11px] text-[var(--color-ink-muted)]">
+                  {installedCoreIds.length} Architecture{installedCoreIds.length === 1 ? '' : 's'} Installed
+                </span>
+              </div>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 {[
-                  { id: 'esp32', name: 'ESP32 (WiFi + BLE)', sub: 'Dual-core 240MHz' },
-                  { id: 'esp8266', name: 'ESP8266 / NodeMCU', sub: 'Single-core 80MHz' },
-                ].map((board) => (
-                  <div
-                    key={board.id}
-                    onClick={() => setDeviceType(board.id as typeof deviceType)}
-                    className={`flex flex-col p-4 rounded-[18px] border cursor-pointer transition-all ${
-                      deviceType === board.id
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]/30'
-                        : 'border-[var(--color-rule)] bg-[var(--color-paper-card)] hover:border-[var(--color-rule-strong)]'
-                    }`}
-                  >
-                    <span className="text-xs font-bold text-[var(--color-ink)]">{board.name}</span>
-                    <span className="text-[11px] text-[var(--color-ink-muted)] font-mono">{board.sub}</span>
-                  </div>
-                ))}
+                  { coreId: 'esp32:esp32', id: 'esp32', name: 'ESP32 (WiFi + BLE)', sub: 'Dual-core 240MHz · Espressif' },
+                  { coreId: 'esp8266:esp8266', id: 'esp8266', name: 'ESP8266 / NodeMCU', sub: 'Single-core 80MHz · Community' },
+                  { coreId: 'arduino:avr', id: 'arduino', name: 'Arduino Uno / Nano / Mega', sub: '8-bit AVR · ATmega328P' },
+                  { coreId: 'rp2040:rp2040', id: 'raspberry_pi', name: 'Raspberry Pi Pico W', sub: 'Dual Cortex-M0+ · RP2040' },
+                ]
+                  .filter((b) => installedCoreIds.includes(b.coreId))
+                  .map((board) => (
+                    <div
+                      key={board.id}
+                      onClick={() => setDeviceType(board.id as any)}
+                      className={`flex flex-col p-4 rounded-[18px] border cursor-pointer transition-all ${
+                        deviceType === board.id
+                          ? 'border-neutral-900 bg-neutral-100 dark:border-white dark:bg-neutral-800'
+                          : 'border-[var(--color-rule)] bg-[var(--color-paper-card)] hover:border-[var(--color-rule-strong)]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[var(--color-ink)]">{board.name}</span>
+                        <span className="rounded-full bg-neutral-200 dark:bg-neutral-700 px-2 py-0.5 text-[9px] font-mono font-medium text-neutral-800 dark:text-neutral-200">
+                          Installed
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[var(--color-ink-muted)] font-mono pt-1">{board.sub}</span>
+                    </div>
+                  ))}
               </div>
+              {onOpenBoardsManager && (
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenBoardsManager();
+                    }}
+                    className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>+ Install more microcontroller architectures in Boards Manager</span>
+                    <ArrowRight size={11} />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>

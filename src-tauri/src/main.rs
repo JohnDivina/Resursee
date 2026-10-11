@@ -523,6 +523,114 @@ fn search_arduino_libraries(query: String) -> Result<serde_json::Value, String> 
     }
 }
 
+/// Lists installed board cores via arduino-cli core list
+#[tauri::command]
+fn list_installed_cores() -> Result<serde_json::Value, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH.".to_string()
+    })?;
+
+    let output = Command::new(&cli_path)
+        .args(&["core", "list", "--format", "json"])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli core list: {}", e))?;
+
+    if output.status.success() {
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout)
+            .map_err(|e| format!("Failed to parse core list JSON: {}", e))?;
+        Ok(json)
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+/// Installs an Arduino board core package (e.g. "esp32:esp32", "esp8266:esp8266")
+#[tauri::command]
+fn install_arduino_core(core_name: String) -> Result<String, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH.".to_string()
+    })?;
+
+    let output = Command::new(&cli_path)
+        .args(&["core", "install", &core_name])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli core install: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        Ok(format!("{}\n{}", stdout, stderr).trim().to_string())
+    } else {
+        Err(format!("Core installation failed:\n{}\n{}", stderr, stdout).trim().to_string())
+    }
+}
+
+/// Uninstalls an Arduino board core package
+#[tauri::command]
+fn uninstall_arduino_core(core_name: String) -> Result<String, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH.".to_string()
+    })?;
+
+    let output = Command::new(&cli_path)
+        .args(&["core", "uninstall", &core_name])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli core uninstall: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        Ok(format!("{}\n{}", stdout, stderr).trim().to_string())
+    } else {
+        Err(format!("Core uninstallation failed:\n{}\n{}", stderr, stdout).trim().to_string())
+    }
+}
+
+/// Lists installed libraries via arduino-cli lib list
+#[tauri::command]
+fn list_installed_libraries() -> Result<serde_json::Value, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH.".to_string()
+    })?;
+
+    let output = Command::new(&cli_path)
+        .args(&["lib", "list", "--format", "json"])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli lib list: {}", e))?;
+
+    if output.status.success() {
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout)
+            .map_err(|e| format!("Failed to parse lib list JSON: {}", e))?;
+        Ok(json)
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+/// Uninstalls an Arduino library via arduino-cli lib uninstall
+#[tauri::command]
+fn uninstall_arduino_library(library_name: String) -> Result<String, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH.".to_string()
+    })?;
+
+    let output = Command::new(&cli_path)
+        .args(&["lib", "uninstall", &library_name])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli lib uninstall: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        Ok(format!("{}\n{}", stdout, stderr).trim().to_string())
+    } else {
+        Err(format!("Library uninstallation failed:\n{}\n{}", stderr, stdout).trim().to_string())
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -541,7 +649,12 @@ fn main() {
             compile_arduino_sketch,
             upload_arduino_sketch,
             install_arduino_library,
-            search_arduino_libraries
+            uninstall_arduino_library,
+            search_arduino_libraries,
+            list_installed_cores,
+            install_arduino_core,
+            uninstall_arduino_core,
+            list_installed_libraries
         ])
         .run(tauri::generate_context!())
         .expect("error while running Resursee desktop application");

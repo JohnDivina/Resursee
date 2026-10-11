@@ -30,267 +30,28 @@ import {
   tauriListSerialPorts,
   tauriCompileSketch,
   tauriUploadSketch,
-  tauriInstallLibrary,
 } from '@/lib/tauriBridge';
 import { generateArduinoSketch } from '@/lib/arduinoSketchGenerator';
 import { IoTDevice } from '@/types/iotCloud';
+import { getInstalledCoreIds } from '@/components/iot/BoardsManager';
 
 export interface Esp32CodeStudioProps {
   device: IoTDevice;
   serverOrigin?: string;
 }
 
-const SUPPORTED_BOARDS = [
-  { fqbn: 'esp32:esp32:esp32', label: 'ESP32 Dev Module (WROOM-32)' },
-  { fqbn: 'esp32:esp32:esp32s3', label: 'ESP32-S3 Dev Module' },
-  { fqbn: 'esp32:esp32:esp32c3', label: 'ESP32-C3 RISC-V Module' },
-  { fqbn: 'esp8266:esp8266:generic', label: 'ESP8266 Generic Module' },
+export const ALL_SUPPORTED_BOARDS = [
+  { fqbn: 'esp32:esp32:esp32', label: 'ESP32 Dev Module (WROOM-32)', coreId: 'esp32:esp32' },
+  { fqbn: 'esp32:esp32:esp32s3', label: 'ESP32-S3 Dev Module', coreId: 'esp32:esp32' },
+  { fqbn: 'esp32:esp32:esp32c3', label: 'ESP32-C3 RISC-V Module', coreId: 'esp32:esp32' },
+  { fqbn: 'esp8266:esp8266:generic', label: 'ESP8266 Generic Module', coreId: 'esp8266:esp8266' },
+  { fqbn: 'arduino:avr:uno', label: 'Arduino Uno (AVR)', coreId: 'arduino:avr' },
+  { fqbn: 'arduino:avr:nano', label: 'Arduino Nano (AVR)', coreId: 'arduino:avr' },
+  { fqbn: 'arduino:mbed_nano:nano33ble', label: 'Arduino Nano 33 BLE', coreId: 'arduino:mbed_nano' },
+  { fqbn: 'rp2040:rp2040:rpipico', label: 'Raspberry Pi Pico (RP2040)', coreId: 'rp2040:rp2040' },
 ];
 
 const BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
-
-export interface ArduinoLibraryMeta {
-  name: string;
-  author: string;
-  version: string;
-  category: 'Sensors' | 'Cloud & IoT' | 'Displays' | 'Actuators' | 'Utilities';
-  required?: boolean;
-  description: string;
-  builtin: boolean;
-  header: string;
-}
-
-const COMMON_LIBRARIES: ArduinoLibraryMeta[] = [
-  // --- CLOUD & NETWORKING ---
-  {
-    name: 'ArduinoJson',
-    author: 'Benoit Blanchon',
-    version: 'v7.0.4',
-    category: 'Cloud & IoT',
-    required: true,
-    description: 'Zero-copy JSON serializer and parser. Essential for IoT telemetry encoding and remote actuator commands.',
-    builtin: false,
-    header: '<ArduinoJson.h>',
-  },
-  {
-    name: 'WiFi (ESP32 Core)',
-    author: 'Espressif Systems',
-    version: 'Core Built-in',
-    category: 'Cloud & IoT',
-    required: true,
-    description: 'Onboard 802.11 b/g/n station and AP mode networking, DHCP client, and RSSI signal tracking.',
-    builtin: true,
-    header: '<WiFi.h>',
-  },
-  {
-    name: 'HTTPClient (ESP32 Core)',
-    author: 'Espressif Systems',
-    version: 'Core Built-in',
-    category: 'Cloud & IoT',
-    required: true,
-    description: 'Native HTTP/1.1 client for RESTful POST telemetry payloads to /api/iot/ingest and parsing responses.',
-    builtin: true,
-    header: '<HTTPClient.h>',
-  },
-  {
-    name: 'PubSubClient',
-    author: 'Nick O\'Leary',
-    version: 'v2.8.0',
-    category: 'Cloud & IoT',
-    required: false,
-    description: 'Lightweight publish/subscribe messaging client for MQTT brokers (Mosquitto, EMQX, AWS IoT Core).',
-    builtin: false,
-    header: '<PubSubClient.h>',
-  },
-  {
-    name: 'WebSockets',
-    author: 'Markus Sattler',
-    version: 'v2.4.1',
-    category: 'Cloud & IoT',
-    required: false,
-    description: 'Real-time bidirectional WebSocket client and server for ESP32 and ESP8266.',
-    builtin: false,
-    header: '<WebSocketsClient.h>',
-  },
-
-  // --- SENSORS & HARDWARE ---
-  {
-    name: 'DHT sensor library',
-    author: 'Adafruit',
-    version: 'v1.4.6',
-    category: 'Sensors',
-    required: false,
-    description: 'Reads digital signals and timing pulses from DHT11, DHT22, and AM2302 temperature and humidity probes.',
-    builtin: false,
-    header: '<DHT.h>',
-  },
-  {
-    name: 'Adafruit Unified Sensor',
-    author: 'Adafruit',
-    version: 'v1.1.14',
-    category: 'Sensors',
-    required: false,
-    description: 'Core hardware abstraction layer required as the underlying driver foundation for Adafruit sensors.',
-    builtin: false,
-    header: '<Adafruit_Sensor.h>',
-  },
-  {
-    name: 'Adafruit BME280 Library',
-    author: 'Adafruit',
-    version: 'v2.2.4',
-    category: 'Sensors',
-    required: false,
-    description: 'Precision barometric pressure, altitude, temperature, and relative humidity sensor over I2C/SPI.',
-    builtin: false,
-    header: '<Adafruit_BME280.h>',
-  },
-  {
-    name: 'DallasTemperature',
-    author: 'Miles Burton',
-    version: 'v3.9.0',
-    category: 'Sensors',
-    required: false,
-    description: 'Driver for DS18B20 1-Wire digital waterproof temperature probes with 9 to 12-bit resolution.',
-    builtin: false,
-    header: '<DallasTemperature.h>',
-  },
-  {
-    name: 'OneWire',
-    author: 'Paul Stoffregen',
-    version: 'v2.3.8',
-    category: 'Sensors',
-    required: false,
-    description: '1-Wire communication protocol bus driver required for DS18B20 and iButton sensors.',
-    builtin: false,
-    header: '<OneWire.h>',
-  },
-  {
-    name: 'BH1750',
-    author: 'Christopher Laws',
-    version: 'v1.3.0',
-    category: 'Sensors',
-    required: false,
-    description: 'Digital ambient light sensor measuring luminous flux directly in Lux over I2C.',
-    builtin: false,
-    header: '<BH1750.h>',
-  },
-  {
-    name: 'Adafruit MPU6050',
-    author: 'Adafruit',
-    version: 'v2.2.6',
-    category: 'Sensors',
-    required: false,
-    description: '6-Axis motion tracking sensor with 3-axis accelerometer and 3-axis gyroscope.',
-    builtin: false,
-    header: '<Adafruit_MPU6050.h>',
-  },
-
-  // --- DISPLAYS ---
-  {
-    name: 'Adafruit SSD1306',
-    author: 'Adafruit',
-    version: 'v2.5.13',
-    category: 'Displays',
-    required: false,
-    description: 'Driver for monochrome 0.96" and 1.3" 128x64 and 128x32 OLED screens via I2C and SPI.',
-    builtin: false,
-    header: '<Adafruit_SSD1306.h>',
-  },
-  {
-    name: 'Adafruit GFX Library',
-    author: 'Adafruit',
-    version: 'v1.11.11',
-    category: 'Displays',
-    required: false,
-    description: 'Core 2D graphics primitive engine (lines, circles, text, bitmapped sprites) for displays.',
-    builtin: false,
-    header: '<Adafruit_GFX.h>',
-  },
-  {
-    name: 'LiquidCrystal I2C',
-    author: 'Frank de Brabander',
-    version: 'v1.1.2',
-    category: 'Displays',
-    required: false,
-    description: 'Drives classic 16x2 and 20x4 alphanumeric character LCD displays using PCF8574 I2C backpacks.',
-    builtin: false,
-    header: '<LiquidCrystal_I2C.h>',
-  },
-
-  // --- ACTUATORS & MOTORS ---
-  {
-    name: 'ESP32Servo',
-    author: 'Kevin Harrington',
-    version: 'v3.0.6',
-    category: 'Actuators',
-    required: false,
-    description: 'Servo motor positioning using ESP32 LEDC hardware PWM timers (compatible with SG90, MG996R).',
-    builtin: false,
-    header: '<ESP32Servo.h>',
-  },
-  {
-    name: 'Adafruit NeoPixel',
-    author: 'Adafruit',
-    version: 'v1.12.3',
-    category: 'Actuators',
-    required: false,
-    description: 'Controls addressable single-wire RGB & RGBW LED strips (WS2812B, SK6812, NeoPixel rings).',
-    builtin: false,
-    header: '<Adafruit_NeoPixel.h>',
-  },
-  {
-    name: 'AccelStepper',
-    author: 'Mike McCauley',
-    version: 'v1.64.0',
-    category: 'Actuators',
-    required: false,
-    description: 'Non-blocking multi-stepper motor driver with acceleration, deceleration, and sub-step microstepping.',
-    builtin: false,
-    header: '<AccelStepper.h>',
-  },
-
-  // --- UTILITIES & SYSTEM ---
-  {
-    name: 'NTPClient',
-    author: 'Fabrice Weinberg',
-    version: 'v3.2.1',
-    category: 'Utilities',
-    required: false,
-    description: 'Syncs current Unix timestamp and real-time clock from internet NTP servers over WiFi UDP.',
-    builtin: false,
-    header: '<NTPClient.h>',
-  },
-  {
-    name: 'WiFiManager',
-    author: 'tzapu',
-    version: 'v2.0.17',
-    category: 'Utilities',
-    required: false,
-    description: 'Captive portal Web GUI for runtime WiFi credential configuration without hardcoding code.',
-    builtin: false,
-    header: '<WiFiManager.h>',
-  },
-  {
-    name: 'esp_sleep (ESP32 Core)',
-    author: 'Espressif Systems',
-    version: 'Core Built-in',
-    category: 'Utilities',
-    required: false,
-    description: 'Timer, touchpad, and external GPIO pin wakeups from low-power deep sleep states.',
-    builtin: true,
-    header: '<esp_sleep.h>',
-  },
-  {
-    name: 'Preferences (ESP32 Core)',
-    author: 'Espressif Systems',
-    version: 'Core Built-in',
-    category: 'Utilities',
-    required: false,
-    description: 'Key-value persistent storage saved in ESP32 Non-Volatile Storage (NVS) flash partition.',
-    builtin: true,
-    header: '<Preferences.h>',
-  },
-];
 
 export default function Esp32CodeStudio({
   device,
@@ -321,11 +82,24 @@ export default function Esp32CodeStudio({
   // --- Setup Modal State ---
   const [cliModalOpen, setCliModalOpen] = useState<boolean>(false);
 
-  // --- Libraries Manager State ---
-  const [librariesOpen, setLibrariesOpen] = useState<boolean>(false);
-  const [installingLib, setInstallingLib] = useState<string | null>(null);
-  const [libSearchQuery, setLibSearchQuery] = useState<string>('');
-  const [libCategory, setLibCategory] = useState<string>('All');
+  // --- Installed Boards & Cores State ---
+  const [installedCores, setInstalledCores] = useState<string[]>(getInstalledCoreIds);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setInstalledCores(getInstalledCoreIds());
+    };
+    window.addEventListener('resursee_boards_updated', handleUpdate);
+    return () => window.removeEventListener('resursee_boards_updated', handleUpdate);
+  }, []);
+
+  const availableBoards = ALL_SUPPORTED_BOARDS.filter((b) => installedCores.includes(b.coreId));
+
+  useEffect(() => {
+    if (availableBoards.length > 0 && !availableBoards.some((b) => b.fqbn === boardFqbn)) {
+      setBoardFqbn(availableBoards[0].fqbn);
+    }
+  }, [availableBoards, boardFqbn]);
 
   // --- Web Serial Monitor State ---
   const [serialOpen, setSerialOpen] = useState<boolean>(false);
@@ -637,28 +411,6 @@ void loop() {
     }
   };
 
-  // --- Library Install Handler ---
-  const handleInstallLib = async (libName: string) => {
-    if (!isDesktop || !cliDetected) {
-      setCliModalOpen(true);
-      return;
-    }
-
-    setInstallingLib(libName);
-    setConsoleOpen(true);
-    setConsoleStatus('idle');
-    setConsoleLogs((prev) => `${prev}\n[Library Manager] Running: arduino-cli lib install "${libName}"...\n`);
-
-    const result = await tauriInstallLibrary(libName);
-    setInstallingLib(null);
-    if (result.success) {
-      setConsoleStatus('success');
-      setConsoleLogs((prev) => `${prev}${result.output}\n✓ "${libName}" installed successfully!\n`);
-    } else {
-      setConsoleStatus('error');
-      setConsoleLogs((prev) => `${prev}✗ ${result.output}\n`);
-    }
-  };
 
   // --- Web Serial API Handlers ---
   const handleConnectSerial = async () => {
@@ -829,19 +581,6 @@ void loop() {
             <span>Serial Monitor</span>
           </button>
 
-          {/* Toggle Libraries Reference */}
-          <button
-            type="button"
-            onClick={() => setLibrariesOpen(!librariesOpen)}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
-              librariesOpen
-                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
-                : 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-            }`}
-          >
-            <Package size={13} weight="bold" />
-            <span>Libraries</span>
-          </button>
 
           {/* Copy */}
           <button
@@ -888,19 +627,28 @@ void loop() {
 
         {/* Target Board FQBN */}
         <div>
-          <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
-            Target Board Architecture
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400">
+              Target Board Architecture
+            </label>
+            <span className="text-[10px] text-neutral-400 font-mono">
+              {availableBoards.length} Installed
+            </span>
+          </div>
           <select
             value={boardFqbn}
             onChange={(e) => setBoardFqbn(e.target.value)}
             className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2.5 py-1.5 text-xs text-neutral-900 dark:text-white outline-none cursor-pointer"
           >
-            {SUPPORTED_BOARDS.map((b) => (
-              <option key={b.fqbn} value={b.fqbn}>
-                {b.label}
-              </option>
-            ))}
+            {availableBoards.length === 0 ? (
+              <option value="">No installed boards (Install via Boards Manager)</option>
+            ) : (
+              availableBoards.map((b) => (
+                <option key={b.fqbn} value={b.fqbn}>
+                  {b.label}
+                </option>
+              ))
+            )}
           </select>
         </div>
 
@@ -1071,174 +819,6 @@ void loop() {
           </div>
         )}
       </div>
-
-      {/* LIBRARIES REFERENCE & 1-CLICK INSTALLER DRAWER */}
-      {librariesOpen && (() => {
-        const categories = ['All', 'Sensors', 'Cloud & IoT', 'Displays', 'Actuators', 'Utilities'];
-        const filteredLibraries = COMMON_LIBRARIES.filter((lib) => {
-          const matchesCat = libCategory === 'All' || lib.category === libCategory;
-          const query = libSearchQuery.toLowerCase().trim();
-          const matchesSearch =
-            !query ||
-            lib.name.toLowerCase().includes(query) ||
-            lib.description.toLowerCase().includes(query) ||
-            lib.header.toLowerCase().includes(query) ||
-            lib.author.toLowerCase().includes(query);
-          return matchesCat && matchesSearch;
-        });
-
-        const externalFilteredNames = filteredLibraries
-          .filter((l) => !l.builtin)
-          .map((l) => `"${l.name}"`)
-          .join(' ');
-
-        return (
-          <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#111111] p-4 space-y-3.5">
-            {/* Header & Close */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Package size={16} weight="bold" className="text-neutral-800 dark:text-neutral-200" />
-                <h3 className="text-xs font-bold text-neutral-900 dark:text-white">
-                  Arduino Library Manager
-                </h3>
-                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
-                  {filteredLibraries.length} of {COMMON_LIBRARIES.length} Available
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {externalFilteredNames && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`arduino-cli lib install ${externalFilteredNames}`);
-                    }}
-                    className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
-                    title="Copy command to install all visible external libraries"
-                  >
-                    Copy Batch CLI Command
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setLibrariesOpen(false)}
-                  className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer p-1"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* Search Bar & Category Filters */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              {/* Search Input */}
-              <div className="relative flex-1">
-                <MagnifyingGlass size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input
-                  type="text"
-                  value={libSearchQuery}
-                  onChange={(e) => setLibSearchQuery(e.target.value)}
-                  placeholder="Search libraries (e.g. DHT, BME280, OLED, MQTT, Servo)..."
-                  className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-8 pr-8 py-1.5 text-xs text-neutral-900 dark:text-white outline-none placeholder:text-neutral-400"
-                />
-                {libSearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setLibSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 p-0.5"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-
-              {/* Category Pills */}
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 text-xs">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setLibCategory(cat)}
-                    className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition cursor-pointer whitespace-nowrap ${
-                      libCategory === cat
-                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
-                        : 'border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Library Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs max-h-[460px] overflow-y-auto pr-1">
-              {filteredLibraries.length === 0 ? (
-                <div className="col-span-full py-8 text-center text-xs text-neutral-500">
-                  No libraries found matching &quot;{libSearchQuery}&quot;. Try a different keyword or category.
-                </div>
-              ) : (
-                filteredLibraries.map((lib) => (
-                  <div
-                    key={lib.name}
-                    className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#161616] p-3 space-y-2 flex flex-col justify-between"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-1 flex-wrap">
-                        <span className="font-bold text-neutral-900 dark:text-white text-xs">{lib.name}</span>
-                        <div className="flex items-center gap-1">
-                          <span className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 text-[9px] font-mono text-neutral-600 dark:text-neutral-300">
-                            {lib.category}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono">
-                        <span>{lib.header}</span>
-                        <span>{lib.version}</span>
-                      </div>
-
-                      <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-relaxed pt-0.5">
-                        {lib.description}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-neutral-200/60 dark:border-neutral-800 text-[10px]">
-                      <span className="text-neutral-400 dark:text-neutral-500">By {lib.author}</span>
-
-                      {lib.builtin ? (
-                        <span className="rounded-md bg-neutral-200 dark:bg-neutral-800 px-2 py-0.5 text-[10px] font-mono font-medium text-neutral-700 dark:text-neutral-300">
-                          Built-in Core
-                        </span>
-                      ) : isDesktop && cliDetected ? (
-                        <button
-                          type="button"
-                          disabled={installingLib === lib.name}
-                          onClick={() => handleInstallLib(lib.name)}
-                          className="rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-2.5 py-1 text-[10px] font-semibold hover:opacity-90 cursor-pointer disabled:opacity-50"
-                        >
-                          {installingLib === lib.name ? 'Installing...' : '1-Click Install'}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(`arduino-cli lib install "${lib.name}"`);
-                          }}
-                          className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
-                          title="Copy install command"
-                        >
-                          Copy Install
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* WEB SERIAL MONITOR DRAWER */}
       {serialOpen && (

@@ -14,12 +14,19 @@ import DeviceWizardModal from '@/components/iot/DeviceWizardModal';
 import EnergyFlowTopology from '@/components/iot/EnergyFlowTopology';
 import SystemArchitectureView from '@/components/iot/SystemArchitectureView';
 import Esp32CodeStudio from '@/components/iot/Esp32CodeStudio';
-import { IoTDevice, IoTTelemetry, IoTActuator } from '@/types/iotCloud';
+import BoardsManager from '@/components/iot/BoardsManager';
+import LibraryManager from '@/components/iot/LibraryManager';
+import WidgetGrid from '@/components/iot/WidgetGrid';
+import { IoTDevice, IoTTelemetry, IoTActuator, IoTParameter, IoTWidget } from '@/types/iotCloud';
 import { UserSession } from '@/lib/sessionCrypto';
 import {
   getInitialDevices,
   getInitialActuators,
   generateSeedTelemetry,
+  loadDeviceParameters,
+  saveDeviceParameters,
+  loadDeviceWidgets,
+  saveDeviceWidgets,
 } from '@/lib/iotStore';
 import { generateArduinoSketch } from '@/lib/arduinoSketchGenerator';
 import {
@@ -46,9 +53,10 @@ import {
   PlugsConnected,
   SlidersHorizontal,
   Graph,
+  Package,
 } from '@phosphor-icons/react';
 
-type IoTTab = 'dashboard' | 'actuators' | 'devices' | 'firmware' | 'guide' | 'architecture';
+type IoTTab = 'dashboard' | 'actuators' | 'devices' | 'firmware' | 'guide' | 'architecture' | 'boards' | 'libraries';
 
 function getValidCachedSession(): UserSession | null {
   if (typeof window === 'undefined') return null;
@@ -99,7 +107,7 @@ export default function IoTCloudPage() {
         const tabParam = params.get('tab') as IoTTab | null;
         if (
           tabParam &&
-          ['dashboard', 'actuators', 'devices', 'firmware', 'guide', 'architecture'].includes(tabParam)
+          ['dashboard', 'actuators', 'devices', 'firmware', 'guide', 'architecture', 'boards', 'libraries'].includes(tabParam)
         ) {
           setActiveTab(tabParam);
         }
@@ -116,6 +124,8 @@ export default function IoTCloudPage() {
   const [selectedDevice, setSelectedDevice] = useState<IoTDevice | null>(null);
   const [telemetry, setTelemetry] = useState<IoTTelemetry[]>([]);
   const [actuators, setActuators] = useState<IoTActuator[]>([]);
+  const [parameters, setParameters] = useState<IoTParameter[]>([]);
+  const [widgets, setWidgets] = useState<IoTWidget[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [selectedChartMetric, setSelectedChartMetric] = useState<
     'temperature' | 'humidity' | 'soilMoisture' | 'light'
@@ -274,11 +284,21 @@ export default function IoTCloudPage() {
         const parsed = JSON.parse(savedTelem);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setTelemetry(parsed);
-          return;
+        } else {
+          setTelemetry([]);
         }
+      } else {
+        setTelemetry([]);
       }
-    } catch {}
-    setTelemetry([]);
+    } catch {
+      setTelemetry([]);
+    }
+
+    const loadedParams = loadDeviceParameters(deviceId);
+    setParameters(loadedParams);
+
+    const loadedWidgets = loadDeviceWidgets(uid, deviceId);
+    setWidgets(loadedWidgets);
   };
 
   // 🛰️ Real Hardware Telemetry Poller: Queries /api/iot/ingest for actual ESP32 packets
@@ -463,6 +483,98 @@ export default function IoTCloudPage() {
 
   const latestTelemetry = telemetry.length > 0 ? telemetry[telemetry.length - 1] : undefined;
 
+  // Keep parameters in sync with latest telemetry & actuator states
+  const activeParameters = React.useMemo(() => {
+    if (!latestTelemetry && actuators.length === 0) return parameters;
+    return parameters.map((p) => {
+      let val = p.currentValue;
+      if (p.variableName === 'temperature' && latestTelemetry?.temperature !== undefined) {
+        val = latestTelemetry.temperature;
+      } else if (p.variableName === 'humidity' && latestTelemetry?.humidity !== undefined) {
+        val = latestTelemetry.humidity;
+      } else if (p.variableName === 'soilMoisture' && latestTelemetry?.soilMoisture !== undefined) {
+        val = latestTelemetry.soilMoisture;
+      } else if (p.variableName === 'light' && latestTelemetry?.light !== undefined) {
+        val = latestTelemetry.light;
+      } else {
+        const matchingAct = actuators.find((a) => a.pin === p.pin || a.name.toLowerCase().includes(p.name.toLowerCase()));
+        if (matchingAct) {
+          val = matchingAct.state;
+        }
+      }
+      return val !== p.currentValue ? { ...p, currentValue: val, updatedAt: new Date().toISOString() } : p;
+    });
+  }, [parameters, latestTelemetry, actuators]);
+
+  const handleSaveWidget = (widget: IoTWidget) => {
+    if (!selectedDevice || !userId) return;
+    setWidgets((prev) => {
+      const existingIndex = prev.findIndex((w) => w.id === widget.id);
+      let next: IoTWidget[];
+      if (existingIndex >= 0) {
+        next = [...prev];
+        next[existingIndex] = widget;
+      } else {
+        next = [...prev, widget];
+      }
+      saveDeviceWidgets(selectedDevice.id, next);
+      return next;
+    });
+  };
+
+  const handleDeleteWidget = (widgetId: string) => {
+    if (!selectedDevice) return;
+    setWidgets((prev) => {
+      const next = prev.filter((w) => w.id !== widgetId);
+      saveDeviceWidgets(selectedDevice.id, next);
+      return next;
+    });
+  };
+
+  const handleAddParameter = (param: IoTParameter) => {
+    if (!selectedDevice) return;
+    setParameters((prev) => {
+      const existingIndex = prev.findIndex((p) => p.id === param.id);
+      let next: IoTParameter[];
+      if (existingIndex >= 0) {
+        next = [...prev];
+        next[existingIndex] = param;
+      } else {
+        next = [...prev, param];
+      }
+      saveDeviceParameters(selectedDevice.id, next);
+      return next;
+    });
+  };
+
+  const handleDeleteParameter = (paramId: string) => {
+    if (!selectedDevice) return;
+    setParameters((prev) => {
+      const next = prev.filter((p) => p.id !== paramId);
+      saveDeviceParameters(selectedDevice.id, next);
+      return next;
+    });
+    setWidgets((prev) => {
+      const next = prev.filter((w) => w.parameterId !== paramId);
+      saveDeviceWidgets(selectedDevice.id, next);
+      return next;
+    });
+  };
+
+  const handleToggleParameter = async (param: IoTParameter, newState: boolean) => {
+    if (!selectedDevice) return;
+    setParameters((prev) => {
+      const next = prev.map((p) => (p.id === param.id ? { ...p, currentValue: newState, updatedAt: new Date().toISOString() } : p));
+      saveDeviceParameters(selectedDevice.id, next);
+      return next;
+    });
+
+    const matchingAct = actuators.find((a) => a.pin === param.pin || a.name.toLowerCase().includes(param.name.toLowerCase()));
+    if (matchingAct) {
+      await handleToggleActuator(matchingAct, newState);
+    }
+  };
+
   const mobileBrand = (
     <div className="flex items-center gap-2.5">
       <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs">
@@ -582,6 +694,34 @@ export default function IoTCloudPage() {
                     />
                   ),
                   isActive: activeTab === 'firmware',
+                }}
+              />
+
+              <SidebarLink
+                link={{
+                  label: 'Boards Manager',
+                  onClick: () => switchTab('boards'),
+                  icon: (
+                    <Cpu
+                      size={18}
+                      weight={activeTab === 'boards' ? 'bold' : 'regular'}
+                    />
+                  ),
+                  isActive: activeTab === 'boards',
+                }}
+              />
+
+              <SidebarLink
+                link={{
+                  label: 'Library Manager',
+                  onClick: () => switchTab('libraries'),
+                  icon: (
+                    <Package
+                      size={18}
+                      weight={activeTab === 'libraries' ? 'bold' : 'regular'}
+                    />
+                  ),
+                  isActive: activeTab === 'libraries',
                 }}
               />
 
@@ -738,9 +878,13 @@ export default function IoTCloudPage() {
                     ? 'Device Fleet'
                     : activeTab === 'firmware'
                       ? 'Code Studio & Firmware'
-                      : activeTab === 'architecture'
-                        ? 'Architecture & Data Flow'
-                        : 'Hardware Guide'}
+                      : activeTab === 'boards'
+                        ? 'Boards Manager'
+                        : activeTab === 'libraries'
+                          ? 'Arduino Library Manager'
+                          : activeTab === 'architecture'
+                            ? 'Architecture & Data Flow'
+                            : 'Hardware Guide'}
             </span>
 
             {/* Quick Device Switcher */}
@@ -1002,49 +1146,18 @@ export default function IoTCloudPage() {
                       deviceName={selectedDevice.name}
                     />
 
-                    {/* 4-Column Live Sensor Gauges */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                      <SensorGauge
-                        title="Temperature"
-                        value={latestTelemetry?.temperature ?? null}
-                        unit="°C"
-                        minVal={0}
-                        maxVal={50}
-                        metricKey="temperature"
-                        color="currentColor"
-                        isOnline={selectedDevice.status === 'online' || isSimulating}
-                      />
-                      <SensorGauge
-                        title="Relative Humidity"
-                        value={latestTelemetry?.humidity ?? null}
-                        unit="%"
-                        minVal={0}
-                        maxVal={100}
-                        metricKey="humidity"
-                        color="currentColor"
-                        isOnline={selectedDevice.status === 'online' || isSimulating}
-                      />
-                      <SensorGauge
-                        title="Soil Moisture"
-                        value={latestTelemetry?.soilMoisture ?? null}
-                        unit="%"
-                        minVal={0}
-                        maxVal={100}
-                        metricKey="soilMoisture"
-                        color="currentColor"
-                        isOnline={selectedDevice.status === 'online' || isSimulating}
-                      />
-                      <SensorGauge
-                        title="Ambient Light"
-                        value={latestTelemetry?.light ?? null}
-                        unit="lux"
-                        minVal={0}
-                        maxVal={1200}
-                        metricKey="light"
-                        color="currentColor"
-                        isOnline={selectedDevice.status === 'online' || isSimulating}
-                      />
-                    </div>
+                    {/* Dynamic Cloud Display Holders / Widgets */}
+                    <WidgetGrid
+                      device={selectedDevice}
+                      widgets={widgets}
+                      parameters={activeParameters}
+                      telemetryHistory={telemetry}
+                      onSaveWidget={handleSaveWidget}
+                      onDeleteWidget={handleDeleteWidget}
+                      onAddParameter={handleAddParameter}
+                      onDeleteParameter={handleDeleteParameter}
+                      onToggleParameter={handleToggleParameter}
+                    />
 
                     {/* Live ESP32 ⇄ Internet ⇄ Cloud Flow Topology */}
                     <EnergyFlowTopology
@@ -1334,6 +1447,16 @@ export default function IoTCloudPage() {
                     deviceId={selectedDevice?.id}
                   />
                 )}
+
+                {/* TAB 7: BOARDS MANAGER */}
+                {activeTab === 'boards' && (
+                  <BoardsManager />
+                )}
+
+                {/* TAB 8: ARDUINO LIBRARY MANAGER */}
+                {activeTab === 'libraries' && (
+                  <LibraryManager />
+                )}
               </>
             )}
           </div>
@@ -1347,6 +1470,7 @@ export default function IoTCloudPage() {
           onClose={() => setWizardOpen(false)}
           userId={userId}
           onDeviceCreated={handleDeviceCreated}
+          onOpenBoardsManager={() => switchTab('boards')}
         />
       )}
     </div>

@@ -37,20 +37,34 @@ export interface IoTActuator {
   updatedAt: string;
 }
 
-export type WidgetType = 'gauge' | 'line_chart' | 'switch' | 'stat_card' | 'device_status';
+export type ParameterDataType = 'float' | 'integer' | 'boolean' | 'string';
+export type ParameterPermission = 'read_only' | 'read_write';
+
+export interface IoTParameter {
+  id: string;
+  deviceId: string;
+  name: string;
+  variableName: string;
+  dataType: ParameterDataType;
+  permission: ParameterPermission;
+  unit?: string;
+  pin?: number;
+  currentValue?: number | boolean | string;
+  updatedAt?: string;
+}
+
+export type WidgetType = 'gauge' | 'line_chart' | 'switch' | 'stat_card' | 'status_indicator';
 
 export interface IoTWidget {
   id: string;
   userId: string;
   deviceId: string;
+  parameterId: string;
   type: WidgetType;
   title: string;
-  metricKey: 'temperature' | 'humidity' | 'light' | 'soilMoisture' | 'battery';
-  unit: string;
+  unit?: string;
   minVal?: number;
   maxVal?: number;
-  color?: string;
-  actuatorId?: string;
   gridSpan?: number; // 1, 2, or 3 cols
 }
 

@@ -313,3 +313,90 @@ export async function tauriSearchLibraries(query: string): Promise<any[]> {
   }
 }
 
+/**
+ * Uninstalls an Arduino library via arduino-cli lib uninstall.
+ */
+export async function tauriUninstallLibrary(
+  libraryName: string
+): Promise<{ success: boolean; output: string }> {
+  try {
+    const output = await safeTauriInvoke<string>('uninstall_arduino_library', {
+      libraryName,
+    });
+    return { success: true, output };
+  } catch (err: any) {
+    return {
+      success: false,
+      output: err?.message || String(err),
+    };
+  }
+}
+
+/**
+ * Lists installed board cores via arduino-cli core list.
+ */
+export async function tauriListInstalledCores(): Promise<any[]> {
+  try {
+    const data = await safeTauriInvoke<any>('list_installed_cores');
+    if (Array.isArray(data)) return data;
+    if (data?.platforms && Array.isArray(data.platforms)) return data.platforms;
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Installs an Arduino board core package (e.g. "esp32:esp32").
+ */
+export async function tauriInstallCore(
+  coreName: string
+): Promise<{ success: boolean; output: string }> {
+  try {
+    const output = await safeTauriInvoke<string>('install_arduino_core', {
+      coreName,
+    });
+    return { success: true, output };
+  } catch (err: any) {
+    return {
+      success: false,
+      output: err?.message || String(err),
+    };
+  }
+}
+
+/**
+ * Uninstalls an Arduino board core package.
+ */
+export async function tauriUninstallCore(
+  coreName: string
+): Promise<{ success: boolean; output: string }> {
+  try {
+    const output = await safeTauriInvoke<string>('uninstall_arduino_core', {
+      coreName,
+    });
+    return { success: true, output };
+  } catch (err: any) {
+    return {
+      success: false,
+      output: err?.message || String(err),
+    };
+  }
+}
+
+/**
+ * Lists installed libraries via arduino-cli lib list.
+ */
+export async function tauriListInstalledLibraries(): Promise<any[]> {
+  try {
+    const data = await safeTauriInvoke<any>('list_installed_libraries');
+    if (Array.isArray(data)) return data;
+    if (data?.installed_libraries && Array.isArray(data.installed_libraries)) {
+      return data.installed_libraries;
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
