@@ -524,9 +524,9 @@ Context & Hardware Configuration:
 ${libContext}
 
 MANDATORY HARDWARE & LIBRARY RULES:
-1. TARGET NETWORKING HEADERS:
-${isEsp32 ? '   - Networking: MUST use #include <WiFi.h> and #include <HTTPClient.h>. NEVER use <ESP8266WiFi.h> or <Ethernet.h>.' : ''}
-${isEsp8266 ? '   - Networking: MUST use #include <ESP8266WiFi.h> and #include <ESP8266HTTPClient.h>. NEVER use <WiFi.h>.' : ''}
+1. TARGET NETWORKING HEADERS & CLIENTS:
+${isEsp32 ? '   - Networking: MUST use #include <WiFi.h> and #include <HTTPClient.h>. NEVER use <ESP8266WiFi.h> or <Ethernet.h>.\n   - Client Instantiation: "Client" is an abstract class in C++. NEVER write "Client client = server.available();". ALWAYS use the concrete class "WiFiClient client = server.available();" and "WiFiServer server(80);".' : ''}
+${isEsp8266 ? '   - Networking: MUST use #include <ESP8266WiFi.h> and #include <ESP8266HTTPClient.h>. NEVER use <WiFi.h>.\n   - Client Instantiation: ALWAYS use "WiFiClient client = server.available();".' : ''}
 ${isS3 ? '   - USB CDC Serial: Initialize Serial with Serial.begin(115200); unsigned long _s=millis(); while(!Serial && millis()-_s<3000);' : ''}
 2. ARDUINOJSON VERSION 7 STRICT SYNTAX:
    - ArduinoJson 7.x is installed. StaticJsonDocument and DynamicJsonDocument were REMOVED in v7 and will fail compilation.
