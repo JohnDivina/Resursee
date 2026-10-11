@@ -54,6 +54,8 @@ import {
   SlidersHorizontal,
   Graph,
   Package,
+  TerminalWindow,
+  Desktop,
 } from '@phosphor-icons/react';
 
 type IoTTab = 'dashboard' | 'actuators' | 'devices' | 'firmware' | 'guide' | 'architecture' | 'boards' | 'libraries';
@@ -86,6 +88,15 @@ export default function IoTCloudPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [copiedSketch, setCopiedSketch] = useState(false);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
+
+  const copyText = (text: string, id: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedCmd(id);
+      setTimeout(() => setCopiedCmd(null), 2000);
+    }
+  };
 
   // Switch tab with URL state synchronizer
   const switchTab = (tab: IoTTab) => {
@@ -1377,8 +1388,202 @@ export default function IoTCloudPage() {
                   <div className="space-y-6">
                     <div>
                       <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                        ESP32 Pinout &amp; Circuit Wiring Reference
+                        ESP32 Developer &amp; Hardware Guide
                       </h2>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        Everything you need to compile, flash, wire sensors, and pair microcontrollers with Resursee IoT Cloud.
+                      </p>
+                    </div>
+
+                    {/* FEATURED: Desktop Compiler & "arduino-cli not found" Guide */}
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-[#121212] space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900">
+                            <TerminalWindow size={20} weight="bold" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                                Desktop In-App Compiler &amp; &quot;arduino-cli not found&quot; Explained
+                              </h3>
+                              <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+                                Toolchain Guide
+                              </span>
+                            </div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 pt-0.5">
+                              Understand how in-app compiling works and how to enable 1-click flashing directly inside Resursee Desktop.
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => switchTab('firmware')}
+                          className="flex items-center gap-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer self-start sm:self-auto"
+                        >
+                          <Code size={14} />
+                          <span>Open Code Studio</span>
+                        </button>
+                      </div>
+
+                      {/* Explanation Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#161616] p-4 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-white font-mono text-xs font-bold">
+                              1
+                            </span>
+                            <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
+                              What is <code className="font-mono">arduino-cli</code>?
+                            </h4>
+                          </div>
+                          <p className="text-[12px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                            <strong>arduino-cli</strong> is the official command-line compiler and flasher developed by Arduino. It contains the behind-the-scenes <strong>Xtensa GCC cross-compiler</strong> that converts your C++ sketch into a binary file (<code>.bin</code>) and writes it directly to your ESP32 chip over USB.
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#161616] p-4 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-white font-mono text-xs font-bold">
+                              2
+                            </span>
+                            <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
+                              Why does &quot;arduino-cli not found&quot; appear?
+                            </h4>
+                          </div>
+                          <p className="text-[12px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                            Resursee Desktop scanned your machine&apos;s system PATH, but <code>arduino-cli</code> wasn&apos;t detected yet (or the app was already open before you ran <code>brew install</code>). Once installed, click the badge in Code Studio or refresh to immediately connect the compiler.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Installation Steps */}
+                      <div className="space-y-3 pt-2">
+                        <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider font-mono">
+                          Quick 1-Minute Setup Instructions
+                        </h4>
+
+                        <div className="space-y-2.5">
+                          {/* Step 1: Install CLI */}
+                          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#161616] p-3.5 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                                Step 1: Install arduino-cli on your system
+                              </span>
+                              <span className="text-[10px] font-mono text-neutral-500">Terminal Command</span>
+                            </div>
+
+                            {/* macOS Homebrew */}
+                            <div className="flex items-center justify-between rounded-lg bg-neutral-950 p-2.5 font-mono text-xs text-neutral-200">
+                              <div className="flex items-center gap-2 overflow-x-auto">
+                                <span className="text-neutral-500">macOS:</span>
+                                <span className="text-white">brew install arduino-cli</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyText('brew install arduino-cli', 'brew')}
+                                className="ml-2 shrink-0 rounded px-2 py-0.5 text-[11px] font-medium bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700 cursor-pointer flex items-center gap-1"
+                              >
+                                {copiedCmd === 'brew' ? <Check size={12} weight="bold" /> : <Copy size={12} />}
+                                <span>{copiedCmd === 'brew' ? 'Copied' : 'Copy'}</span>
+                              </button>
+                            </div>
+
+                            {/* Windows winget */}
+                            <div className="flex items-center justify-between rounded-lg bg-neutral-950 p-2.5 font-mono text-xs text-neutral-200">
+                              <div className="flex items-center gap-2 overflow-x-auto">
+                                <span className="text-neutral-500">Windows:</span>
+                                <span className="text-white">winget install Arduino.ArduinoCLI</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyText('winget install Arduino.ArduinoCLI', 'winget')}
+                                className="ml-2 shrink-0 rounded px-2 py-0.5 text-[11px] font-medium bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700 cursor-pointer flex items-center gap-1"
+                              >
+                                {copiedCmd === 'winget' ? <Check size={12} weight="bold" /> : <Copy size={12} />}
+                                <span>{copiedCmd === 'winget' ? 'Copied' : 'Copy'}</span>
+                              </button>
+                            </div>
+
+                            {/* Linux */}
+                            <div className="flex items-center justify-between rounded-lg bg-neutral-950 p-2.5 font-mono text-xs text-neutral-200">
+                              <div className="flex items-center gap-2 overflow-x-auto">
+                                <span className="text-neutral-500">Linux:</span>
+                                <span className="text-white">curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyText('curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh', 'linux')}
+                                className="ml-2 shrink-0 rounded px-2 py-0.5 text-[11px] font-medium bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700 cursor-pointer flex items-center gap-1"
+                              >
+                                {copiedCmd === 'linux' ? <Check size={12} weight="bold" /> : <Copy size={12} />}
+                                <span>{copiedCmd === 'linux' ? 'Copied' : 'Copy'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Step 2: Install ESP32 Core */}
+                          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#161616] p-3.5 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                                Step 2: Install the ESP32 Core compiler package
+                              </span>
+                              <span className="text-[10px] font-mono text-neutral-500">One-Time Core Setup</span>
+                            </div>
+                            <div className="flex items-center justify-between rounded-lg bg-neutral-950 p-2.5 font-mono text-xs text-neutral-200">
+                              <div className="flex items-center gap-2 overflow-x-auto">
+                                <span className="text-neutral-500">$</span>
+                                <span className="text-white">arduino-cli core install esp32:esp32</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyText('arduino-cli core install esp32:esp32', 'core')}
+                                className="ml-2 shrink-0 rounded px-2 py-0.5 text-[11px] font-medium bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700 cursor-pointer flex items-center gap-1"
+                              >
+                                {copiedCmd === 'core' ? <Check size={12} weight="bold" /> : <Copy size={12} />}
+                                <span>{copiedCmd === 'core' ? 'Copied' : 'Copy'}</span>
+                              </button>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                              Tip: You can also install or remove cores anytime using the <strong>Boards Manager</strong> in the sidebar!
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Comparison of the two workflows */}
+                      <div className="pt-2">
+                        <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider font-mono mb-2">
+                          Two Flexible Flashing Workflows
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-1.5">
+                            <div className="flex items-center gap-2 font-bold text-neutral-900 dark:text-white">
+                              <Desktop size={15} />
+                              <span>Path A: Native In-App Compiling</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                              With <code>arduino-cli</code> installed, click <strong>Verify</strong> to build and <strong>Upload</strong> to flash your connected USB board directly inside Resursee. No other software required.
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-1.5">
+                            <div className="flex items-center gap-2 font-bold text-neutral-900 dark:text-white">
+                              <DownloadSimple size={15} />
+                              <span>Path B: Official Arduino IDE</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                              Prefer the standard Arduino IDE or VS Code PlatformIO? Click <strong>&quot;Download .ino&quot;</strong> in Code Studio to download the pre-configured sketch, open it in Arduino IDE, and click Upload.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                        ESP32 Pinout &amp; Circuit Wiring Reference
+                      </h3>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">
                         Schematics and library configurations for connecting sensors and relays to ESP32-WROOM-32.
                       </p>

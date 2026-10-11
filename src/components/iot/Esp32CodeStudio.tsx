@@ -118,26 +118,39 @@ export default function Esp32CodeStudio({
   // Line numbering
   const lineCount = Math.max(code.split('\n').length, 1);
 
-  // Detect environment on mount
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  const [isCheckingCli, setIsCheckingCli] = useState<boolean>(false);
 
+  // Dynamic CLI Detector
+  const checkCli = async () => {
     const desktop = isTauriDesktop();
     setIsDesktop(desktop);
+    if (!desktop) return;
+
+    setIsCheckingCli(true);
+    try {
+      const detected = await tauriCheckArduinoCli();
+      setCliDetected(detected);
+      if (detected) {
+        const ver = await tauriGetArduinoCliVersion();
+        setCliVersion(ver);
+        refreshSerialPorts();
+      }
+    } finally {
+      setIsCheckingCli(false);
+    }
+  };
+
+  // Detect environment on mount and re-check whenever window regains focus
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
     const hasSerial = typeof navigator !== 'undefined' && 'serial' in navigator;
     setSerialSupported(hasSerial);
 
-    if (desktop) {
-      tauriCheckArduinoCli().then(async (detected) => {
-        setCliDetected(detected);
-        if (detected) {
-          const ver = await tauriGetArduinoCliVersion();
-          setCliVersion(ver);
-          refreshSerialPorts();
-        }
-      });
-    }
+    checkCli();
+
+    window.addEventListener('focus', checkCli);
+    return () => window.removeEventListener('focus', checkCli);
   }, []);
 
   // Auto-scroll serial monitor
@@ -360,7 +373,17 @@ void loop() {
 
   // --- Compile / Verify ---
   const handleVerify = async () => {
-    if (!isDesktop || !cliDetected) {
+    let detected = cliDetected;
+    if (!detected && isDesktop) {
+      detected = await tauriCheckArduinoCli();
+      setCliDetected(detected);
+      if (detected) {
+        const ver = await tauriGetArduinoCliVersion();
+        setCliVersion(ver);
+      }
+    }
+
+    if (!isDesktop || !detected) {
       setCliModalOpen(true);
       return;
     }
@@ -383,7 +406,17 @@ void loop() {
 
   // --- Upload / Flash ---
   const handleUpload = async () => {
-    if (!isDesktop || !cliDetected) {
+    let detected = cliDetected;
+    if (!detected && isDesktop) {
+      detected = await tauriCheckArduinoCli();
+      setCliDetected(detected);
+      if (detected) {
+        const ver = await tauriGetArduinoCliVersion();
+        setCliVersion(ver);
+      }
+    }
+
+    if (!isDesktop || !detected) {
       setCliModalOpen(true);
       return;
     }
@@ -515,14 +548,30 @@ void loop() {
               ESP32 Code Studio &amp; Compiler
             </h2>
             {/* AGENTS.md Solid Grey Bubble without pastel wash or neon */}
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-medium text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
-              <span className={`h-1.5 w-1.5 rounded-full ${cliDetected ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'}`} />
-              {isDesktop && cliDetected
-                ? `Tauri Desktop Bridge · ${cliVersion ? cliVersion.split(' ')[2] || 'CLI Ready' : 'arduino-cli'}`
-                : isDesktop
-                ? 'Desktop Mode · arduino-cli not found'
-                : 'Web Code Studio · Arduino IDE / Web Serial'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span
+                onClick={checkCli}
+                className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-medium text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition"
+                title="Click to re-check arduino-cli detection"
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${cliDetected ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-400'}`} />
+                {isDesktop && cliDetected
+                  ? `Tauri Desktop Bridge · ${cliVersion ? cliVersion.split(' ')[2] || 'CLI Ready' : 'arduino-cli'}`
+                  : isDesktop
+                  ? isCheckingCli ? 'Checking arduino-cli...' : 'Desktop Mode · arduino-cli not found'
+                  : 'Web Code Studio · Arduino IDE / Web Serial'}
+              </span>
+              {isDesktop && (
+                <button
+                  type="button"
+                  onClick={checkCli}
+                  className="rounded-full p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                  title="Re-check for arduino-cli"
+                >
+                  <ArrowsClockwise size={12} className={isCheckingCli ? 'animate-spin' : ''} />
+                </button>
+              )}
+            </div>
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 pt-0.5">
             Targeting: <strong className="text-neutral-800 dark:text-neutral-200">{device.name}</strong> ({device.id})
