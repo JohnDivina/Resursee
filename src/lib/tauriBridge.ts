@@ -299,3 +299,17 @@ export async function tauriInstallLibrary(
   }
 }
 
+/**
+ * Searches the official Arduino library registry via arduino-cli lib search.
+ */
+export async function tauriSearchLibraries(query: string): Promise<any[]> {
+  try {
+    const data = await safeTauriInvoke<any>('search_arduino_libraries', { query });
+    if (Array.isArray(data)) return data;
+    if (data?.libraries && Array.isArray(data.libraries)) return data.libraries;
+    return [];
+  } catch {
+    return [];
+  }
+}
+

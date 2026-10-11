@@ -501,6 +501,28 @@ fn install_arduino_library(library_name: String) -> Result<String, String> {
     }
 }
 
+/// Searches the official Arduino library registry via arduino-cli lib search
+#[tauri::command]
+fn search_arduino_libraries(query: String) -> Result<serde_json::Value, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH.".to_string()
+    })?;
+
+    let output = Command::new(&cli_path)
+        .args(&["lib", "search", &query, "--format", "json"])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli lib search: {}", e))?;
+
+    if output.status.success() {
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout)
+            .map_err(|e| format!("Failed to parse library search JSON: {}", e))?;
+        Ok(json)
+    } else {
+        let err_msg = String::from_utf8_lossy(&output.stderr);
+        Err(format!("Search failed: {}", err_msg))
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -518,7 +540,8 @@ fn main() {
             list_serial_ports,
             compile_arduino_sketch,
             upload_arduino_sketch,
-            install_arduino_library
+            install_arduino_library,
+            search_arduino_libraries
         ])
         .run(tauri::generate_context!())
         .expect("error while running Resursee desktop application");
