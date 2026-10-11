@@ -13,6 +13,7 @@ import VirtualSimulator from '@/components/iot/VirtualSimulator';
 import DeviceWizardModal from '@/components/iot/DeviceWizardModal';
 import EnergyFlowTopology from '@/components/iot/EnergyFlowTopology';
 import SystemArchitectureView from '@/components/iot/SystemArchitectureView';
+import Esp32CodeStudio from '@/components/iot/Esp32CodeStudio';
 import { IoTDevice, IoTTelemetry, IoTActuator } from '@/types/iotCloud';
 import { UserSession } from '@/lib/sessionCrypto';
 import {
@@ -572,7 +573,7 @@ export default function IoTCloudPage() {
 
               <SidebarLink
                 link={{
-                  label: 'C++ Firmware',
+                  label: 'Code Studio & Firmware',
                   onClick: () => switchTab('firmware'),
                   icon: (
                     <Code
@@ -736,7 +737,7 @@ export default function IoTCloudPage() {
                   : activeTab === 'devices'
                     ? 'Device Fleet'
                     : activeTab === 'firmware'
-                      ? 'Arduino C++ Firmware'
+                      ? 'Code Studio & Firmware'
                       : activeTab === 'architecture'
                         ? 'Architecture & Data Flow'
                         : 'Hardware Guide'}
@@ -989,7 +990,7 @@ export default function IoTCloudPage() {
                           className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 cursor-pointer"
                         >
                           <Code size={15} />
-                          <span>Firmware</span>
+                          <span>Code Studio</span>
                         </button>
                       </div>
                     </div>
@@ -1231,48 +1232,31 @@ export default function IoTCloudPage() {
                   </div>
                 )}
 
-                {/* TAB 4: ARDUINO C++ FIRMWARE */}
-                {activeTab === 'firmware' && selectedDevice && (
-                  <div className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                          Arduino C++ Firmware · {selectedDevice.name}
-                        </h2>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          Pre-configured sketch ready to flash onto your ESP32 via Arduino IDE or PlatformIO.
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(generateArduinoSketch(selectedDevice));
-                            setCopiedSketch(true);
-                            setTimeout(() => setCopiedSketch(false), 2000);
-                          }}
-                          className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 cursor-pointer"
-                        >
-                          {copiedSketch ? <Check size={14} weight="bold" /> : <Copy size={14} />}
-                          <span>{copiedSketch ? 'Copied!' : 'Copy Sketch'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleDownloadSketch}
-                          className="flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition cursor-pointer"
-                        >
-                          <DownloadSimple size={14} weight="bold" />
-                          <span>Download .ino</span>
-                        </button>
-                      </div>
+                {/* TAB 4: ARDUINO C++ CODE STUDIO & FIRMWARE */}
+                {activeTab === 'firmware' && (
+                  selectedDevice ? (
+                    <Esp32CodeStudio
+                      device={selectedDevice}
+                      serverOrigin={typeof window !== 'undefined' ? window.location.origin : 'https://resursee.vercel.app'}
+                    />
+                  ) : (
+                    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121212] p-8 text-center space-y-3">
+                      <Cpu size={32} className="mx-auto text-neutral-400" />
+                      <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                        No ESP32 Device Selected
+                      </h3>
+                      <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+                        Select an existing device from the dropdown above or create a new ESP32 board in the Device Fleet tab.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('devices')}
+                        className="rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-semibold hover:opacity-90 cursor-pointer"
+                      >
+                        Open Device Fleet
+                      </button>
                     </div>
-
-                    <div className="rounded-2xl border border-neutral-300 dark:border-neutral-800 bg-[#0c0c0c] p-5 text-xs font-mono text-neutral-300 max-h-[560px] overflow-y-auto">
-                      <pre>{generateArduinoSketch(selectedDevice)}</pre>
-                    </div>
-                  </div>
+                  )
                 )}
 
                 {/* TAB 5: HARDWARE & WIRING GUIDE */}

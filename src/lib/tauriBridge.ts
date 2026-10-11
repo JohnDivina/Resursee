@@ -203,3 +203,80 @@ export async function openExternalUrl(url: string): Promise<void> {
   }
 }
 
+/**
+ * Checks if arduino-cli is installed and accessible on the host machine.
+ */
+export async function tauriCheckArduinoCli(): Promise<boolean> {
+  try {
+    return await safeTauriInvoke<boolean>('check_arduino_cli');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Gets the detected arduino-cli version string.
+ */
+export async function tauriGetArduinoCliVersion(): Promise<string | null> {
+  try {
+    return await safeTauriInvoke<string>('get_arduino_cli_version');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Lists connected serial ports and boards on the host system.
+ */
+export async function tauriListSerialPorts(): Promise<string[]> {
+  try {
+    return await safeTauriInvoke<string[]>('list_serial_ports');
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Compiles an Arduino sketch natively via arduino-cli.
+ */
+export async function tauriCompileSketch(
+  code: string,
+  fqbn = 'esp32:esp32:esp32'
+): Promise<{ success: boolean; output: string }> {
+  try {
+    const output = await safeTauriInvoke<string>('compile_arduino_sketch', {
+      code,
+      fqbn,
+    });
+    return { success: true, output };
+  } catch (err: any) {
+    return {
+      success: false,
+      output: err?.message || String(err),
+    };
+  }
+}
+
+/**
+ * Uploads an Arduino sketch to the selected serial port via arduino-cli.
+ */
+export async function tauriUploadSketch(
+  port: string,
+  code: string,
+  fqbn = 'esp32:esp32:esp32'
+): Promise<{ success: boolean; output: string }> {
+  try {
+    const output = await safeTauriInvoke<string>('upload_arduino_sketch', {
+      port,
+      code,
+      fqbn,
+    });
+    return { success: true, output };
+  } catch (err: any) {
+    return {
+      success: false,
+      output: err?.message || String(err),
+    };
+  }
+}
+

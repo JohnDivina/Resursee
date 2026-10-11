@@ -314,6 +314,171 @@ fn open_external_url(url: String) -> Result<bool, String> {
     Ok(true)
 }
 
+/// Helper to find arduino-cli on host system
+fn find_arduino_cli() -> Option<String> {
+    let candidate_paths = [
+        "arduino-cli",
+        "/opt/homebrew/bin/arduino-cli",
+        "/usr/local/bin/arduino-cli",
+        "/usr/bin/arduino-cli",
+        "C:\\Program Files\\Arduino CLI\\arduino-cli.exe",
+    ];
+
+    for path in candidate_paths {
+        if let Ok(output) = Command::new(path).arg("version").output() {
+            if output.status.success() {
+                return Some(path.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Checks whether arduino-cli is installed and accessible
+#[tauri::command]
+fn check_arduino_cli() -> Result<bool, String> {
+    Ok(find_arduino_cli().is_some())
+}
+
+/// Returns the detected arduino-cli version string
+#[tauri::command]
+fn get_arduino_cli_version() -> Result<String, String> {
+    match find_arduino_cli() {
+        Some(path) => {
+            let output = Command::new(&path)
+                .arg("version")
+                .output()
+                .map_err(|e| format!("Failed to run arduino-cli version: {}", e))?;
+            let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(stdout)
+        }
+        None => Err("arduino-cli is not installed or not found in system PATH".to_string()),
+    }
+}
+
+/// Lists detected serial ports and connected hardware boards
+#[tauri::command]
+fn list_serial_ports() -> Result<Vec<String>, String> {
+    let mut ports = Vec::new();
+
+    // 1. Try arduino-cli board list if available
+    if let Some(cli_path) = find_arduino_cli() {
+        if let Ok(output) = Command::new(&cli_path).args(&["board", "list"]).output() {
+            let text = String::from_utf8_lossy(&output.stdout);
+            for line in text.lines().skip(1) {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if let Some(port) = parts.first() {
+                    if !port.is_empty() && !ports.contains(&port.to_string()) {
+                        ports.push(port.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Fallback to scanning /dev on macOS / Linux
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        if let Ok(entries) = std::fs::read_dir("/dev") {
+            for entry in entries.flatten() {
+                if let Ok(name) = entry.file_name().into_string() {
+                    if name.starts_with("cu.usb")
+                        || name.starts_with("cu.wch")
+                        || name.starts_with("cu.SLAB")
+                        || name.starts_with("ttyUSB")
+                        || name.starts_with("ttyACM")
+                    {
+                        let full_path = format!("/dev/{}", name);
+                        if !ports.contains(&full_path) {
+                            ports.push(full_path);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(ports)
+}
+
+/// Compiles an Arduino sketch in a sandboxed temporary directory
+#[tauri::command]
+fn compile_arduino_sketch(code: String, fqbn: Option<String>) -> Result<String, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH. Install via 'brew install arduino-cli' or official installer.".to_string()
+    })?;
+
+    let board_fqbn = fqbn.unwrap_or_else(|| "esp32:esp32:esp32".to_string());
+    let temp_dir = std::env::temp_dir().join("resursee_esp32_sketch");
+    std::fs::create_dir_all(&temp_dir)
+        .map_err(|e| format!("Failed to create sketch directory: {}", e))?;
+
+    let sketch_path = temp_dir.join("resursee_esp32_sketch.ino");
+    std::fs::write(&sketch_path, code)
+        .map_err(|e| format!("Failed to write sketch file: {}", e))?;
+
+    let output = Command::new(&cli_path)
+        .args(&[
+            "compile",
+            "--fqbn",
+            &board_fqbn,
+            temp_dir.to_str().unwrap_or(""),
+        ])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli compile: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        Ok(format!("{}\n{}", stdout, stderr).trim().to_string())
+    } else {
+        Err(format!("Compilation failed:\n{}\n{}", stderr, stdout).trim().to_string())
+    }
+}
+
+/// Uploads an Arduino sketch to the selected serial port
+#[tauri::command]
+fn upload_arduino_sketch(
+    port: String,
+    fqbn: Option<String>,
+    code: String,
+) -> Result<String, String> {
+    let cli_path = find_arduino_cli().ok_or_else(|| {
+        "arduino-cli is not installed or not in PATH. Install via 'brew install arduino-cli' or official installer.".to_string()
+    })?;
+
+    let board_fqbn = fqbn.unwrap_or_else(|| "esp32:esp32:esp32".to_string());
+    let temp_dir = std::env::temp_dir().join("resursee_esp32_sketch");
+    std::fs::create_dir_all(&temp_dir)
+        .map_err(|e| format!("Failed to create sketch directory: {}", e))?;
+
+    let sketch_path = temp_dir.join("resursee_esp32_sketch.ino");
+    std::fs::write(&sketch_path, code)
+        .map_err(|e| format!("Failed to write sketch file: {}", e))?;
+
+    let output = Command::new(&cli_path)
+        .args(&[
+            "upload",
+            "-p",
+            &port,
+            "--fqbn",
+            &board_fqbn,
+            temp_dir.to_str().unwrap_or(""),
+        ])
+        .output()
+        .map_err(|e| format!("Failed to execute arduino-cli upload: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        Ok(format!("Flash uploaded successfully!\n{}\n{}", stdout, stderr).trim().to_string())
+    } else {
+        Err(format!("Upload failed:\n{}\n{}", stderr, stdout).trim().to_string())
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -325,7 +490,12 @@ fn main() {
             query_ollama_ps,
             stream_ollama_chat,
             ollama_proxy_request,
-            open_external_url
+            open_external_url,
+            check_arduino_cli,
+            get_arduino_cli_version,
+            list_serial_ports,
+            compile_arduino_sketch,
+            upload_arduino_sketch
         ])
         .run(tauri::generate_context!())
         .expect("error while running Resursee desktop application");
