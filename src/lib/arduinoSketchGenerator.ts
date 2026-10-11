@@ -113,7 +113,7 @@ void sendTelemetryAndSyncActuators() {
   int rssi = WiFi.RSSI();
 
   // 2. Build JSON Telemetry Payload
-  StaticJsonDocument<384> doc;
+  JsonDocument doc;
   doc["deviceToken"]   = DEVICE_TOKEN;
   doc["temperature"]   = simulatedTemp;
   doc["humidity"]      = simulatedHumidity;
@@ -133,7 +133,7 @@ void sendTelemetryAndSyncActuators() {
     Serial.printf("[Cloud] Success (HTTP %d)\\n", httpCode);
 
     // 3. Parse Server Response for Remote Actuator Commands
-    StaticJsonDocument<512> responseDoc;
+    JsonDocument responseDoc;
     DeserializationError error = deserializeJson(responseDoc, responseString);
 
     if (!error) {

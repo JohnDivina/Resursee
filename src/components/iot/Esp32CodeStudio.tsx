@@ -217,7 +217,7 @@ void loop() {
       http.addHeader("Content-Type", "application/json");
       http.addHeader("x-device-token", DEVICE_TOKEN);
 
-      StaticJsonDocument<256> doc;
+      JsonDocument doc;
       doc["deviceToken"] = DEVICE_TOKEN;
       doc["rssi"] = WiFi.RSSI();
       doc["ipAddress"] = WiFi.localIP().toString();
@@ -228,7 +228,7 @@ void loop() {
 
       if (code == 200) {
         String resp = http.getString();
-        StaticJsonDocument<256> rDoc;
+        JsonDocument rDoc;
         deserializeJson(rDoc, resp);
         if (rDoc.containsKey("actuatorStates")) {
           bool state = rDoc["actuatorStates"]["pin_2"] | false;
@@ -279,7 +279,7 @@ void setup() {
     // Read analog battery or temperature
     float simulatedBattery = 3.92; // e.g. read from voltage divider on GPIO 35
 
-    StaticJsonDocument<256> doc;
+    JsonDocument doc;
     doc["deviceToken"] = DEVICE_TOKEN;
     doc["battery"] = simulatedBattery;
     doc["rssi"] = WiFi.RSSI();
