@@ -594,7 +594,7 @@ fn start_serial_monitor(
     let _ = Command::new("pkill").args(&["-f", "arduino-cli monitor"]).output();
 
     let baud = baudrate.unwrap_or(115200);
-    let baud_config = format!("baudrate={}", baud);
+    let baud_config = format!("baudrate={},dtr=on,rts=off", baud);
 
     std::thread::spawn(move || {
         use std::io::Read;

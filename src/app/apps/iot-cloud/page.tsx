@@ -1357,8 +1357,8 @@ export default function IoTCloudPage() {
                 )}
 
                 {/* TAB 4: ARDUINO C++ CODE STUDIO & FIRMWARE */}
-                {activeTab === 'firmware' && (
-                  selectedDevice ? (
+                <div className={activeTab === 'firmware' ? 'block' : 'hidden'}>
+                  {selectedDevice ? (
                     <Esp32CodeStudio
                       device={selectedDevice}
                       serverOrigin={typeof window !== 'undefined' ? window.location.origin : 'https://resursee.vercel.app'}
@@ -1380,8 +1380,8 @@ export default function IoTCloudPage() {
                         Open Device Fleet
                       </button>
                     </div>
-                  )
-                )}
+                  )}
+                </div>
 
                 {/* TAB 5: HARDWARE & WIRING GUIDE */}
                 {activeTab === 'guide' && (

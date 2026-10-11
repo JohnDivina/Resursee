@@ -60,20 +60,94 @@ export default function Esp32CodeStudio({
   device,
   serverOrigin = 'https://resursee.vercel.app',
 }: Esp32CodeStudioProps) {
-  // --- Editor State ---
-  const [code, setCode] = useState<string>(() => generateArduinoSketch(device, serverOrigin));
-  const [template, setTemplate] = useState<'default' | 'minimal' | 'sleep' | 'diagnostic'>('default');
-  const [boardFqbn, setBoardFqbn] = useState<string>('esp32:esp32:esp32');
+  // --- Editor State with LocalStorage Persistence ---
+  const [code, setCode] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_state_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.code) return parsed.code;
+        }
+      } catch {}
+    }
+    return generateArduinoSketch(device, serverOrigin);
+  });
+  const [template, setTemplate] = useState<'default' | 'minimal' | 'sleep' | 'diagnostic'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_state_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.template) return parsed.template;
+        }
+      } catch {}
+    }
+    return 'default';
+  });
+  const [boardFqbn, setBoardFqbn] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_state_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.boardFqbn) return parsed.boardFqbn;
+        }
+        const globalFqbn = localStorage.getItem('resursee_firmware_last_fqbn');
+        if (globalFqbn) return globalFqbn;
+      } catch {}
+    }
+    return 'esp32:esp32:esp32';
+  });
   const [copied, setCopied] = useState<boolean>(false);
-  const [wifiSsid, setWifiSsid] = useState<string>('YOUR_WIFI_SSID');
-  const [wifiPassword, setWifiPassword] = useState<string>('YOUR_WIFI_PASSWORD');
+  const [wifiSsid, setWifiSsid] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_state_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.wifiSsid) return parsed.wifiSsid;
+        }
+        const globalSsid = localStorage.getItem('resursee_firmware_last_ssid');
+        if (globalSsid) return globalSsid;
+      } catch {}
+    }
+    return 'YOUR_WIFI_SSID';
+  });
+  const [wifiPassword, setWifiPassword] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_state_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.wifiPassword) return parsed.wifiPassword;
+        }
+        const globalPass = localStorage.getItem('resursee_firmware_last_password');
+        if (globalPass) return globalPass;
+      } catch {}
+    }
+    return 'YOUR_WIFI_PASSWORD';
+  });
 
   // --- Tauri Desktop & Arduino CLI State ---
   const [isDesktop, setIsDesktop] = useState<boolean>(false);
   const [cliDetected, setCliDetected] = useState<boolean | null>(null);
   const [cliVersion, setCliVersion] = useState<string | null>(null);
   const [availablePorts, setAvailablePorts] = useState<string[]>([]);
-  const [selectedPort, setSelectedPort] = useState<string>('');
+  const [selectedPort, setSelectedPort] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_state_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.selectedPort) return parsed.selectedPort;
+        }
+        const globalPort = localStorage.getItem('resursee_firmware_last_port');
+        if (globalPort) return globalPort;
+      } catch {}
+    }
+    return '';
+  });
   const [isCompiling, setIsCompiling] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
@@ -109,10 +183,69 @@ export default function Esp32CodeStudio({
   const [serialSupported, setSerialSupported] = useState<boolean>(false);
   const [serialConnected, setSerialConnected] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
-  const [baudRate, setBaudRate] = useState<number>(115200);
+  const [baudRate, setBaudRate] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_state_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.baudRate) return parsed.baudRate;
+        }
+        const globalBaud = localStorage.getItem('resursee_firmware_last_baud');
+        if (globalBaud) return Number(globalBaud);
+      } catch {}
+    }
+    return 115200;
+  });
   const [serialLogs, setSerialLogs] = useState<Array<{ id: number; time: string; text: string }>>([]);
   const [serialInput, setSerialInput] = useState<string>('');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
+
+  // Auto-persist sketch code and configs whenever they change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stateToSave = {
+        code,
+        template,
+        boardFqbn,
+        selectedPort,
+        baudRate,
+        wifiSsid,
+        wifiPassword,
+      };
+      localStorage.setItem(`resursee_firmware_state_${device.id}`, JSON.stringify(stateToSave));
+      if (selectedPort) localStorage.setItem('resursee_firmware_last_port', selectedPort);
+      if (boardFqbn) localStorage.setItem('resursee_firmware_last_fqbn', boardFqbn);
+      if (baudRate) localStorage.setItem('resursee_firmware_last_baud', String(baudRate));
+      if (wifiSsid && wifiSsid !== 'YOUR_WIFI_SSID') localStorage.setItem('resursee_firmware_last_ssid', wifiSsid);
+      if (wifiPassword && wifiPassword !== 'YOUR_WIFI_PASSWORD') localStorage.setItem('resursee_firmware_last_password', wifiPassword);
+    } catch {}
+  }, [code, template, boardFqbn, selectedPort, baudRate, wifiSsid, wifiPassword, device.id]);
+
+  // Handle device switching: load newly selected device's saved state
+  const lastDeviceIdRef = useRef<string>(device.id);
+  useEffect(() => {
+    if (lastDeviceIdRef.current !== device.id) {
+      lastDeviceIdRef.current = device.id;
+      try {
+        const raw = localStorage.getItem(`resursee_firmware_state_${device.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.code) setCode(parsed.code);
+          if (parsed.template) setTemplate(parsed.template);
+          if (parsed.boardFqbn) setBoardFqbn(parsed.boardFqbn);
+          if (parsed.selectedPort) setSelectedPort(parsed.selectedPort);
+          if (parsed.baudRate) setBaudRate(parsed.baudRate);
+          if (parsed.wifiSsid) setWifiSsid(parsed.wifiSsid);
+          if (parsed.wifiPassword) setWifiPassword(parsed.wifiPassword);
+          return;
+        }
+      } catch {}
+      setCode(generateArduinoSketch(device, serverOrigin));
+      setTemplate('default');
+    }
+  }, [device.id, serverOrigin]);
 
   // Web Serial refs
   const portRef = useRef<any>(null);
@@ -237,6 +370,7 @@ void loop() {
       String payload;
       serializeJson(doc, payload);
       int code = http.POST(payload);
+      Serial.printf("[Cloud] Telemetry POST %d | RSSI: %d dBm\\n", code, WiFi.RSSI());
 
       if (code == 200) {
         String resp = http.getString();
@@ -479,6 +613,7 @@ void loop() {
       alert('Please select a hardware serial port first in the top bar.');
       return;
     }
+    const wasConnected = serialConnected;
     setIsResetting(true);
     appendSerialLog('--- Pulsing hardware RST / esptool run ---');
     try {
@@ -492,10 +627,15 @@ void loop() {
       appendSerialLog(`✗ Reset error: ${err?.message || err}`);
     } finally {
       setIsResetting(false);
+      if (wasConnected) {
+        setTimeout(() => {
+          handleConnectSerial(false);
+        }, 500);
+      }
     }
   };
 
-  const handleConnectSerial = async () => {
+  const handleConnectSerial = async (pulseReset = true) => {
     // If running in Resursee Desktop, stream serial monitor natively
     if (isDesktop) {
       if (!selectedPort) {
@@ -503,6 +643,12 @@ void loop() {
         return;
       }
       try {
+        if (pulseReset) {
+          appendSerialLog(`--- Requesting hardware reset for boot capture (Arduino IDE mode) ---`);
+          try {
+            await tauriResetBoard(selectedPort);
+          } catch {}
+        }
         appendSerialLog(`--- Native Serial Port Opened (${selectedPort} @ ${baudRate} baud) ---`);
         setSerialConnected(true);
 
@@ -524,7 +670,7 @@ void loop() {
               appendSerialLog(lineBuffer.replace(/\r/g, ''));
               lineBuffer = '';
             }
-          }, 150);
+          }, 80);
         });
       } catch (err: any) {
         appendSerialLog(`✗ Error opening serial port: ${err?.message || err}`);
@@ -757,9 +903,23 @@ void loop() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#121212] p-3 text-xs">
         {/* Template Selector */}
         <div>
-          <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
-            Sketch Template
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400">
+              Sketch Template
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('Reset sketch to default generated code for this device?')) {
+                  handleTemplateChange('default');
+                }
+              }}
+              className="text-[10px] text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer underline"
+              title="Reset code to freshly generated template"
+            >
+              Reset Default
+            </button>
+          </div>
           <select
             value={template}
             onChange={(e) => handleTemplateChange(e.target.value as any)}
@@ -1017,7 +1177,7 @@ void loop() {
               ) : (
                 <button
                   type="button"
-                  onClick={handleConnectSerial}
+                  onClick={() => handleConnectSerial(true)}
                   className="rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 px-3 py-1 text-xs font-semibold hover:opacity-90 cursor-pointer"
                 >
                   Connect Serial Port
