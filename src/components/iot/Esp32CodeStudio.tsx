@@ -93,7 +93,7 @@ export default function Esp32CodeStudio({
     return () => window.removeEventListener('resursee_boards_updated', handleUpdate);
   }, []);
 
-  const availableBoards = ALL_SUPPORTED_BOARDS.filter((b) => installedCores.includes(b.coreId));
+  const availableBoards = ALL_SUPPORTED_BOARDS.filter((b) => installedCores.includes(b.coreId) || (b.coreId === 'esp32:esp32' && installedCores.includes('arduino:esp32')));
 
   useEffect(() => {
     if (availableBoards.length > 0 && !availableBoards.some((b) => b.fqbn === boardFqbn)) {

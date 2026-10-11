@@ -35,9 +35,9 @@ export interface BoardPackage {
 export const AVAILABLE_BOARD_PACKAGES: BoardPackage[] = [
   {
     id: 'esp32:esp32',
-    name: 'Arduino ESP32 Boards',
+    name: 'Espressif ESP32 Boards',
     author: 'Espressif Systems',
-    availableVersions: ['3.0.4', '2.0.18', '2.0.14', '1.0.6'],
+    availableVersions: ['3.3.12', '3.0.4', '2.0.18', '2.0.14', '1.0.6'],
     description: 'Arduino core for the ESP32, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-C6, and ESP32-H2 microcontrollers.',
     boardsIncluded: [
       'ESP32 Dev Module (WROOM-32)',
@@ -46,6 +46,20 @@ export const AVAILABLE_BOARD_PACKAGES: BoardPackage[] = [
       'NodeMCU-32S',
       'DOIT ESP32 DEVKIT V1',
       'ESP32-WROVER Module',
+    ],
+    category: 'ESP32',
+    hardwareDeviceTypes: ['esp32'],
+  },
+  {
+    id: 'arduino:esp32',
+    name: 'Arduino ESP32 Boards',
+    author: 'Arduino',
+    availableVersions: ['2.0.18-arduino.5', '2.0.18', '2.0.14'],
+    description: 'Official Arduino package for ESP32 and Arduino Nano ESP32 boards.',
+    boardsIncluded: [
+      'Arduino Nano ESP32',
+      'ESP32 Dev Module',
+      'ESP32-S3 Dev Module',
     ],
     category: 'ESP32',
     hardwareDeviceTypes: ['esp32'],

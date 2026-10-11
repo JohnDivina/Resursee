@@ -160,7 +160,7 @@ export default function DeviceWizardModal({
                   { coreId: 'arduino:avr', id: 'arduino', name: 'Arduino Uno / Nano / Mega', sub: '8-bit AVR · ATmega328P' },
                   { coreId: 'rp2040:rp2040', id: 'raspberry_pi', name: 'Raspberry Pi Pico W', sub: 'Dual Cortex-M0+ · RP2040' },
                 ]
-                  .filter((b) => installedCoreIds.includes(b.coreId))
+                  .filter((b) => installedCoreIds.includes(b.coreId) || (b.coreId === 'esp32:esp32' && installedCoreIds.includes('arduino:esp32')))
                   .map((board) => (
                     <div
                       key={board.id}
