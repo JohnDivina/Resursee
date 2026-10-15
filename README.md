@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ Resursee
+# Resursee
 
 **Unified Engineering Workspace · Local AI Studio · ESP32 IoT Cloud Platform · Client-Side Media Toolbox**
 
@@ -13,21 +13,21 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <a href="#-key-features">Key Features</a> •
-  <a href="#-esp32-iot-cloud-platform">IoT Cloud Platform</a> •
-  <a href="#-system-architecture--data-flow">Architecture & Flow</a> •
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-hardware--wiring-guide">Hardware Guide</a> •
-  <a href="#-api-reference">API Reference</a> •
-  <a href="#-security-foundation">Security</a> •
-  <a href="#-native-desktop-app">Desktop App</a>
+  <a href="#key-features">Key Features</a> •
+  <a href="#esp32-iot-cloud-platform">IoT Cloud Platform</a> •
+  <a href="#system-architecture--data-flow">Architecture & Flow</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#hardware--wiring-guide">Hardware Guide</a> •
+  <a href="#api-reference">API Reference</a> •
+  <a href="#security-foundation">Security</a> •
+  <a href="#native-desktop-app-tauri-v2--rust">Desktop App</a>
 </p>
 
 </div>
 
 ---
 
-## 📌 Executive Overview
+## Executive Overview
 
 **Resursee** is an open-source, privacy-first personal engineering workstation that consolidates **real-time hardware IoT telemetry**, **local-first AI inference**, **statistical data computing**, and **zero-install client-side document processing** into a unified, high-performance web and native desktop application.
 
@@ -35,9 +35,9 @@ Built from the ground up with **Next.js 16 (Turbopack)**, **React 19**, **Tailwi
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🌐 1. ESP32 IoT Cloud Platform
+### 1. ESP32 IoT Cloud Platform
 - **Live Hardware Telemetry Stream**: Connect ESP32 microcontrollers over Wi-Fi to capture real-time temperature, relative humidity, capacitive soil moisture, and ambient light readings.
 - **Solar-Style Energy & Power Flow Topology**: An interactive SVG energy distribution matrix visualizing real-time power routing across **Solar PV Panels**, **LiFePO4 Battery Storage**, **Central Hybrid Inverter Hub**, **Home / Actuator Loads**, and the **Utility Grid** with hardware-accelerated animated particles (`<animateMotion>`) and live link health toggles.
 - **Bi-Directional Relay & Actuator Control**: Remotely toggle physical GPIO pins (irrigation water pumps, full-spectrum grow lights, exhaust fans) in under 100ms with optimistic UI feedback.
@@ -45,22 +45,22 @@ Built from the ground up with **Next.js 16 (Turbopack)**, **React 19**, **Tailwi
 - **Instant Firmware Generator**: Automatically generates production-ready Arduino C++ sketches (`.ino`) pre-configured with user device tokens, Wi-Fi reconnection loops, and FreeRTOS task pinning.
 - **Virtual Hardware Simulator**: Built-in simulator for testing the dashboard, gauges, and time-series charts without physical hardware connected.
 
-### 🤖 2. Local AI & Machine Learning Suite
+### 2. Local AI & Machine Learning Suite
 - **Plant Doctor (`/apps/plant-doctor`)**: Computer vision diagnostics for foliar blights, fungal infections, nutrient deficiencies, and pest infestations.
 - **AI Studio (`/apps/ai-hub`)**: Zero-data-leakage inference engine powered by local **Ollama** instances (Llama 3.2, DeepSeek R1, LLaVA) and Hugging Face model search.
 - **AI Audio Transcriber (`/apps/transcriber`)**: In-browser speech-to-text powered by `@huggingface/transformers` (Whisper), supporting Taglish audio, speaker identification, and structured markdown minutes.
 
-### 📊 3. Statistical Data Studio (`/apps/data-studio`)
+### 3. Statistical Data Studio (`/apps/data-studio`)
 - R Studio-inspired statistical computing environment running directly in the browser.
 - Run `dplyr`-style data wrangling pipelines, frequency distributions, and Ordinary Least Squares (OLS) regression models.
 - Interactive data visualizations (`recharts`) and instant export to reproducible R scripts or Excel workbooks.
 
-### 📽️ 4. Presentation Studio (`/apps/presentation-studio`)
+### 4. Presentation Studio (`/apps/presentation-studio`)
 - Technical slide deck generator with custom engineering themes and templates.
 - Native `.pptx` PowerPoint export powered by `pptxgenjs`.
 - Live presenter mode with elapsed timer, keyboard slide control, and local Ollama slide assistant.
 
-### 🛠️ 5. Zero-Upload Client-Side Media Toolbox
+### 5. Zero-Upload Client-Side Media Toolbox
 - **Image Compression (`/tools/compress-image`)**: Lossless and lossy WebP/JPEG compression executing 100% in-browser via Canvas and WebAssembly.
 - **Image Conversion (`/tools/convert-image`)**: Cross-format conversion between PNG, JPEG, WebP, and AVIF.
 - **Image Cropping & Resizing (`/tools/crop-image`, `/tools/resize-image`)**: Dimension scaling and aspect-ratio cropping.
@@ -68,7 +68,7 @@ Built from the ground up with **Next.js 16 (Turbopack)**, **React 19**, **Tailwi
 
 ---
 
-## 🏗️ System Architecture & Data Flow
+## System Architecture & Data Flow
 
 ```mermaid
 flowchart TD
@@ -117,7 +117,7 @@ flowchart TD
 
 ---
 
-## ⚡ ESP32 IoT Cloud Platform
+## ESP32 IoT Cloud Platform
 
 ### Real-Time Hardware, Internet & Cloud Flow Topology
 
@@ -150,7 +150,7 @@ Adapted from interactive distribution topology models, Resursee features an anim
 
 ---
 
-## 🔌 Hardware & Wiring Guide
+## Hardware & Wiring Guide
 
 ### ESP32-WROOM-32 Pin Allocation
 
@@ -172,7 +172,7 @@ Install via **Arduino IDE Library Manager** (`Ctrl+Shift+I` or `Cmd+Shift+I`):
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### 1. Ingest Telemetry Packet
 Dispatched by the ESP32 every 2.5–3 seconds.
@@ -227,7 +227,7 @@ Content-Type: application/json
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Node.js**: v20.0.0 or higher
@@ -281,7 +281,7 @@ npm run start
 
 ---
 
-## 🖥️ Native Desktop App (Tauri v2 + Rust)
+## Native Desktop App (Tauri v2 + Rust)
 
 Resursee packages as a native desktop application with full offline capabilities and local Ollama daemon lifecycle management.
 
@@ -300,7 +300,7 @@ curl -fsSL https://raw.githubusercontent.com/JohnDivina/Resursee/main/public/ins
 
 ---
 
-## 🛡️ Security Foundation
+## Security Foundation
 
 Resursee enforces strict security hardening across all tiers:
 1. **Rate Limiting & Anti-DDoS**: Sliding-window token-bucket rate limiting (60 requests/minute per device token) with `HTTP 429` responses and `Retry-After` headers.
@@ -314,7 +314,7 @@ Resursee enforces strict security hardening across all tiers:
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 resursee/
@@ -347,7 +347,7 @@ resursee/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions, feature requests, and bug reports are welcome!
 1. Fork the Project.
@@ -358,7 +358,7 @@ Contributions, feature requests, and bug reports are welcome!
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
 
